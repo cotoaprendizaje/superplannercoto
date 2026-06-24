@@ -1374,7 +1374,7 @@ function renderInicio(){
   return `<div class="hub">
     <div class="hub-hero">
       ${logoLockup()}
-      <h1 class="hub-title" style="margin-top:18px">Hola, ${esc(state.user||'equipo')}</h1>
+      <h1 class="hub-title" style="margin-top:18px">Hola, ${esc(state.user||'equipo')} 👋</h1>
       <p class="hub-sub">¿Qué querés ver hoy?${venc?` · <b style="color:var(--bad)">${venc} vencida${venc!==1?'s':''}</b>`:''}${al?` · <b>${al}</b> alerta${al!==1?'s':''}`:''}</p>
     </div>
     <div class="hub-grid">${items.map(card).join('')}${cta}</div>
@@ -1738,7 +1738,8 @@ function renderGateTeam(){ $('#gateTeam').innerHTML=TEAM.map(t=>`<div class="gat
 function enterAs(nombre){ if(!nombre) { flash('Decinos quién sos 🙂',true); return; } state.user=nombre; $('#gate').classList.add('hidden');
   const m=TEAM.find(t=>t.nombre.toLowerCase()===nombre.toLowerCase());
   state.userId = m ? m.id : null;
-  $('#userChip').innerHTML=`${m?avatarHTML(m.id):`<span class="avatar" style="background:var(--coto-blue)">${nombre.slice(0,1).toUpperCase()}</span>`}<span>${esc(nombre)}</span>`; }
+  $('#userChip').innerHTML=`${m?avatarHTML(m.id):`<span class="avatar" style="background:var(--coto-blue)">${nombre.slice(0,1).toUpperCase()}</span>`}<span>${esc(nombre)}</span>`;
+  try{ window.storage && window.storage.set('sp:user', nombre); }catch(e){} }
 
 /* ===========================================================================
    SUPER APP — búsqueda, comentarios, actividad, alertas, recurrencia, ajustes, backup
@@ -1876,6 +1877,11 @@ async function boot(){
   // migración defensiva de datos previos
   state.cards.forEach(c=>{ c.ficha=c.ficha||{url:'',owner:'',estadoOp:'operativo'}; c.comentarios=c.comentarios||[]; c.actividad=c.actividad||[]; if(!c.recurrencia) c.recurrencia='none'; if(!c.catalogo) c.catalogo={categoria:'',bajada:'',anio:'',duracion:'',imagen:'',personas:'',descripcion:''};
     c.sectores=(c.sectores||[]).map(s=>SECTORES[s]?s:(SLUG_MAP[s]||s)); }); // migra slugs viejos -> sectores oficiales
+  // Restaurar usuario guardado (para no pedir nombre en cada recarga)
+  try{
+    const savedUser = await window.storage.get('sp:user');
+    if(savedUser && savedUser.value){ enterAs(savedUser.value); }
+  }catch(e){}
   state.ready=true;
   showBanner();
   render();
