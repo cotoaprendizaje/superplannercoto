@@ -1624,8 +1624,8 @@ document.addEventListener('click', e=>{
   const t=e.target.closest('[data-action]'); if(!t) return;
   const a=t.dataset.action, id=t.dataset.id;
   switch(a){
-    case 'gate:enter': enterAs($('#gateInput').value.trim()); break;
-    case 'gate:person': enterAs(t.dataset.nombre); break;
+    case 'gate:enter': enterAs($('#gateInput').value.trim()); render(); break;
+    case 'gate:person': enterAs(t.dataset.nombre); render(); break;
     case 'gate:open': $('#gate').classList.remove('hidden'); break;
     case 'theme:toggle': toggleTheme(); break;
     case 'mis:toggle': if(!state.userId){ flash('Entrá con tu nombre del equipo para usar “Mis tareas”',true); break; } state.mis=!state.mis; render(); break;
