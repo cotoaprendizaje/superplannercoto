@@ -1867,7 +1867,7 @@ async function boot(){
     if(saved && saved.cards && saved.cards.length){
       state.cards=saved.cards; state.customTpl=saved.templates||{};
       if(saved.sectores) Object.assign(SECTORES,saved.sectores);
-      if(Array.isArray(saved.team)&&saved.team.length){ TEAM.length=0; saved.team.forEach(t=>TEAM.push(t)); }
+      // TEAM siempre se toma del código, no del storage (para que los cambios en el archivo tengan efecto de inmediato)
       injectSectorStyles(); renderGateTeam();
     } else {
       state.cards=seedCards(); ingestCatalogo(CURSOS,{}); await Store.save({cards:state.cards,templates:state.customTpl,sectores:SECTORES,team:TEAM});
@@ -1891,7 +1891,7 @@ function startPolling(){ if(!useSupabase()) return; setInterval(async()=>{
     if(h===state._remoteHash) return; state._remoteHash=h;
     state.cards=d.cards; if(d.templates) state.customTpl=d.templates;
     if(d.sectores) Object.assign(SECTORES,d.sectores);
-    if(Array.isArray(d.team)&&d.team.length){ TEAM.length=0; d.team.forEach(t=>TEAM.push(t)); }
+    // TEAM no se pisa desde el storage remoto
     injectSectorStyles(); render();
   }catch(e){} },BACKEND.pollMs); }
 boot();
