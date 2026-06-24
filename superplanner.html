@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Super Planner · Aprendizaje e-Learning COTO</title>
+
+<!--
+================================================================================
+  SUPER PLANNER DEL ÁREA · Aprendizaje e-Learning · RRHH COTO CICSA
+  Fase 1 — Tablero (Kanban / Calendario / Timeline) + Mapa > Cursos
+================================================================================
+  VISIÓN (documentada, ejecución acotada a Fase 1):
+
+  DOS PLANOS CONECTADOS
+  - TABLERO  = "lo que hacemos": proyectos/tareas en movimiento.
+  - MAPA     = "lo que tenemos": inventario navegable (Fase 1: Cursos).
+  - PUENTE   = ciclo de vida: una tarjeta es UN objeto; su plano se DERIVA
+               del estado. Un curso del tablero, al publicarse, aparece en el
+               inventario; si necesita actualización vuelve al tablero. No se
+               duplica data, se mueve la misma tarjeta entre vistas.
+
+  MODELO: 3 EJES INDEPENDIENTES que se combinan
+  - TIPO   -> trae una PLANTILLA editable (fases + checklist). Punto de partida.
+  - ESTADO -> pendiente | en-desarrollo | en-revision (solo esos 3).
+  - SECTOR -> sectores[] (uno o varios). Color vía data-cat (modelo Edu Point).
+
+  SECCIONES DEL MAPA aún vacías (estructura lista p/ fases siguientes):
+  apps web · QR/Edu Point inventario · bases del sistema.
+
+  PERSISTENCIA: window.storage { shared:true }. Sin localStorage/sessionStorage.
+  Identificación por nombre al entrar. try/catch + estados de carga.
+  Fallback en memoria (modo demo) si window.storage no existe.
+================================================================================
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+
+<style>
+/* --- Tipografía de marca ------------------------------------------------ */
+/* Faible no se puede embeber acá; dejamos la regla lista para cuando esté el woff2.
+@font-face{
+  font-family:'Faible';
+  src:url('fonts/Faible.woff2') format('woff2');
+  font-weight:400 900; font-display:swap;
+}
+*/
+:root{
+  --titulo:'Faible','Roboto',system-ui,'Segoe UI',sans-serif;
+  --texto:'Roboto',system-ui,'Segoe UI',sans-serif;
+
+  /* Marca COTO */
+  --coto-blue:#006EA0;
+  --coto-navy:#1E2D46;
+  --coto-white:#EBF0FF;
+  --line:#D7DEEC;
+
+  --bg:var(--coto-white);
+  --surface:#FFFFFF;
+  --surface-2:#F6F8FE;
+  --ink:var(--coto-navy);
+  --ink-soft:#5B6A86;
+  --link:var(--coto-blue);
+  --shadow:0 4px 18px rgba(30,45,70,.08);
+  --shadow-lg:0 10px 34px rgba(30,45,70,.14);
+  --r-s:14px; --r-l:22px; --pill:999px;
+
+  --ok:#2E9E8F; --warn:#E2A03F; --bad:#D8553F; --bad-soft:#FBE7E1;
+}
+[data-theme="dark"]{
+  --bg:#0F1626;
+  --surface:#161F33;
+  --surface-2:#1B2740;
+  --ink:#E7ECF7;
+  --ink-soft:#9BA8C4;
+  --line:#2A3650;
+  --coto-white:#0F1626;
+  --shadow:0 4px 18px rgba(0,0,0,.35);
+  --shadow-lg:0 10px 34px rgba(0,0,0,.45);
+  --bad-soft:#3a201b;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  font-family:var(--texto);
+  color:var(--ink);
+  background:var(--bg);
+  /* trama sutil de puntos — lenguaje "camino" */
+  background-image:radial-gradient(rgba(30,45,70,.05) 1px, transparent 1px);
+  background-size:22px 22px;
+  -webkit-font-smoothing:antialiased;
+}
+[data-theme="dark"] body{background-image:radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px)}
+h1,h2,h3,h4{font-family:var(--titulo);font-weight:700;margin:0;letter-spacing:.2px}
+a{color:var(--link);text-decoration:none}
+button{font-family:inherit}
+.hidden{display:none !important}
+
+/* --- Color de sector (data-cat) — modelo Edu Point --------------------- */
+[data-cat]{
+  --cat:#8A97B4;
+  --cat-strong:color-mix(in srgb, var(--cat) 74%, var(--coto-navy));
+  --cat-soft:color-mix(in srgb, var(--cat) 16%, #ffffff);
+  --on-cat:#fff;
+}
+[data-theme="dark"] [data-cat]{
+  --cat-strong:color-mix(in srgb, var(--cat) 70%, #ffffff);
+  --cat-soft:color-mix(in srgb, var(--cat) 26%, #11192b);
+}
+
+/* --- Botones / píldoras ------------------------------------------------- */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  padding:8px 14px;border-radius:var(--pill);font-size:13px;font-weight:500;
+  transition:.15s;white-space:nowrap;
+}
+.btn:hover{border-color:var(--coto-blue);transform:translateY(-1px)}
+.btn-primary{background:var(--coto-blue);border-color:var(--coto-blue);color:#fff}
+.btn-primary:hover{background:#0a7fb5}
+.btn-ghost{background:transparent;border-color:transparent}
+.btn-ghost:hover{background:var(--surface-2);border-color:var(--line)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-icon{padding:8px;width:38px;height:38px;justify-content:center;border-radius:50%}
+
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:var(--pill);
+  font-size:11.5px;font-weight:600;background:var(--surface-2);color:var(--ink-soft);border:1px solid var(--line)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--pill);
+  font-size:11px;font-weight:600;line-height:1.4}
+.badge-cat{background:var(--cat-soft);color:var(--cat-strong);border:1px solid color-mix(in srgb,var(--cat) 32%,transparent)}
+.badge-tbd{background:var(--surface-2);color:var(--ink-soft);border:1px dashed var(--line)}
+.prio{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.tipo-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;
+  color:var(--ink-soft);padding:2px 4px}
+
+/* --- Layout ------------------------------------------------------------- */
+.app{min-height:100%;display:flex;flex-direction:column}
+.topbar{
+  position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:12px 22px;background:color-mix(in srgb,var(--surface) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand-mark{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,var(--coto-blue),var(--coto-navy));
+  position:relative;box-shadow:var(--shadow);flex:none}
+.brand-mark::after{content:"";position:absolute;inset:0;border-radius:13px;
+  background:radial-gradient(circle at 30% 30%, rgba(255,255,255,.5) 1.5px, transparent 2px) 0 0/9px 9px}
+.brand-k{font-size:11px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+.brand-t{font-family:var(--titulo);font-size:19px;font-weight:700;line-height:1.05}
+
+.tabs{display:flex;align-items:center;gap:4px;background:var(--surface-2);padding:5px;border-radius:var(--pill);border:1px solid var(--line)}
+.tabs .sep{width:1px;height:20px;background:var(--line);margin:0 4px}
+.tab{cursor:pointer;border:none;background:transparent;color:var(--ink-soft);padding:7px 14px;border-radius:var(--pill);
+  font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;transition:.15s}
+.tab:hover{color:var(--ink)}
+.tab.active{background:var(--surface);color:var(--coto-blue);box-shadow:var(--shadow)}
+.top-actions{display:flex;align-items:center;gap:8px}
+.userchip{display:flex;align-items:center;gap:8px;padding:4px 12px 4px 4px;border-radius:var(--pill);
+  background:var(--surface);border:1px solid var(--line);cursor:pointer;font-size:13px;font-weight:600}
+
+.avatar{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  color:#fff;font-size:12px;font-weight:700;flex:none;box-shadow:0 0 0 2px var(--surface)}
+.avatar.sm{width:22px;height:22px;font-size:10px}
+
+#banner{padding:0 22px}
+.note{margin:10px 0 0;padding:9px 14px;border-radius:var(--r-s);font-size:12.5px;border:1px solid var(--line);
+  background:var(--surface);color:var(--ink-soft);display:flex;gap:8px;align-items:center}
+.note.warn{background:#FFF7E8;border-color:#F0D79A;color:#8a6a1f}
+[data-theme="dark"] .note.warn{background:#2a2412;border-color:#4d421f;color:#e0c074}
+
+/* --- Filtros ------------------------------------------------------------ */
+.filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 22px 6px}
+.filt{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--pill);padding:5px 6px 5px 12px;font-size:12.5px;color:var(--ink-soft)}
+.filt select,.filt input{border:none;background:transparent;color:var(--ink);font-family:inherit;font-size:13px;
+  font-weight:500;outline:none;padding:3px 6px;border-radius:var(--pill)}
+.filt input{min-width:150px}
+.filt-clear{margin-left:auto}
+.view{padding:14px 22px 60px;flex:1}
+
+/* --- Kanban ------------------------------------------------------------- */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
+.kcol{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-l);padding:12px;min-height:180px}
+.kcol-head{display:flex;align-items:center;gap:8px;margin:2px 4px 12px}
+.kcol-dot{width:9px;height:9px;border-radius:50%}
+.kcol-head h3{font-size:14px}
+.kcol-count{margin-left:auto;font-size:12px;font-weight:700;color:var(--ink-soft);background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--pill);padding:1px 9px}
+.kcol-body{display:flex;flex-direction:column;gap:10px;min-height:40px}
+.kcol-body.drop{outline:2px dashed var(--coto-blue);outline-offset:3px;border-radius:var(--r-s)}
+
+.kcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s);padding:12px;cursor:pointer;
+  box-shadow:var(--shadow);transition:.15s;position:relative;border-left:4px solid var(--cat,var(--line))}
+.kcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.kcard.drag{opacity:.4}
+.kcard-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.kcard-title{font-family:var(--texto);font-size:14px;font-weight:600;line-height:1.3;margin:2px 0 8px}
+.badges{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}
+.kcard-meta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-soft);margin-bottom:8px}
+.date{display:inline-flex;align-items:center;gap:4px}
+.date.overdue{color:var(--bad);font-weight:700}
+.progress{height:7px;border-radius:var(--pill);background:var(--surface-2);overflow:hidden;flex:1}
+.progress-bar{height:100%;border-radius:var(--pill);background:var(--cat,var(--coto-blue));transition:width .3s}
+.prog-row{display:flex;align-items:center;gap:8px;margin-top:2px}
+.prog-num{font-size:11px;font-weight:700;color:var(--ink-soft);white-space:nowrap}
+.kcard-foot{display:flex;align-items:center;margin-top:9px}
+.stack{display:flex}
+.stack .avatar{margin-left:-7px}
+.stack .avatar:first-child{margin-left:0}
+.tag-flag{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;color:var(--coto-blue)}
+
+/* --- Calendario --------------------------------------------------------- */
+.cal-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.cal-title{font-family:var(--titulo);font-size:18px;text-transform:capitalize;min-width:190px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.cal-dow{font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;text-align:center;padding:2px}
+.cal-cell{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s);min-height:96px;padding:7px;
+  display:flex;flex-direction:column;gap:4px}
+.cal-cell.out{background:var(--surface-2);opacity:.6}
+.cal-cell.today{border-color:var(--coto-blue);box-shadow:0 0 0 1px var(--coto-blue) inset}
+.cal-day{font-size:12px;font-weight:700;color:var(--ink-soft)}
+.cal-cell.today .cal-day{color:var(--coto-blue)}
+.cal-week{grid-template-columns:repeat(7,1fr)}
+.cal-week .cal-cell{min-height:340px}
+.cal-chip{font-size:11px;font-weight:600;padding:3px 7px;border-radius:8px;background:var(--cat-soft);
+  color:var(--cat-strong);border-left:3px solid var(--cat);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-chip.overdue{box-shadow:inset 0 0 0 1px var(--bad)}
+.cal-more{font-size:11px;color:var(--ink-soft);cursor:pointer;font-weight:600}
+
+/* --- Timeline / Gantt --------------------------------------------------- */
+.tl-wrap{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);overflow:hidden;box-shadow:var(--shadow)}
+.tl-grid{display:flex}
+.tl-left{flex:none;width:230px;border-right:1px solid var(--line);background:var(--surface);z-index:2}
+.tl-right{flex:1;overflow-x:auto;position:relative}
+.tl-corner,.tl-months{height:46px;border-bottom:1px solid var(--line);display:flex;align-items:center}
+.tl-corner{padding:0 14px;font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase}
+.tl-months{position:relative}
+.tl-month{position:absolute;top:0;height:46px;border-left:1px solid var(--line);display:flex;align-items:center;
+  padding:0 10px;font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:capitalize}
+.tl-rows-left .tl-rl{padding:0 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:9px}
+.tl-rl-title{font-size:13px;font-weight:600;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-rl-sub{font-size:11px;color:var(--ink-soft)}
+.tl-track{position:relative;border-bottom:1px solid var(--line)}
+.tl-bar{position:absolute;height:22px;border-radius:var(--pill);background:var(--cat,var(--coto-blue));
+  box-shadow:var(--shadow);cursor:pointer;display:flex;align-items:center;padding:0 9px;overflow:hidden}
+.tl-bar span{font-size:11px;font-weight:600;color:var(--on-cat);white-space:nowrap}
+.tl-bar.overdue{box-shadow:0 0 0 2px var(--bad)}
+.tl-fase{position:absolute;height:11px;border-radius:var(--pill);background:color-mix(in srgb,var(--cat) 55%,#fff);
+  border:1px solid var(--cat)}
+.tl-today{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);z-index:3}
+.tl-today::after{content:"hoy";position:absolute;top:2px;left:4px;font-size:10px;font-weight:700;color:var(--bad)}
+
+/* --- Cursos (Mapa) ------------------------------------------------------ */
+.cursos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.curso{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);overflow:hidden;
+  box-shadow:var(--shadow);transition:.15s;cursor:pointer;display:flex;flex-direction:column}
+.curso:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.curso-img{height:118px;background:linear-gradient(135deg,var(--cat),var(--cat-strong));position:relative;display:flex;align-items:flex-end;padding:10px}
+.curso-img::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 20%, rgba(255,255,255,.35) 1.5px,transparent 2px) 0 0/14px 14px}
+.curso-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.curso-estado{position:relative;z-index:1;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:var(--pill);
+  background:rgba(255,255,255,.9);color:var(--cat-strong)}
+.curso-estado.upd{background:#fff;color:var(--warn)}
+.curso-body{padding:12px;display:flex;flex-direction:column;gap:7px;flex:1}
+.curso-body h4{font-size:15px;line-height:1.2}
+.curso-bajada{font-size:12.5px;color:var(--ink-soft);line-height:1.35;flex:1}
+.curso-foot{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-soft);flex-wrap:wrap}
+.curso-foot .moodle{margin-left:auto;font-weight:700}
+
+.section-empty{border:1.5px dashed var(--line);border-radius:var(--r-l);padding:34px;text-align:center;color:var(--ink-soft)}
+.mapa-secciones{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 18px}
+.mapa-sec{padding:8px 14px;border-radius:var(--pill);border:1px solid var(--line);background:var(--surface);font-size:13px;font-weight:600}
+.mapa-sec.soon{opacity:.55;border-style:dashed}
+.mapa-sec.active{border-color:var(--coto-blue);color:var(--coto-blue)}
+
+/* --- Panel lateral / detalle ------------------------------------------- */
+.overlay{position:fixed;inset:0;background:rgba(20,30,50,.4);backdrop-filter:blur(2px);z-index:40}
+.panel{position:fixed;top:0;right:0;height:100%;width:430px;max-width:94vw;background:var(--surface);z-index:50;
+  box-shadow:var(--shadow-lg);transform:translateX(105%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  display:flex;flex-direction:column;border-left:1px solid var(--line)}
+.panel.open{transform:translateX(0)}
+.panel-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:10px}
+.panel-body{padding:16px 18px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:16px}
+.fld{display:flex;flex-direction:column;gap:5px}
+.fld label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft)}
+.fld input,.fld select,.fld textarea{font-family:inherit;font-size:13.5px;color:var(--ink);background:var(--surface-2);
+  border:1px solid var(--line);border-radius:10px;padding:9px 11px;outline:none;width:100%}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--coto-blue)}
+.fld textarea{resize:vertical;min-height:62px}
+.fld-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.chiplist{display:flex;flex-wrap:wrap;gap:6px}
+.chip-toggle{cursor:pointer;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:var(--pill);
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink-soft);user-select:none}
+.chip-toggle.on{background:var(--cat-soft);color:var(--cat-strong);border-color:color-mix(in srgb,var(--cat) 34%,transparent)}
+.chk{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px dashed var(--line)}
+.chk input[type=checkbox]{width:17px;height:17px;accent-color:var(--coto-blue);flex:none}
+.chk .chk-text{flex:1;font-size:13.5px;background:transparent;border:none;color:var(--ink);outline:none}
+.chk .chk-text.done{text-decoration:line-through;color:var(--ink-soft)}
+.chk-del{cursor:pointer;color:var(--ink-soft);opacity:.6;font-size:15px}
+.chk-del:hover{color:var(--bad);opacity:1}
+.sub{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--ink-soft);
+  display:flex;align-items:center;gap:8px;margin-top:4px}
+.sub .ring{flex:1;height:1px;background:var(--line)}
+.fase-box{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--surface-2);display:flex;flex-direction:column;gap:8px}
+.bridge{background:linear-gradient(135deg,color-mix(in srgb,var(--coto-blue) 10%,var(--surface)),var(--surface));
+  border:1px solid color-mix(in srgb,var(--coto-blue) 30%,var(--line));border-radius:14px;padding:13px;display:flex;flex-direction:column;gap:9px}
+.bridge .bridge-t{font-size:12px;font-weight:700;color:var(--coto-blue);display:flex;align-items:center;gap:6px}
+.bridge .bridge-d{font-size:12px;color:var(--ink-soft);line-height:1.4}
+
+/* --- Carga por persona -------------------------------------------------- */
+.carga-list{display:flex;flex-direction:column;gap:14px}
+.carga-row{display:flex;align-items:center;gap:12px}
+.carga-info{flex:1}
+.carga-name{font-size:13.5px;font-weight:700}
+.carga-rol{font-size:11px;color:var(--ink-soft)}
+.carga-bar{height:9px;border-radius:var(--pill);background:var(--surface-2);overflow:hidden;margin-top:5px}
+.carga-fill{height:100%;border-radius:var(--pill);transition:width .4s}
+.carga-num{font-size:12px;font-weight:700;color:var(--ink-soft);min-width:74px;text-align:right}
+
+/* --- Modales ------------------------------------------------------------ */
+.modal-wrap{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-bg{position:absolute;inset:0;background:rgba(20,30,50,.45)}
+.modal{position:relative;background:var(--surface);border-radius:var(--r-l);box-shadow:var(--shadow-lg);
+  width:560px;max-width:96vw;max-height:90vh;overflow:auto;padding:22px}
+.modal h2{font-size:19px;margin-bottom:4px}
+.modal .sub-t{color:var(--ink-soft);font-size:13px;margin-bottom:16px}
+.tipo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:8px 0 14px}
+.tipo-opt{cursor:pointer;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center;
+  background:var(--surface-2);transition:.15s;display:flex;flex-direction:column;gap:5px;align-items:center}
+.tipo-opt:hover{border-color:var(--coto-blue);transform:translateY(-2px)}
+.tipo-opt.on{border-color:var(--coto-blue);background:color-mix(in srgb,var(--coto-blue) 10%,var(--surface))}
+.tipo-opt .ic{font-size:22px}
+.tipo-opt .nm{font-size:12px;font-weight:600}
+.modal-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+
+/* --- Gate (identificación) --------------------------------------------- */
+.gate{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--coto-navy),#0c1320)}
+.gate-card{background:var(--surface);border-radius:26px;box-shadow:var(--shadow-lg);padding:34px;width:440px;max-width:92vw;text-align:center}
+.gate-card .brand-mark{width:58px;height:58px;border-radius:17px;margin:0 auto 14px}
+.gate-card h1{font-size:24px;margin-bottom:4px}
+.gate-card p{color:var(--ink-soft);font-size:13.5px;margin:0 0 22px}
+.gate-team{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
+.gate-person{cursor:pointer;border:1px solid var(--line);border-radius:14px;padding:11px;display:flex;align-items:center;gap:10px;
+  background:var(--surface-2);transition:.15s;text-align:left}
+.gate-person:hover{border-color:var(--coto-blue);transform:translateY(-2px)}
+.gate-person .nm{font-size:14px;font-weight:700}
+.gate-person .rl{font-size:11px;color:var(--ink-soft)}
+.gate-other{display:flex;gap:8px}
+.gate-other input{flex:1;border:1px solid var(--line);border-radius:var(--pill);padding:10px 14px;font-family:inherit;font-size:13.5px;background:var(--surface-2);color:var(--ink);outline:none}
+
+.spinner{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--coto-blue);border-radius:50%;animation:spin .8s linear infinite;margin:30px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{padding:50px;text-align:center;color:var(--ink-soft)}
+.empty .big{font-size:38px;margin-bottom:8px}
+
+@media(max-width:900px){
+  .kanban{grid-template-columns:1fr}
+  .tabs{order:3;width:100%;justify-content:center}
+}
+
+/* === UPGRADE "a full" =================================================== */
+/* KPIs / Resumen */
+.res-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:16px;box-shadow:var(--shadow);
+  display:flex;flex-direction:column;gap:4px;cursor:pointer;transition:.15s;position:relative;overflow:hidden}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.kpi::after{content:"";position:absolute;right:-18px;bottom:-18px;width:70px;height:70px;border-radius:50%;background:var(--kpi,var(--coto-blue));opacity:.08}
+.kpi-num{font-family:var(--titulo);font-size:34px;font-weight:700;line-height:1;color:var(--kpi,var(--coto-blue))}
+.kpi-lbl{font-size:12.5px;font-weight:600;color:var(--ink-soft)}
+.kpi-sub{font-size:11px;color:var(--ink-soft)}
+.res-cols{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start}
+@media(max-width:820px){.res-cols{grid-template-columns:1fr}}
+.res-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:16px;box-shadow:var(--shadow);margin-bottom:16px}
+.res-card h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.res-card h3 .mini{margin-left:auto;font-size:12px;font-weight:600;color:var(--ink-soft)}
+.bar-line{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.bar-line .bl-lbl{font-size:12.5px;font-weight:600;min-width:104px}
+.bar-line .bl-track{flex:1;height:10px;border-radius:var(--pill);background:var(--surface-2);overflow:hidden}
+.bar-line .bl-fill{height:100%;border-radius:var(--pill)}
+.bar-line .bl-num{font-size:12px;font-weight:700;color:var(--ink-soft);min-width:26px;text-align:right}
+.venc{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.venc:last-child{border-bottom:none}
+.venc:hover{opacity:.75}
+.venc-d{font-size:12px;font-weight:700;width:48px;text-align:center;border-radius:8px;padding:3px 0;background:var(--surface-2);color:var(--ink-soft)}
+.venc-d.over{background:var(--bad-soft);color:var(--bad)}
+.venc-t{flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chipcount{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:var(--pill);background:var(--cat-soft,var(--surface-2));color:var(--cat-strong,var(--ink-soft));border:1px solid var(--line);margin:0 6px 6px 0}
+
+/* Kanban toolbar + quick add */
+.kbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.kbar .grow{flex:1}
+.quick-add{margin-top:8px}
+.quick-add input{width:100%;border:1px dashed var(--line);background:transparent;border-radius:10px;padding:8px 11px;
+  font-family:inherit;font-size:12.5px;color:var(--ink);outline:none}
+.quick-add input:focus{border-style:solid;border-color:var(--coto-blue);background:var(--surface)}
+.kcol-over{font-size:11px;font-weight:700;color:var(--bad)}
+
+/* Mapa subnav */
+.mapa-sec{cursor:pointer}
+.mapa-sec:not(.soon):hover{border-color:var(--coto-blue)}
+
+/* Timeline pro */
+.tl-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.tl-weekend{position:absolute;top:0;bottom:0;background:color-mix(in srgb,var(--coto-navy) 5%,transparent);z-index:0}
+[data-theme="dark"] .tl-weekend{background:rgba(255,255,255,.03)}
+.tl-group-l{padding:8px 14px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-soft);
+  background:var(--surface-2);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.tl-group-r{background:var(--surface-2);border-bottom:1px solid var(--line)}
+.tl-tick{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--cat-strong,var(--coto-blue));
+  border:2px solid var(--surface);top:31px;z-index:2;cursor:pointer}
+.tl-bar span{pointer-events:none}
+
+/* Tareas dentro de fase */
+.ftask{display:flex;align-items:center;gap:7px;padding:4px 0}
+.ftask input[type=checkbox]{width:15px;height:15px;accent-color:var(--coto-blue);flex:none}
+.ftask .ft-text{flex:1;font-size:12.5px;background:transparent;border:none;color:var(--ink);outline:none}
+.ftask .ft-text.done{text-decoration:line-through;color:var(--ink-soft)}
+.ftask input[type=date]{font-size:11px;border:1px solid var(--line);border-radius:7px;background:var(--surface);color:var(--ink-soft);padding:2px 5px}
+.ftask .chk-del{font-size:13px}
+
+/* Mis tareas activo */
+#misBtn.on{background:var(--coto-blue);border-color:var(--coto-blue);color:#fff}
+
+@media(max-width:900px){
+  .res-cols{grid-template-columns:1fr}
+}
+
+/* === SUPER APP =========================================================== */
+/* Comentarios + actividad */
+.cmt{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:9px 11px;margin-bottom:8px}
+.cmt-h{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink-soft);margin-bottom:3px}
+.cmt-h b{color:var(--ink)}
+.cmt-h span{margin-left:auto}
+.cmt-b{font-size:13px;line-height:1.4;white-space:pre-wrap}
+.cmt-add{display:flex;flex-direction:column;gap:7px;margin-top:8px}
+.cmt-add textarea{min-height:54px}
+.act{font-size:12px;color:var(--ink-soft);padding:4px 0;border-bottom:1px dashed var(--line);line-height:1.4}
+.act:last-child{border-bottom:none}
+.act b{color:var(--ink)}
+.act-d{display:inline-block;min-width:64px;color:var(--ink-soft);opacity:.8}
+
+/* Search / command palette */
+.search-modal{position:relative;background:var(--surface);border-radius:var(--r-l);box-shadow:var(--shadow-lg);
+  width:620px;max-width:96vw;max-height:80vh;overflow:hidden;display:flex;flex-direction:column}
+.search-top{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.search-top input{flex:1;border:none;background:transparent;font-family:inherit;font-size:17px;color:var(--ink);outline:none}
+.search-top .kbd{font-size:11px;color:var(--ink-soft);border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.search-results{overflow-y:auto;padding:8px;max-height:60vh}
+.sr-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;border-left:3px solid var(--cat,var(--line))}
+.sr-item:hover,.sr-item.sel{background:var(--surface-2)}
+.sr-t{flex:1;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-m{font-size:11px;color:var(--ink-soft)}
+.sr-where{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--coto-blue);background:color-mix(in srgb,var(--coto-blue) 10%,transparent);padding:2px 7px;border-radius:var(--pill)}
+
+/* Notificaciones */
+.notif-badge{position:absolute;top:-3px;right:-3px;background:var(--bad);color:#fff;font-size:10px;font-weight:700;
+  min-width:17px;height:17px;border-radius:999px;display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 0 0 2px var(--surface)}
+.notif-item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px dashed var(--line);cursor:pointer}
+.notif-item:hover{opacity:.78}
+.notif-ic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+.notif-ic.bad{background:var(--bad-soft);color:var(--bad)}
+.notif-ic.warn{background:#FFF3DC;color:#B7791F}
+.notif-ic.rec{background:color-mix(in srgb,var(--coto-blue) 12%,transparent);color:var(--coto-blue)}
+[data-theme="dark"] .notif-ic.warn{background:#3a2f12}
+.notif-t{flex:1;font-size:13px;font-weight:600;line-height:1.2}
+.notif-s{font-size:11px;color:var(--ink-soft)}
+
+/* Settings */
+.set-sec{margin-bottom:22px}
+.set-sec h3{font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.set-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.set-row input[type=text]{flex:1;border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-family:inherit;font-size:13px;background:var(--surface-2);color:var(--ink);outline:none}
+.set-row input[type=color]{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--surface-2);padding:2px;cursor:pointer;flex:none}
+.set-grid{max-height:230px;overflow-y:auto;padding-right:4px;border:1px solid var(--line);border-radius:12px;padding:10px}
+.set-data{display:flex;gap:8px;flex-wrap:wrap}
+.tpl-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.tpl-row .chk-del{margin-left:auto}
+
+@media(max-width:900px){
+  .res-cols{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- GATE: identificación por nombre -->
+<div id="gate" class="gate">
+  <div class="gate-card">
+    <div class="brand-mark"></div>
+    <h1>Super Planner del área</h1>
+    <p>Aprendizaje e-Learning · COTO. Identificate para que el equipo vea lo que cargás.</p>
+    <div class="gate-team" id="gateTeam"></div>
+    <div class="gate-other">
+      <input id="gateInput" placeholder="...o escribí tu nombre" />
+      <button class="btn btn-primary" data-action="gate:enter">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" class="app hidden">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <div class="brand-k">Aprendizaje · e-Learning · COTO</div>
+        <div class="brand-t">Super Planner del área</div>
+      </div>
+    </div>
+    <nav class="tabs">
+      <button class="tab" data-view="resumen">◆ Resumen</button>
+      <span class="sep"></span>
+      <button class="tab" data-view="kanban">▦ Kanban</button>
+      <button class="tab" data-view="calendario">▣ Calendario</button>
+      <button class="tab" data-view="timeline">▬ Timeline</button>
+      <span class="sep"></span>
+      <button class="tab" data-view="mapa">◎ Mapa</button>
+    </nav>
+    <div class="top-actions">
+      <button class="btn btn-icon btn-ghost" data-action="search:open" title="Buscar (tecla /)">🔎</button>
+      <button class="btn btn-icon btn-ghost" data-action="notif:open" id="notifBtn" title="Alertas" style="position:relative">🔔<span id="notifBadge" class="notif-badge hidden"></span></button>
+      <button class="btn btn-ghost" data-action="mis:toggle" id="misBtn" title="Ver solo mis tareas">★ Mis tareas</button>
+      <button class="btn btn-icon btn-ghost" data-action="carga:open" title="Carga del equipo">👥</button>
+      <button class="btn btn-icon btn-ghost" data-action="settings:open" title="Ajustes y datos">⚙</button>
+      <button class="btn btn-icon btn-ghost" data-action="theme:toggle" title="Modo oscuro/claro" id="themeBtn">◑</button>
+      <button class="btn btn-primary" data-action="nuevo:open">+ Nuevo</button>
+      <div class="userchip" data-action="gate:open" id="userChip"></div>
+    </div>
+  </header>
+  <div id="banner"></div>
+  <div class="filters" id="filters"></div>
+  <main id="view" class="view"><div class="spinner"></div></main>
+</div>
+
+<!-- Panel lateral + overlay + modal -->
+<div id="overlay" class="overlay hidden" data-action="panel:close"></div>
+<aside id="panel" class="panel"></aside>
+<div id="modal" class="modal-wrap hidden"></div>
+
+<script>
+"use strict";
+/* ===========================================================================
+   DATOS MAESTROS (3 ejes + equipo + plantillas)
+=========================================================================== */
+const TEAM = [
+  {id:'dami', nombre:'Damián', rol:'Líder',                      color:'#006EA0'},
+  {id:'vane', nombre:'Vane',   rol:'Identidad visual · Auditoría',color:'#7E57C2'},
+  {id:'eve',  nombre:'Eve',    rol:'Audiovisual',                color:'#E5736F'},
+  {id:'flor', nombre:'Flor',   rol:'Contenido · Instruccional',  color:'#2E9E8F'},
+  {id:'gasti',nombre:'Gasti',  rol:'Storyline · Gamificación',   color:'#E2A03F'},
+];
+
+const ESTADOS = [
+  {id:'pendiente',    nombre:'Pendiente',    dot:'#8A97B4'},
+  {id:'en-desarrollo',nombre:'En desarrollo',dot:'#006EA0'},
+  {id:'en-revision',  nombre:'En revisión',  dot:'#E2A03F'},
+];
+
+const TIPOS = {
+  'curso':              {nombre:'Curso',                  icon:'🎓'},
+  'actualizacion-curso':{nombre:'Actualización de curso', icon:'♻️'},
+  'video':              {nombre:'Video / Filmación',      icon:'🎬'},
+  'presencial':         {nombre:'Capacitación presencial',icon:'🧑‍🏫'},
+  'edu-point':          {nombre:'Edu Point',              icon:'📍'},
+  'poes':               {nombre:'POES / Validación',      icon:'🧪'},
+  'guia':               {nombre:'Guía',                   icon:'📖'},
+  'pedido-insumos':     {nombre:'Pedido de insumos',      icon:'📦'},
+  'app-web':            {nombre:'Aplicativo web',         icon:'🖥️'},
+  'base-sistema':       {nombre:'Base del sistema',       icon:'🗄️'},
+  'libre':              {nombre:'Libre',                  icon:'📝'},
+};
+
+/* 21 SECTORES del Sistema de Diseño COTO (data-cat). Editable: ajustar a la lista oficial. */
+const SECTORES = {
+  'cajas':               {nombre:'Cajas',                cat:'#E2A03F'},
+  'frutas-y-verduras':   {nombre:'Frutas y Verduras',    cat:'#4CAF50'},
+  'lacteos-y-congelados':{nombre:'Lácteos y Congelados', cat:'#3FA7D6'},
+  'panaderia':           {nombre:'Panadería',            cat:'#C8893B'},
+  'carniceria':          {nombre:'Carnicería',           cat:'#C0504D'},
+  'fiambres-y-quesos':   {nombre:'Fiambres y Quesos',    cat:'#D99A4E'},
+  'pescaderia':          {nombre:'Pescadería',           cat:'#5B8DB8'},
+  'almacen':             {nombre:'Almacén',              cat:'#8D6E63'},
+  'bebidas':             {nombre:'Bebidas',              cat:'#7E57C2'},
+  'perfumeria':          {nombre:'Perfumería',           cat:'#D081B0'},
+  'limpieza':            {nombre:'Limpieza',             cat:'#26A69A'},
+  'textil-bazar':        {nombre:'Textil y Bazar',       cat:'#9575CD'},
+  'control-de-calidad':  {nombre:'Control de Calidad',   cat:'#2E9E8F'},
+  'servicio-medico':     {nombre:'Servicio Médico',      cat:'#E5736F'},
+  'flota-propia':        {nombre:'Flota Propia',         cat:'#5C6BC0'},
+  'seguridad-higiene':   {nombre:'Seguridad e Higiene',  cat:'#EAB308'},
+  'frescos-1':           {nombre:'Frescos 1',            cat:'#66BB6A'},
+  'frescos-2':           {nombre:'Frescos 2',            cat:'#2BB3A3'},
+  'mantenimiento':       {nombre:'Mantenimiento',        cat:'#78909C'},
+  'coto-digital':        {nombre:'Coto Digital',         cat:'#2979FF'},
+  'carteles-qr':         {nombre:'Carteles / QR',        cat:'#546E7A'},
+};
+
+/* Diccionario slug catálogo -> token de sector (para que resuelva el color) */
+const SLUG_MAP = {
+  calidad:'control-de-calidad', medico:'servicio-medico', flota:'flota-propia',
+  'seg-higiene':'seguridad-higiene', frescos1:'frescos-1', frescos2:'frescos-2',
+  fyv:'frutas-y-verduras', frutas:'frutas-y-verduras', verduras:'frutas-y-verduras',
+  lacteos:'lacteos-y-congelados','lacteos-congelados':'lacteos-y-congelados',
+  congelados:'lacteos-y-congelados', panaderia:'panaderia', carniceria:'carniceria',
+  carnes:'carniceria', fiambres:'fiambres-y-quesos', quesos:'fiambres-y-quesos',
+  pescaderia:'pescaderia', almacen:'almacen', bebidas:'bebidas', perfumeria:'perfumeria',
+  limpieza:'limpieza', textil:'textil-bazar', bazar:'textil-bazar', cajas:'cajas',
+  mantenimiento:'mantenimiento', digital:'coto-digital','coto-digital':'coto-digital',
+  qr:'carteles-qr', carteles:'carteles-qr',
+};
+function toSector(slug){
+  if(!slug) return null;
+  const s = String(slug).toLowerCase().trim();
+  if(SECTORES[s]) return s;
+  if(SLUG_MAP[s]) return SLUG_MAP[s];
+  return s; // token desconocido -> se renderiza como TBD
+}
+
+/* PLANTILLAS por tipo: punto de partida (fases + checklist), no corsé. */
+const TEMPLATES = {
+  'curso':{fases:['Guion','Diseño visual','Producción Storyline','Revisión','Publicación'],
+    checklist:['Brief aprobado','Objetivos de aprendizaje','Guion validado','Maqueta visual','Montaje Storyline','QA funcional','Alta en Moodle']},
+  'actualizacion-curso':{fases:['Relevamiento de cambios','Reescritura','Rearmado','Revisión','Republicación'],
+    checklist:['Detectar desactualizaciones','Actualizar guion','Actualizar piezas','QA','Republicar en Moodle']},
+  'video':{fases:['Pre-producción','Rodaje','Post-producción'],
+    checklist:['Guion / storyboard','Coordinar rodaje','Filmación','Edición','Musicalización','Aprobación','Entrega final']},
+  'presencial':{fases:['Preparación','Dictado','Cierre'],
+    checklist:['Definir temario','Material de soporte','Convocatoria','Logística de sala','Dictado','Registro de asistencia']},
+  'edu-point':{fases:[],
+    checklist:['Definir contenido','Diseño de pieza','Generar QR','Validar enlace','Impresión','Colocación en sala']},
+  'poes':{fases:[],
+    checklist:['Relevar procedimiento','Redactar POES','Validación técnica','Aprobación']},
+  'guia':{fases:[],
+    checklist:['Esquema','Redacción','Diseño','Revisión','Publicación']},
+  'pedido-insumos':{fases:[],
+    checklist:['Detectar necesidad','Cotizar','Aprobar','Comprar','Recibir']},
+  'app-web':{fases:['Relevamiento','Desarrollo','QA','Puesta en producción'],
+    checklist:['Definir alcance','Diseño de interfaz','Desarrollo','Pruebas','Deploy']},
+  'base-sistema':{fases:[],
+    checklist:['Definir esquema','Cargar datos','Validar','Documentar']},
+  'libre':{fases:[],checklist:[]},
+};
+
+/* ===========================================================================
+   CATÁLOGO SEMILLA (formato real const CURSOS=[{categoria,...}]).
+   Reemplazable pegando el JSON real desde el botón "Catálogo".
+=========================================================================== */
+const CURSOS = [
+  {categoria:'calidad',  titulo:'Seguridad Alimentaria',     bajada:'Buenas prácticas de manipulación de alimentos.', anio:2024, duracion:'45 min', imagen:'', personas:1280, descripcion:'Manejo seguro, cadena de frío y prevención de contaminación cruzada en sucursal.'},
+  {categoria:'cajas',    titulo:'Atención en Línea de Cajas',bajada:'Experiencia de cliente y velocidad de atención.', anio:2025, duracion:'30 min', imagen:'', personas:2100, descripcion:'Protocolo de saludo, manejo de medios de pago y resolución de incidencias.'},
+  {categoria:'medico',   titulo:'RCP y Primeros Auxilios',   bajada:'Respuesta ante emergencias en el punto de venta.',anio:2024, duracion:'60 min', imagen:'', personas:640, descripcion:'Maniobras básicas de reanimación y uso del botiquín.'},
+  {categoria:'seg-higiene',titulo:'Prevención de Riesgos',   bajada:'Higiene y seguridad en el trabajo.',              anio:2025, duracion:'40 min', imagen:'', personas:1750, descripcion:'Uso de EPP, ergonomía y prevención de accidentes en depósito y salón.'},
+  {categoria:'frescos1', titulo:'Cadena de Frío',            bajada:'Conservación de productos frescos.',              anio:2023, duracion:'35 min', imagen:'', personas:890, descripcion:'Control de temperaturas, rotación y exhibición de frescos.'},
+  {categoria:'panaderia',titulo:'Elaboración de Panificados', bajada:'Estándares de producción de panadería.',          anio:2024, duracion:'50 min', imagen:'', personas:430, descripcion:'Procesos, recetas estándar y control de calidad del horneado.'},
+  {categoria:'flota',    titulo:'Manejo Defensivo',          bajada:'Conducción segura de la flota propia.',           anio:2025, duracion:'55 min', imagen:'', personas:210, descripcion:'Normas de tránsito, prevención y cuidado del vehículo.'},
+  {categoria:'frutas',   titulo:'Gestión de Frutas y Verduras',bajada:'Recepción, control y exhibición.',              anio:2024, duracion:'38 min', imagen:'', personas:760, descripcion:'Selección de calidad, mermas y armado de góndola.'},
+  {categoria:'digital',  titulo:'Coto Digital para Equipos', bajada:'Ecosistema de apps y e-commerce.',                anio:2025, duracion:'25 min', imagen:'', personas:980, descripcion:'Pedidos online, picking y atención omnicanal.'},
+  {categoria:'frescos2', titulo:'Exhibición de Fiambrería',  bajada:'Presentación y rotación en frescos 2.',           anio:2023, duracion:'30 min', imagen:'', personas:520, descripcion:'Corte, vitrina y control de vencimientos.'},
+];
+
+/* ===========================================================================
+   HELPERS
+=========================================================================== */
+const $  = s => document.querySelector(s);
+const uid = () => 'id-'+Math.random().toString(36).slice(2,9);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const isoOf = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayISO = () => isoOf(new Date());
+function parseISO(s){ if(!s) return null; const p=String(s).split('-').map(Number); return new Date(p[0],p[1]-1,p[2]); }
+function fmtShort(s){ const d=parseISO(s); return d? `${d.getDate()}/${d.getMonth()+1}` : ''; }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function daysBetween(a,b){ return Math.round((parseISO(b)-parseISO(a))/86400000); }
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DOW=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
+const member = id => TEAM.find(t=>t.id===id);
+const sectorName = tk => SECTORES[tk] ? SECTORES[tk].nombre : null;
+function isCurso(c){ return c.tipo==='curso'; }
+const INV_KIND={'curso':'cursos','edu-point':'edu-points','app-web':'apps','base-sistema':'bases'};
+function inventoryKind(c){ return INV_KIND[c.tipo]||null; } // tipos publicables (viajan al Mapa)
+function inInventory(c){ return !!c.publicado && !!inventoryKind(c); }              // aparece en el Mapa
+function isInventory(c){ return inInventory(c) && !c.enActualizacion; }             // vive SOLO en el Mapa
+function isOverdue(c){ const end=c.fin||c.inicio; if(!end||isInventory(c)) return false; return end < todayISO(); }
+function progress(c){ const t=c.checklist||[]; const done=t.filter(x=>x.done).length; return {done,total:t.length,pct:t.length?Math.round(done/t.length*100):0}; }
+
+function avatarHTML(id,sm){ const m=member(id); if(!m) return ''; const ini=m.nombre.slice(0,1).toUpperCase();
+  return `<span class="avatar ${sm?'sm':''}" style="background:${m.color}" title="${esc(m.nombre)}">${ini}</span>`; }
+function stackHTML(c){ const ids=[c.responsable,...(c.asignados||[])].filter((v,i,a)=>v&&a.indexOf(v)===i).slice(0,4);
+  return `<div class="stack">${ids.map(i=>avatarHTML(i,true)).join('')}</div>`; }
+function sectoresBadges(arr){ if(!arr||!arr.length) return `<span class="badge badge-tbd" data-action="noop">TBD</span>`;
+  return arr.map(tk=> SECTORES[tk]
+    ? `<span class="badge badge-cat" data-cat="${tk}">${esc(SECTORES[tk].nombre)}</span>`
+    : `<span class="badge badge-tbd">${esc(tk)}</span>`).join(''); }
+function primaryCat(c){ return (c.sectores&&c.sectores[0]&&SECTORES[c.sectores[0]]) ? c.sectores[0] : 'tbd'; }
+
+/* ===========================================================================
+   PERSISTENCIA — window.storage { shared:true } (+ fallback en memoria)
+=========================================================================== */
+/* ====== BACKEND COMPARTIDO (opcional — completar mañana) ==================
+   Para que TODO el equipo vea lo mismo, pegá los 2 valores de tu proyecto
+   Supabase (Settings → API). Mientras estén vacíos, la app funciona igual que
+   hoy (window.storage / memoria). Tabla requerida (SQL en la guía):
+       create table planner (id text primary key, data jsonb);
+=========================================================================== */
+const BACKEND = {
+  supabaseUrl: '',        // ej: https://abcdxyz.supabase.co
+  supabaseKey: '',        // anon public key
+  tabla: 'planner',
+  fila: 'coto',           // fila única que comparte el equipo
+  pollMs: 5000,           // cada cuánto refresca lo que cargaron los demás
+};
+const useSupabase = () => !!(BACKEND.supabaseUrl && BACKEND.supabaseKey);
+
+const KEY='coto.superplanner.v1';
+const Store = (function(){
+  const mem={}; let mode='storage';
+  function api(){ return (typeof window!=='undefined') ? window.storage : null; }
+  async function rawGet(k){ const s=api(); if(!s) throw 0;
+    if(typeof s.get==='function')      return await s.get(k,{shared:true});
+    if(typeof s.getItem==='function')  return await s.getItem(k,{shared:true});
+    throw 0; }
+  async function rawSet(k,v){ const s=api(); if(!s) throw 0;
+    if(typeof s.set==='function')      return await s.set(k,v,{shared:true});
+    if(typeof s.setItem==='function')  return await s.setItem(k,v,{shared:true});
+    throw 0; }
+  // Supabase vía REST (sin SDK, sin dependencias)
+  function sbH(extra){ return Object.assign({apikey:BACKEND.supabaseKey,Authorization:'Bearer '+BACKEND.supabaseKey},extra||{}); }
+  async function sbLoad(){ const u=`${BACKEND.supabaseUrl}/rest/v1/${BACKEND.tabla}?id=eq.${encodeURIComponent(BACKEND.fila)}&select=data`;
+    const r=await fetch(u,{headers:sbH()}); if(!r.ok) throw new Error('Supabase '+r.status); const j=await r.json(); return (j&&j[0])?j[0].data:null; }
+  async function sbSave(obj){ const u=`${BACKEND.supabaseUrl}/rest/v1/${BACKEND.tabla}`;
+    const r=await fetch(u,{method:'POST',headers:sbH({'Content-Type':'application/json',Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify({id:BACKEND.fila,data:obj})}); if(!r.ok) throw new Error('Supabase '+r.status); }
+  return {
+    mode:()=>mode,
+    async load(){
+      if(useSupabase()){ const d=await sbLoad(); mode='supabase'; return d; } // si falla, throw -> boot lo maneja
+      try{ const raw=await rawGet(KEY); mode='storage'; return raw? JSON.parse(raw):null; }
+      catch(e){ mode='memoria'; return mem[KEY]? JSON.parse(mem[KEY]):null; } },
+    async save(obj){ const raw=JSON.stringify(obj);
+      if(useSupabase()){ try{ await sbSave(obj); mode='supabase'; }catch(e){ mode='error'; mem[KEY]=raw; } return; }
+      try{ await rawSet(KEY,raw); mode='storage'; }
+      catch(e){ mode='memoria'; mem[KEY]=raw; } },
+    async remote(){ return useSupabase()? await sbLoad() : null; },
+  };
+})();
+let saveTimer=null;
+function persist(){ if(useSupabase() && state.connOk===false) return; clearTimeout(saveTimer); saveTimer=setTimeout(async()=>{
+  await Store.save({cards:state.cards, templates:state.customTpl, sectores:SECTORES, team:TEAM});
+  if(useSupabase()) state._remoteHash=JSON.stringify(state.cards)+JSON.stringify(SECTORES)+JSON.stringify(TEAM);
+  showBanner();
+},250); }
+
+/* ===========================================================================
+   ESTADO DE LA APP
+=========================================================================== */
+const state = {
+  ready:false, user:null, userId:null, mis:false, view:'resumen',
+  calMode:'mes', calCursor:new Date(),
+  tlScale:'mes', tlGroup:'', sort:'prioridad', mapaSec:'cursos',
+  filters:{persona:'',tipo:'',sector:'',estado:'',texto:'',cursoEstado:''},
+  cards:[], customTpl:{}, selectedId:null, draftTipo:'curso',
+  connOk:true, _remoteHash:'',
+};
+const allTipos = () => Object.assign({}, TIPOS, mapCustom());
+function mapCustom(){ const o={}; for(const k in state.customTpl) o[k]={nombre:state.customTpl[k].nombre,icon:'🧩',custom:true}; return o; }
+function tplFor(tipo){ if(state.customTpl[tipo]) return state.customTpl[tipo]; return TEMPLATES[tipo]||{fases:[],checklist:[]}; }
+const current = () => state.cards.find(c=>c.id===state.selectedId);
+
+/* ===========================================================================
+   SEED — tarjetas reales del Planner + ingesta del catálogo
+=========================================================================== */
+function newCard(tipo,titulo,extra){
+  const tpl=tplFor(tipo);
+  return Object.assign({
+    id:uid(), titulo:titulo||'Sin título', tipo, estado:'pendiente', sectores:[],
+    responsable:null, asignados:[], inicio:null, fin:null, prioridad:'normal',
+    checklist:(tpl.checklist||[]).map(t=>({id:uid(),text:t,done:false})),
+    fases:(tpl.fases||[]).map(f=>({id:uid(),nombre:f,inicio:null,fin:null})),
+    publicado:false, enActualizacion:false, linkMoodle:'',
+    catalogo:{categoria:'',bajada:'',anio:'',duracion:'',imagen:'',personas:'',descripcion:''}, notas:'',
+    recurrencia:'none', ficha:{url:'',owner:'',estadoOp:'operativo'}, comentarios:[], actividad:[],
+  }, extra||{});
+}
+function withChecklist(items){ return items.map(t=> typeof t==='string'?{id:uid(),text:t,done:false}:{id:uid(),text:t.t,done:!!t.d}); }
+
+function seedCards(){
+  const C=[];
+  const mk=(tipo,titulo,o)=>{ const c=newCard(tipo,titulo); Object.assign(c,o); if(o&&o.checklist) c.checklist=withChecklist(o.checklist); if(o&&o.fasesD) c.fases=o.fasesD.map(f=>({id:uid(),nombre:f.n,inicio:f.i||null,fin:f.f||null,tareas:(f.t||[]).map(x=>({id:uid(),text:x.text,done:!!x.done,fecha:x.fecha||null}))})); C.push(c); return c; };
+
+  mk('video','Filmación videos cortos Zona Gourmet',{
+    sectores:['cajas'], estado:'en-desarrollo', responsable:'eve', asignados:['eve'],
+    inicio:'2026-06-10', fin:'2026-07-04',
+    checklist:Array.from({length:14},(_,i)=>({t:'Video '+(i+1),d:false})),
+    fasesD:[{n:'Pre-producción',i:'2026-06-10',f:'2026-06-16'},{n:'Rodaje',i:'2026-06-17',f:'2026-06-26'},{n:'Post-producción',i:'2026-06-27',f:'2026-07-04'}]});
+
+  mk('presencial','Capac. presenciales Control de Calidad',{
+    sectores:['control-de-calidad'], estado:'en-desarrollo', prioridad:'alta',
+    responsable:'flor', asignados:['flor','dami'], inicio:'2026-06-19', fin:'2026-06-19',
+    checklist:['Definir temario','Material de soporte','Convocatoria','Logística de sala','Dictado','Registro de asistencia']});
+
+  mk('poes','Limpieza de heladeras de frío',{
+    sectores:['mantenimiento'], estado:'pendiente', responsable:'vane', asignados:['vane'],
+    inicio:'2026-06-22', fin:'2026-06-26', recurrencia:'semanal',
+    checklist:['Relevar procedimiento','Redactar POES','Validación técnica']});
+
+  mk('actualizacion-curso','Actualización curso Seguridad alimentaria',{
+    sectores:[], estado:'en-desarrollo', responsable:'flor', asignados:['flor','gasti','vane'],
+    inicio:'2026-06-15', fin:'2026-07-15',
+    checklist:['Detectar desactualizaciones','Actualizar guion','Actualizar piezas','QA','Republicar en Moodle'],
+    fasesD:[{n:'Relevamiento',i:'2026-06-15',f:'2026-06-22',t:[{text:'Comparar normativa vigente',fecha:'2026-06-18'}]},{n:'Reescritura',i:'2026-06-23',f:'2026-07-02',t:[{text:'Guion módulo 1',fecha:'2026-06-26'},{text:'Guion módulo 2',fecha:'2026-06-30'}]},{n:'Rearmado Storyline',i:'2026-07-03',f:'2026-07-10',t:[{text:'Maquetar interacciones',fecha:'2026-07-07'}]},{n:'Revisión',i:'2026-07-11',f:'2026-07-15'}]});
+
+  mk('curso','Manejo del iPad NOA',{
+    sectores:[], estado:'pendiente', responsable:'flor', asignados:['flor'],
+    inicio:'2026-07-01', fin:'2026-07-20'});
+
+  mk('curso','Surtido sin Venta',{
+    sectores:[], estado:'pendiente', responsable:'flor', asignados:['flor','dami'],
+    inicio:'2026-06-25', fin:'2026-07-10'});
+
+  mk('curso','Curso de Cobradores',{
+    sectores:['coto-digital'], estado:'en-revision', responsable:'gasti', asignados:['gasti','flor'],
+    inicio:'2026-05-20', fin:'2026-06-27',
+    checklist:[{t:'Brief aprobado',d:true},{t:'Objetivos de aprendizaje',d:true},{t:'Guion validado',d:true},{t:'Maqueta visual',d:true},{t:'Montaje Storyline',d:true},{t:'QA funcional',d:false},{t:'Alta en Moodle',d:false}],
+    fasesD:[{n:'Guion',i:'2026-05-20',f:'2026-05-30'},{n:'Diseño',i:'2026-05-31',f:'2026-06-10'},{n:'Storyline',i:'2026-06-11',f:'2026-06-22'},{n:'Revisión',i:'2026-06-23',f:'2026-06-27'}]});
+
+  // Instancias Edu Point — las 2 últimas ya colocadas (publicadas al inventario del Mapa)
+  const eps=[['Carteles QR','carteles-qr'],['Cajas','cajas'],['Frutas y Verduras','frutas-y-verduras'],['Lácteos y Congelados','lacteos-y-congelados'],['Panadería','panaderia']];
+  eps.forEach((e,i)=>{ const pub=i>=3; mk('edu-point','Edu Point · '+e[0],{
+    sectores:[e[1]], publicado:pub, estado: pub?'en-revision':(i<2?'en-desarrollo':'pendiente'),
+    responsable:'vane', asignados:['vane','gasti'],
+    inicio:isoOf(addDays(new Date(2026,5,24),i*3)), fin:isoOf(addDays(new Date(2026,5,28),i*3)),
+    catalogo:{categoria:e[1],bajada: pub?('Pieza con QR colocada en sala · '+e[0]):'',anio:2026,duracion:'',imagen:'',personas:'',descripcion:''},
+    checklist:['Definir contenido','Diseño de pieza','Generar QR','Validar enlace','Impresión','Colocación en sala']}); });
+
+  // Mapa — Aplicativos web y Bases del sistema (fases adelantadas, ya activos)
+  mk('app-web','Edu Point Web',{publicado:true,estado:'en-revision',sectores:['carteles-qr'],responsable:'gasti',asignados:['gasti','vane'],
+    ficha:{url:'https://edupoint.coto.intra',owner:'Gasti',estadoOp:'operativo'},catalogo:{bajada:'Generador y visor de piezas Edu Point con QR por sector.'}});
+  mk('app-web','Portal de Aprendizaje',{publicado:true,estado:'en-revision',sectores:['coto-digital'],responsable:'dami',asignados:['dami'],
+    ficha:{url:'https://aprendizaje.coto.intra',owner:'Damián',estadoOp:'operativo'},catalogo:{bajada:'Acceso unificado a cursos, recursos y novedades del área.'}});
+  mk('app-web','Tablero de Capacitaciones',{publicado:false,estado:'en-desarrollo',sectores:['coto-digital'],responsable:'dami',asignados:['dami','gasti'],
+    inicio:'2026-06-20',fin:'2026-07-25',ficha:{url:'',owner:'Damián',estadoOp:'mantenimiento'},catalogo:{bajada:'Reportes de avance y asistencia por sucursal.'}});
+  mk('base-sistema','Catálogo de cursos (CURSOS)',{publicado:true,estado:'en-revision',sectores:[],responsable:'flor',asignados:['flor'],
+    ficha:{url:'',owner:'Flor',estadoOp:'operativo'},catalogo:{bajada:'Fuente de datos de los cursos publicados (categoria, titulo, bajada, anio, duracion, personas).'}});
+  mk('base-sistema','Sistema de Diseño · Sectores',{publicado:true,estado:'en-revision',sectores:[],responsable:'vane',asignados:['vane'],
+    ficha:{url:'',owner:'Vane',estadoOp:'operativo'},catalogo:{bajada:'21 sectores con tokens y colores (data-cat) del Sistema de Diseño COTO.'}});
+
+  return C;
+}
+
+/* Ingesta del catálogo: cada item -> tarjeta curso publicada (activa). No re-tipear. */
+function ingestCatalogo(arr,{replace=false}={}){
+  let n=0;
+  arr.forEach(it=>{
+    const sec=toSector(it.categoria);
+    const dup=state.cards.find(c=>isCurso(c)&&c.titulo.trim().toLowerCase()===String(it.titulo||'').trim().toLowerCase());
+    if(dup && !replace) return;
+    const card=newCard('curso',it.titulo||'Curso sin título',{
+      publicado:true, estado:'en-revision',
+      sectores: sec?[sec]:[],
+      linkMoodle: it.linkMoodle||'',
+      catalogo:{categoria:it.categoria||'',bajada:it.bajada||'',anio:it.anio||'',duracion:it.duracion||'',
+        imagen:it.imagen||'',personas:it.personas||'',descripcion:it.descripcion||''},
+    });
+    card.checklist=[];
+    if(dup&&replace) Object.assign(dup,card,{id:dup.id});
+    else state.cards.push(card);
+    n++;
+  });
+  return n;
+}
+
+/* ===========================================================================
+   FILTROS
+=========================================================================== */
+function boardCards(){ return state.cards.filter(c=>!isInventory(c)); }
+function mine(c){ return state.userId && (c.responsable===state.userId || (c.asignados||[]).includes(state.userId)); }
+function passBoard(c){
+  const f=state.filters;
+  if(state.mis && state.userId && !mine(c)) return false;
+  if(f.persona && c.responsable!==f.persona && !(c.asignados||[]).includes(f.persona)) return false;
+  if(f.tipo && c.tipo!==f.tipo) return false;
+  if(f.sector && !(c.sectores||[]).includes(f.sector)) return false;
+  if(f.estado && c.estado!==f.estado) return false;
+  if(f.texto && !c.titulo.toLowerCase().includes(f.texto.toLowerCase())) return false;
+  return true;
+}
+function filteredBoard(){ return boardCards().filter(passBoard); }
+
+function renderFilters(){
+  const misBtn=$('#misBtn'); if(misBtn) misBtn.classList.toggle('on', state.mis);
+  if(state.view==='resumen'){ $('#filters').innerHTML=''; return; }
+  const f=state.filters, cur=state.view==='mapa';
+  const opt=(val,label,sel)=>`<option value="${val}" ${sel===val?'selected':''}>${esc(label)}</option>`;
+  const personas=`<div class="filt">👤<select data-filter="persona"><option value="">Todos</option>${TEAM.map(t=>opt(t.id,t.nombre,f.persona)).join('')}</select></div>`;
+  const sectores=`<div class="filt">🎨<select data-filter="sector"><option value="">Sector</option>${Object.keys(SECTORES).map(k=>opt(k,SECTORES[k].nombre,f.sector)).join('')}</select></div>`;
+  const tipos=`<div class="filt">🏷️<select data-filter="tipo"><option value="">Tipo</option>${Object.keys(allTipos()).map(k=>opt(k,allTipos()[k].nombre,f.tipo)).join('')}</select></div>`;
+  const estados=`<div class="filt">◷<select data-filter="estado"><option value="">Estado</option>${ESTADOS.map(e=>opt(e.id,e.nombre,f.estado)).join('')}</select></div>`;
+  const cursoEstado=`<div class="filt">◷<select data-filter="cursoEstado"><option value="">Estado</option>${opt('activo','Activo',f.cursoEstado)}${opt('actualizando','En actualización',f.cursoEstado)}</select></div>`;
+  const texto=`<div class="filt">🔎<input data-filter="texto" value="${esc(f.texto)}" placeholder="Buscar título..." /></div>`;
+  const clear=`<button class="btn btn-ghost btn-sm filt-clear" data-action="filt:clear">Limpiar</button>`;
+  $('#filters').innerHTML = (cur ? [personas,sectores,cursoEstado,texto] : [personas,tipos,sectores,estados,texto]).join('') + clear;
+}
+
+/* ===========================================================================
+   RENDER PRINCIPAL
+=========================================================================== */
+function render(){ renderFilters(); renderView(); updateBell(); }
+function renderView(){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.view===state.view));
+  const v=$('#view');
+  if(state.view==='resumen')         v.innerHTML=renderResumen();
+  else if(state.view==='kanban')     v.innerHTML=renderKanban();
+  else if(state.view==='calendario') v.innerHTML=renderCalendario();
+  else if(state.view==='timeline')   v.innerHTML=renderTimeline();
+  else if(state.view==='mapa')       v.innerHTML=renderMapa();
+}
+
+/* ----- KANBAN ----------------------------------------------------------- */
+function cardKanban(c){
+  const p=progress(c), tipo=allTipos()[c.tipo]||{nombre:c.tipo,icon:'•'}, ov=isOverdue(c);
+  return `<article class="kcard" draggable="true" data-id="${c.id}" data-cat="${primaryCat(c)}" data-action="card:open">
+    ${inInventory(c)?'<span class="tag-flag">◎ activo</span>':''}
+    <div class="kcard-top">
+      <span class="tipo-pill">${tipo.icon} ${esc(tipo.nombre)}</span>
+      ${c.prioridad==='alta'?'<span class="badge prio">★ Alta</span>':''}
+    </div>
+    <div class="kcard-title">${esc(c.titulo)}</div>
+    <div class="badges">${sectoresBadges(c.sectores)}</div>
+    <div class="kcard-meta">
+      <span class="date ${ov?'overdue':''}">📅 ${dateLabel(c)}${ov?' · vencida':''}</span>
+    </div>
+    ${p.total?`<div class="prog-row"><div class="progress"><div class="progress-bar" style="width:${p.pct}%"></div></div><span class="prog-num">${p.done}/${p.total}</span></div>`:''}
+    <div class="kcard-foot">${stackHTML(c)}</div>
+  </article>`;
+}
+function dateLabel(c){
+  if(c.inicio&&c.fin&&c.fin!==c.inicio) return `${fmtShort(c.inicio)} – ${fmtShort(c.fin)}`;
+  const one=c.fin||c.inicio; return one?fmtShort(one):'sin fecha';
+}
+function sortCards(arr){
+  const s=state.sort, pr=c=>c.prioridad==='alta'?0:1, dt=c=>(c.fin||c.inicio||'9999-12-31');
+  return arr.slice().sort((a,b)=>{
+    if(s==='prioridad'){ if(pr(a)!==pr(b)) return pr(a)-pr(b); return dt(a).localeCompare(dt(b)); }
+    if(s==='fecha') return dt(a).localeCompare(dt(b));
+    if(s==='titulo') return a.titulo.localeCompare(b.titulo);
+    return 0;
+  });
+}
+function renderKanban(){
+  const cards=filteredBoard();
+  const toolbar=`<div class="kbar">
+    <span class="pill">${cards.length} tarjeta${cards.length!==1?'s':''}${state.mis&&state.userId?' · mías':''}</span>
+    <span class="grow"></span>
+    <div class="filt">↕<select data-control="sort">
+      <option value="prioridad" ${state.sort==='prioridad'?'selected':''}>Prioridad</option>
+      <option value="fecha" ${state.sort==='fecha'?'selected':''}>Fecha</option>
+      <option value="titulo" ${state.sort==='titulo'?'selected':''}>Título</option>
+    </select></div></div>`;
+  const cols=ESTADOS.map(e=>{
+    const col=sortCards(cards.filter(c=>c.estado===e.id));
+    const over=col.filter(isOverdue).length;
+    return `<section class="kcol">
+      <div class="kcol-head"><span class="kcol-dot" style="background:${e.dot}"></span><h3>${e.nombre}</h3>
+        ${over?`<span class="kcol-over" title="vencidas">⚑ ${over}</span>`:''}
+        <span class="kcol-count">${col.length}</span></div>
+      <div class="kcol-body" data-estado="${e.id}">${col.map(cardKanban).join('')||'<div style="font-size:12px;color:var(--ink-soft);padding:10px;text-align:center">— vacío —</div>'}</div>
+      <div class="quick-add"><input data-quickadd="${e.id}" placeholder="+ Agregar… (Enter)"></div>
+    </section>`;
+  }).join('');
+  return toolbar + `<div class="kanban">${cols}</div>`;
+}
+
+/* ----- CALENDARIO ------------------------------------------------------- */
+function cardsOnDay(cards,iso){ return cards.filter(c=>{ const a=c.inicio||c.fin, b=c.fin||c.inicio; if(!a) return false; return iso>=a && iso<=b; }); }
+function renderCalendario(){
+  const cards=filteredBoard();
+  const cur=state.calCursor;
+  const label = state.calMode==='mes' ? `${MESES[cur.getMonth()]} ${cur.getFullYear()}`
+    : `Semana del ${fmtShort(isoOf(weekStart(cur)))}`;
+  const head=`<div class="cal-head">
+    <button class="btn btn-icon btn-ghost" data-action="cal:prev">‹</button>
+    <button class="btn btn-icon btn-ghost" data-action="cal:next">›</button>
+    <button class="btn btn-sm" data-action="cal:hoy">Hoy</button>
+    <div class="cal-title">${label}</div>
+    <div style="margin-left:auto" class="tabs">
+      <button class="tab ${state.calMode==='mes'?'active':''}" data-action="cal:mes">Mes</button>
+      <button class="tab ${state.calMode==='semana'?'active':''}" data-action="cal:semana">Semana</button>
+    </div></div>`;
+  const dow=DOW.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  const cells = state.calMode==='mes' ? monthCells(cards,cur) : weekCells(cards,cur);
+  return head + `<div class="cal-grid">${dow}${cells}</div>`;
+}
+function weekStart(d){ const x=new Date(d); const wd=(x.getDay()+6)%7; return addDays(x,-wd); }
+function dayChip(c){ const ov=isOverdue(c);
+  return `<div class="cal-chip ${ov?'overdue':''}" data-cat="${primaryCat(c)}" data-id="${c.id}" data-action="card:open" title="${esc(c.titulo)}">${esc(c.titulo)}</div>`; }
+function cellHTML(cards,iso,out){
+  const today=iso===todayISO();
+  const list=cardsOnDay(cards,iso);
+  const max= state.calMode==='mes'?3:20;
+  const chips=list.slice(0,max).map(dayChip).join('') + (list.length>max?`<span class="cal-more">+${list.length-max} más</span>`:'');
+  const d=parseISO(iso);
+  return `<div class="cal-cell ${out?'out':''} ${today?'today':''}"><div class="cal-day">${d.getDate()}</div>${chips}</div>`;
+}
+function monthCells(cards,cur){
+  const first=new Date(cur.getFullYear(),cur.getMonth(),1);
+  const start=weekStart(first);
+  let out='';
+  for(let i=0;i<42;i++){ const d=addDays(start,i); out+=cellHTML(cards,isoOf(d), d.getMonth()!==cur.getMonth()); }
+  return out;
+}
+function weekCells(cards,cur){ const start=weekStart(cur); let out=''; for(let i=0;i<7;i++){ const d=addDays(start,i); out+=cellHTML(cards,isoOf(d),false);} return out; }
+
+/* ----- TIMELINE / GANTT (pro) ------------------------------------------- */
+function groupCards(cards){
+  const sorter=(a,b)=>(a.inicio||a.fin).localeCompare(b.inicio||b.fin);
+  if(!state.tlGroup) return [{label:null,cards:cards.slice().sort(sorter)}];
+  const map=new Map();
+  cards.forEach(c=>{ let key,label,icon='';
+    if(state.tlGroup==='persona'){ key=c.responsable||'zz'; const m=member(c.responsable); label=m?m.nombre:'Sin responsable'; icon='👤'; }
+    else if(state.tlGroup==='sector'){ key=primaryCat(c); label=sectorName(key)||'TBD'; icon='🎨'; }
+    else { key=c.tipo; label=(allTipos()[c.tipo]||{}).nombre||c.tipo; icon=(allTipos()[c.tipo]||{}).icon||''; }
+    if(!map.has(key)) map.set(key,{label,icon,cards:[]});
+    map.get(key).cards.push(c); });
+  const arr=[...map.values()]; arr.forEach(g=>g.cards.sort(sorter));
+  return arr.sort((a,b)=>a.label.localeCompare(b.label));
+}
+function renderTimeline(){
+  const cards=filteredBoard().filter(c=>c.inicio||c.fin);
+  const toolbar=`<div class="tl-toolbar">
+    <div class="filt">🔍<select data-control="tlScale">
+      <option value="mes" ${state.tlScale==='mes'?'selected':''}>Vista compacta</option>
+      <option value="semana" ${state.tlScale==='semana'?'selected':''}>Vista detalle</option></select></div>
+    <div class="filt">▣<select data-control="tlGroup">
+      <option value="" ${state.tlGroup===''?'selected':''}>Sin agrupar</option>
+      <option value="persona" ${state.tlGroup==='persona'?'selected':''}>Por persona</option>
+      <option value="sector" ${state.tlGroup==='sector'?'selected':''}>Por sector</option>
+      <option value="tipo" ${state.tlGroup==='tipo'?'selected':''}>Por tipo</option></select></div>
+    <span class="pill">${cards.length} proyecto${cards.length!==1?'s':''}</span></div>`;
+  if(!cards.length) return toolbar + emptyState('▬','Sin proyectos con fecha','Asigná fechas a las tarjetas para ver el panorama macro del área.');
+
+  // Rango temporal (incluye fases y tareas con fecha)
+  let min=null,max=null; const touch=iso=>{ if(!iso) return; if(!min||iso<min)min=iso; if(!max||iso>max)max=iso; };
+  cards.forEach(c=>{ touch(c.inicio);touch(c.fin); (c.fases||[]).forEach(f=>{touch(f.inicio);touch(f.fin); (f.tareas||[]).forEach(t=>touch(t.fecha));}); });
+  touch(todayISO());
+  const start=isoOf(addDays(parseISO(min),-3)), end=isoOf(addDays(parseISO(max),4));
+  const totalDays=daysBetween(start,end)+1;
+  const dayW=state.tlScale==='semana'?30:12;
+  const width=totalDays*dayW;
+  const xOf=iso=> daysBetween(start,iso)*dayW;
+  const barOf=(a,b)=>{ a=a||b; b=b||a; return {left:xOf(a), w:Math.max(dayW,(daysBetween(a,b)+1)*dayW)}; };
+
+  // Meses
+  let months='',d=parseISO(start);
+  while(isoOf(d)<=end){ const m1=isoOf(new Date(d.getFullYear(),d.getMonth(),1));
+    months+=`<div class="tl-month" style="left:${xOf(m1<start?start:m1)}px">${MESES[d.getMonth()].slice(0,3)} ${String(d.getFullYear()).slice(2)}</div>`;
+    d=new Date(d.getFullYear(),d.getMonth()+1,1); }
+  // Bandas de fin de semana
+  let weekends=''; for(let i=0;i<totalDays;i++){ const wd=addDays(parseISO(start),i).getDay(); if(wd===0||wd===6) weekends+=`<div class="tl-weekend" style="left:${i*dayW}px;width:${dayW}px"></div>`; }
+  const todayX=xOf(todayISO());
+  const rowH=c=> 38 + ((c.fases&&c.fases.length)?16:0);
+
+  let leftRows='', rightRows='';
+  groupCards(cards).forEach(g=>{
+    if(g.label!==null){
+      leftRows+=`<div class="tl-group-l" style="height:33px">${g.icon} ${esc(g.label)}<span style="margin-left:auto">${g.cards.length}</span></div>`;
+      rightRows+=`<div class="tl-group-r" style="height:33px"></div>`;
+    }
+    g.cards.forEach(c=>{ const m=member(c.responsable);
+      leftRows+=`<div class="tl-rl" style="height:${rowH(c)}px" data-id="${c.id}" data-action="card:open">
+        ${m?avatarHTML(m.id,true):'<span class="avatar sm" style="background:var(--line)">·</span>'}
+        <div style="overflow:hidden"><div class="tl-rl-title">${esc(c.titulo)}</div>
+        <div class="tl-rl-sub">${(allTipos()[c.tipo]||{}).nombre||c.tipo}</div></div></div>`;
+      const b=barOf(c.inicio,c.fin), ov=isOverdue(c);
+      const fases=(c.fases||[]).filter(f=>f.inicio||f.fin).map(f=>{ const fb=barOf(f.inicio,f.fin);
+        const ticks=(f.tareas||[]).filter(t=>t.fecha).map(t=>`<div class="tl-tick" data-cat="${primaryCat(c)}" style="left:${xOf(t.fecha)-4}px" title="${esc(t.text)} · ${fmtShort(t.fecha)}"></div>`).join('');
+        return `<div class="tl-fase" data-cat="${primaryCat(c)}" style="left:${fb.left}px;width:${fb.w}px;top:30px" title="${esc(f.nombre)}"></div>${ticks}`; }).join('');
+      rightRows+=`<div class="tl-track" style="height:${rowH(c)}px">
+        <div class="tl-bar ${ov?'overdue':''}" data-cat="${primaryCat(c)}" data-id="${c.id}" data-action="card:open" style="left:${b.left}px;width:${b.w}px;top:6px"><span>${esc(c.titulo)}</span></div>
+        ${fases}</div>`; });
+  });
+
+  return toolbar + `<div class="tl-wrap"><div class="tl-grid">
+    <div class="tl-left"><div class="tl-corner">Proyecto</div><div class="tl-rows-left">${leftRows}</div></div>
+    <div class="tl-right"><div style="width:${width}px">
+      <div class="tl-months" style="width:${width}px">${months}</div>
+      <div style="position:relative;width:${width}px">${weekends}${rightRows}<div class="tl-today" style="left:${todayX}px"></div></div>
+    </div></div>
+  </div></div>`;
+}
+
+/* ----- MAPA (inventario navegable) -------------------------------------- */
+function mapaFilter(list){
+  const f=state.filters;
+  return list.filter(c=>{
+    if(state.mis && state.userId && !mine(c)) return false;
+    if(f.sector && !(c.sectores||[]).includes(f.sector)) return false;
+    if(f.persona && c.responsable!==f.persona && !(c.asignados||[]).includes(f.persona)) return false;
+    if(f.cursoEstado==='activo' && c.enActualizacion) return false;
+    if(f.cursoEstado==='actualizando' && !c.enActualizacion) return false;
+    if(f.texto && !c.titulo.toLowerCase().includes(f.texto.toLowerCase())) return false;
+    return true;
+  });
+}
+function invCount(tipo){ return state.cards.filter(c=>c.tipo===tipo&&inInventory(c)).length; }
+function renderMapa(){
+  const secs=[
+    {id:'cursos',     label:'◎ Cursos e-learning', n:invCount('curso')},
+    {id:'edu-points', label:'📍 QR / Edu Point',    n:invCount('edu-point')},
+    {id:'apps',       label:'🖥️ Aplicativos web',   n:invCount('app-web')},
+    {id:'bases',      label:'🗄️ Bases del sistema', n:invCount('base-sistema')},
+  ];
+  const subnav=`<div class="mapa-secciones">${secs.map(s=>
+    `<div class="mapa-sec ${state.mapaSec===s.id?'active':''}" data-action="mapa:sec" data-sec="${s.id}">${s.label} <b>(${s.n})</b></div>`).join('')}</div>`;
+  let body='';
+  if(state.mapaSec==='cursos')          body=sectionCursos();
+  else if(state.mapaSec==='edu-points') body=sectionEduPoints();
+  else if(state.mapaSec==='apps')       body=sectionInv('app-web','🖥️','Sin aplicativos activos','Publicá un aplicativo web del tablero (botón en su ficha) para verlo acá.');
+  else if(state.mapaSec==='bases')      body=sectionInv('base-sistema','🗄️','Sin bases activas','Publicá una base del sistema del tablero para verla acá.');
+  return subnav + body;
+}
+function sectionInv(tipo,ic,t,d){
+  const list=mapaFilter(state.cards.filter(c=>c.tipo===tipo&&inInventory(c)));
+  if(!list.length) return emptyState(ic,t,d);
+  return `<div class="cursos-grid">${list.map(recursoCard).join('')}</div>`;
+}
+function recursoCard(c){ const cat=primaryCat(c), s=c.catalogo||{}, f=c.ficha||{}, m=member(c.responsable);
+  const op={operativo:'● Operativo',mantenimiento:'◐ Mantenimiento',baja:'○ Baja'}[f.estadoOp]||'● Operativo';
+  return `<article class="curso" data-cat="${cat}" data-id="${c.id}" data-action="card:open">
+    <div class="curso-img" style="height:78px"><span class="curso-estado ${f.estadoOp==='mantenimiento'?'upd':''}">${(TIPOS[c.tipo]||{}).icon||''} ${op}</span></div>
+    <div class="curso-body">
+      <h4>${esc(c.titulo)}</h4>
+      <div class="badges">${sectoresBadges(c.sectores)}</div>
+      <div class="curso-bajada">${esc(s.bajada||'')}</div>
+      <div class="curso-foot"><span>👤 ${m?esc(m.nombre):(f.owner?esc(f.owner):'—')}</span>${f.url?`<a class="moodle" href="${esc(f.url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Abrir ↗</a>`:''}</div>
+    </div>
+  </article>`;
+}
+function sectionCursos(){
+  const cursos=mapaFilter(state.cards.filter(c=>c.tipo==='curso'&&inInventory(c)));
+  if(!cursos.length) return emptyState('◎','Sin cursos activos','Publicá un curso del tablero o ingestá el catálogo con “⤓ Catálogo”.');
+  return `<div class="cursos-grid">${cursos.map(cursoCard).join('')}</div>`;
+}
+function cursoCard(c){ const cat=primaryCat(c), s=c.catalogo||{};
+  return `<article class="curso" data-cat="${cat}" data-id="${c.id}" data-action="card:open">
+    <div class="curso-img">${s.imagen?`<img src="${esc(s.imagen)}" alt="" onerror="this.remove()">`:''}
+      <span class="curso-estado ${c.enActualizacion?'upd':''}">${c.enActualizacion?'🔄 En actualización':'● Activo'}</span></div>
+    <div class="curso-body">
+      <h4>${esc(c.titulo)}</h4>
+      <div class="badges">${sectoresBadges(c.sectores)}</div>
+      <div class="curso-bajada">${esc(s.bajada||s.descripcion||'')}</div>
+      <div class="curso-foot">
+        ${s.anio?`<span>📅 ${esc(s.anio)}</span>`:''}${s.duracion?`<span>⏱ ${esc(s.duracion)}</span>`:''}${s.personas?`<span>👥 ${esc(s.personas)}</span>`:''}
+        ${c.linkMoodle?`<a class="moodle" href="${esc(c.linkMoodle)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Moodle ↗</a>`:'<span class="moodle" style="color:var(--ink-soft)">sin link</span>'}
+      </div>
+    </div>
+  </article>`;
+}
+function sectionEduPoints(){
+  const eps=mapaFilter(state.cards.filter(c=>c.tipo==='edu-point'&&inInventory(c)));
+  if(!eps.length) return emptyState('📍','Sin Edu Points colocados','Marcá un Edu Point del tablero como colocado (botón en su ficha) para verlo en el inventario.');
+  return `<div class="cursos-grid">${eps.map(eduCard).join('')}</div>`;
+}
+function eduCard(c){ const cat=primaryCat(c), s=c.catalogo||{}; const m=member(c.responsable);
+  return `<article class="curso" data-cat="${cat}" data-id="${c.id}" data-action="card:open">
+    <div class="curso-img" style="height:92px"><span class="curso-estado ${c.enActualizacion?'upd':''}">${c.enActualizacion?'🔄 Actualizando':'📍 Colocado'}</span>
+      <div style="position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:var(--shadow)">▦</div></div>
+    <div class="curso-body">
+      <h4>${esc(c.titulo)}</h4>
+      <div class="badges">${sectoresBadges(c.sectores)}</div>
+      <div class="curso-bajada">${esc(s.bajada||'Pieza Edu Point con QR colocada en sala.')}</div>
+      <div class="curso-foot"><span>👤 ${m?esc(m.nombre):'—'}</span>${c.linkMoodle?`<a class="moodle" href="${esc(c.linkMoodle)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Enlace ↗</a>`:''}</div>
+    </div>
+  </article>`;
+}
+
+/* ----- RESUMEN (dashboard del área) ------------------------------------- */
+function renderResumen(){
+  const board=boardCards();
+  const cursosAct=state.cards.filter(c=>c.tipo==='curso'&&inInventory(c)).length;
+  const eduAct=state.cards.filter(c=>c.tipo==='edu-point'&&inInventory(c)).length;
+  const enRev=board.filter(c=>c.estado==='en-revision').length;
+  const venc=board.filter(isOverdue).length;
+  const kpi=(num,lbl,sub,color,view,sec)=>`<div class="kpi" style="--kpi:${color}" ${view?`data-action="kpi:go" data-go="${view}" ${sec?`data-sec="${sec}"`:''}`:''}>
+    <div class="kpi-num">${num}</div><div class="kpi-lbl">${lbl}</div>${sub?`<div class="kpi-sub">${sub}</div>`:''}</div>`;
+
+  // distribución por estado
+  const total=board.length||1;
+  const estBars=ESTADOS.map(e=>{ const n=board.filter(c=>c.estado===e.id).length;
+    return `<div class="bar-line"><span class="bl-lbl">${e.nombre}</span><div class="bl-track"><div class="bl-fill" style="width:${Math.round(n/total*100)}%;background:${e.dot}"></div></div><span class="bl-num">${n}</span></div>`; }).join('');
+
+  // próximos vencimientos (board, con fecha fin, próximos 45 días o vencidos)
+  const hoy=todayISO(); const lim=isoOf(addDays(new Date(),45));
+  const prox=board.filter(c=>{ const end=c.fin||c.inicio; return end && end<=lim; })
+    .sort((a,b)=>(a.fin||a.inicio).localeCompare(b.fin||b.inicio)).slice(0,8);
+  const venList=prox.length?prox.map(c=>{ const end=c.fin||c.inicio; const over=end<hoy; const dd=daysBetween(hoy,end);
+    const lbl=over?'−'+Math.abs(dd)+'d':(dd===0?'hoy':dd+'d');
+    return `<div class="venc" data-id="${c.id}" data-action="card:open"><span class="venc-d ${over?'over':''}">${lbl}</span><span class="venc-t">${esc(c.titulo)}</span>${stackHTML(c)}</div>`;
+  }).join('') : '<div style="color:var(--ink-soft);font-size:13px;padding:6px 0">Nada en los próximos 45 días 🎉</div>';
+
+  // carga por persona (board)
+  const counts={}; TEAM.forEach(t=>counts[t.id]=0);
+  board.forEach(c=>{ [c.responsable,...(c.asignados||[])].filter((v,i,a)=>v&&a.indexOf(v)===i).forEach(id=>{ if(counts[id]!=null) counts[id]++; }); });
+  const maxc=Math.max(1,...Object.values(counts));
+  const cargaBars=TEAM.map(t=>`<div class="bar-line"><span class="bl-lbl">${avatarHTML(t.id,true)} ${t.nombre}</span><div class="bl-track"><div class="bl-fill" style="width:${Math.round(counts[t.id]/maxc*100)}%;background:${t.color}"></div></div><span class="bl-num">${counts[t.id]}</span></div>`).join('');
+
+  // mezcla por tipo
+  const tipoMix={}; board.forEach(c=>tipoMix[c.tipo]=(tipoMix[c.tipo]||0)+1);
+  const tipoChips=Object.keys(tipoMix).sort((a,b)=>tipoMix[b]-tipoMix[a]).map(k=>`<span class="chipcount">${(allTipos()[k]||{}).icon||'•'} ${(allTipos()[k]||{}).nombre||k} · ${tipoMix[k]}</span>`).join('');
+
+  return `<div style="margin-bottom:6px"><h2 style="font-size:21px">Resumen del área</h2>
+    <div style="color:var(--ink-soft);font-size:13px;margin:2px 0 14px">Hola ${esc(state.user||'')} 👋 — panorama de “lo que hacemos” y “lo que tenemos”.</div></div>
+    <div class="res-grid">
+      ${kpi(board.length,'Proyectos en el tablero','en movimiento','#006EA0','kanban')}
+      ${kpi(enRev,'En revisión','por publicar','#E2A03F','kanban')}
+      ${kpi(venc,'Vencidas','requieren atención', venc?'#D8553F':'#2E9E8F','kanban')}
+      ${kpi(cursosAct,'Cursos activos','en el mapa','#2E9E8F','mapa','cursos')}
+      ${kpi(eduAct,'Edu Points','colocados','#546E7A','mapa','edu-points')}
+    </div>
+    <div class="res-cols">
+      <div>
+        <div class="res-card"><h3>⚑ Próximos vencimientos <span class="mini">${prox.length}</span></h3>${venList}</div>
+        <div class="res-card"><h3>🧩 Mezcla por tipo</h3><div>${tipoChips||'<span style="color:var(--ink-soft)">—</span>'}</div></div>
+      </div>
+      <div>
+        <div class="res-card"><h3>◷ Por estado <span class="mini">${board.length} total</span></h3>${estBars}</div>
+        <div class="res-card"><h3>👥 Carga del equipo <span class="mini">tablero</span></h3>${cargaBars}</div>
+      </div>
+    </div>`;
+}
+
+function emptyState(ic,t,d){ return `<div class="empty"><div class="big">${ic}</div><div style="font-weight:700;font-size:16px;color:var(--ink)">${esc(t)}</div><div style="margin-top:4px">${esc(d)}</div></div>`; }
+
+/* ===========================================================================
+   PANEL LATERAL — detalle + edición inline + puente (ciclo de vida)
+=========================================================================== */
+function openDetail(id){ closeModal(); state.selectedId=id; renderPanel(); $('#panel').classList.add('open'); $('#overlay').classList.remove('hidden'); }
+function closePanel(){ $('#panel').classList.remove('open'); $('#overlay').classList.add('hidden'); state.selectedId=null; render(); }
+
+function renderPanel(){
+  const c=current(); if(!c){ $('#panel').innerHTML=''; return; }
+  const p=progress(c), ov=isOverdue(c);
+  const optTipos=Object.keys(allTipos()).map(k=>`<option value="${k}" ${c.tipo===k?'selected':''}>${allTipos()[k].icon} ${esc(allTipos()[k].nombre)}</option>`).join('');
+  const optEstados=ESTADOS.map(e=>`<option value="${e.id}" ${c.estado===e.id?'selected':''}>${e.nombre}</option>`).join('');
+  const sectorChips=Object.keys(SECTORES).map(k=>`<span class="chip-toggle ${(c.sectores||[]).includes(k)?'on':''}" data-cat="${k}" data-action="sector:toggle" data-sector="${k}">${esc(SECTORES[k].nombre)}</span>`).join('');
+  const personChips=TEAM.map(t=>`<span class="chip-toggle ${(c.asignados||[]).includes(t.id)?'on':''}" data-action="asig:toggle" data-person="${t.id}" style="--cat:${t.color}">${t.nombre}</span>`).join('');
+  const checklist=(c.checklist||[]).map(it=>`<div class="chk"><input type="checkbox" ${it.done?'checked':''} data-action="cl:toggle" data-cl="${it.id}"><input class="chk-text ${it.done?'done':''}" value="${esc(it.text)}" data-field="cl:${it.id}"><span class="chk-del" data-action="cl:del" data-cl="${it.id}">✕</span></div>`).join('');
+  const fases=(c.fases||[]).map(fz=>{
+    const tareas=(fz.tareas||[]).map(t=>`<div class="ftask"><input type="checkbox" ${t.done?'checked':''} data-action="ft:toggle" data-fase="${fz.id}" data-task="${t.id}"><input class="ft-text ${t.done?'done':''}" value="${esc(t.text)}" data-field="ft:${fz.id}:${t.id}:text"><input type="date" value="${t.fecha||''}" data-field="ft:${fz.id}:${t.id}:fecha"><span class="chk-del" data-action="ft:del" data-fase="${fz.id}" data-task="${t.id}">✕</span></div>`).join('');
+    return `<div class="fase-box"><div style="display:flex;gap:8px;align-items:center"><input class="chk-text" style="font-weight:600" value="${esc(fz.nombre)}" data-field="fz:${fz.id}:nombre"><span class="chk-del" data-action="fase:del" data-fase="${fz.id}">✕</span></div>
+    <div class="fld-row"><input type="date" value="${fz.inicio||''}" data-field="fz:${fz.id}:inicio"><input type="date" value="${fz.fin||''}" data-field="fz:${fz.id}:fin"></div>
+    ${tareas}<button class="btn btn-ghost btn-sm" data-action="ft:add" data-fase="${fz.id}" style="align-self:flex-start;margin-top:2px">+ Tarea</button></div>`;
+  }).join('');
+
+  // Puente / ciclo de vida (curso y edu-point son publicables)
+  let bridge=''; const kind=inventoryKind(c);
+  if(kind){
+    const isC=c.tipo==='curso';
+    const W=isC ? {pub:'◎ Publicar como activo', noun:'Curso',     inv:'Cursos activos', badge:'activo',   act:'♻️ Generar actualización'}
+                : {pub:'📍 Marcar como colocado', noun:'Edu Point', inv:'QR / Edu Point',  badge:'colocado', act:'♻️ Generar revisión'};
+    if(!c.publicado){
+      bridge=`<div class="bridge"><div class="bridge-t">⇄ Puente · Tablero → Mapa</div>
+        <div class="bridge-d">Cuando esté listo, publicá esta tarjeta para que pase al inventario “${W.inv}”. Es el mismo objeto: no se duplica data.</div>
+        <button class="btn btn-primary btn-sm" data-action="curso:publicar">${W.pub}</button></div>`;
+    } else {
+      bridge=`<div class="bridge"><div class="bridge-t">⇄ Puente · Mapa ↔ Tablero</div>
+        <div class="bridge-d">${c.enActualizacion
+          ? `${W.noun} <b>${W.badge}</b> en revisión: vive en el tablero como trabajo y sigue listado en el mapa.`
+          : `${W.noun} <b>${W.badge}</b> en el inventario. Si necesita cambios, generá una actualización: la misma tarjeta vuelve al tablero.`}</div>
+        ${c.enActualizacion
+          ? '<button class="btn btn-primary btn-sm" data-action="curso:republicar">✓ Republicar (volver al mapa)</button>'
+          : `<button class="btn btn-sm" data-action="curso:actualizar">${W.act}</button>`}</div>`;
+    }
+  }
+
+  const catalogo = (isCurso(c)) ? `<div><div class="sub">Ficha de catálogo<span class="ring"></span></div>
+    <div class="fld" style="margin-bottom:10px"><label>Link Moodle</label><input value="${esc(c.linkMoodle)}" data-field="linkMoodle" placeholder="https://..."></div>
+    <div class="fld" style="margin-bottom:10px"><label>Bajada</label><input value="${esc(c.catalogo.bajada)}" data-field="cat:bajada"></div>
+    <div class="fld-row"><div class="fld"><label>Año</label><input value="${esc(c.catalogo.anio)}" data-field="cat:anio"></div>
+      <div class="fld"><label>Duración</label><input value="${esc(c.catalogo.duracion)}" data-field="cat:duracion"></div></div>
+    <div class="fld-row" style="margin-top:10px"><div class="fld"><label>Personas</label><input value="${esc(c.catalogo.personas)}" data-field="cat:personas"></div>
+      <div class="fld"><label>Slug categoría</label><input value="${esc(c.catalogo.categoria)}" data-field="cat:categoria"></div></div>
+    <div class="fld" style="margin-top:10px"><label>Descripción</label><textarea data-field="cat:descripcion">${esc(c.catalogo.descripcion)}</textarea></div></div>` : '';
+
+  const RECN={none:'Sin recurrencia',semanal:'Semanal',mensual:'Mensual',trimestral:'Trimestral'};
+  const recBlock=`<div class="fld"><label>Recurrencia</label><select data-field="recurrencia">${Object.keys(RECN).map(r=>`<option value="${r}" ${c.recurrencia===r?'selected':''}>${RECN[r]}</option>`).join('')}</select>${(c.recurrencia&&c.recurrencia!=='none')?`<button class="btn btn-sm" data-action="card:recurrar" style="margin-top:8px;align-self:flex-start">↻ Generar próxima instancia</button>`:''}</div>`;
+  const fichaBlock=(c.tipo==='app-web'||c.tipo==='base-sistema')?`<div><div class="sub">Ficha técnica<span class="ring"></span></div>
+    <div class="fld" style="margin-bottom:10px"><label>URL / acceso</label><input value="${esc(c.ficha.url)}" data-field="fi:url" placeholder="https://..."></div>
+    <div class="fld-row"><div class="fld"><label>Responsable técnico</label><input value="${esc(c.ficha.owner)}" data-field="fi:owner"></div>
+    <div class="fld"><label>Estado operativo</label><select data-field="fi:estadoOp">${['operativo','mantenimiento','baja'].map(o=>`<option ${c.ficha.estadoOp===o?'selected':''}>${o}</option>`).join('')}</select></div></div></div>`:'';
+  const comentariosBlock=`<div><div class="sub">Comentarios · ${(c.comentarios||[]).length}<span class="ring"></span></div>
+    ${(c.comentarios||[]).slice().reverse().map(cm=>`<div class="cmt"><div class="cmt-h"><b>${esc(cm.autor)}</b><span>${relTime(cm.ts)}</span></div><div class="cmt-b">${esc(cm.texto)}</div></div>`).join('')||'<div style="font-size:12px;color:var(--ink-soft);padding:4px 0">Sin comentarios todavía.</div>'}
+    <div class="cmt-add"><textarea id="cmtInput" placeholder="Escribí un comentario para el equipo..."></textarea><button class="btn btn-sm btn-primary" data-action="cmt:add" style="align-self:flex-start">Comentar</button></div></div>`;
+  const actividadBlock=(c.actividad&&c.actividad.length)?`<div><div class="sub">Actividad<span class="ring"></span></div>${c.actividad.slice(-10).reverse().map(a=>`<div class="act"><span class="act-d">${relTime(a.ts)}</span> <b>${esc(a.autor)}</b> ${esc(a.texto)}</div>`).join('')}</div>`:'';
+
+  $('#panel').innerHTML=`
+    <div class="panel-head" data-cat="${primaryCat(c)}">
+      <div style="flex:1">
+        <div class="tipo-pill">${(allTipos()[c.tipo]||{}).icon||'•'} ${(allTipos()[c.tipo]||{}).nombre||c.tipo}${inInventory(c)?' · ◎ activo':''}</div>
+        <input class="chk-text" style="font-size:18px;font-weight:700;font-family:var(--titulo);width:100%;margin-top:4px" value="${esc(c.titulo)}" data-field="titulo">
+      </div>
+      <button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button>
+    </div>
+    <div class="panel-body">
+      ${bridge}
+      <div class="fld-row">
+        <div class="fld"><label>Tipo</label><select data-field="tipo">${optTipos}</select></div>
+        <div class="fld"><label>Estado</label><select data-field="estado">${optEstados}</select></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>Inicio</label><input type="date" value="${c.inicio||''}" data-field="inicio"></div>
+        <div class="fld"><label>Fin ${ov?'· <span style="color:var(--bad)">vencida</span>':''}</label><input type="date" value="${c.fin||''}" data-field="fin"></div>
+      </div>
+      <div class="fld-row"><div class="fld"><label>Prioridad</label><select data-field="prioridad"><option value="normal" ${c.prioridad==='normal'?'selected':''}>Normal</option><option value="alta" ${c.prioridad==='alta'?'selected':''}>Alta</option></select></div>${recBlock}</div>
+      <div class="fld"><label>Responsable</label><select data-field="responsable"><option value="">— sin asignar —</option>${TEAM.map(t=>`<option value="${t.id}" ${c.responsable===t.id?'selected':''}>${t.nombre}</option>`).join('')}</select></div>
+      <div class="fld"><label>Asignados</label><div class="chiplist">${personChips}</div></div>
+      <div class="fld"><label>Sectores (data-cat · podés elegir varios)</label><div class="chiplist">${sectorChips}</div></div>
+
+      <div><div class="sub">Checklist · ${p.done}/${p.total}<span class="ring"></span></div>
+        <div class="prog-row" style="margin-bottom:6px"><div class="progress"><div class="progress-bar" style="width:${p.pct}%"></div></div><span class="prog-num">${p.pct}%</span></div>
+        ${checklist}
+        <button class="btn btn-ghost btn-sm" data-action="cl:add" style="margin-top:8px">+ Ítem</button></div>
+
+      <div><div class="sub">Fases (opcional · proyectos multi-etapa)<span class="ring"></span></div>
+        ${fases}
+        <button class="btn btn-ghost btn-sm" data-action="fase:add" style="margin-top:8px">+ Fase</button></div>
+
+      ${catalogo}
+      ${fichaBlock}
+
+      <div class="fld"><label>Notas</label><textarea data-field="notas" placeholder="Notas del equipo...">${esc(c.notas)}</textarea></div>
+      ${comentariosBlock}
+      ${actividadBlock}
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px">
+        <button class="btn btn-sm" data-action="tpl:save">💾 Guardar como plantilla</button>
+        <button class="btn btn-sm" data-action="card:dup">⧉ Duplicar</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--bad);margin-left:auto" data-action="card:del">🗑 Eliminar</button>
+      </div>
+    </div>`;
+}
+
+/* ===========================================================================
+   CARGA POR PERSONA — "quién está al palo"
+=========================================================================== */
+function openCarga(){
+  const counts={}; TEAM.forEach(t=>counts[t.id]={n:0,alta:0});
+  boardCards().forEach(c=>{ const ids=[c.responsable,...(c.asignados||[])].filter((v,i,a)=>v&&a.indexOf(v)===i);
+    ids.forEach(id=>{ if(counts[id]){ counts[id].n++; if(c.prioridad==='alta') counts[id].alta++; } }); });
+  const max=Math.max(1,...TEAM.map(t=>counts[t.id].n));
+  const rows=TEAM.map(t=>{ const c=counts[t.id]; const pct=Math.round(c.n/max*100); const hot=c.n===max&&max>1;
+    return `<div class="carga-row">${avatarHTML(t.id)}<div class="carga-info">
+      <div class="carga-name">${t.nombre} ${hot?'<span class="badge prio" style="margin-left:4px">al palo</span>':''}</div>
+      <div class="carga-rol">${t.rol}</div>
+      <div class="carga-bar"><div class="carga-fill" style="width:${pct}%;background:${t.color}"></div></div></div>
+      <div class="carga-num">${c.n} tarea${c.n!==1?'s':''}${c.alta?` · ${c.alta}★`:''}</div></div>`; }).join('');
+  state.selectedId=null;
+  $('#panel').innerHTML=`<div class="panel-head"><div style="flex:1"><div class="tipo-pill">👥 Equipo</div>
+    <div style="font-family:var(--titulo);font-size:18px;font-weight:700;margin-top:4px">Carga del equipo</div></div>
+    <button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>
+    <div class="panel-body"><div class="carga-list">${rows}</div>
+    <div class="note">Cuenta tarjetas del tablero (responsable + asignados). Ayuda al reparto: el “al palo” es quien más acumula.</div></div>`;
+  $('#panel').classList.add('open'); $('#overlay').classList.remove('hidden');
+}
+
+/* ===========================================================================
+   MODALES
+=========================================================================== */
+function closeModal(){ $('#modal').classList.add('hidden'); $('#modal').innerHTML=''; }
+function openModal(html){ $('#modal').innerHTML=`<div class="modal-bg" data-action="modal:close"></div><div class="modal">${html}</div>`; $('#modal').classList.remove('hidden'); }
+
+function openNuevo(){
+  state.draftTipo='curso';
+  const grid=Object.keys(allTipos()).map(k=>`<div class="tipo-opt ${k==='curso'?'on':''}" data-action="nuevo:tipo" data-tipo="${k}"><span class="ic">${allTipos()[k].icon}</span><span class="nm">${esc(allTipos()[k].nombre)}</span></div>`).join('');
+  openModal(`<h2>Nueva tarjeta</h2><div class="sub-t">Elegí el <b>tipo</b> (trae su plantilla) y ponele título. Todo es editable después.</div>
+    <div class="fld"><label>Tipo</label><div class="tipo-grid" id="tipoGrid">${grid}</div></div>
+    <div class="fld"><label>Título</label><input id="nuevoTitulo" placeholder="Ej: Curso de inducción..." autofocus></div>
+    <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="nuevo:create">Crear tarjeta</button></div>`);
+  setTimeout(()=>$('#nuevoTitulo')&&$('#nuevoTitulo').focus(),50);
+}
+function openIngest(){
+  openModal(`<h2>Ingestar catálogo</h2><div class="sub-t">Pegá el JSON <code>const CURSOS=[…]</code> (campos: categoria, titulo, bajada, anio, duracion, imagen, personas, descripcion). Entran como cursos <b>activos</b>; el slug de categoría resuelve el sector por el diccionario.</div>
+    <div class="fld"><label>JSON del catálogo</label><textarea id="ingestText" style="min-height:180px;font-family:monospace;font-size:12px" placeholder='[{"categoria":"calidad","titulo":"Seguridad Alimentaria","bajada":"...","anio":2024,"duracion":"45 min","personas":1280,"descripcion":"..."}]'></textarea></div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:8px"><input type="checkbox" id="ingestReplace"> Reemplazar si el título ya existe</label>
+    <div class="modal-foot"><button class="btn" data-action="ingest:demo">Cargar ejemplo</button><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="ingest:run">Ingestar</button></div>`);
+}
+function openSaveTpl(){
+  const c=current(); if(!c) return;
+  openModal(`<h2>Guardar como plantilla</h2><div class="sub-t">Crea un <b>tipo nuevo</b> reutilizable con las fases y el checklist actuales de “${esc(c.titulo)}”.</div>
+    <div class="fld"><label>Nombre del tipo</label><input id="tplName" placeholder="Ej: Microlearning, Onboarding..." autofocus></div>
+    <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="tpl:create">Guardar plantilla</button></div>`);
+}
+
+/* ===========================================================================
+   MUTACIONES
+=========================================================================== */
+function touch(){ persist(); }
+function patch(c,o){ Object.assign(c,o); touch(); }
+
+function applyField(c,field,target){
+  const val = target.type==='checkbox'? target.checked : target.value;
+  if(field.startsWith('cat:')){ c.catalogo[field.slice(4)]=val; }
+  else if(field.startsWith('fi:')){ c.ficha=c.ficha||{}; c.ficha[field.slice(3)]=val; }
+  else if(field.startsWith('cl:')){ const it=(c.checklist||[]).find(x=>x.id===field.slice(3)); if(it) it.text=val; }
+  else if(field.startsWith('ft:')){ const p=field.split(':'); const f=(c.fases||[]).find(x=>x.id===p[1]); if(f){ const t=(f.tareas||[]).find(x=>x.id===p[2]); if(t) t[p[3]]=val; } }
+  else if(field.startsWith('fz:')){ const[,id,prop]=field.split(':'); const f=(c.fases||[]).find(x=>x.id===id); if(f) f[prop]=val; }
+  else c[field]=val;
+  touch();
+}
+const STRUCTURAL=['tipo','estado','responsable','inicio','fin','prioridad'];
+
+/* ===========================================================================
+   EVENTOS — delegación
+=========================================================================== */
+document.addEventListener('click', e=>{
+  const tab=e.target.closest('.tab[data-view]'); if(tab){ state.view=tab.dataset.view; render(); return; }
+  const t=e.target.closest('[data-action]'); if(!t) return;
+  const a=t.dataset.action, id=t.dataset.id;
+  switch(a){
+    case 'gate:enter': enterAs($('#gateInput').value.trim()); break;
+    case 'gate:person': enterAs(t.dataset.nombre); break;
+    case 'gate:open': $('#gate').classList.remove('hidden'); break;
+    case 'theme:toggle': toggleTheme(); break;
+    case 'mis:toggle': if(!state.userId){ flash('Entrá con tu nombre del equipo para usar “Mis tareas”',true); break; } state.mis=!state.mis; render(); break;
+    case 'mapa:sec': state.mapaSec=t.dataset.sec; render(); break;
+    case 'kpi:go': state.view=t.dataset.go; if(t.dataset.sec) state.mapaSec=t.dataset.sec; render(); break;
+    case 'search:open': openSearch(); break;
+    case 'sr:open': closeModal(); openDetail(t.dataset.id); break;
+    case 'notif:open': openNotif(); break;
+    case 'settings:open': openSettings(); break;
+    case 'cmt:add': addComment(); break;
+    case 'card:recurrar': { const c=current(); if(c){ const np=recurrar(c); openDetail(np.id); render(); flash('↻ Próxima instancia generada'); } break; }
+    case 'data:export': exportJSON(); break;
+    case 'data:csv': exportCSV(); break;
+    case 'data:import': doImport(); break;
+    case 'data:import-run': runImport(); break;
+    case 'set:add-sector': addSector(); break;
+    case 'set:add-member': addMember(); break;
+    case 'tpl:del': delTpl(t.dataset.tpl); break;
+    case 'view': break;
+    case 'card:open': if(id){ openDetail(id); } break;
+    case 'panel:close': closePanel(); break;
+    case 'carga:open': openCarga(); break;
+    case 'nuevo:open': openNuevo(); break;
+    case 'ingest:open': openIngest(); break;
+    case 'modal:close': closeModal(); break;
+    case 'filt:clear': state.filters={persona:'',tipo:'',sector:'',estado:'',texto:'',cursoEstado:''}; render(); break;
+    case 'cal:prev': calShift(-1); break;
+    case 'cal:next': calShift(1); break;
+    case 'cal:hoy': state.calCursor=new Date(); render(); break;
+    case 'cal:mes': state.calMode='mes'; render(); break;
+    case 'cal:semana': state.calMode='semana'; render(); break;
+    case 'nuevo:tipo': state.draftTipo=t.dataset.tipo; document.querySelectorAll('.tipo-opt').forEach(o=>o.classList.toggle('on',o.dataset.tipo===t.dataset.tipo)); break;
+    case 'nuevo:create': doCreate(); break;
+    case 'ingest:run': doIngest(false); break;
+    case 'ingest:demo': $('#ingestText').value=JSON.stringify(CURSOS,null,2); break;
+    case 'tpl:save': openSaveTpl(); break;
+    case 'tpl:create': doSaveTpl(); break;
+    // mutaciones de tarjeta seleccionada
+    case 'sector:toggle': toggleArr(current(),'sectores',t.dataset.sector); renderPanel(); break;
+    case 'asig:toggle': toggleArr(current(),'asignados',t.dataset.person); renderPanel(); break;
+    case 'cl:toggle': { const c=current(); const it=c.checklist.find(x=>x.id===t.dataset.cl); if(it){it.done=!it.done; touch(); renderPanel();} break; }
+    case 'cl:add': { const c=current(); c.checklist.push({id:uid(),text:'Nuevo ítem',done:false}); touch(); renderPanel(); break; }
+    case 'cl:del': { const c=current(); c.checklist=c.checklist.filter(x=>x.id!==t.dataset.cl); touch(); renderPanel(); break; }
+    case 'fase:add': { const c=current(); c.fases.push({id:uid(),nombre:'Nueva fase',inicio:null,fin:null,tareas:[]}); touch(); renderPanel(); break; }
+    case 'fase:del': { const c=current(); c.fases=c.fases.filter(x=>x.id!==t.dataset.fase); touch(); renderPanel(); break; }
+    case 'ft:add': { const c=current(); const f=c.fases.find(x=>x.id===t.dataset.fase); if(f){ f.tareas=f.tareas||[]; f.tareas.push({id:uid(),text:'Nueva tarea',done:false,fecha:null}); touch(); renderPanel(); } break; }
+    case 'ft:del': { const c=current(); const f=c.fases.find(x=>x.id===t.dataset.fase); if(f){ f.tareas=(f.tareas||[]).filter(x=>x.id!==t.dataset.task); touch(); renderPanel(); } break; }
+    case 'ft:toggle': { const c=current(); const f=c.fases.find(x=>x.id===t.dataset.fase); if(f){ const tk=(f.tareas||[]).find(x=>x.id===t.dataset.task); if(tk){ tk.done=!tk.done; touch(); renderPanel(); } } break; }
+    case 'curso:publicar': { const c=current(); logAct(c,'publicó al inventario'); patch(c,{publicado:true,enActualizacion:false}); renderPanel(); render(); flash('◎ Publicado al inventario del Mapa'); break; }
+    case 'curso:actualizar': { const c=current(); logAct(c,'generó actualización'); patch(c,{enActualizacion:true,estado:'pendiente'}); state.view='kanban'; renderPanel(); render(); flash('♻️ Actualización generada en el tablero'); break; }
+    case 'curso:republicar': { const c=current(); logAct(c,'republicó al mapa'); patch(c,{enActualizacion:false,estado:'en-revision'}); renderPanel(); render(); flash('✓ Republicado al Mapa'); break; }
+    case 'card:dup': doDup(); break;
+    case 'card:del': doDelete(); break;
+  }
+});
+function toggleArr(c,key,val){ if(!c) return; c[key]=c[key]||[]; const i=c[key].indexOf(val); if(i>=0)c[key].splice(i,1); else c[key].push(val); touch(); }
+
+// inputs (filtros + panel) — delegación en document
+document.addEventListener('input', e=>{
+  if(e.target.id==='searchInput'){ renderSearchResults(e.target.value); return; }
+  const fl=e.target.dataset.filter;
+  if(fl){ state.filters[fl]=e.target.value; if(fl==='texto'){ renderView(); } return; }
+  const fld=e.target.dataset.field; if(fld){ const c=current(); if(c){ applyField(c,fld,e.target); if(fld==='titulo' && state.view!=='cursos'){ /* refresco diferido */ } } }
+});
+document.addEventListener('change', e=>{
+  const fl=e.target.dataset.filter; if(fl){ state.filters[fl]=e.target.value; render(); return; }
+  const ctl=e.target.dataset.control; if(ctl){ state[ctl]=e.target.value; render(); return; }
+  const setk=e.target.dataset.set; if(setk){ applySetting(setk,e.target.value); return; }
+  const fld=e.target.dataset.field; if(fld){ const c=current(); if(c){
+    if(fld==='estado'){ logAct(c,'pasó a '+((ESTADOS.find(x=>x.id===e.target.value)||{}).nombre||e.target.value)); }
+    applyField(c,fld,e.target);
+    if(STRUCTURAL.includes(fld)){ renderPanel(); render(); } else render(); } }
+});
+// Drag & drop Kanban
+document.addEventListener('dragstart', e=>{ const k=e.target.closest('.kcard'); if(k){ state.dragId=k.dataset.id; k.classList.add('drag'); } });
+document.addEventListener('dragend', e=>{ const k=e.target.closest('.kcard'); if(k) k.classList.remove('drag'); document.querySelectorAll('.kcol-body.drop').forEach(x=>x.classList.remove('drop')); });
+document.addEventListener('dragover', e=>{ const col=e.target.closest('.kcol-body'); if(col){ e.preventDefault(); col.classList.add('drop'); } });
+document.addEventListener('dragleave', e=>{ const col=e.target.closest('.kcol-body'); if(col) col.classList.remove('drop'); });
+document.addEventListener('drop', e=>{ const col=e.target.closest('.kcol-body'); if(col&&state.dragId){ e.preventDefault(); const c=state.cards.find(x=>x.id===state.dragId); if(c&&c.estado!==col.dataset.estado){ logAct(c,'pasó a '+((ESTADOS.find(x=>x.id===col.dataset.estado)||{}).nombre||'')); c.estado=col.dataset.estado; touch(); } state.dragId=null; render(); } });
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ if(!$('#modal').classList.contains('hidden')) closeModal(); else if($('#panel').classList.contains('open')) closePanel(); }
+  if(e.key==='Enter' && e.target.dataset && e.target.dataset.quickadd){ e.preventDefault(); const est=e.target.dataset.quickadd, txt=(e.target.value||'').trim();
+    if(txt){ const c=newCard('libre',txt); c.estado=est; logAct(c,'creada'); state.cards.push(c); touch(); render(); const inp=document.querySelector('[data-quickadd="'+est+'"]'); if(inp) inp.focus(); } }
+});
+
+function calShift(dir){ const c=state.calCursor; state.calCursor = state.calMode==='mes' ? new Date(c.getFullYear(),c.getMonth()+dir,1) : addDays(c,7*dir); render(); }
+function doCreate(){ const titulo=($('#nuevoTitulo').value||'').trim()||'Sin título'; const c=newCard(state.draftTipo,titulo); logAct(c,'creada'); state.cards.push(c); touch(); closeModal(); if(state.view==='resumen'||state.view==='mapa') state.view='kanban'; render(); openDetail(c.id); }
+function doIngest(){ const repl=$('#ingestReplace')&&$('#ingestReplace').checked; let arr; try{ let txt=$('#ingestText').value.trim().replace(/^const\s+CURSOS\s*=\s*/,'').replace(/;?\s*$/,''); arr=JSON.parse(txt); }catch(err){ flash('⚠ JSON inválido: '+err.message,true); return; } if(!Array.isArray(arr)){ flash('⚠ Esperaba un array',true); return; } const n=ingestCatalogo(arr,{replace:repl}); touch(); closeModal(); state.view='cursos'; render(); flash(`◎ ${n} curso(s) ingresados como activos`); }
+function doSaveTpl(){ const c=current(); const name=($('#tplName').value||'').trim(); if(!name){ flash('Poné un nombre',true); return; } const key='tpl-'+name.toLowerCase().replace(/[^a-z0-9]+/g,'-'); state.customTpl[key]={nombre:name,fases:(c.fases||[]).map(f=>f.nombre),checklist:(c.checklist||[]).map(x=>x.text)}; touch(); closeModal(); flash('🧩 Plantilla “'+name+'” guardada'); }
+function doDup(){ const c=current(); if(!c) return; const cp=JSON.parse(JSON.stringify(c)); cp.id=uid(); cp.titulo=c.titulo+' (copia)'; cp.publicado=false; cp.checklist.forEach(x=>x.id=uid()); (cp.fases||[]).forEach(x=>x.id=uid()); state.cards.push(cp); touch(); openDetail(cp.id); render(); }
+function doDelete(){ const c=current(); if(!c) return; if(!confirm('¿Eliminar “'+c.titulo+'”?')) return; state.cards=state.cards.filter(x=>x.id!==c.id); touch(); closePanel(); }
+
+/* ===========================================================================
+   UI auxiliares: tema, banner, flash, gate
+=========================================================================== */
+function toggleTheme(){ const r=document.documentElement; r.dataset.theme = r.dataset.theme==='dark'?'light':'dark'; $('#themeBtn').textContent = r.dataset.theme==='dark'?'◐':'◑'; }
+function showBanner(){ const m=Store.mode(); let h;
+  if(m==='supabase')    h=`<div class="note" style="background:#E7F6EF;border-color:#A8D8C0;color:#1c6b4a">🟢 <b>Equipo conectado (Supabase)</b> — lo que carga cada uno lo ven todos en vivo.</div>`;
+  else if(m==='error')  h=`<div class="note warn">🔴 <b>Sin conexión al backend.</b> Revisá las claves en <code>BACKEND</code> y recargá. No se guardan cambios para no pisar datos del equipo.</div>`;
+  else if(m==='memoria')h=`<div class="note warn">⚠ <b>Modo demo (memoria):</b> no hay backend compartido acá; los cambios no se comparten ni persisten al recargar.</div>`;
+  else                  h=`<div class="note">🔗 Persistencia compartida activa — lo que cargás lo ve el equipo.</div>`;
+  $('#banner').innerHTML=h; }
+let flashT=null;
+function flash(msg,bad){ clearTimeout(flashT); let el=$('#flash'); if(!el){ el=document.createElement('div'); el.id='flash'; el.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:90;padding:11px 20px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg)'; document.body.appendChild(el);} el.style.background=bad?'var(--bad)':'var(--coto-navy)'; el.style.color='#fff'; el.textContent=msg; el.style.opacity='1'; flashT=setTimeout(()=>el.style.opacity='0',2600); }
+
+function renderGateTeam(){ $('#gateTeam').innerHTML=TEAM.map(t=>`<div class="gate-person" data-action="gate:person" data-nombre="${t.nombre}">${avatarHTML(t.id)}<div><div class="nm">${t.nombre}</div><div class="rl">${t.rol}</div></div></div>`).join(''); }
+function enterAs(nombre){ if(!nombre) { flash('Decinos quién sos 🙂',true); return; } state.user=nombre; $('#gate').classList.add('hidden');
+  const m=TEAM.find(t=>t.nombre.toLowerCase()===nombre.toLowerCase());
+  state.userId = m ? m.id : null;
+  $('#userChip').innerHTML=`${m?avatarHTML(m.id):`<span class="avatar" style="background:var(--coto-blue)">${nombre.slice(0,1).toUpperCase()}</span>`}<span>${esc(nombre)}</span>`; }
+
+/* ===========================================================================
+   SUPER APP — búsqueda, comentarios, actividad, alertas, recurrencia, ajustes, backup
+=========================================================================== */
+function relTime(ts){ if(!ts) return ''; const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60) return 'recién'; if(s<3600) return 'hace '+Math.floor(s/60)+' min'; if(s<86400) return 'hace '+Math.floor(s/3600)+' h';
+  const d=Math.floor(s/86400); if(d===1) return 'ayer'; if(d<7) return 'hace '+d+' días';
+  return new Date(ts).toLocaleDateString('es-AR',{day:'numeric',month:'short'}); }
+function logAct(c,texto){ if(!c) return; c.actividad=c.actividad||[]; c.actividad.push({ts:Date.now(),autor:state.user||'sistema',texto}); if(c.actividad.length>60) c.actividad=c.actividad.slice(-60); }
+function addComment(){ const c=current(); if(!c) return; const el=$('#cmtInput'); const txt=((el&&el.value)||'').trim(); if(!txt) return;
+  c.comentarios=c.comentarios||[]; c.comentarios.push({id:uid(),autor:state.user||'—',texto:txt,ts:Date.now()}); logAct(c,'comentó'); touch(); renderPanel(); }
+
+/* Recurrencia (POES / validaciones) */
+function shiftISO(iso,rec){ if(!iso) return iso; const d=parseISO(iso); if(rec==='semanal') d.setDate(d.getDate()+7); else if(rec==='mensual') d.setMonth(d.getMonth()+1); else if(rec==='trimestral') d.setMonth(d.getMonth()+3); return isoOf(d); }
+function recurrar(c){ const cp=JSON.parse(JSON.stringify(c)); cp.id=uid(); cp.estado='pendiente'; cp.publicado=false; cp.enActualizacion=false; cp.comentarios=[]; cp.actividad=[];
+  cp.inicio=shiftISO(c.inicio,c.recurrencia); cp.fin=shiftISO(c.fin,c.recurrencia);
+  (cp.checklist||[]).forEach(x=>{x.id=uid();x.done=false;});
+  (cp.fases||[]).forEach(f=>{f.id=uid(); f.inicio=shiftISO(f.inicio,c.recurrencia); f.fin=shiftISO(f.fin,c.recurrencia); (f.tareas||[]).forEach(t=>{t.id=uid();t.done=false;t.fecha=shiftISO(t.fecha,c.recurrencia);});});
+  logAct(cp,'instancia recurrente generada'); logAct(c,'generó próxima instancia'); state.cards.push(cp); touch(); return cp; }
+
+/* Búsqueda global */
+function openSearch(){ openModal(`<div class="search-modal"><div class="search-top">🔎<input id="searchInput" placeholder="Buscar tarjetas, cursos, apps, sectores..." autocomplete="off"><span class="kbd">esc</span></div><div class="search-results" id="searchResults"></div></div>`);
+  setTimeout(()=>{ const i=$('#searchInput'); if(i){ i.focus(); renderSearchResults(''); } },40); }
+function renderSearchResults(q){ const el=$('#searchResults'); if(!el) return; q=(q||'').trim().toLowerCase();
+  let list=state.cards.slice();
+  if(q) list=list.filter(c=> c.titulo.toLowerCase().includes(q)
+    || (c.sectores||[]).some(s=>(sectorName(s)||s).toLowerCase().includes(q))
+    || ((allTipos()[c.tipo]||{}).nombre||'').toLowerCase().includes(q)
+    || (c.catalogo&&(c.catalogo.bajada||'').toLowerCase().includes(q)) );
+  list=list.slice(0,14);
+  if(!list.length){ el.innerHTML='<div style="padding:18px;text-align:center;color:var(--ink-soft)">Sin resultados</div>'; return; }
+  el.innerHTML=list.map((c,i)=>{ const where=inInventory(c)?'Mapa':'Tablero', tipo=allTipos()[c.tipo]||{};
+    return `<div class="sr-item ${i===0?'sel':''}" data-cat="${primaryCat(c)}" data-action="sr:open" data-id="${c.id}">
+      <span>${tipo.icon||'•'}</span><div style="flex:1;overflow:hidden"><div class="sr-t">${esc(c.titulo)}</div>
+      <div class="sr-m">${esc(tipo.nombre||c.tipo)} · ${(c.sectores||[]).map(s=>sectorName(s)||s).join(', ')||'TBD'}</div></div>
+      <span class="sr-where">${where}</span></div>`; }).join('');
+}
+
+/* Alertas / notificaciones */
+function computeAlerts(){ const hoy=todayISO(), soon=isoOf(addDays(new Date(),3)), out=[];
+  boardCards().forEach(c=>{ const end=c.fin||c.inicio; if(!end) return;
+    if(end<hoy) out.push({c,kind:'bad',ic:'⚑',label:'Vencida',sub:'venció '+fmtShort(end)});
+    else if(end<=soon) out.push({c,kind:'warn',ic:'⏳',label:'Vence pronto',sub:'para '+fmtShort(end)}); });
+  state.cards.forEach(c=>{ if(c.recurrencia&&c.recurrencia!=='none'&&!isInventory(c)){ const end=c.fin||c.inicio; if(end&&end<=hoy) out.push({c,kind:'rec',ic:'↻',label:'Recurrente',sub:'corresponde nueva instancia'}); } });
+  const seen={}; return out.filter(a=>{ if(seen[a.c.id]) return false; seen[a.c.id]=1; return true; }); }
+function updateBell(){ const b=$('#notifBadge'); if(!b||!b.classList) return; const n=computeAlerts().length; if(n){ b.textContent=n; b.classList.remove('hidden'); } else b.classList.add('hidden'); }
+function openNotif(){ const al=computeAlerts(); state.selectedId=null;
+  const body=al.length? al.map(a=>`<div class="notif-item" data-action="card:open" data-id="${a.c.id}"><div class="notif-ic ${a.kind}">${a.ic}</div><div style="flex:1"><div class="notif-t">${esc(a.c.titulo)}</div><div class="notif-s">${a.label} · ${a.sub}</div></div></div>`).join('')
+    : '<div class="empty"><div class="big">✅</div><div style="font-weight:700;color:var(--ink)">Todo al día</div><div style="margin-top:4px">Sin vencidas ni alertas.</div></div>';
+  $('#panel').innerHTML=`<div class="panel-head"><div style="flex:1"><div class="tipo-pill">🔔 Alertas</div><div style="font-family:var(--titulo);font-size:18px;font-weight:700;margin-top:4px">${al.length} pendiente${al.length!==1?'s':''}</div></div><button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div><div class="panel-body">${body}</div>`;
+  $('#panel').classList.add('open'); $('#overlay').classList.remove('hidden'); }
+
+/* Ajustes + datos */
+function openSettings(){
+  const secRows=Object.keys(SECTORES).map(k=>`<div class="set-row"><input type="color" data-set="sec:${k}:cat" value="${SECTORES[k].cat}"><input type="text" data-set="sec:${k}:nombre" value="${esc(SECTORES[k].nombre)}"><span style="font-size:11px;color:var(--ink-soft);min-width:118px">${esc(k)}</span></div>`).join('');
+  const teamRows=TEAM.map(t=>`<div class="set-row">${avatarHTML(t.id,true)}<input type="text" data-set="team:${t.id}:nombre" value="${esc(t.nombre)}"><input type="text" data-set="team:${t.id}:rol" value="${esc(t.rol)}"><input type="color" data-set="team:${t.id}:color" value="${t.color}"></div>`).join('');
+  const tplRows=Object.keys(state.customTpl).length? Object.keys(state.customTpl).map(k=>`<div class="tpl-row">🧩 ${esc(state.customTpl[k].nombre)} <span class="chk-del" data-action="tpl:del" data-tpl="${k}">✕</span></div>`).join('') : '<div style="font-size:12.5px;color:var(--ink-soft)">Sin plantillas propias todavía.</div>';
+  openModal(`<h2>Ajustes</h2><div class="sub-t">Configurá el área. Los cambios se comparten con el equipo.</div>
+    <div class="set-sec"><h3>🎨 Sectores (data-cat) <span style="margin-left:auto;font-size:12px;color:var(--ink-soft)">${Object.keys(SECTORES).length}</span></h3>
+      <div class="set-grid">${secRows}</div>
+      <div class="set-row" style="margin-top:10px"><input type="color" id="newSecCat" value="#3FA7D6"><input type="text" id="newSecNombre" placeholder="Nuevo sector (nombre)"><button class="btn btn-sm" data-action="set:add-sector">+ Agregar</button></div></div>
+    <div class="set-sec"><h3>👥 Equipo</h3>${teamRows}
+      <div class="set-row" style="margin-top:10px"><input type="text" id="newMemNombre" placeholder="Nombre"><input type="text" id="newMemRol" placeholder="Rol"><input type="color" id="newMemColor" value="#006EA0"><button class="btn btn-sm" data-action="set:add-member">+ Agregar</button></div></div>
+    <div class="set-sec"><h3>🧩 Plantillas propias</h3>${tplRows}</div>
+    <div class="set-sec"><h3>💾 Datos</h3><div class="set-data">
+      <button class="btn" data-action="ingest:open">⤓ Ingestar catálogo</button>
+      <button class="btn" data-action="data:export">⬇ Exportar JSON</button>
+      <button class="btn" data-action="data:import">⬆ Importar JSON</button>
+      <button class="btn" data-action="data:csv">📄 Exportar CSV</button>
+    </div></div>
+    <div class="modal-foot"><button class="btn btn-primary" data-action="modal:close">Listo</button></div>`);
+}
+function applySetting(key,val){ const p=key.split(':');
+  if(p[0]==='sec'){ const k=p[1]; if(SECTORES[k]){ SECTORES[k][p[2]]=val; injectSectorStyles(); persist(); render(); } }
+  else if(p[0]==='team'){ const m=member(p[1]); if(m){ m[p[2]]=val; persist(); render(); } } }
+function addSector(){ const nombre=($('#newSecNombre').value||'').trim(), cat=($('#newSecCat').value||'#3FA7D6'); if(!nombre){ flash('Poné un nombre de sector',true); return; }
+  let key=nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); if(!key||SECTORES[key]) key='sector-'+Date.now();
+  SECTORES[key]={nombre,cat}; injectSectorStyles(); persist(); openSettings(); render(); flash('🎨 Sector agregado'); }
+function addMember(){ const nombre=($('#newMemNombre').value||'').trim(); if(!nombre){ flash('Poné un nombre',true); return; } const rol=($('#newMemRol').value||'').trim()||'Equipo', color=$('#newMemColor').value||'#006EA0';
+  const id='m-'+nombre.toLowerCase().replace(/[^a-z0-9]+/g,'')+'-'+Math.random().toString(36).slice(2,5); TEAM.push({id,nombre,rol,color}); persist(); openSettings(); render(); flash('👤 Miembro agregado'); }
+function delTpl(k){ delete state.customTpl[k]; persist(); openSettings(); }
+
+/* Export / Import / CSV */
+function download(name,content,type){ try{ const blob=new Blob([content],{type:type||'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); },100); }catch(e){ flash('No se pudo descargar en este entorno',true); } }
+function exportJSON(){ download('super-planner-coto.json', JSON.stringify({version:1,exportado:new Date().toISOString(),cards:state.cards,templates:state.customTpl,sectores:SECTORES,team:TEAM},null,2)); flash('⬇ Backup exportado'); }
+function exportCSV(){ const rows=[['Titulo','Tipo','Estado','Sectores','Responsable','Inicio','Fin','Prioridad','Progreso']];
+  boardCards().forEach(c=>{ const p=progress(c); rows.push([c.titulo,(allTipos()[c.tipo]||{}).nombre||c.tipo,c.estado,(c.sectores||[]).map(s=>sectorName(s)||s).join(' / '),(member(c.responsable)||{}).nombre||'',c.inicio||'',c.fin||'',c.prioridad,p.total?`${p.done}/${p.total}`:'']); });
+  download('tablero-coto.csv','﻿'+rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n'),'text/csv'); flash('📄 CSV exportado'); }
+function doImport(){ openModal(`<h2>Importar JSON</h2><div class="sub-t">Pegá un backup exportado. <b>Reemplaza</b> los datos actuales.</div>
+  <div class="fld"><label>Backup JSON</label><textarea id="importText" style="min-height:160px;font-family:monospace;font-size:12px"></textarea></div>
+  <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="data:import-run">Importar y reemplazar</button></div>`); }
+function runImport(){ let d; try{ d=JSON.parse($('#importText').value); }catch(e){ flash('JSON inválido',true); return; }
+  if(!d||!Array.isArray(d.cards)){ flash('Backup sin "cards"',true); return; }
+  if(!confirm('Esto reemplaza todos los datos actuales. ¿Seguir?')) return;
+  state.cards=d.cards; state.customTpl=d.templates||{};
+  if(d.sectores) Object.assign(SECTORES,d.sectores); if(Array.isArray(d.team)&&d.team.length){ TEAM.length=0; d.team.forEach(t=>TEAM.push(t)); }
+  injectSectorStyles(); touch(); closeModal(); render(); flash('⬆ Datos importados'); }
+
+/* Atajos de teclado */
+document.addEventListener('keydown', e=>{
+  const tag=(e.target.tagName||'').toLowerCase(); if(tag==='input'||tag==='textarea'||tag==='select'||e.target.isContentEditable) return;
+  if(e.metaKey||e.ctrlKey||e.altKey) return;
+  if(e.key==='/'){ e.preventDefault(); openSearch(); }
+  else if(e.key.toLowerCase()==='n'){ openNuevo(); }
+  else if(e.key>='1'&&e.key<='5'){ const v=['resumen','kanban','calendario','timeline','mapa'][+e.key-1]; if(v){ state.view=v; render(); } }
+});
+
+/* ===========================================================================
+   BOOT
+=========================================================================== */
+function injectSectorStyles(){ let css=''; for(const k in SECTORES) css+=`[data-cat="${k}"]{--cat:${SECTORES[k].cat}}`; let s=document.getElementById('sectorStyles'); if(!s){ s=document.createElement('style'); s.id='sectorStyles'; document.head.appendChild(s); } s.textContent=css; }
+
+async function boot(){
+  injectSectorStyles();
+  renderGateTeam();
+  $('#app').classList.remove('hidden');
+  try{
+    const saved=await Store.load();
+    if(saved && saved.cards && saved.cards.length){
+      state.cards=saved.cards; state.customTpl=saved.templates||{};
+      if(saved.sectores) Object.assign(SECTORES,saved.sectores);
+      if(Array.isArray(saved.team)&&saved.team.length){ TEAM.length=0; saved.team.forEach(t=>TEAM.push(t)); }
+      injectSectorStyles(); renderGateTeam();
+    } else {
+      state.cards=seedCards(); ingestCatalogo(CURSOS,{}); await Store.save({cards:state.cards,templates:state.customTpl,sectores:SECTORES,team:TEAM});
+    }
+  }catch(err){ console.error(err); if(useSupabase()) state.connOk=false; state.cards=seedCards(); ingestCatalogo(CURSOS,{}); flash(useSupabase()?'No se pudo conectar a Supabase — revisá las claves':'Usando datos semilla',true); }
+  // migración defensiva de datos previos
+  state.cards.forEach(c=>{ c.ficha=c.ficha||{url:'',owner:'',estadoOp:'operativo'}; c.comentarios=c.comentarios||[]; c.actividad=c.actividad||[]; if(!c.recurrencia) c.recurrencia='none'; if(!c.catalogo) c.catalogo={categoria:'',bajada:'',anio:'',duracion:'',imagen:'',personas:'',descripcion:''}; });
+  state.ready=true;
+  showBanner();
+  render();
+  startPolling();
+}
+/* Refresco en vivo: trae lo que cargaron los demás (last-write-wins, solo si estás "idle") */
+function startPolling(){ if(!useSupabase()) return; setInterval(async()=>{
+  if(state.connOk===false) return;
+  if($('#panel').classList.contains('open')) return;     // no pisar mientras editás
+  if(!$('#modal').classList.contains('hidden')) return;   // ni con un modal abierto
+  try{ const d=await Store.remote(); if(!d||!Array.isArray(d.cards)) return;
+    const h=JSON.stringify(d.cards)+JSON.stringify(d.sectores||{})+JSON.stringify(d.team||[]);
+    if(h===state._remoteHash) return; state._remoteHash=h;
+    state.cards=d.cards; if(d.templates) state.customTpl=d.templates;
+    if(d.sectores) Object.assign(SECTORES,d.sectores);
+    if(Array.isArray(d.team)&&d.team.length){ TEAM.length=0; d.team.forEach(t=>TEAM.push(t)); }
+    injectSectorStyles(); render();
+  }catch(e){} },BACKEND.pollMs); }
+boot();
+</script>
+</body>
+</html>
