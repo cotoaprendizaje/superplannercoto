@@ -1,12 +1,12 @@
-Cotonetes Forever — VERSIÓN PARA DEPLOY (código ofuscado)
-=========================================================
-Esta es la versión "blindada" (JS ofuscado + CSS minificado) para SUBIR/DEPLOYAR.
-- Deploy: arrastrá ESTA CARPETA a Netlify (app.netlify.com/drop) o subila a tu hosting.
-- index.html + assets/ van SIEMPRE juntos.
+Cotonetes Forever — cómo desplegar
+==================================
+
+Deploy: arrastrá index.html + assets/ + manifest.webmanifest + sw.js a Netlify
+(app.netlify.com/drop) o subilos a tu hosting. Van SIEMPRE juntos.
 
 IMPORTANTE
-- Esta versión NO es editable (está ofuscada a propósito).
-- El "master" editable lo tenés vos (carpeta super-planner/, sin ofuscar). Guardalo
-  en tu repo PRIVADO. Para cambios, se edita el master y se vuelve a generar esta dist.
+- index.html es un archivo GENERADO. No lo edites a mano: se regenera con
+  `npm run build` a partir de la carpeta src/.
+- El código editable ahora vive en este mismo repo, en src/. Ver README.md.
 
 Clave de ingreso actual: Minuevacontra5  (cambiable desde Ajustes dentro de la app)

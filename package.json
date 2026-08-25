@@ -1,0 +1,11 @@
+{
+  "name": "cotonetes-forever",
+  "version": "1.0.0",
+  "description": "Planner del equipo de Aprendizaje e-Learning de COTO CICSA",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "npm run build && npx --yes http-server . -p 8080 -c-1"
+  }
+}
