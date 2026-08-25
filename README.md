@@ -35,6 +35,16 @@ El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
 > `index.html` es un artefacto generado. Si lo editás directo, el siguiente
 > build te pisa los cambios.
 
+### Sobre los nombres de variables
+
+El código se recuperó desde una versión ofuscada. Los nombres de función
+sobrevivieron enteros, pero los de las variables no: el ofuscador los reemplazó
+por `_0x4f2abb` y esos ya no se pueden recuperar. Se les infirió un nombre a
+partir de cómo se usa cada una, así que la mayoría dice algo (`tarjeta`,
+`miembro`, `fecha`, `html`, `el`). Donde no alcanzó la evidencia quedaron
+nombres genéricos: `arg` para parámetros, `val` para locales. Si tocás una
+función y ves uno de esos, ponele el nombre que corresponda.
+
 Para probar con datos de ejemplo en vez de los reales, poné
 `window.__CF_SEED__ = true` en la consola antes de cargar la página.
 
