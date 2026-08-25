@@ -157,12 +157,90 @@ async function pruebaDosPersonas(browser, backend) {
   (await vivi.close(), await dami.close());
 }
 
+// --- la ventana entre editar y guardar ----------------------------------
+
+async function pruebaCarrera(browser, backend) {
+  console.log("\ncarreras entre editar y sincronizar");
+  await backend.reset();
+  const page = await openClient(browser, backend.url, "Vivi");
+  await page.waitForTimeout(1200);
+
+  // El guardado va con 250 ms de retardo. Si la marca de tiempo se pusiera
+  // recién ahí, un polling que entre en esa ventana vería el cambio sin marca
+  // y lo descartaría por viejo. Por eso touch() tiene que marcar en el acto.
+  const marca = await page.evaluate(() => {
+    const c = state.cards[0],
+      antes = c.updatedAt || 0;
+    ((c.titulo = "CAMBIO SIN GUARDAR"), touch());
+    return { antes, despues: c.updatedAt || 0 };
+  });
+  check("editar marca la tarjeta en el acto, sin esperar el guardado", marca.despues > marca.antes, marca);
+
+  // Y el caso concreto: una tarjeta con lápida que vuelve, si el merge corre
+  // antes del guardado, tiene que sobrevivir igual.
+  const sobrevive = await page.evaluate(async () => {
+    const c = state.cards[0];
+    // Alguien la borró hace un rato; ahora otra persona la vuelve a cargar.
+    ((state.deleted[c.id] = Date.now() - 1000), delete c.updatedAt);
+    ((c.titulo = "VUELVE A LA VIDA"), touch());
+    await mergeRemoteIntoState();
+    return state.cards.some((x) => x.titulo === "VUELVE A LA VIDA");
+  });
+  check("un cambio recién hecho no lo pisa el polling", sobrevive);
+
+  await page.close();
+}
+
+// --- copias de resguardo ------------------------------------------------
+
+async function pruebaBackups(browser, backend) {
+  console.log("\ncopias de resguardo");
+  await backend.reset();
+  const page = await openClient(browser, backend.url, "Vivi");
+  await page.waitForTimeout(1200);
+
+  await page.evaluate(() => {
+    (state.cards.push(newCard("libre", "ANTES DEL DESASTRE")), touch());
+  });
+  await page.waitForTimeout(1600);
+
+  const copias = await page.evaluate(() => readBackups().length);
+  check("guarda una copia al grabar", copias >= 1, copias);
+
+  // Alguien vacía el tablero compartido.
+  await page.evaluate(() => {
+    (dropCards(state.cards.map((c) => c.id)), touch());
+  });
+  await page.waitForTimeout(1600);
+  check(
+    "el tablero queda vacío tras el desastre",
+    (await page.evaluate(() => state.cards.length)) === 0,
+  );
+
+  await page.evaluate(() => {
+    window.confirm = () => true;
+    restoreBackup(readBackups()[0].ts);
+  });
+  await page.waitForTimeout(2000);
+
+  (check(
+    "restaurar una copia devuelve las tarjetas",
+    await page.evaluate(() => state.cards.some((c) => c.titulo === "ANTES DEL DESASTRE")),
+  ),
+    check("la restauración llega al backend", (await backend.state()).cards.length > 0));
+
+  await page.close();
+}
+
 // --- corrida ------------------------------------------------------------
 
 const backend = await startFakeBackend();
 const browser = await chromium.launch({ executablePath: CHROMIUM });
 try {
-  (await pruebasDeMerge(browser, backend.url), await pruebaDosPersonas(browser, backend));
+  (await pruebasDeMerge(browser, backend.url),
+    await pruebaDosPersonas(browser, backend),
+    await pruebaCarrera(browser, backend),
+    await pruebaBackups(browser, backend));
 } finally {
   (await browser.close(), await backend.stop());
 }

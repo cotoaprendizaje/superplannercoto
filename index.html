@@ -7925,9 +7925,57 @@ function docSnapshot() {
   };
 }
 
+// Copias de resguardo locales. El tablero vive en una única fila compartida:
+// si alguien la vacía, se vacía para todos. Estas copias quedan en el navegador
+// de cada uno (a diferencia del tablero, que va por window.storage/Supabase) y
+// permiten volver atrás desde Ajustes.
+
+const BACKUP_KEY = "coto.superplanner.backups",
+  BACKUP_MAX = 8,
+  BACKUP_MIN_GAP = 15 * 60 * 1000;
+
+function readBackups() {
+  try {
+    const raw = localStorage.getItem(BACKUP_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function writeBackups(list) {
+  // Si no entra, se va soltando la copia más vieja antes que perderlas todas.
+  for (let intento = list.length; intento > 0; intento--) {
+    try {
+      return (localStorage.setItem(BACKUP_KEY, JSON.stringify(list.slice(0, intento))), true);
+    } catch (e) {}
+  }
+  try {
+    localStorage.removeItem(BACKUP_KEY);
+  } catch (e) {}
+  return false;
+}
+
+function saveBackup(doc) {
+  const list = readBackups(),
+    now = Date.now();
+  // Espaciadas, para que las ocho copias abarquen días y no los últimos minutos.
+  if (list.length && now - list[0].ts < BACKUP_MIN_GAP) return;
+  (list.unshift({
+    ts: now,
+    autor: state.user || "",
+    tarjetas: doc.cards.length,
+    doc: JSON.stringify(doc),
+  }),
+    writeBackups(list.slice(0, BACKUP_MAX)));
+}
+
 // Trae lo remoto, lo mezcla con lo local y adopta el resultado. Devuelve las
 // tarjetas que llegaron de otra persona, para poder avisar.
 async function mergeRemoteIntoState() {
+  // Marcar antes de pedir lo remoto: si hay un cambio local todavía sin marca,
+  // se lo ve más viejo de lo que es y la copia remota lo pisa.
+  stampEditedCards();
   const remote = await Store.remote();
   if (!remote || !Array.isArray(remote.cards)) return [];
   const before = new Map(state.cards.map((c) => [c.id, cardFingerprint(c)])),
@@ -7958,7 +8006,7 @@ function persist() {
         } catch (e) {}
       }
       const doc = docSnapshot();
-      (await Store.save(doc), rememberFingerprints(state.cards));
+      (await Store.save(doc), rememberFingerprints(state.cards), saveBackup(doc));
       showBanner();
     }, 250)));
 }
@@ -10602,7 +10650,10 @@ function openSaveTpl() {
   );
 }
 function touch() {
-  persist();
+  // La marca va acá, en el momento del cambio, y no dentro del guardado con
+  // retardo: si no, un polling que caiga en esa ventana ve el cambio sin marca
+  // y lo descarta por viejo.
+  (stampEditedCards(), persist());
 }
 function patch(v654, v655) {
   (Object.assign(v654, v655), touch());
@@ -10817,6 +10868,9 @@ document.addEventListener("click", (v671) => {
       ((state.appPassHash = ""), persist(), updateGatePass(), openSettings(), flash("Clave quitada"));
       break;
     }
+    case "backup:restore":
+      restoreBackup(v673.dataset.ts);
+      break;
     case "set:add-member":
       addMember();
       break;
@@ -12151,11 +12205,78 @@ function openSettings() {
       (state.appPassHash
         ? '<button class="btn btn-sm" data-action="set:pass-clear" style="color:var(--bad)">Quitar</button>'
         : "") +
-      '</div>\n      <div style="font-size:11px;color:var(--ink-soft);margin-top:5px">Barrera para que no entre cualquiera con el link. No es seguridad fuerte (para eso haría falta login real).</div></div>\n    <div class="set-sec"><h3>🧩 Plantillas propias</h3>' +
+      '</div>\n      <div style="font-size:11px;color:var(--ink-soft);margin-top:5px">Barrera para que no entre cualquiera con el link. No es seguridad fuerte (para eso haría falta login real).</div></div>\n    <div class="set-sec"><h3>🛟 Copias de resguardo</h3>' +
+      backupListHTML() +
+      '</div>\n    <div class="set-sec"><h3>🧩 Plantillas propias</h3>' +
       v931 +
       '</div>\n    <div class="set-sec"><h3>💾 Datos</h3><div class="set-data">\n      <button class="btn" data-action="ingest:open">⤓ Ingestar catálogo</button>\n      <button class="btn" data-action="data:export">⬇ Exportar JSON</button>\n      <button class="btn" data-action="data:import">⬆ Importar JSON</button>\n      <button class="btn" data-action="data:csv">📄 Exportar CSV</button>\n      <button class="btn" data-action="data:reset" style="color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))">🧹 Reiniciar (Planner vacío + catálogo)</button>\n    </div></div>\n    <div class="modal-foot"><button class="btn btn-primary" data-action="modal:close">Listo</button></div>',
   );
 }
+function backupListHTML() {
+  const list = readBackups();
+  if (!list.length)
+    return '<div style="font-size:12.5px;color:var(--ink-soft)">Todavía no hay copias. Se guarda una en este navegador cada vez que se graba, como mucho una cada 15 minutos.</div>';
+  return (
+    '<div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px">Guardadas en este navegador, no en el servidor. Sirven para volver atrás si alguien vacía el tablero.</div>' +
+    list
+      .map(
+        (b) =>
+          '<div class="set-row"><span style="flex:1;font-size:13px">' +
+          esc(fmtBackupDate(b.ts)) +
+          ' <span style="color:var(--ink-soft)">· ' +
+          b.tarjetas +
+          " tarjetas" +
+          (b.autor ? " · " + esc(b.autor) : "") +
+          '</span></span><button class="btn btn-sm" data-action="backup:restore" data-ts="' +
+          b.ts +
+          '">Restaurar</button></div>',
+      )
+      .join("")
+  );
+}
+
+function fmtBackupDate(ts) {
+  return new Date(ts).toLocaleString("es-AR", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function restoreBackup(ts) {
+  const hit = readBackups().find((b) => String(b.ts) === String(ts));
+  if (!hit) {
+    flash("No encontré esa copia", true);
+    return;
+  }
+  if (!confirm("Restaurar la copia del " + fmtBackupDate(hit.ts) + "? Reemplaza el tablero actual."))
+    return;
+  let doc;
+  try {
+    doc = JSON.parse(hit.doc);
+  } catch (e) {
+    flash("La copia está dañada", true);
+    return;
+  }
+  // Igual que al importar: lo que la copia no trae tiene que quedar con lápida,
+  // si no el merge del guardado lo revive desde la fila compartida.
+  const ids = new Set(doc.cards.map((c) => c.id));
+  (dropCards(state.cards.filter((c) => !ids.has(c.id)).map((c) => c.id)),
+    (state.cards = doc.cards),
+    (state.customTpl = doc.templates || {}));
+  if (doc.sectores) Object.assign(SECTORES, doc.sectores);
+  if (doc.agenda && typeof doc.agenda === "object") state.agenda = doc.agenda;
+  (Array.isArray(doc.team) &&
+    doc.team.length &&
+    ((TEAM.length = 0), doc.team.forEach((m) => TEAM.push(m))),
+    injectSectorStyles(),
+    touch(),
+    closeModal(),
+    render(),
+    flash("🛟 Copia restaurada"));
+}
+
 function applySetting(v933, v934) {
   const v935 = v933.split(":");
   if (v935[0] === "sec") {
