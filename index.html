@@ -386,15 +386,18 @@
   --coto-blue: #006ea0;
   --coto-navy: #1e2d46;
   --coto-white: #ebf0ff;
-  --line: #e4e9f2;
-  --line-soft: #edf1f8;
+  /* Antes casi invisible (#e4e9f2 sobre blanco): las cajas flotaban sin
+     borde real y dependían de una sombra al 5% de opacidad para separarse
+     del fondo. Ahora el borde hace el trabajo por sí solo. */
+  --line: #c7d1e3;
+  --line-soft: #dde4f0;
   --coto-blue-deep: #00466e;
   --coto-chambray: #96a5be;
   --bg: #e7ecf6;
   --surface: #ffffff;
-  --surface-2: #f3f6fc;
+  --surface-2: #eef2fa;
   --ink: var(--coto-navy);
-  --ink-soft: #586780;
+  --ink-soft: #465269;
   --link: var(--coto-blue);
   --grad-brand: linear-gradient(
     135deg,
@@ -402,17 +405,17 @@
     var(--coto-blue)
   );
   --shadow-sm:
-    0 1px 2px rgba(30, 45, 70, 0.05), 0 1px 3px rgba(30, 45, 70, 0.04);
+    0 1px 2px rgba(20, 32, 56, 0.08), 0 1px 3px rgba(20, 32, 56, 0.06);
   --shadow:
-    0 2px 6px rgba(30, 45, 70, 0.05), 0 10px 28px rgba(30, 45, 70, 0.07);
+    0 3px 10px rgba(20, 32, 56, 0.08), 0 14px 32px rgba(20, 32, 56, 0.1);
   --shadow-lg:
-    0 10px 24px rgba(30, 45, 70, 0.1), 0 32px 64px rgba(30, 45, 70, 0.15);
-  --r-sm: 10px;
-  --r-s: 14px;
-  --r-l: 20px;
+    0 16px 32px rgba(20, 32, 56, 0.14), 0 40px 76px rgba(20, 32, 56, 0.2);
+  --r-sm: 12px;
+  --r-s: 16px;
+  --r-l: 22px;
   --pill: 999px;
-  --r-xl: 28px;
-  --r-squircle: 20px;
+  --r-xl: 30px;
+  --r-squircle: 22px;
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --spring: cubic-bezier(0.34, 1.4, 0.5, 1);
@@ -431,15 +434,15 @@
 [data-theme="dark"] {
   --bg: #0e1521;
   --surface: #161f33;
-  --surface-2: #1c2842;
+  --surface-2: #1f2b46;
   --ink: #eaf0fb;
   --ink-soft: #a3b0c8;
-  --line: #28344c;
-  --line-soft: #222e44;
+  --line: #3c4b6c;
+  --line-soft: #2b3752;
   --coto-white: #0e1521;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.32), 0 12px 30px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.45), 0 36px 70px rgba(0, 0, 0, 0.55);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.36);
+  --shadow: 0 3px 10px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 16px 34px rgba(0, 0, 0, 0.48), 0 40px 76px rgba(0, 0, 0, 0.58);
   --glass: rgba(255, 255, 255, 0.05);
   --glass-2: rgba(255, 255, 255, 0.03);
   --glass-brd: rgba(255, 255, 255, 0.1);
@@ -698,7 +701,7 @@ button {
 .brand-mark {
   width: 42px;
   height: 42px;
-  border-radius: 13px;
+  border-radius: var(--r-sm);
   background: linear-gradient(135deg, var(--coto-blue), var(--coto-navy));
   position: relative;
   box-shadow: var(--shadow);
@@ -708,7 +711,7 @@ button {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 13px;
+  border-radius: var(--r-sm);
   background: radial-gradient(
       circle at 30% 30%,
       rgba(255, 255, 255, 0.5) 1.5px,
@@ -805,7 +808,7 @@ button {
   min-width: 206px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-s);
   box-shadow: var(--shadow-lg);
   padding: 6px;
   z-index: 45;
@@ -993,7 +996,7 @@ button {
   min-width: 220px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-s);
   box-shadow: var(--shadow-lg);
   padding: 12px;
   z-index: 45;
@@ -1540,7 +1543,7 @@ button {
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 9px 11px;
   outline: 0;
 }
@@ -1707,7 +1710,7 @@ button {
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 9px 11px;
   outline: 0;
   width: 100%;
@@ -1808,7 +1811,7 @@ button {
 }
 .fase-box {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   padding: 10px;
   background: var(--surface-2);
   display: flex;
@@ -1822,7 +1825,7 @@ button {
     var(--surface)
   );
   border: 1px solid color-mix(in srgb, var(--coto-blue) 30%, var(--line));
-  border-radius: 14px;
+  border-radius: var(--r-s);
   padding: 13px;
   display: flex;
   flex-direction: column;
@@ -1924,7 +1927,7 @@ button {
 .tipo-opt {
   cursor: pointer;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-s);
   padding: 12px;
   text-align: center;
   background: var(--surface-2);
@@ -1965,7 +1968,7 @@ button {
 }
 .gate-card {
   background: var(--surface);
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   box-shadow: var(--shadow-lg);
   padding: 34px;
   width: 440px;
@@ -1996,7 +1999,7 @@ button {
 .gate-person {
   cursor: pointer;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-s);
   padding: 11px;
   display: flex;
   align-items: center;
@@ -2249,7 +2252,7 @@ button {
   width: 100%;
   border: 1px dashed var(--line);
   background: 0 0;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 8px 11px;
   font-family: inherit;
   font-size: 12.5px;
@@ -2371,7 +2374,7 @@ button {
 .cmt {
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   padding: 9px 11px;
   margin-bottom: 8px;
 }
@@ -2467,7 +2470,7 @@ button {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   border-left: 3px solid var(--cat, var(--line));
 }
@@ -2581,7 +2584,7 @@ button {
 .set-row input[type="text"] {
   flex: 1;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   padding: 7px 10px;
   font-family: inherit;
   font-size: 13px;
@@ -2603,7 +2606,7 @@ button {
   max-height: 230px;
   overflow-y: auto;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   padding: 10px;
 }
 .set-data {
@@ -3241,7 +3244,7 @@ html {
   gap: 10px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 8px 12px;
 }
 .edu-file.elim {
@@ -4145,7 +4148,7 @@ button.aday:hover {
   cursor: pointer;
   font-family: inherit;
   padding: 9px 11px;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   color: var(--ink);
   transition: background 0.12s var(--ease);
 }
@@ -4258,7 +4261,7 @@ button.aday:hover {
     width: auto;
     order: 0;
     z-index: 36;
-    border-radius: 20px;
+    border-radius: var(--r-l);
     justify-content: space-between;
     gap: 0;
     padding: 6px;
@@ -4282,7 +4285,7 @@ button.aday:hover {
     font-size: 9.5px;
     font-weight: 700;
     padding: 7px 8px;
-    border-radius: 14px;
+    border-radius: var(--r-s);
     white-space: nowrap;
     flex: 1 0 auto;
   }
@@ -4375,7 +4378,7 @@ button.aday:hover {
   font-size: 13px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 8px 10px;
   color: var(--ink);
   outline: 0;
@@ -4497,7 +4500,7 @@ button.aday:hover {
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 7px 10px;
   outline: 0;
 }
