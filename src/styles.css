@@ -1867,6 +1867,9 @@ button {
   background: var(--surface-2);
   transition: 0.15s;
   text-align: left;
+  width: 100%;
+  font: inherit;
+  color: inherit;
 }
 .gate-person:hover {
   border-color: var(--coto-blue);
