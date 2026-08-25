@@ -376,6 +376,7 @@
   --ambient: 0 18px 40px -26px rgba(0, 110, 160, 0.55);
   --blur: saturate(170%) blur(18px);
   --ok: #2e9e8f;
+  --ok-soft: #e3f3f0;
   --warn: #e2a03f;
   --bad: #d8553f;
   --bad-soft: #fbe7e1;
@@ -398,6 +399,7 @@
   --glow: 0 20px 54px rgba(38, 179, 232, 0.28);
   --ambient: 0 18px 44px -24px rgba(38, 179, 232, 0.5);
   --blur: saturate(140%) blur(14px);
+  --ok-soft: #17332e;
   --bad-soft: #3a201b;
 }
 * {
@@ -919,6 +921,45 @@ button {
 }
 .filt-clear {
   margin-left: auto;
+}
+.filt-pop-wrap {
+  position: relative;
+}
+.filt-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 5px;
+  border-radius: var(--pill);
+  background: var(--coto-blue);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+}
+.filt-pop {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  min-width: 220px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  padding: 12px;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: 0.16s viewIn;
+}
+.filt-pop-item {
+  width: 100%;
+}
+.filt-pop-item select {
+  flex: 1;
 }
 .view {
   padding: 14px 22px 60px;
@@ -1541,6 +1582,55 @@ button {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+}
+.panel-headtop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.savestate {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: var(--pill);
+  white-space: nowrap;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.savestate::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.savestate.saving {
+  color: var(--ink-soft);
+  animation: savestate-pulse 1s ease-in-out infinite;
+}
+.savestate.saved {
+  color: var(--ok);
+  background: var(--ok-soft);
+  border-color: color-mix(in srgb, var(--ok) 35%, transparent);
+}
+.savestate.error {
+  color: var(--bad);
+  background: var(--bad-soft);
+  border-color: color-mix(in srgb, var(--bad) 35%, transparent);
+}
+@keyframes savestate-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 .panel-body {
   padding: 16px 18px;

@@ -3391,7 +3391,7 @@ let guardadoPendiente = false;
 // mismo documento dos veces.
 let guardadoUrgenteEnCurso = false;
 function persist() {
-  guardadoPendiente = true;
+  ((guardadoPendiente = true), (state.saveError = false), updateSavestate());
   (clearTimeout(saveTimer), (saveTimer = setTimeout(() => guardarAhora(false), 250)));
 }
 async function guardarAhora(urgente) {
@@ -3421,6 +3421,7 @@ async function guardarAhora(urgente) {
   }
   if (urgente) guardadoUrgenteEnCurso = false;
   else (showBanner(), avisarSinGuardar());
+  updateSavestate();
 }
 // Entre que se dispara persist() y que el POST llega a destino pasan el
 // debounce de 250ms más una o dos idas y vueltas de red: si alguien cierra la
@@ -3470,6 +3471,26 @@ function avisarSinGuardar() {
     "Tenés una copia local en Ajustes → Copias de resguardo. " +
     '<button data-action="reintentar:guardar" style="margin-left:8px;padding:3px 10px;border-radius:999px;' +
     'border:1px solid #fff;background:transparent;color:#fff;font:inherit;cursor:pointer">Reintentar</button>';
+}
+
+// El panel no tiene botón "Guardar" — todo autoguarda — así que este pill es
+// lo único que le dice a la persona si lo que tipeó ya quedó a salvo.
+function savestateEstado() {
+  if (state.saveError) return { clase: "error", texto: "Sin guardar" };
+  if (guardadoPendiente) return { clase: "saving", texto: "Guardando…" };
+  return { clase: "saved", texto: "Guardado" };
+}
+function savestateHTML() {
+  const { clase, texto } = savestateEstado();
+  return '<span class="savestate ' + clase + '" id="panelSaveState">' + texto + "</span>";
+}
+// Actualiza el pill sin re-renderizar el panel entero: un re-render en medio
+// de tipear le tira el foco del campo a la persona.
+function updateSavestate() {
+  const el = $("#panelSaveState");
+  if (!el) return;
+  const { clase, texto } = savestateEstado();
+  ((el.className = "savestate " + clase), (el.textContent = texto));
 }
 const state = {
   ready: false,
@@ -3838,6 +3859,10 @@ function filteredBoard() {
   return boardCards().filter(passBoard);
 }
 function renderFilters() {
+  // Elegir un filtro reconstruye toda la barra (así se actualiza el contador
+  // del botón), lo que cerraría el popover después de cada click si no se
+  // preserva a mano: nadie quiere reabrirlo para poner un segundo filtro.
+  const popAbierto = $("#filtrosPop") && !$("#filtrosPop").classList.contains("hidden");
   const misFlag = $("#misFlag");
   if (misFlag) misFlag.textContent = state.mis ? "ON" : "";
   if (state.view === "resumen" || state.view === "inicio" || state.view === "agenda") {
@@ -3881,6 +3906,21 @@ function renderFilters() {
       '<div class="filt">🔎<input data-filter="texto" value="' +
       esc(tarjeta.texto) +
       '" placeholder="Buscar título..." /></div>',
+    // Los selects que antes iban sueltos en la barra se agrupan en un solo
+    // popover: cuatro (o tres, en el Mapa) selects siempre a la vista era
+    // ruido para algo que se usa de vez en cuando. El buscador y los chips de
+    // acceso rápido sí quedan afuera, porque esos se usan todo el tiempo.
+    activos = [tarjeta.persona, tarjeta.sector, !flag && tarjeta.tipo, tarjeta.estado, flag && tarjeta.cursoEstado]
+      .filter(Boolean).length,
+    popoverFlds = (flag ? [html2, html5] : [html, html3, html2, html4])
+      .map((h) => h.replace('<div class="filt">', '<div class="filt filt-pop-item">'))
+      .join(""),
+    htmlFiltrosBtn =
+      '<div class="filt-pop-wrap"><button class="btn btn-ghost btn-sm" data-action="filtros:toggle" id="filtrosBtn">☰ Filtros' +
+      (activos ? '<span class="filt-badge">' + activos + "</span>" : "") +
+      '</button><div class="filt-pop hidden" id="filtrosPop">' +
+      popoverFlds +
+      '<button class="btn btn-ghost btn-sm" data-action="filt:clear" style="align-self:flex-start;margin-top:2px">Limpiar filtros</button></div></div>',
     lista = [
       {
         k: "venc",
@@ -3930,10 +3970,12 @@ function renderFilters() {
               '" title="Borrar vista">✕</span></button>',
           )
           .join("") +
-        '<button class="btn btn-ghost btn-sm" data-action="view:save" title="Guardar los filtros actuales como vista">💾 Guardar vista</button></div>',
-    html7 = '<button class="btn btn-ghost btn-sm filt-clear" data-action="filt:clear">Limpiar</button>';
-  $("#filters").innerHTML =
-    (flag ? [html2, html5, html6] : [html, html3, html2, html4, html6]).join("") + txt + txt2 + html7;
+        '<button class="btn btn-ghost btn-sm" data-action="view:save" title="Guardar los filtros actuales como vista">💾 Guardar vista</button></div>';
+  $("#filters").innerHTML = html6 + htmlFiltrosBtn + txt + txt2;
+  if (popAbierto) {
+    const p = $("#filtrosPop");
+    if (p) p.classList.remove("hidden");
+  }
 }
 const VIEW_TITLES = {
   kanban: ["Planner", "Tareas y proyectos por estado"],
@@ -4905,8 +4947,8 @@ function renderEduArchivos() {
     return (
       '<div class="edu-overview-head">\n        <div class="edu-kpis">' +
       eduKpi(cantidad, "archivos", "var(--coto-blue)") +
-      eduKpi(cantidad2, "listos", "#2E9E8F") +
-      eduKpi(cantidad - cantidad2, "por hacer", "#E2A03F") +
+      eduKpi(cantidad2, "listos", "var(--ok)") +
+      eduKpi(cantidad - cantidad2, "por hacer", "var(--warn)") +
       eduKpi(cantidad3 + "/" + Object.keys(SECTORES).length, "sectores", "#5A1ED2") +
       '</div>\n        <div style="font-size:12.5px;color:var(--ink-soft);margin-top:8px">Base de archivos de Edu Point por sector — en qué instancia está cada uno. Tocá un sector para ver sus archivos y qué falta terminar, corregir o mejorar.</div>\n      </div>\n      <div class="edu-sec-grid">' +
       txt +
@@ -5503,13 +5545,13 @@ function renderResumen() {
     '<div style="margin-bottom:6px"><h2 style="font-size:21px">Resumen del área</h2>\n    <div style="color:var(--ink-soft);font-size:13px;margin:2px 0 14px">Hola ' +
     esc(state.user || "") +
     ' 👋 — panorama de “lo que hacemos” y “lo que tenemos”.</div></div>\n    <div class="res-grid">\n      ' +
-    fn(lista.length, "Proyectos en el tablero", "en movimiento", "#006EA0", "kanban") +
+    fn(lista.length, "Proyectos en el tablero", "en movimiento", "var(--coto-blue)", "kanban") +
     "\n      " +
-    fn(cantidad3, "En revisión", "por publicar", "#E2A03F", "kanban") +
+    fn(cantidad3, "En revisión", "por publicar", "var(--warn)", "kanban") +
     "\n      " +
-    fn(cantidad4, "Vencidas", "requieren atención", cantidad4 ? "#D8553F" : "#2E9E8F", "kanban") +
+    fn(cantidad4, "Vencidas", "requieren atención", cantidad4 ? "var(--bad)" : "var(--ok)", "kanban") +
     "\n      " +
-    fn(cantidad, "Cursos activos", "en el mapa", "#2E9E8F", "mapa", "cursos") +
+    fn(cantidad, "Cursos activos", "en el mapa", "var(--ok)", "mapa", "cursos") +
     "\n      " +
     fn(cantidad2, "Edu Points", "colocados", "#546E7A", "mapa", "edu-points") +
     '\n    </div>\n    <div class="res-cols">\n      <div>\n        <div class="res-card"><h3>⚑ Próximos vencimientos <span class="mini">' +
@@ -5876,13 +5918,39 @@ function renderPanel() {
     (inInventory(tarjeta) ? " · ◎ activo" : "") +
     '</div>\n        <input class="chk-text" style="font-size:18px;font-weight:700;font-family:var(--titulo);width:100%;margin-top:4px" value="' +
     esc(tarjeta.titulo) +
-    '" data-field="titulo">\n      </div>\n      <button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button>\n    </div>\n    <div class="panel-body">\n      ' +
+    '" data-field="titulo">\n      </div>\n      <div class="panel-headtop">' +
+    savestateHTML() +
+    '<button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>\n    </div>\n    <div class="panel-body">\n      ' +
     txt7 +
     '\n      <div class="fld-row">\n        <div class="fld"><label>Tipo</label><select data-field="tipo">' +
     txt +
     '</select></div>\n        <div class="fld"><label>Estado</label><select data-field="estado">' +
     txt2 +
-    '</select></div>\n      </div>\n      <div class="fld-row">\n        <div class="fld"><label>Inicio</label><input type="date" value="' +
+    '</select></div>\n      </div>\n      <div class="fld"><label>Responsable</label><select data-field="responsable"><option value="">— sin asignar —</option>' +
+    TEAM.map(
+      (miembro) =>
+        '<option value="' +
+        miembro.id +
+        '" ' +
+        (tarjeta.responsable === miembro.id ? "selected" : "") +
+        ">" +
+        miembro.nombre +
+        "</option>",
+    ).join("") +
+    '</select><span class="fld-hint">Quién rinde cuentas por la tarjeta (uno solo).</span></div>\n\n      ' +
+    // "Más detalles" arranca colapsado en una tarjeta nueva: fechas, prioridad,
+    // recurrencia, asignados y sectores no hacen falta para crear algo rápido.
+    // Si la tarjeta ya trae alguno cargado, arranca abierto — lo que ya está
+    // puesto no se esconde.
+    '<details class="acc sec-acc" ' +
+    (tarjeta.inicio ||
+    tarjeta.fin ||
+    tarjeta.prioridad === "alta" ||
+    (tarjeta.asignados || []).length ||
+    (tarjeta.sectores || []).length
+      ? "open"
+      : "") +
+    '><summary class="sub">Más detalles<span class="ring"></span></summary>\n        <div class="acc-body">\n      <div class="fld-row">\n        <div class="fld"><label>Inicio</label><input type="date" value="' +
     (tarjeta.inicio || "") +
     '" data-field="inicio"></div>\n        <div class="fld"><label>Fin ' +
     (vencida ? '· <span style="color:var(--bad)">vencida</span>' : "") +
@@ -5894,22 +5962,16 @@ function renderPanel() {
     (tarjeta.prioridad === "alta" ? "selected" : "") +
     ">Alta</option></select></div>" +
     html2 +
-    '</div>\n      <div class="fld"><label>Responsable</label><select data-field="responsable"><option value="">— sin asignar —</option>' +
-    TEAM.map(
-      (miembro) =>
-        '<option value="' +
-        miembro.id +
-        '" ' +
-        (tarjeta.responsable === miembro.id ? "selected" : "") +
-        ">" +
-        miembro.nombre +
-        "</option>",
-    ).join("") +
-    '</select><span class="fld-hint">Quién rinde cuentas por la tarjeta (uno solo).</span></div>\n      <div class="fld"><label>Asignados</label><div class="chiplist">' +
+    '</div>\n      <div class="fld"><label>Asignados</label><div class="chiplist">' +
     txt3 +
     '</div><span class="fld-hint">Todos los que trabajan en ella (los que quieras).</span></div>\n      ' +
     sectorPicker(tarjeta) +
-    '\n\n      <details class="acc sec-acc" open><summary class="sub">Checklist · ' +
+    "\n        </div></details>\n\n      " +
+    // El checklist arranca colapsado si está vacío, igual que Enlaces y
+    // Comentarios: en cuanto tiene el primer ítem, se abre solo.
+    '<details class="acc sec-acc" ' +
+    (avance.total ? "open" : "") +
+    '><summary class="sub">Checklist · ' +
     avance.done +
     "/" +
     avance.total +
@@ -6203,6 +6265,11 @@ document.addEventListener("click", (ev) => {
     case "menu:toggle": {
       const el5 = $("#userMenu");
       if (el5) el5.classList.toggle("hidden");
+      break;
+    }
+    case "filtros:toggle": {
+      const el5b = $("#filtrosPop");
+      if (el5b) el5b.classList.toggle("hidden");
       break;
     }
     case "user:logout": {
@@ -6962,12 +7029,16 @@ function pushRecent(id2) {
 }
 (document.addEventListener("click", (ev) => {
   const el = $("#userMenu");
-  if (!el || el.classList.contains("hidden")) return;
-  if (
-    !ev.target.closest('[data-action="menu:toggle"]') &&
-    (!ev.target.closest("#userMenu") || ev.target.closest(".menu-item"))
-  )
-    el.classList.add("hidden");
+  if (el && !el.classList.contains("hidden")) {
+    if (
+      !ev.target.closest('[data-action="menu:toggle"]') &&
+      (!ev.target.closest("#userMenu") || ev.target.closest(".menu-item"))
+    )
+      el.classList.add("hidden");
+  }
+  const elFiltros = $("#filtrosPop");
+  if (elFiltros && !elFiltros.classList.contains("hidden") && !ev.target.closest(".filt-pop-wrap"))
+    elFiltros.classList.add("hidden");
 }),
   document.addEventListener("keydown", (ev) => {
     if ((ev.metaKey || ev.ctrlKey) && (ev.key === "k" || ev.key === "K")) {
@@ -7136,7 +7207,7 @@ function showBanner() {
   let val2;
   if (val === "supabase")
     val2 =
-      '<div class="note" style="background:#E7F6EF;border-color:#A8D8C0;color:#1c6b4a">🟢 <b>Equipo conectado (Supabase)</b> — lo que carga cada uno lo ven todos en vivo.</div>';
+      '<div class="note" style="background:var(--ok-soft);border-color:color-mix(in srgb, var(--ok) 40%, transparent);color:var(--ok)">🟢 <b>Equipo conectado (Supabase)</b> — lo que carga cada uno lo ven todos en vivo.</div>';
   else {
     if (val === "error")
       val2 =
