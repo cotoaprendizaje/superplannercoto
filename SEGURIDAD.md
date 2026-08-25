@@ -49,23 +49,51 @@ datos. Conviene tratarla como un cartel, no como una cerradura.
 
 ## Qué se puede hacer
 
-Ordenado por esfuerzo:
+### 1. Cambiar la clave de ingreso (un minuto)
 
-1. **Cambiar la clave de ingreso.** Un minuto, y saca de circulación la que
-   estuvo publicada.
+Desde Ajustes, dentro de la app. Saca de circulación la que estuvo publicada en
+este repositorio.
 
-2. **Cerrar RLS y poner la escritura detrás de algo.** La lectura anónima quizá
-   sea tolerable; la escritura anónima significa que cualquiera puede vaciarles
-   el tablero. Como mínimo, que la tabla no acepte `INSERT`/`UPDATE` anónimos.
+### 2. Copias de resguardo (ya está hecho)
 
-3. **Usar Supabase Auth.** Una cuenta por persona del equipo y políticas RLS que
-   exijan sesión iniciada. Es la solución correcta y la que hace que la clave de
-   ingreso pase a ser de verdad una cerradura. Implica pantalla de login real y
-   migrar el gate actual.
+Cada guardado deja una copia en el navegador de quien está usando la app, hasta
+ocho, espaciadas al menos 15 minutos. Se restauran desde **Ajustes → Copias de
+resguardo**. Si alguien vacía el tablero, cualquiera del equipo que lo haya
+tenido abierto en los últimos días puede devolverlo a como estaba.
 
-4. **Backups.** Mientras la escritura esté abierta, un export periódico
-   (Ajustes → exportar JSON) es la red de contención barata.
+Son copias locales: viven en el navegador de cada uno, no en el servidor. Si
+todos limpian los datos del navegador el mismo día, no quedan. Para algo más
+duradero, un `Ajustes → Exportar JSON` cada tanto y guardarlo en el Drive del
+área.
 
-Hacer privado el repositorio ayuda poco por sí solo: la clave igual viaja en el
-`index.html` publicado. El problema se arregla del lado de Supabase, no
-escondiendo el código.
+### 3. Cerrar la escritura anónima
+
+Acá hay una trampa que conviene tener clara antes de tocar nada: **la app
+escribe usando la misma clave anónima con la que lee**. Si en Supabase se
+bloquean los `INSERT`/`UPDATE` anónimos y no se cambia nada más, la app deja de
+poder guardar. No alcanza con apretar un botón en el panel.
+
+Para cerrar la escritura de verdad hace falta que la app se autentique. La
+opción más corta, que además deja el ingreso actual casi igual:
+
+1. En Supabase, **Authentication → Users**, crear un usuario para el equipo
+   (por ejemplo `elearning@coto.com.ar`) con una contraseña.
+2. En **Authentication → Policies**, sobre la tabla `planner`:
+   - `SELECT`: permitir a `authenticated` (y a `anon` sólo si les sirve que se
+     pueda leer sin entrar).
+   - `INSERT` / `UPDATE`: **sólo** `authenticated`.
+3. En la app, la pantalla de ingreso pasa a iniciar sesión de verdad contra
+   Supabase con esa cuenta, en vez de comparar un hash local. La clave grupal
+   que ya escriben pasa a ser la contraseña de esa cuenta.
+
+El paso 3 es trabajo en `src/app.js` y hay que hacerlo **junto** con el 2, si no
+la app queda sin poder guardar. Los pasos 1 y 2 son del panel de Supabase.
+
+Una cuenta por persona (en vez de una compartida) es mejor todavía —permite
+saber quién cambió qué y dar de baja a alguien sin cambiarle la clave al resto—
+pero implica manejar altas y bajas.
+
+### Sobre hacer privado el repositorio
+
+Ayuda poco por sí solo: la clave igual viaja en el `index.html` publicado.
+El problema se arregla del lado de Supabase, no escondiendo el código.
