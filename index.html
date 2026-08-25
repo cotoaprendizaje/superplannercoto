@@ -7778,8 +7778,11 @@ const BACKEND = {
           "?id=eq." +
           encodeURIComponent(BACKEND.fila) +
           "&select=data",
+        // Sin no-store, un proxy o el caché del navegador puede devolver una
+        // copia vieja del tablero y el merge escribiría sobre datos frescos.
         v68 = await fetch(v67, {
           headers: v63(),
+          cache: "no-store",
         });
       if (!v68.ok) throw new Error("Supabase " + v68.status);
       const v69 = await v68.json();
@@ -7843,25 +7846,119 @@ const BACKEND = {
       },
     };
   })();
+// El backend guarda un único documento JSON, así que dos personas editando a
+// la vez se pisaban: la última en guardar mandaba su copia entera del tablero
+// y borraba lo que la otra hubiera cargado mientras tanto. Para evitarlo cada
+// tarjeta lleva su propia marca de tiempo y, antes de escribir, se mezcla lo
+// local con lo remoto tarjeta por tarjeta.
+
+const TOMBSTONE_TTL = 30 * 24 * 60 * 60 * 1000;
+
+// La huella ignora updatedAt: si no, cada tarjeta se vería modificada apenas
+// se le pone la marca y todas quedarían con la fecha del último guardado.
+function cardFingerprint(card) {
+  const { updatedAt, ...rest } = card;
+  return JSON.stringify(rest);
+}
+
+let savedFingerprints = new Map();
+
+function stampEditedCards() {
+  const now = Date.now();
+  for (const card of state.cards) {
+    const fp = cardFingerprint(card);
+    if (savedFingerprints.get(card.id) !== fp) {
+      ((card.updatedAt = now), savedFingerprints.set(card.id, fp));
+    }
+  }
+}
+
+function rememberFingerprints(cards) {
+  savedFingerprints = new Map(cards.map((c) => [c.id, cardFingerprint(c)]));
+}
+
+function dropCards(ids) {
+  const gone = new Set(ids),
+    now = Date.now();
+  ((state.cards = state.cards.filter((c) => !gone.has(c.id))),
+    gone.forEach((id) => {
+      ((state.deleted[id] = now), savedFingerprints.delete(id));
+    }));
+}
+
+function pruneTombstones(deleted) {
+  const cutoff = Date.now() - TOMBSTONE_TTL,
+    out = {};
+  for (const id in deleted) if (deleted[id] > cutoff) out[id] = deleted[id];
+  return out;
+}
+
+// Gana la copia con updatedAt más nuevo. Una tarjeta borrada sólo revive si
+// alguien la editó después de que se la borró.
+function mergeCards(localCards, remoteCards, localDeleted, remoteDeleted) {
+  const byId = new Map(remoteCards.map((c) => [c.id, c]));
+  for (const local of localCards) {
+    const remote = byId.get(local.id);
+    if (!remote || (local.updatedAt || 0) >= (remote.updatedAt || 0)) byId.set(local.id, local);
+  }
+  const deleted = Object.assign({}, remoteDeleted);
+  for (const id in localDeleted) deleted[id] = Math.max(deleted[id] || 0, localDeleted[id]);
+  for (const id in deleted) {
+    const card = byId.get(id);
+    if (card && (card.updatedAt || 0) <= deleted[id]) byId.delete(id);
+  }
+  return {
+    cards: [...byId.values()],
+    deleted: pruneTombstones(deleted),
+  };
+}
+
+function docSnapshot() {
+  return {
+    cards: state.cards,
+    templates: state.customTpl,
+    sectores: SECTORES,
+    team: TEAM,
+    appPassHash: state.appPassHash,
+    agenda: state.agenda,
+    deleted: state.deleted,
+  };
+}
+
+// Trae lo remoto, lo mezcla con lo local y adopta el resultado. Devuelve las
+// tarjetas que llegaron de otra persona, para poder avisar.
+async function mergeRemoteIntoState() {
+  const remote = await Store.remote();
+  if (!remote || !Array.isArray(remote.cards)) return [];
+  const before = new Map(state.cards.map((c) => [c.id, cardFingerprint(c)])),
+    merged = mergeCards(state.cards, remote.cards, state.deleted, remote.deleted || {});
+  ((state.cards = merged.cards), (state.deleted = merged.deleted));
+  if (remote.templates) state.customTpl = Object.assign({}, remote.templates, state.customTpl);
+  if (remote.sectores) Object.assign(SECTORES, remote.sectores);
+  Array.isArray(remote.team) &&
+    remote.team.length &&
+    ((TEAM.length = 0), remote.team.forEach((m) => TEAM.push(m)));
+  if (remote.agenda && typeof remote.agenda === "object")
+    state.agenda = Object.assign({}, remote.agenda, state.agenda);
+  return state.cards.filter((c) => before.get(c.id) !== cardFingerprint(c));
+}
+
 let saveTimer = null;
 function persist() {
   if (useSupabase() && state.connOk === false) return;
   (clearTimeout(saveTimer),
     (saveTimer = setTimeout(async () => {
-      await Store.save({
-        cards: state.cards,
-        templates: state.customTpl,
-        sectores: SECTORES,
-        team: TEAM,
-        appPassHash: state.appPassHash,
-        agenda: state.agenda,
-      });
-      if (useSupabase())
-        state._remoteHash =
-          JSON.stringify(state.cards) +
-          JSON.stringify(SECTORES) +
-          JSON.stringify(TEAM) +
-          JSON.stringify(state.agenda);
+      stampEditedCards();
+      if (useSupabase()) {
+        // Releer y mezclar justo antes de escribir es lo que evita pisar el
+        // trabajo de otro. Si la lectura falla, se guarda igual: perder el
+        // cambio propio es peor que arriesgar un merge.
+        try {
+          await mergeRemoteIntoState();
+        } catch (e) {}
+      }
+      const doc = docSnapshot();
+      (await Store.save(doc), rememberFingerprints(state.cards));
       showBanner();
     }, 250)));
 }
@@ -7897,7 +7994,6 @@ const state = {
   sel: [],
   savedViews: [],
   connOk: true,
-  _remoteHash: "",
   eduSector: null,
   eduEst: "",
   eduQ: "",
@@ -7909,6 +8005,7 @@ const state = {
   agendaEdit: "",
   agendaWho: "",
   agenda: {},
+  deleted: {},
 };
 function hashStr(v81) {
   v81 = String(v81);
@@ -10748,8 +10845,7 @@ document.addEventListener("click", (v671) => {
     case "bulk:del": {
       if (!state.sel.length) break;
       if (!confirm("¿Eliminar " + state.sel.length + " tarjeta(s)?")) break;
-      const v694 = new Set(state.sel);
-      ((state.cards = state.cards.filter((v695) => !v694.has(v695.id))),
+      (dropCards(state.sel),
         (state.sel = []),
         touch(),
         render(),
@@ -11461,7 +11557,7 @@ function doDelete() {
   const v833 = current();
   if (!v833) return;
   if (!confirm("¿Eliminar “" + v833.titulo + "”?")) return;
-  ((state.cards = state.cards.filter((v834) => v834.id !== v833.id)), touch(), closePanel());
+  (dropCards([v833.id]), touch(), closePanel());
 }
 const ICON_SUN =
     '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
@@ -12202,7 +12298,12 @@ function runImport() {
     return;
   }
   if (!confirm("Esto reemplaza todos los datos actuales. ¿Seguir?")) return;
-  ((state.cards = v959.cards), (state.customTpl = v959.templates || {}));
+  // El merge del guardado une tarjetas, así que un reemplazo tiene que dejar
+  // lápida en todo lo que el backup no trae; si no, lo viejo revive.
+  const restoredIds = new Set(v959.cards.map((c) => c.id));
+  (dropCards(state.cards.filter((c) => !restoredIds.has(c.id)).map((c) => c.id)),
+    (state.cards = v959.cards),
+    (state.customTpl = v959.templates || {}));
   if (v959.sectores) Object.assign(SECTORES, v959.sectores);
   (Array.isArray(v959.team) &&
     v959.team.length &&
@@ -12287,6 +12388,8 @@ async function boot() {
     const v971 = await Store.load();
     if (v971 && Array.isArray(v971.cards)) {
       ((state.cards = v971.cards), (state.customTpl = v971.templates || {}));
+      if (v971.deleted && typeof v971.deleted === "object")
+        state.deleted = pruneTombstones(v971.deleted);
       if (v971.sectores) Object.assign(SECTORES, v971.sectores);
       Array.isArray(v971.team) &&
         v971.team.length &&
@@ -12348,6 +12451,9 @@ async function boot() {
       };
     v976.sectores = (v976.sectores || []).map((v977) => (SECTORES[v977] ? v977 : SLUG_MAP[v977] || v977));
   }),
+    // Después de normalizar, no antes: si no, el relleno de campos contaría
+    // como edición y este cliente ganaría todos los conflictos al guardar.
+    rememberFingerprints(state.cards),
     (state.ready = true),
     updateGatePass(),
     showBanner(),
@@ -12361,24 +12467,17 @@ function startPolling() {
   if (!useSupabase()) return;
   setInterval(async () => {
     if (state.connOk === false) return;
-    if ($("#panel").classList.contains("open")) return;
-    if (!$("#modal").classList.contains("hidden")) return;
     try {
-      const v979 = await Store.remote();
-      if (!v979 || !Array.isArray(v979.cards)) return;
-      const v980 =
-        JSON.stringify(v979.cards) +
-        JSON.stringify(v979.sectores || {}) +
-        JSON.stringify(v979.team || []) +
-        JSON.stringify(v979.agenda || {});
-      if (v980 === state._remoteHash) return;
-      ((state._remoteHash = v980), (state.cards = v979.cards));
-      if (v979.templates) state.customTpl = v979.templates;
-      if (v979.sectores) Object.assign(SECTORES, v979.sectores);
-      Array.isArray(v979.team) &&
-        v979.team.length &&
-        ((TEAM.length = 0), v979.team.forEach((v981) => TEAM.push(v981)));
-      if (v979.agenda && typeof v979.agenda === "object") state.agenda = v979.agenda;
+      // Antes esto se salteaba entero con el panel o un modal abierto, así que
+      // quien editaba se quedaba con una copia vieja del tablero y al guardar
+      // borraba lo que los demás habían cargado. Ahora siempre se mezcla; lo
+      // único que se pospone es volver a dibujar, para no arrancarle el
+      // formulario de las manos a quien está escribiendo.
+      const editing =
+        $("#panel").classList.contains("open") || !$("#modal").classList.contains("hidden"),
+        changed = await mergeRemoteIntoState();
+      if (!changed.length) return;
+      if (editing) return;
       (injectSectorStyles(), render());
     } catch (v982) {}
   }, BACKEND.pollMs);

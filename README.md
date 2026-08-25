@@ -24,8 +24,10 @@ index.html        ← generado, es lo que se despliega. No editar a mano.
 ## Trabajar en la app
 
 ```bash
+npm install       # una sola vez (Playwright, para los tests)
 npm run build     # regenera index.html desde src/
 npm start         # sirve la carpeta en http://localhost:8080
+npm test          # pruebas de sincronización
 ```
 
 El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
@@ -33,12 +35,28 @@ El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
 > `index.html` es un artefacto generado. Si lo editás directo, el siguiente
 > build te pisa los cambios.
 
+Para probar con datos de ejemplo en vez de los reales, poné
+`window.__CF_SEED__ = true` en la consola antes de cargar la página.
+
 ## Persistencia
 
 Los datos se guardan en una fila de Supabase (`BACKEND` en `src/app.js`) y se
 sincronizan por polling cada 5 segundos. Si no hay backend disponible, la app
 cae a `window.storage` y, en última instancia, a memoria (modo demo: los
 cambios se pierden al recargar).
+
+Como el backend guarda **un único documento JSON** con todo el tablero, el
+riesgo permanente es que dos personas editando a la vez se pisen. Para evitarlo:
+
+- cada tarjeta lleva su propio `updatedAt`;
+- antes de escribir, `persist()` relee lo remoto y mezcla tarjeta por tarjeta,
+  quedándose con la versión más nueva de cada una;
+- los borrados dejan una lápida en `state.deleted` (se podan a los 30 días) para
+  que una tarjeta borrada no reviva desde la copia de otra persona.
+
+`npm test` fija ese comportamiento levantando un backend de mentira y dos
+navegadores que editan al mismo tiempo. Si alguien vuelve a hacer que el
+guardado escriba la copia local entera, esas pruebas se ponen en rojo.
 
 ## Ingreso
 

@@ -6,6 +6,10 @@
   "type": "module",
   "scripts": {
     "build": "node build.mjs",
-    "start": "npm run build && npx --yes http-server . -p 8080 -c-1"
+    "start": "npm run build && npx --yes http-server . -p 8080 -c-1",
+    "test": "npm run build && node test/sync.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
   }
 }
