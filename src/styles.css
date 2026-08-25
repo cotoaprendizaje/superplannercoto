@@ -40,6 +40,16 @@
   font-display: swap;
   src: url("../assets/fonts/Roboto-Italic.woff2") format("woff2");
 }
+[data-cat] {
+  --cat: #8a97b4;
+  --cat-strong: color-mix(in srgb, var(--cat) 74%, var(--coto-navy));
+  --cat-soft: color-mix(in srgb, var(--cat) 16%, #ffffff);
+  --on-cat: #fff;
+}
+[data-theme="dark"] [data-cat] {
+  --cat-strong: color-mix(in srgb, var(--cat) 70%, #ffffff);
+  --cat-soft: color-mix(in srgb, var(--cat) 26%, #11192b);
+}
 [data-cat="cajas"] {
   --cat-1: #aa0028;
   --cat-2: #dc0032;
@@ -338,16 +348,25 @@
   --texto: "Roboto", system-ui, "Segoe UI", sans-serif;
   --coto-blue: #006ea0;
   --coto-navy: #1e2d46;
+  /* El header es navy sólido siempre, prenda o no prenda el modo oscuro:
+     ancla de marca fija, no cambia con el tema de la página. */
+  --chrome-bg: #0e1c30;
+  --chrome-line: rgba(255, 255, 255, 0.14);
+  --chrome-ink: #f5f8fd;
+  --chrome-ink-soft: #a9b8d6;
   --coto-white: #ebf0ff;
-  --line: #e4e9f2;
-  --line-soft: #edf1f8;
+  /* Antes casi invisible (#e4e9f2 sobre blanco): las cajas flotaban sin
+     borde real y dependían de una sombra al 5% de opacidad para separarse
+     del fondo. Ahora el borde hace el trabajo por sí solo. */
+  --line: #c7d1e3;
+  --line-soft: #dde4f0;
   --coto-blue-deep: #00466e;
   --coto-chambray: #96a5be;
   --bg: #e7ecf6;
   --surface: #ffffff;
-  --surface-2: #f3f6fc;
+  --surface-2: #eef2fa;
   --ink: var(--coto-navy);
-  --ink-soft: #586780;
+  --ink-soft: #465269;
   --link: var(--coto-blue);
   --grad-brand: linear-gradient(
     135deg,
@@ -355,26 +374,32 @@
     var(--coto-blue)
   );
   --shadow-sm:
-    0 1px 2px rgba(30, 45, 70, 0.05), 0 1px 3px rgba(30, 45, 70, 0.04);
+    0 1px 2px rgba(20, 32, 56, 0.08), 0 1px 3px rgba(20, 32, 56, 0.06);
   --shadow:
-    0 2px 6px rgba(30, 45, 70, 0.05), 0 10px 28px rgba(30, 45, 70, 0.07);
+    0 3px 10px rgba(20, 32, 56, 0.08), 0 14px 32px rgba(20, 32, 56, 0.1);
   --shadow-lg:
-    0 10px 24px rgba(30, 45, 70, 0.1), 0 32px 64px rgba(30, 45, 70, 0.15);
-  --r-sm: 10px;
-  --r-s: 14px;
-  --r-l: 20px;
+    0 16px 32px rgba(20, 32, 56, 0.14), 0 40px 76px rgba(20, 32, 56, 0.2);
+  --r-sm: 12px;
+  --r-s: 16px;
+  --r-l: 22px;
   --pill: 999px;
-  --r-xl: 28px;
-  --r-squircle: 20px;
+  --r-xl: 30px;
+  --r-squircle: 22px;
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --spring: cubic-bezier(0.34, 1.4, 0.5, 1);
-  --glass: rgba(255, 255, 255, 0.82);
-  --glass-2: rgba(255, 255, 255, 0.55);
-  --glass-brd: rgba(255, 255, 255, 0.9);
+  /* El "glassmorphism" (fondo translúcido + blur) se saca acá, en el
+     origen: --glass/--glass-2/--glass-brd/--blur alimentan ~50 reglas más
+     abajo en el archivo. En vez de tocarlas una por una, se redefinen
+     estas cuatro como sólidas y sin desenfoque — todo lo que las usa pasa
+     a ser opaco y nítido de una. Vidrio translúcido = todo se ve suave y
+     lavado, lo contrario de la fuerza y el contraste que se pidió. */
+  --glass: var(--surface);
+  --glass-2: var(--surface-2);
+  --glass-brd: var(--line);
   --glow: 0 18px 50px rgba(0, 120, 180, 0.2);
   --ambient: 0 18px 40px -26px rgba(0, 110, 160, 0.55);
-  --blur: saturate(170%) blur(18px);
+  --blur: none;
   --ok: #2e9e8f;
   --ok-soft: #e3f3f0;
   --warn: #e2a03f;
@@ -382,23 +407,25 @@
   --bad-soft: #fbe7e1;
 }
 [data-theme="dark"] {
-  --bg: #0e1521;
-  --surface: #161f33;
-  --surface-2: #1c2842;
+  /* Menos "navy lavado", más carbón: que los acentos de color salten en
+     vez de competir con un fondo azul medio. */
+  --bg: #090e17;
+  --surface: #121b2c;
+  --surface-2: #1f2b46;
   --ink: #eaf0fb;
   --ink-soft: #a3b0c8;
-  --line: #28344c;
-  --line-soft: #222e44;
+  --line: #3c4b6c;
+  --line-soft: #2b3752;
   --coto-white: #0e1521;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.32);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.32), 0 12px 30px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.45), 0 36px 70px rgba(0, 0, 0, 0.55);
-  --glass: rgba(255, 255, 255, 0.05);
-  --glass-2: rgba(255, 255, 255, 0.03);
-  --glass-brd: rgba(255, 255, 255, 0.1);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.36);
+  --shadow: 0 3px 10px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.42);
+  --shadow-lg: 0 16px 34px rgba(0, 0, 0, 0.48), 0 40px 76px rgba(0, 0, 0, 0.58);
+  --glass: var(--surface);
+  --glass-2: var(--surface-2);
+  --glass-brd: var(--line);
   --glow: 0 20px 54px rgba(38, 179, 232, 0.28);
   --ambient: 0 18px 44px -24px rgba(38, 179, 232, 0.5);
-  --blur: saturate(140%) blur(14px);
+  --blur: none;
   --ok-soft: #17332e;
   --bad-soft: #3a201b;
 }
@@ -473,16 +500,6 @@ button {
 }
 .hidden {
   display: none !important;
-}
-[data-cat] {
-  --cat: #8a97b4;
-  --cat-strong: color-mix(in srgb, var(--cat) 74%, var(--coto-navy));
-  --cat-soft: color-mix(in srgb, var(--cat) 16%, #ffffff);
-  --on-cat: #fff;
-}
-[data-theme="dark"] [data-cat] {
-  --cat-strong: color-mix(in srgb, var(--cat) 70%, #ffffff);
-  --cat-soft: color-mix(in srgb, var(--cat) 26%, #11192b);
 }
 .btn {
   display: inline-flex;
@@ -567,9 +584,10 @@ button {
   line-height: 1.4;
 }
 .badge-cat {
-  background: color-mix(in srgb, var(--cat) 13%, transparent);
-  color: var(--cat-strong);
-  border: 1px solid color-mix(in srgb, var(--cat) 28%, transparent);
+  background: var(--cat);
+  color: var(--on-cat);
+  border: none;
+  font-weight: 700;
 }
 .badge-tbd {
   background: var(--surface-2);
@@ -577,9 +595,10 @@ button {
   border: 1px dashed var(--line);
 }
 .prio {
-  background: var(--bad-soft);
-  color: var(--bad);
+  background: var(--bad);
+  color: #fff;
   border-color: transparent;
+  font-weight: 700;
 }
 .tipo-pill {
   display: inline-flex;
@@ -651,7 +670,7 @@ button {
 .brand-mark {
   width: 42px;
   height: 42px;
-  border-radius: 13px;
+  border-radius: var(--r-sm);
   background: linear-gradient(135deg, var(--coto-blue), var(--coto-navy));
   position: relative;
   box-shadow: var(--shadow);
@@ -661,7 +680,7 @@ button {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 13px;
+  border-radius: var(--r-sm);
   background: radial-gradient(
       circle at 30% 30%,
       rgba(255, 255, 255, 0.5) 1.5px,
@@ -758,7 +777,7 @@ button {
   min-width: 206px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-s);
   box-shadow: var(--shadow-lg);
   padding: 6px;
   z-index: 45;
@@ -833,8 +852,8 @@ button {
   margin: 0 0 16px;
 }
 .view-head h2 {
-  font-size: 21px;
-  letter-spacing: -0.4px;
+  font-size: 28px;
+  letter-spacing: -0.5px;
   color: var(--ink);
 }
 .view-head p {
@@ -946,7 +965,7 @@ button {
   min-width: 220px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-s);
   box-shadow: var(--shadow-lg);
   padding: 12px;
   z-index: 45;
@@ -968,7 +987,7 @@ button {
 .kanban {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  gap: 20px;
   align-items: start;
 }
 .kcol {
@@ -1022,7 +1041,7 @@ button {
   box-shadow: var(--shadow);
   transition: 0.15s;
   position: relative;
-  border-left: 4px solid var(--cat, var(--line));
+  border-left: 6px solid var(--cat, var(--line));
 }
 .kcard:hover {
   box-shadow: var(--shadow-lg);
@@ -1461,12 +1480,12 @@ button {
   align-items: center;
   gap: 6px;
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 4px 6px 4px 11px;
   border-radius: var(--pill);
-  background: color-mix(in srgb, var(--cat) 14%, transparent);
-  color: var(--cat-strong);
-  border: 1px solid color-mix(in srgb, var(--cat) 28%, transparent);
+  background: var(--cat);
+  color: var(--on-cat);
+  border: none;
 }
 .sec-x {
   cursor: pointer;
@@ -1475,13 +1494,14 @@ button {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: color-mix(in srgb, var(--cat) 22%, transparent);
+  background: color-mix(in srgb, var(--on-cat) 22%, transparent);
+  color: var(--on-cat);
   font-size: 12px;
   line-height: 1;
 }
 .sec-x:hover {
-  background: var(--cat);
-  color: var(--on-cat);
+  background: var(--on-cat);
+  color: var(--cat);
 }
 .sec-search {
   position: relative;
@@ -1493,7 +1513,7 @@ button {
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 9px 11px;
   outline: 0;
 }
@@ -1576,12 +1596,41 @@ button {
   color: var(--ink-soft);
   margin-top: 1px;
 }
+/* El header del panel ahora lleva el color del sector de la tarjeta: de
+   un vistazo, sin leer nada, se sabe a qué sector pertenece lo que se
+   está editando. Sin sector, cae al celeste de marca. */
 .panel-head {
   padding: 16px 18px;
-  border-bottom: 1px solid var(--line);
+  background: var(--cat, var(--coto-blue));
+  color: var(--on-cat, #fff);
+  border-bottom: none;
   display: flex;
   align-items: flex-start;
   gap: 10px;
+}
+.panel-head .tipo-pill {
+  color: var(--on-cat, #fff);
+  opacity: 0.9;
+}
+.panel-head input[data-field="titulo"] {
+  color: var(--on-cat, #fff);
+  background: color-mix(in srgb, var(--on-cat, #fff) 14%, transparent);
+  border-radius: var(--r-sm);
+  padding: 4px 8px;
+  margin-left: -8px;
+}
+.panel-head input[data-field="titulo"]::placeholder {
+  color: color-mix(in srgb, var(--on-cat, #fff) 60%, transparent);
+}
+.panel-head .btn-ghost {
+  color: var(--on-cat, #fff);
+}
+.panel-head .btn-ghost:hover {
+  background: color-mix(in srgb, var(--on-cat, #fff) 16%, transparent);
+}
+.panel-head .savestate {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: transparent;
 }
 .panel-headtop {
   display: flex;
@@ -1660,7 +1709,7 @@ button {
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 9px 11px;
   outline: 0;
   width: 100%;
@@ -1761,7 +1810,7 @@ button {
 }
 .fase-box {
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   padding: 10px;
   background: var(--surface-2);
   display: flex;
@@ -1775,7 +1824,7 @@ button {
     var(--surface)
   );
   border: 1px solid color-mix(in srgb, var(--coto-blue) 30%, var(--line));
-  border-radius: 14px;
+  border-radius: var(--r-s);
   padding: 13px;
   display: flex;
   flex-direction: column;
@@ -1860,7 +1909,7 @@ button {
   padding: 22px;
 }
 .modal h2 {
-  font-size: 19px;
+  font-size: 23px;
   margin-bottom: 4px;
 }
 .modal .sub-t {
@@ -1877,7 +1926,7 @@ button {
 .tipo-opt {
   cursor: pointer;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-s);
   padding: 12px;
   text-align: center;
   background: var(--surface-2);
@@ -1918,7 +1967,7 @@ button {
 }
 .gate-card {
   background: var(--surface);
-  border-radius: 26px;
+  border-radius: var(--r-xl);
   box-shadow: var(--shadow-lg);
   padding: 34px;
   width: 440px;
@@ -1949,7 +1998,7 @@ button {
 .gate-person {
   cursor: pointer;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-s);
   padding: 11px;
   display: flex;
   align-items: center;
@@ -2055,25 +2104,34 @@ button {
 }
 .kpi:hover {
   box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
 }
 .kpi::after {
   content: none;
 }
+/* Antes: caja blanca con el número coloreado. Ahora el color manda la
+   tarjeta entera — de un vistazo se distingue el estado sin leer el
+   número. */
+.kpi {
+  background: var(--kpi, var(--coto-blue));
+  border: none;
+}
 .kpi-num {
   font-family: var(--titulo);
-  font-size: 30px;
+  font-size: 32px;
   font-weight: 700;
   line-height: 1;
-  color: var(--kpi, var(--coto-blue));
+  color: #fff;
+  font-variant-numeric: tabular-nums;
 }
 .kpi-lbl {
   font-size: 12.5px;
-  font-weight: 600;
-  color: var(--ink-soft);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
 }
 .kpi-sub {
   font-size: 11px;
-  color: var(--ink-soft);
+  color: rgba(255, 255, 255, 0.72);
 }
 .res-cols {
   display: grid;
@@ -2202,7 +2260,7 @@ button {
   width: 100%;
   border: 1px dashed var(--line);
   background: 0 0;
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 8px 11px;
   font-family: inherit;
   font-size: 12.5px;
@@ -2324,7 +2382,7 @@ button {
 .cmt {
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   padding: 9px 11px;
   margin-bottom: 8px;
 }
@@ -2420,7 +2478,7 @@ button {
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   border-left: 3px solid var(--cat, var(--line));
 }
@@ -2534,7 +2592,7 @@ button {
 .set-row input[type="text"] {
   flex: 1;
   border: 1px solid var(--line);
-  border-radius: 9px;
+  border-radius: var(--r-sm);
   padding: 7px 10px;
   font-family: inherit;
   font-size: 13px;
@@ -2556,7 +2614,7 @@ button {
   max-height: 230px;
   overflow-y: auto;
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   padding: 10px;
 }
 .set-data {
@@ -3085,7 +3143,7 @@ html {
   font-family: inherit;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-left: 4px solid var(--cat);
+  border-left: 6px solid var(--cat);
   border-radius: var(--r-s);
   padding: 14px;
   box-shadow: var(--shadow);
@@ -3194,7 +3252,7 @@ html {
   gap: 10px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 8px 12px;
 }
 .edu-file.elim {
@@ -3628,47 +3686,37 @@ button.aday:hover {
   }
 }
 .topbar {
-  background: color-mix(in srgb, var(--surface) 58%, transparent);
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
-  border-bottom: 1px solid var(--glass-brd);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 50%, transparent) inset,
-    0 8px 28px rgba(20, 40, 80, 0.05);
+  background: var(--chrome-bg);
+  color: var(--chrome-ink);
+  border-bottom: 1px solid var(--chrome-line);
+  box-shadow: var(--shadow);
   padding: 11px 22px;
   gap: 16px;
 }
 .brand-t {
-  background: linear-gradient(120deg, var(--coto-navy), var(--coto-blue) 92%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--chrome-ink);
   font-size: 18px;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
-[data-theme="dark"] .brand-t {
-  background: linear-gradient(120deg, #dfeefb, var(--coto-blue));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
 .tabs {
-  background: color-mix(in srgb, var(--surface) 42%, transparent);
-  border: 1px solid var(--glass-brd);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--chrome-line);
+}
+.tab {
+  color: var(--chrome-ink-soft);
+}
+.tab:hover {
+  color: var(--chrome-ink);
 }
 .tab.active {
-  background: var(--surface);
-  color: var(--coto-blue);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--coto-blue) 22%, transparent),
-    0 6px 18px color-mix(in srgb, var(--coto-blue) 18%, transparent);
+  background: var(--coto-blue);
+  color: #fff;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--coto-blue) 55%, transparent);
 }
 .amonth,
 .gate-card,
 .hub-card,
-.kpi,
 .menu,
 .modal,
 .panel,
@@ -3689,7 +3737,7 @@ button.aday:hover {
   -webkit-backdrop-filter: var(--blur);
   backdrop-filter: var(--blur);
   border: 1px solid var(--glass-brd);
-  border-left: 4px solid var(--cat, var(--coto-blue));
+  border-left: 6px solid var(--cat, var(--coto-blue));
   box-shadow:
     0 1px 0 color-mix(in srgb, #fff 90%, transparent) inset,
     var(--shadow),
@@ -3730,14 +3778,20 @@ button.aday:hover {
   color: transparent;
 }
 .fab {
-  box-shadow: 0 12px 34px color-mix(in srgb, var(--coto-blue) 45%, transparent);
+  border: 3px solid var(--bg);
+  box-shadow: 0 14px 36px color-mix(in srgb, var(--coto-blue) 55%, transparent);
 }
-.filt,
+.fab:hover {
+  transform: scale(1.06);
+}
+.filt {
+  background: var(--surface);
+  border-color: var(--line);
+}
 .userchip {
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  border-color: var(--glass-brd);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--chrome-line);
+  color: var(--chrome-ink);
 }
 .overlay {
   background: rgba(18, 32, 58, 0.34);
@@ -3770,10 +3824,8 @@ button.aday:hover {
   gap: 13px;
 }
 .logo-lockup {
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.6) inset,
-    var(--shadow-sm);
-  border: 1px solid var(--glass-brd);
+  box-shadow: var(--shadow-sm);
+  border: none;
 }
 .top-tools {
   display: flex;
@@ -3781,10 +3833,8 @@ button.aday:hover {
   gap: 2px;
   padding: 4px;
   border-radius: var(--pill);
-  background: color-mix(in srgb, var(--surface) 42%, transparent);
-  border: 1px solid var(--glass-brd);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--chrome-line);
 }
 .ticon {
   display: grid;
@@ -3794,7 +3844,7 @@ button.aday:hover {
   border-radius: 50%;
   border: none;
   background: 0 0;
-  color: var(--ink-soft);
+  color: var(--chrome-ink-soft);
   cursor: pointer;
   position: relative;
   transition:
@@ -3803,8 +3853,8 @@ button.aday:hover {
     transform 0.2s var(--spring);
 }
 .ticon:hover {
-  background: color-mix(in srgb, var(--coto-blue) 13%, transparent);
-  color: var(--coto-blue);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--chrome-ink);
 }
 .ticon:active {
   transform: scale(0.92);
@@ -3824,16 +3874,15 @@ button.aday:hover {
 .userchip {
   padding: 4px 13px 4px 5px;
   border-radius: var(--pill);
-  background: color-mix(in srgb, var(--surface) 60%, transparent);
-  border: 1px solid var(--glass-brd);
-  box-shadow: var(--shadow-sm);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--chrome-line);
+  color: var(--chrome-ink);
+  box-shadow: none;
   font-weight: 700;
 }
 .userchip:hover {
-  border-color: color-mix(in srgb, var(--coto-blue) 45%, var(--glass-brd));
-  box-shadow:
-    var(--shadow-sm),
-    0 6px 16px color-mix(in srgb, var(--coto-blue) 14%, transparent);
+  border-color: color-mix(in srgb, var(--coto-blue) 55%, var(--chrome-line));
+  background: rgba(255, 255, 255, 0.12);
 }
 .appfoot {
   position: relative;
@@ -3927,25 +3976,11 @@ button.aday:hover {
     gap: 14px;
   }
 }
+/* El halo decorativo de fondo (dos manchas de color difuminadas, animadas)
+   se sacó: competía con las cajas por atención y le restaba nitidez al
+   conjunto. El fondo ahora es liso. */
 .aurora {
-  position: fixed;
-  inset: -15%;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.9;
-  background:
-    radial-gradient(
-      38% 42% at 78% 16%,
-      color-mix(in srgb, #0096d2 26%, transparent),
-      transparent 70%
-    ),
-    radial-gradient(
-      34% 40% at 18% 88%,
-      color-mix(in srgb, #6e328c 14%, transparent),
-      transparent 72%
-    );
-  animation: 20s ease-in-out infinite alternate auroraDrift;
-  will-change: transform, opacity;
+  display: none;
 }
 @keyframes auroraDrift {
   0% {
@@ -4098,7 +4133,7 @@ button.aday:hover {
   cursor: pointer;
   font-family: inherit;
   padding: 9px 11px;
-  border-radius: 12px;
+  border-radius: var(--r-sm);
   color: var(--ink);
   transition: background 0.12s var(--ease);
 }
@@ -4211,7 +4246,7 @@ button.aday:hover {
     width: auto;
     order: 0;
     z-index: 36;
-    border-radius: 20px;
+    border-radius: var(--r-l);
     justify-content: space-between;
     gap: 0;
     padding: 6px;
@@ -4235,7 +4270,7 @@ button.aday:hover {
     font-size: 9.5px;
     font-weight: 700;
     padding: 7px 8px;
-    border-radius: 14px;
+    border-radius: var(--r-s);
     white-space: nowrap;
     flex: 1 0 auto;
   }
@@ -4328,7 +4363,7 @@ button.aday:hover {
   font-size: 13px;
   background: var(--surface-2);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 8px 10px;
   color: var(--ink);
   outline: 0;
@@ -4450,7 +4485,7 @@ button.aday:hover {
   border: 1px solid var(--line);
   background: var(--surface);
   color: var(--ink);
-  border-radius: 10px;
+  border-radius: var(--r-sm);
   padding: 7px 10px;
   outline: 0;
 }
