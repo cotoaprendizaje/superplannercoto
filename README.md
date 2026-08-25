@@ -63,3 +63,6 @@ guardado escriba la copia local entera, esas pruebas se ponen en rojo.
 La pantalla de entrada pide identificarse con un nombre y, si hay clave
 configurada, una clave de ingreso. Ambas cosas se manejan del lado del cliente:
 sirven para saber quién carga qué, **no** son un control de acceso real.
+
+Los datos del planner hoy son accesibles para cualquiera que abra la app. Ver
+[SEGURIDAD.md](SEGURIDAD.md) para el detalle y qué se puede hacer al respecto.

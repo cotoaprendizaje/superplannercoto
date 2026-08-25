@@ -9,4 +9,5 @@ IMPORTANTE
   `npm run build` a partir de la carpeta src/.
 - El código editable ahora vive en este mismo repo, en src/. Ver README.md.
 
-Clave de ingreso actual: Minuevacontra5  (cambiable desde Ajustes dentro de la app)
+La clave de ingreso se cambia desde Ajustes, dentro de la app. No la anotes
+acá: este repo es público. Ver SEGURIDAD.md.
