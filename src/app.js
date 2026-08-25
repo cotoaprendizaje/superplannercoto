@@ -3191,10 +3191,15 @@ const BACKEND = {
       const datos = await resp.json();
       return datos && datos[0] ? datos[0].data : null;
     }
-    async function escribirEnSupabase(obj) {
+    async function escribirEnSupabase(obj, urgente) {
       const txt = BACKEND.supabaseUrl + "/rest/v1/" + BACKEND.tabla,
         resp = await fetch(txt, {
           method: "POST",
+          // keepalive: el pedido sobrevive aunque la pestaña se cierre o
+          // navegue a otro lado justo después de mandarlo. Sin esto, cerrar
+          // la pestaña a los pocos milisegundos de editar cancela el POST a
+          // mitad de camino y la edición se pierde sin ningún aviso.
+          keepalive: !!urgente,
           headers: cabeceras({
             "Content-Type": "application/json",
             Prefer: "resolution=merge-duplicates,return=minimal",
@@ -3225,12 +3230,23 @@ const BACKEND = {
           return ((modo = "memoria"), memoria[KEY] ? JSON.parse(memoria[KEY]) : null);
         }
       },
-      async save(obj) {
+      async save(obj, urgente) {
         const json = JSON.stringify(obj);
         if (useSupabase()) {
-          // Reintentar unas veces: la mayoría de las fallas son un pico de red
-          // que se resuelve solo. Si igual no entra, propagar el error — quien
-          // llama tiene que enterarse de que el trabajo no quedó guardado.
+          // Guardado urgente (la pestaña se está por cerrar): un solo intento
+          // con keepalive, sin esperar reintentos que ya no van a llegar a
+          // tiempo. El resto de los casos sí reintenta, porque la mayoría de
+          // las fallas son un pico de red que se resuelve solo.
+          if (urgente) {
+            try {
+              await escribirEnSupabase(obj, true);
+              modo = "supabase";
+            } catch (err) {
+              ((modo = "error"), (memoria[KEY] = json));
+              throw err;
+            }
+            return;
+          }
           let ultimoError = null;
           for (let intento = 0; intento < 3; intento++) {
             try {
@@ -3367,30 +3383,70 @@ async function mergeRemoteIntoState() {
   return state.cards.filter((c) => before.get(c.id) !== cardFingerprint(c));
 }
 let saveTimer = null;
+// Hay una edición que todavía no confirmó el backend. Es lo que revisan el
+// aviso al cerrar la pestaña y el guardado urgente al ocultarla.
+let guardadoPendiente = false;
+// pagehide y visibilitychange('hidden') disparan juntos en el mismo cierre;
+// sin este candado los dos piden el guardado urgente a la vez y se manda el
+// mismo documento dos veces.
+let guardadoUrgenteEnCurso = false;
 function persist() {
-  (clearTimeout(saveTimer),
-    (saveTimer = setTimeout(async () => {
-      stampEditedCards();
-      if (useSupabase()) {
-        try {
-          await mergeRemoteIntoState();
-        } catch (e) {}
-      }
-      const doc = docSnapshot();
-      // La copia local va primero: si el backend falla, el trabajo igual quedó
-      // en algún lado y se puede restaurar.
-      saveBackup(doc);
-      try {
-        (await Store.save(doc), rememberFingerprints(state.cards));
-        ((state.saveError = false), (state.connOk = true));
-      } catch (err) {
-        (console.error("No se pudo guardar:", err),
-          (state.saveError = true),
-          saveBackup(doc, true));
-      }
-      (showBanner(), avisarSinGuardar());
-    }, 250)));
+  guardadoPendiente = true;
+  (clearTimeout(saveTimer), (saveTimer = setTimeout(() => guardarAhora(false), 250)));
 }
+async function guardarAhora(urgente) {
+  if (urgente) {
+    if (guardadoUrgenteEnCurso) return;
+    guardadoUrgenteEnCurso = true;
+  }
+  clearTimeout(saveTimer);
+  stampEditedCards();
+  // El guardado urgente no espera al merge: es un solo POST con keepalive
+  // disparado porque la pestaña se está yendo, y ya no hay tiempo para un ida
+  // y vuelta extra.
+  if (useSupabase() && !urgente) {
+    try {
+      await mergeRemoteIntoState();
+    } catch (e) {}
+  }
+  const doc = docSnapshot();
+  // La copia local va primero: si el backend falla, el trabajo igual quedó
+  // en algún lado y se puede restaurar.
+  saveBackup(doc, urgente);
+  try {
+    (await Store.save(doc, urgente), rememberFingerprints(state.cards));
+    ((state.saveError = false), (state.connOk = true), (guardadoPendiente = false));
+  } catch (err) {
+    (console.error("No se pudo guardar:", err), (state.saveError = true), saveBackup(doc, true));
+  }
+  if (urgente) guardadoUrgenteEnCurso = false;
+  else (showBanner(), avisarSinGuardar());
+}
+// Entre que se dispara persist() y que el POST llega a destino pasan el
+// debounce de 250ms más una o dos idas y vueltas de red: si alguien cierra la
+// pestaña, cambia de app o el celular la manda a segundo plano en ese lapso,
+// el guardado normal se corta a mitad de camino y la edición se pierde sin
+// ningún aviso. Estos tres enganches cubren esa ventana.
+//
+// Ojo con el límite: keepalive rechaza de entrada cualquier pedido de más de
+// 64 KB, sin ni siquiera salir a la red. El tablero de esta app arranca en
+// ~114 KB solo con el catálogo semilla de cursos, así que en la práctica el
+// POST urgente casi nunca entra. Por eso el aviso de beforeunload importa más
+// que el POST en sí: es lo que le da a la persona la chance de no irse y
+// dejar que el guardado normal (que no tiene ese tope) termine solo. Y la
+// copia local, que se graba antes de intentar la red sin importar el tamaño,
+// es la que de verdad no se pierde nunca.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden" && guardadoPendiente) guardarAhora(true);
+});
+window.addEventListener("pagehide", () => {
+  if (guardadoPendiente) guardarAhora(true);
+});
+window.addEventListener("beforeunload", (ev) => {
+  if (guardadoPendiente) {
+    (ev.preventDefault(), (ev.returnValue = ""));
+  }
+});
 
 // Cuando el backend no acepta los cambios hay que decirlo fuerte: el equipo
 // puede pasarse la tarde trabajando sobre algo que no se está guardando.

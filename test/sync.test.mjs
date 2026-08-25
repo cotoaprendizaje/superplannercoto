@@ -232,6 +232,126 @@ async function pruebaBackups(browser, backend) {
   await page.close();
 }
 
+// --- cerrar la pestaña con una edición sin guardar -----------------------
+//
+// El guardado normal tiene un debounce de 250ms y después una ida y vuelta de
+// red. Si alguien edita una tarjeta y cierra la pestaña (o cambia de app, o
+// el celular la manda a segundo plano) en ese lapso, un fetch normal se corta
+// a mitad de camino sin avisar nada. Esta prueba reproduce justo eso: editar
+// y cerrar en el mismo instante, sin darle tiempo al debounce a disparar.
+
+// Nota sobre cómo se prueba esto: navegar la pestaña de verdad (page.goto,
+// page.close) en este sandbox corta la conexión de red apenas arranca la
+// navegación — hasta navigator.sendBeacon, el mecanismo más viejo y probado
+// que existe para esto, falla igual con ERR_TUNNEL_CONNECTION_FAILED. Es el
+// proxy de salida del entorno de pruebas cortando la conexión en el momento
+// de navegar, no un problema del fetch con keepalive: un fetch keepalive
+// idéntico, disparado sin navegar, sí llega. Así que en vez de navegar de
+// verdad se dispara el evento pagehide a mano, que ejercita el mismo camino
+// de código (el listener real de la app, guardarAhora(true), el POST con
+// keepalive) sin depender de que la navegación sobreviva en este sandbox.
+// El navegador impone un tope de 64 KB al cuerpo de un pedido keepalive; por
+// encima de eso lo rechaza al toque, ni siquiera sale a la red. El tablero de
+// esta app arranca en 114 KB solo con el catálogo semilla de cursos, antes de
+// que el equipo cargue una sola tarjeta propia — así que en el uso real este
+// tope se pisa todo el tiempo, no es un caso raro. Por eso hay dos defensas,
+// no una: el POST con keepalive salva la edición cuando el tablero entra en
+// el tope, y la copia local (que se graba antes de tocar la red, sin importar
+// el tamaño) la salva siempre, incluso cuando no entra.
+async function pruebaCierre(browser, backend) {
+  console.log("\ncerrar la pestaña con una edición sin guardar");
+
+  // Caso A: tablero chico, entra en el tope de keepalive — el POST debería
+  // llegar de verdad.
+  await backend.reset();
+  let page = await openClient(browser, backend.url, "Popi");
+  await page.waitForTimeout(1200);
+  const writesAntes = (await backend.state()).writes;
+
+  let resultado = await page.evaluate(async () => {
+    state.cards = state.cards.slice(0, 2); // tablero chico a propósito
+    const c = state.cards[0];
+    ((c.titulo = "SE GUARDA AL CERRAR"), touch());
+    const marcaPendiente = guardadoPendiente;
+    // pagehide y visibilitychange('hidden') disparan juntos en un cierre real;
+    // se simulan los dos para probar que el candado evita el POST duplicado.
+    (window.dispatchEvent(new Event("pagehide")),
+      Object.defineProperty(document, "visibilityState", { value: "hidden", configurable: true }),
+      document.dispatchEvent(new Event("visibilitychange")));
+    await new Promise((r) => setTimeout(r, 400));
+    return { marcaPendiente, quedoPendiente: guardadoPendiente, tamano: JSON.stringify(docSnapshot()).length };
+  });
+  check("(tablero chico) entra bajo el tope de 64 KB", resultado.tamano < 60000, resultado.tamano);
+  check(
+    "(tablero chico) el guardado urgente limpia la marca de pendiente",
+    resultado.quedoPendiente === false,
+    resultado,
+  );
+  let estado = await backend.state();
+  check(
+    "(tablero chico) la edición llega al backend al cerrar",
+    estado.cards.some((c) => c.titulo === "SE GUARDA AL CERRAR"),
+    estado.cards,
+  );
+  check(
+    "pagehide y visibilitychange a la vez no duplican el guardado",
+    estado.writes - writesAntes === 1,
+    { writesAntes, writesDespues: estado.writes },
+  );
+  await page.close();
+
+  // Caso B: tablero real, con el catálogo semilla — pisa el tope, el POST se
+  // rechaza sin salir a la red. La edición tiene que sobrevivir igual, en la
+  // copia local.
+  await backend.reset();
+  page = await openClient(browser, backend.url, "Popi");
+  await page.waitForTimeout(1200);
+
+  resultado = await page.evaluate(async () => {
+    const c = state.cards[0];
+    ((c.titulo = "SOLO EN LA COPIA LOCAL"), touch());
+    window.dispatchEvent(new Event("pagehide"));
+    await new Promise((r) => setTimeout(r, 400));
+    return { tamano: JSON.stringify(docSnapshot()).length, copias: readBackups() };
+  });
+  check("(tablero real) pisa el tope de 64 KB", resultado.tamano > 65536, resultado.tamano);
+  check(
+    "(tablero real) la copia local salva la edición igual",
+    resultado.copias[0] && JSON.parse(resultado.copias[0].doc).cards.some((c) => c.titulo === "SOLO EN LA COPIA LOCAL"),
+  );
+  await page.close();
+}
+
+// El aviso nativo del navegador ("¿seguro que querés salir?") no depende de
+// que la red funcione: es la defensa que de verdad protege a un tablero
+// grande, porque le da a la persona la chance de no irse y dejar que el
+// guardado normal (sin el tope de keepalive) termine solo.
+async function pruebaAvisoAlSalir(browser, backend) {
+  console.log("\naviso nativo al intentar salir con algo sin guardar");
+  await backend.reset();
+  const page = await openClient(browser, backend.url, "Popi");
+  await page.waitForTimeout(1200);
+
+  const sinNada = await page.evaluate(() => {
+    let bloqueado = false;
+    const ev = new Event("beforeunload", { cancelable: true });
+    Object.defineProperty(ev, "returnValue", { value: "", writable: true });
+    window.dispatchEvent(ev);
+    return ev.defaultPrevented || ev.returnValue !== "";
+  });
+  check("no avisa si no hay nada pendiente", sinNada === false, sinNada);
+
+  const conAlgo = await page.evaluate(() => {
+    (state.cards[0].titulo = "SIN GUARDAR TODAVÍA"), touch();
+    const ev = new Event("beforeunload", { cancelable: true });
+    window.dispatchEvent(ev);
+    return ev.defaultPrevented;
+  });
+  check("avisa cuando hay una edición sin confirmar", conAlgo === true, conAlgo);
+
+  await page.close();
+}
+
 // --- el backend no responde ---------------------------------------------
 //
 // El modo de falla que más caro sale: si la carga inicial fallaba, la app
@@ -334,6 +454,8 @@ try {
   (await pruebasDeMerge(browser, backend.url),
     await pruebaDosPersonas(browser, backend),
     await pruebaCarrera(browser, backend),
+    await pruebaCierre(browser, backend),
+    await pruebaAvisoAlSalir(browser, backend),
     await pruebaBackups(browser, backend),
     await pruebaBackendCaido(browser, backend));
 } finally {
