@@ -232,6 +232,100 @@ async function pruebaBackups(browser, backend) {
   await page.close();
 }
 
+// --- el backend no responde ---------------------------------------------
+//
+// El modo de falla que más caro sale: si la carga inicial fallaba, la app
+// armaba un tablero de ejemplo y desactivaba el guardado. El equipo trabajaba
+// media tarde sobre tarjetas inventadas y no se guardaba nada.
+
+async function pruebaBackendCaido(browser, backend) {
+  console.log("\ncuando el backend no responde");
+  await backend.reset();
+
+  // Un cliente que enrutamos nosotros, para poder cortar la conexión a gusto.
+  const abrir = async (control) => {
+    const page = await browser.newPage({ ...CONTEXTO, viewport: { width: 1280, height: 900 } });
+    page.on("pageerror", (e) => console.log("  [caido] error de página:", e.message));
+    await page.route("**://*.supabase.co/rest/v1/**", async (route) => {
+      const req = route.request();
+      if (control.cortarLectura && req.method() === "GET") return route.fulfill({ status: 503, body: "{}" });
+      if (control.cortarEscritura && req.method() === "POST")
+        return route.fulfill({ status: 403, body: "{}" });
+      (control.cabeceras = req.headers());
+      const { pathname, search } = new URL(req.url());
+      const upstream = await fetch(backend.url + pathname + search, {
+        method: req.method(),
+        headers: { "Content-Type": "application/json" },
+        body: req.method() === "POST" ? req.postData() : undefined,
+      });
+      route.fulfill({
+        status: upstream.status,
+        headers: { "Content-Type": "application/json", "Cache-Control": "no-store" },
+        body: await upstream.text(),
+      });
+    });
+    await page.goto(backend.url + "/index.html");
+    return page;
+  };
+
+  // 1. la lectura falla
+  const control = { cortarLectura: true, cortarEscritura: false };
+  let page = await abrir(control);
+  await page.waitForTimeout(2500);
+
+  const traslaCaida = await page.evaluate(() => ({
+    tarjetas: (window.state && state.cards && state.cards.length) || 0,
+    lista: !!(window.state && state.ready),
+    avisa: /no pude conectarme/i.test(document.body.innerText),
+  }));
+  (check("no inventa un tablero cuando no puede leer", traslaCaida.tarjetas === 0, traslaCaida),
+    check("no se declara lista si no cargó", traslaCaida.lista === false),
+    check("explica que no se pudo conectar", traslaCaida.avisa === true));
+  await page.close();
+
+  // 2. la lectura anda pero la escritura no
+  ((control.cortarLectura = false), (control.cortarEscritura = false));
+  page = await abrir(control);
+  await page.waitForFunction(() => state?.ready === true);
+  await page.fill("#gatePassInput", CLAVE);
+  await page.fill("#gateInput", "Vivi");
+  await page.click('#gate button:has-text("Entrar")');
+  await page.waitForTimeout(1200);
+
+  check(
+    "manda apikey y Authorization",
+    !!(control.cabeceras && control.cabeceras["apikey"] && control.cabeceras["authorization"]),
+    control.cabeceras && Object.keys(control.cabeceras),
+  );
+
+  control.cortarEscritura = true;
+  await page.evaluate(() => {
+    const c = newCard("libre", "SE VA A PERDER");
+    (state.cards.push(c), touch());
+  });
+  await page.waitForTimeout(3000);
+
+  const traslaFalla = await page.evaluate(() => ({
+    avisa: !!document.querySelector("#saveWarn"),
+    texto: (document.querySelector("#saveWarn") || {}).innerText || "",
+    copias: JSON.parse(localStorage.getItem("coto.superplanner.backups") || "[]").length,
+  }));
+  (check("avisa fuerte que no se está guardando", traslaFalla.avisa === true),
+    check("el aviso menciona la copia local", /copia/i.test(traslaFalla.texto), traslaFalla.texto),
+    check("dejó una copia local igual", traslaFalla.copias > 0, traslaFalla.copias));
+
+  // 3. vuelve el backend y el aviso se va
+  control.cortarEscritura = false;
+  await page.evaluate(() => persist());
+  await page.waitForTimeout(2000);
+  check(
+    "el aviso desaparece cuando el backend vuelve",
+    (await page.evaluate(() => !document.querySelector("#saveWarn"))) === true,
+  );
+
+  await page.close();
+}
+
 // --- corrida ------------------------------------------------------------
 
 const backend = await startFakeBackend();
@@ -240,7 +334,8 @@ try {
   (await pruebasDeMerge(browser, backend.url),
     await pruebaDosPersonas(browser, backend),
     await pruebaCarrera(browser, backend),
-    await pruebaBackups(browser, backend));
+    await pruebaBackups(browser, backend),
+    await pruebaBackendCaido(browser, backend));
 } finally {
   (await browser.close(), await backend.stop());
 }

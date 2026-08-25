@@ -7761,14 +7761,17 @@ const BACKEND = {
       throw 0;
     }
     function cabeceras(obj) {
-      const val = Object.assign(
+      // Supabase espera la clave en apikey y además en Authorization. Con las
+      // claves viejas (JWT, empiezan con eyJ) alcanzaba con apikey; con las
+      // nuevas (sb_publishable_...) hay que mandar las dos o PostgREST no
+      // resuelve el rol y contesta 401.
+      return Object.assign(
         {
           apikey: BACKEND.supabaseKey,
+          Authorization: "Bearer " + BACKEND.supabaseKey,
         },
         obj || {},
       );
-      if (/^eyJ/.test(BACKEND.supabaseKey)) val.Authorization = "Bearer " + BACKEND.supabaseKey;
-      return val;
     }
     async function leerDeSupabase() {
       const txt =
@@ -7823,12 +7826,20 @@ const BACKEND = {
       async save(obj) {
         const json = JSON.stringify(obj);
         if (useSupabase()) {
-          try {
-            (await escribirEnSupabase(obj), (modo = "supabase"));
-          } catch (err) {
-            ((modo = "error"), (memoria[KEY] = json));
+          // Reintentar unas veces: la mayoría de las fallas son un pico de red
+          // que se resuelve solo. Si igual no entra, propagar el error — quien
+          // llama tiene que enterarse de que el trabajo no quedó guardado.
+          let ultimoError = null;
+          for (let intento = 0; intento < 3; intento++) {
+            try {
+              return ((await escribirEnSupabase(obj)), (modo = "supabase"), undefined);
+            } catch (err) {
+              ultimoError = err;
+              if (intento < 2) await new Promise((r) => setTimeout(r, 400 * (intento + 1)));
+            }
           }
-          return;
+          ((modo = "error"), (memoria[KEY] = json));
+          throw ultimoError;
         }
         try {
           (await escribirEnStorage(KEY, json), (modo = "storage"));
@@ -7923,10 +7934,12 @@ function writeBackups(list) {
   } catch (e) {}
   return false;
 }
-function saveBackup(doc) {
+// forzar salta el intervalo mínimo: se usa cuando el backend rechazó la
+// escritura, que es justo cuando la copia local es la única que queda.
+function saveBackup(doc, forzar) {
   const list = readBackups(),
     now = Date.now();
-  if (list.length && now - list[0].ts < BACKUP_MIN_GAP) return;
+  if (!forzar && list.length && now - list[0].ts < BACKUP_MIN_GAP) return;
   (list.unshift({
     ts: now,
     autor: state.user || "",
@@ -7953,7 +7966,6 @@ async function mergeRemoteIntoState() {
 }
 let saveTimer = null;
 function persist() {
-  if (useSupabase() && state.connOk === false) return;
   (clearTimeout(saveTimer),
     (saveTimer = setTimeout(async () => {
       stampEditedCards();
@@ -7963,9 +7975,43 @@ function persist() {
         } catch (e) {}
       }
       const doc = docSnapshot();
-      (await Store.save(doc), rememberFingerprints(state.cards), saveBackup(doc));
-      showBanner();
+      // La copia local va primero: si el backend falla, el trabajo igual quedó
+      // en algún lado y se puede restaurar.
+      saveBackup(doc);
+      try {
+        (await Store.save(doc), rememberFingerprints(state.cards));
+        ((state.saveError = false), (state.connOk = true));
+      } catch (err) {
+        (console.error("No se pudo guardar:", err),
+          (state.saveError = true),
+          saveBackup(doc, true));
+      }
+      (showBanner(), avisarSinGuardar());
     }, 250)));
+}
+
+// Cuando el backend no acepta los cambios hay que decirlo fuerte: el equipo
+// puede pasarse la tarde trabajando sobre algo que no se está guardando.
+function avisarSinGuardar() {
+  let aviso = $("#saveWarn");
+  if (!state.saveError) {
+    (aviso && aviso.remove(), (document.body.style.paddingTop = ""));
+    return;
+  }
+  if (!aviso) {
+    ((aviso = document.createElement("div")),
+      (aviso.id = "saveWarn"),
+      (aviso.setAttribute("role", "alert")),
+      (aviso.style.cssText =
+        "position:fixed;top:0;left:0;right:0;z-index:120;background:var(--bad);color:#fff;" +
+        "padding:10px 16px;font-size:13px;font-weight:600;text-align:center;box-shadow:var(--shadow-lg)"),
+      document.body.appendChild(aviso));
+  }
+  aviso.innerHTML =
+    "⚠ No se están guardando los cambios — el backend no responde. " +
+    "Tenés una copia local en Ajustes → Copias de resguardo. " +
+    '<button data-action="reintentar:guardar" style="margin-left:8px;padding:3px 10px;border-radius:999px;' +
+    'border:1px solid #fff;background:transparent;color:#fff;font:inherit;cursor:pointer">Reintentar</button>';
 }
 const state = {
   ready: false,
@@ -7999,6 +8045,7 @@ const state = {
   sel: [],
   savedViews: [],
   connOk: true,
+  saveError: false,
   eduSector: null,
   eduEst: "",
   eduQ: "",
@@ -8441,6 +8488,11 @@ function viewHeader() {
   return val ? '<div class="view-head"><h2>' + val[0] + "</h2><p>" + val[1] + "</p></div>" : "";
 }
 function render() {
+  // Sin backend no hay tablero que dibujar: la pantalla de corte manda.
+  if (useSupabase() && state.connOk === false) {
+    mostrarPantallaSinConexion(errorConexion);
+    return;
+  }
   (renderFilters(), renderView(), updateBell());
 }
 function renderView() {
@@ -10668,6 +10720,12 @@ document.addEventListener("click", (ev) => {
     case "gate:enter":
       gateTry($("#gateInput").value);
       break;
+    case "reintentar:guardar":
+      (flash("Reintentando…"), persist());
+      break;
+    case "reintentar:conexion":
+      location.reload();
+      break;
     case "gate:person": {
       const nombre = el.dataset.nombre;
       if (state.appPassHash) {
@@ -11586,6 +11644,35 @@ function toggleTheme() {
   const el2 = $("#themeBtn");
   if (el2) el2.innerHTML = el.dataset.theme === "dark" ? ICON_SUN : ICON_MOON;
 }
+// Pantalla de corte cuando no se pudo leer el backend. Es preferible que la
+// app no se pueda usar a que se pueda usar en falso.
+let errorConexion = null;
+function mostrarPantallaSinConexion(err) {
+  errorConexion = err || errorConexion;
+  const copias = readBackups(),
+    ultima = copias && copias[0];
+  ($("#view") || document.body).innerHTML =
+    '<div class="empty" style="max-width:560px;margin:40px auto;text-align:left">' +
+    '<h2 style="margin:0 0 10px">No pude conectarme al tablero del equipo</h2>' +
+    "<p>Los datos están en Supabase y ahora mismo no responde, así que no puedo mostrarte " +
+    "el tablero real. No te muestro uno de ejemplo para que no trabajes sobre algo que " +
+    "después no se guarda.</p>" +
+    "<p><b>Qué suele ser:</b> el proyecto de Supabase quedó pausado por inactividad (pasa " +
+    "en el plan gratuito), la clave cambió, o se cayó la conexión.</p>" +
+    (ultima
+      ? "<p>Tenés una copia local de " +
+        esc(relTime(ultima.ts)) +
+        " con " +
+        (ultima.tarjetas || 0) +
+        " tarjetas. No se pierde: sigue guardada en este navegador.</p>"
+      : "") +
+    '<p style="margin-top:16px">' +
+    '<button class="btn primary" data-action="reintentar:conexion">Reintentar</button></p>' +
+    '<p style="margin-top:14px;font-size:12px;opacity:.7">Detalle técnico: ' +
+    esc(String((err && err.message) || err)) +
+    "</p></div>";
+  ($("#filters") && ($("#filters").innerHTML = ""), (state.ready = false));
+}
 function showBanner() {
   const val = Store.mode();
   let val2;
@@ -12493,13 +12580,14 @@ async function boot() {
         }));
   } catch (err2) {
     console.error(err2);
-    if (useSupabase()) state.connOk = false;
-    ((state.cards = seedCards()),
-      ingestCatalogo(CURSOS, {}),
-      flash(
-        useSupabase() ? "No se pudo conectar a Supabase — revisá las claves" : "Usando datos semilla",
-        true,
-      ));
+    // Si no se pudo leer el backend NO se arma un tablero de demo: mostrar
+    // tarjetas inventadas hace creer que la app anda y el equipo termina
+    // trabajando sobre algo que no existe y que no se va a guardar.
+    if (useSupabase()) {
+      (mostrarPantallaSinConexion(err2), (state.connOk = false));
+      return;
+    }
+    ((state.cards = seedCards()), ingestCatalogo(CURSOS, {}), flash("Usando datos semilla", true));
   }
   (state.cards.forEach((tarjeta2) => {
     ((tarjeta2.ficha = tarjeta2.ficha || {
