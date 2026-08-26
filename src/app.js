@@ -5261,8 +5261,53 @@ function renderInicio() {
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
     html +
-    "</div>\n  </div>"
+    '</div>\n    <div class="slot-widget">\n      <div class="slot-top"><span class="slot-emoji">🎰</span><div class="slot-tx"><div class="slot-t">Máquina de la suerte</div><div class="slot-d">Tirá de la palanca y a ver qué te toca.</div></div></div>\n      <div class="slot-screen" id="slotScreen">🍀 🍀 🍀</div>\n      <button class="slot-lever" id="slotLever" data-action="slot:pull">🎲 Tirar de la palanca</button>\n    </div>\n  </div>'
   );
+}
+const SLOT_FRASES = [
+  "Ponete a laburar 😤",
+  "Vas bien, dale que va 💪",
+  "Te merecés un cafecito ☕",
+  "Hora del mate 🧉",
+  "Tomate 5 minutos y volvés",
+  "Hoy es buen día para tildar una tarea",
+  "Menos scroll, más checklist 👀",
+  "Sos un crack, seguí así 🌟",
+  "La productividad no se mide en pestañas abiertas",
+  "Andá a estirar las piernas un toque",
+  "Tomate el laburo con soda 🥤",
+  "El Planner no se llena solo, dale una mano",
+  "Respirá hondo y arrancá de nuevo",
+  "Una cosa a la vez, tranqui",
+  "Los grandes proyectos se arman de a poquito",
+  "Che, ¿ya hidrataste? 💧",
+  "Metele con toda, el equipo cuenta con vos",
+  "Una tarjeta completada es una victoria",
+  "Descanso corto, foco largo",
+  "Sonreí, hoy también suma",
+  "Guardá lo que hiciste y date una vuelta",
+  "El café se enfría, andá a tomarlo",
+  "Vos podés con esto y más",
+  "Un aplauso interno para vos 👏",
+  "Todo bien por acá, seguí no más",
+];
+function tirarSlot() {
+  const el = $("#slotScreen"),
+    boton = $("#slotLever");
+  if (!el || el.dataset.spinning) return;
+  ((el.dataset.spinning = "1"), boton && (boton.disabled = true));
+  let vueltas = 0;
+  const timer = setInterval(() => {
+    ((el.textContent = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)]), vueltas++);
+    if (vueltas > 10) {
+      (clearInterval(timer),
+        (el.textContent = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)]),
+        el.classList.add("pop"),
+        setTimeout(() => el.classList.remove("pop"), 400),
+        delete el.dataset.spinning,
+        boton && (boton.disabled = false));
+    }
+  }, 70);
 }
 function agendaWindow() {
   const fecha = new Date(state.agendaRefY, state.agendaRefM, 1),
@@ -6807,6 +6852,9 @@ document.addEventListener("click", (ev) => {
       break;
     case "undo:del":
       undoBorrado();
+      break;
+    case "slot:pull":
+      tirarSlot();
       break;
     case "coach:close": {
       const elCoach = el.closest(".coachcard");
