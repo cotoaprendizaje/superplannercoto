@@ -390,6 +390,19 @@
   --cat-grad: linear-gradient(135deg, #bed20a, #6e328c);
   --on-cat: #ffffff;
 }
+[data-cat="aprendizaje"] {
+  --cat-1: #003c56;
+  --cat-2: #005478;
+  --cat-3: #006ea0;
+  --cat-4: #1e8ac8;
+  --cat-5: #50aae0;
+  --cat-6: #82c4ee;
+  --cat: #006ea0;
+  --cat-strong: #003c56;
+  --cat-soft: #50aae0;
+  --cat-grad: linear-gradient(135deg, #005478, #1e8ac8);
+  --on-cat: #ffffff;
+}
 :root {
   --titulo: "Faible", "Roboto", system-ui, "Segoe UI", sans-serif;
   --texto: "Roboto", system-ui, "Segoe UI", sans-serif;
@@ -684,7 +697,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  background: #fff;
+  background: var(--coto-navy);
   border-radius: var(--pill);
   padding: 5px 12px;
   box-shadow: var(--shadow);
@@ -697,8 +710,8 @@ button {
 .logo-div {
   width: 1px;
   height: 18px;
-  background: #1e2d46;
-  opacity: 0.22;
+  background: #fff;
+  opacity: 0.25;
 }
 .gate .logo-lockup {
   padding: 8px 16px;
@@ -1647,6 +1660,16 @@ button {
   font-size: 12px;
   color: var(--ink-soft);
   padding: 6px 9px;
+}
+.sec-create {
+  color: var(--coto-blue);
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+  margin-top: 2px;
+  padding-top: 9px;
+}
+.sec-create:hover {
+  background: color-mix(in srgb, var(--coto-blue) 10%, transparent);
 }
 .acc {
   border-top: 1px dashed transparent;
@@ -7322,6 +7345,10 @@ const ESTADOS = [
       nombre: "Zona Cumples",
       cat: "#6E328C",
     },
+    aprendizaje: {
+      nombre: "Aprendizaje",
+      cat: "#006EA0",
+    },
   },
   OFFICIAL_CATS = new Set(Object.keys(SECTORES)),
   SLUG_MAP = {
@@ -11370,7 +11397,8 @@ function sectorPicker(tarjeta) {
 function renderSectorResults(value) {
   const el = $("#sectorResults");
   if (!el) return;
-  value = (value || "").trim().toLowerCase();
+  const raw = (value || "").trim();
+  value = raw.toLowerCase();
   const tarjeta = current(),
     conjunto = new Set((tarjeta && tarjeta.sectores) || []),
     lista = Object.keys(SECTORES)
@@ -11379,23 +11407,32 @@ function renderSectorResults(value) {
           !conjunto.has(arg) &&
           (!value || SECTORES[arg].nombre.toLowerCase().includes(value) || arg.includes(value)),
       )
-      .slice(0, 8);
-  el.innerHTML = lista.length
-    ? lista
-        .map(
-          (arg) =>
-            '<button class="sec-opt" data-cat="' +
-            arg +
-            '" data-action="sector:add" data-sector="' +
-            arg +
-            '"><span class="sec-dot"></span>' +
-            esc(SECTORES[arg].nombre) +
-            "</button>",
-        )
-        .join("")
-    : value
-      ? '<div class="sec-none">Sin coincidencias</div>'
-      : "";
+      .slice(0, 8),
+    hayExacto = raw && Object.values(SECTORES).some((arg) => arg.nombre.toLowerCase() === value);
+  el.innerHTML =
+    (lista.length
+      ? lista
+          .map(
+            (arg) =>
+              '<button class="sec-opt" data-cat="' +
+              arg +
+              '" data-action="sector:add" data-sector="' +
+              arg +
+              '"><span class="sec-dot"></span>' +
+              esc(SECTORES[arg].nombre) +
+              "</button>",
+          )
+          .join("")
+      : value
+        ? '<div class="sec-none">Sin coincidencias</div>'
+        : "") +
+    (raw && !hayExacto
+      ? '<button class="sec-opt sec-create" data-action="sector:create" data-sector-name="' +
+        esc(raw) +
+        '">➕ Crear sector "' +
+        esc(raw) +
+        '"</button>'
+      : "");
 }
 function datePresetsHTML(campo) {
   return (
@@ -12479,6 +12516,10 @@ document.addEventListener("click", (ev) => {
       (toggleArr(current(), "sectores", el.dataset.sector), renderPanel());
       const el8 = $("#sectorSearch");
       if (el8) el8.focus();
+      break;
+    }
+    case "sector:create": {
+      createSectorInline(el.dataset.sectorName);
       break;
     }
     case "asig:toggle":
@@ -14051,6 +14092,34 @@ function addSector() {
     openSettings(),
     render(),
     flash("🎨 Sector agregado"));
+}
+const SEC_PALETTE = ["#006EA0", "#00C88C", "#8232C8", "#F0A032", "#D71E50", "#1EAADC", "#6E328C", "#CD1E1E"];
+function createSectorInline(nombre) {
+  const txt = (nombre || "").trim();
+  if (!txt) return;
+  let val = txt
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  if (!val || SECTORES[val]) val = "sector-" + Date.now();
+  ((SECTORES[val] = {
+    nombre: txt,
+    cat: SEC_PALETTE[Object.keys(SECTORES).length % SEC_PALETTE.length],
+  }),
+    injectSectorStyles(),
+    persist());
+  const tarjeta = current();
+  if (tarjeta) {
+    ((tarjeta.sectores = tarjeta.sectores || []),
+      tarjeta.sectores.includes(val) || tarjeta.sectores.push(val),
+      touch());
+  }
+  renderPanel();
+  flash('🎨 Sector "' + txt + '" creado');
+  const el = $("#sectorSearch");
+  if (el) ((el.value = ""), el.focus());
 }
 function addMember() {
   const txt = ($("#newMemNombre").value || "").trim();

@@ -1939,6 +1939,10 @@ const ESTADOS = [
       nombre: "Zona Cumples",
       cat: "#6E328C",
     },
+    aprendizaje: {
+      nombre: "Aprendizaje",
+      cat: "#006EA0",
+    },
   },
   OFFICIAL_CATS = new Set(Object.keys(SECTORES)),
   SLUG_MAP = {
@@ -5987,7 +5991,8 @@ function sectorPicker(tarjeta) {
 function renderSectorResults(value) {
   const el = $("#sectorResults");
   if (!el) return;
-  value = (value || "").trim().toLowerCase();
+  const raw = (value || "").trim();
+  value = raw.toLowerCase();
   const tarjeta = current(),
     conjunto = new Set((tarjeta && tarjeta.sectores) || []),
     lista = Object.keys(SECTORES)
@@ -5996,23 +6001,32 @@ function renderSectorResults(value) {
           !conjunto.has(arg) &&
           (!value || SECTORES[arg].nombre.toLowerCase().includes(value) || arg.includes(value)),
       )
-      .slice(0, 8);
-  el.innerHTML = lista.length
-    ? lista
-        .map(
-          (arg) =>
-            '<button class="sec-opt" data-cat="' +
-            arg +
-            '" data-action="sector:add" data-sector="' +
-            arg +
-            '"><span class="sec-dot"></span>' +
-            esc(SECTORES[arg].nombre) +
-            "</button>",
-        )
-        .join("")
-    : value
-      ? '<div class="sec-none">Sin coincidencias</div>'
-      : "";
+      .slice(0, 8),
+    hayExacto = raw && Object.values(SECTORES).some((arg) => arg.nombre.toLowerCase() === value);
+  el.innerHTML =
+    (lista.length
+      ? lista
+          .map(
+            (arg) =>
+              '<button class="sec-opt" data-cat="' +
+              arg +
+              '" data-action="sector:add" data-sector="' +
+              arg +
+              '"><span class="sec-dot"></span>' +
+              esc(SECTORES[arg].nombre) +
+              "</button>",
+          )
+          .join("")
+      : value
+        ? '<div class="sec-none">Sin coincidencias</div>'
+        : "") +
+    (raw && !hayExacto
+      ? '<button class="sec-opt sec-create" data-action="sector:create" data-sector-name="' +
+        esc(raw) +
+        '">➕ Crear sector "' +
+        esc(raw) +
+        '"</button>'
+      : "");
 }
 function datePresetsHTML(campo) {
   return (
@@ -7096,6 +7110,10 @@ document.addEventListener("click", (ev) => {
       (toggleArr(current(), "sectores", el.dataset.sector), renderPanel());
       const el8 = $("#sectorSearch");
       if (el8) el8.focus();
+      break;
+    }
+    case "sector:create": {
+      createSectorInline(el.dataset.sectorName);
       break;
     }
     case "asig:toggle":
@@ -8668,6 +8686,34 @@ function addSector() {
     openSettings(),
     render(),
     flash("🎨 Sector agregado"));
+}
+const SEC_PALETTE = ["#006EA0", "#00C88C", "#8232C8", "#F0A032", "#D71E50", "#1EAADC", "#6E328C", "#CD1E1E"];
+function createSectorInline(nombre) {
+  const txt = (nombre || "").trim();
+  if (!txt) return;
+  let val = txt
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  if (!val || SECTORES[val]) val = "sector-" + Date.now();
+  ((SECTORES[val] = {
+    nombre: txt,
+    cat: SEC_PALETTE[Object.keys(SECTORES).length % SEC_PALETTE.length],
+  }),
+    injectSectorStyles(),
+    persist());
+  const tarjeta = current();
+  if (tarjeta) {
+    ((tarjeta.sectores = tarjeta.sectores || []),
+      tarjeta.sectores.includes(val) || tarjeta.sectores.push(val),
+      touch());
+  }
+  renderPanel();
+  flash('🎨 Sector "' + txt + '" creado');
+  const el = $("#sectorSearch");
+  if (el) ((el.value = ""), el.focus());
 }
 function addMember() {
   const txt = ($("#newMemNombre").value || "").trim();
