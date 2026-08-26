@@ -4634,6 +4634,311 @@ button.aday:hover {
   }
 }
 
+/* ===== Usabilidad y conexiones (rondas 2 y 3 de mejoras) ===== */
+.kpi-go {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+.kpi-go:hover {
+  transform: translateY(-2px);
+}
+.kpi-trend {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.9;
+}
+.kpi-trend.up {
+  color: #d7ffe9;
+}
+.kpi-trend.down {
+  color: #ffe0d9;
+}
+.kpi-trend.flat {
+  color: rgba(255, 255, 255, 0.75);
+}
+.bar-line-btn {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--r-sm);
+}
+.bar-line-btn:hover {
+  background: var(--surface-2);
+}
+.bar-line.overload .bl-lbl {
+  color: var(--bad);
+}
+.kcard-quick {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+  z-index: 2;
+}
+.kcard:hover .kcard-quick,
+.kcard:focus-within .kcard-quick {
+  opacity: 1;
+  transform: translateY(0);
+}
+.kq-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+}
+.kq-btn:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.kq-del:hover {
+  color: #fff;
+  background: var(--bad);
+  border-color: var(--bad);
+}
+.kcol-load {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin: 2px 2px 8px;
+}
+.kcol-load-bar {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+.snackbar {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(16px);
+  background: var(--coto-navy);
+  color: #fff;
+  padding: 10px 12px 10px 16px;
+  border-radius: var(--pill);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  z-index: 95;
+}
+.snackbar.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.snackbar .btn {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: transparent;
+  color: #fff;
+}
+.ctxmenu {
+  position: fixed;
+  z-index: 96;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+}
+.ctxmenu button {
+  border: none;
+  background: none;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.ctxmenu button:hover {
+  background: var(--surface-2);
+}
+.datepresets {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+.dp-btn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+.dp-btn:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.throughput-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 72px;
+  padding-top: 6px;
+}
+.tp-bar-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  gap: 4px;
+}
+.tp-bar {
+  width: 100%;
+  max-width: 22px;
+  border-radius: 5px 5px 0 0;
+  background: var(--coto-blue);
+}
+.tp-n {
+  font-size: 10px;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.sync-ago {
+  opacity: 0.75;
+  font-weight: 500;
+}
+.gotop {
+  position: fixed;
+  right: 22px;
+  bottom: 24px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: var(--coto-navy);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  z-index: 40;
+}
+.gotop.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.gotop:hover {
+  background: var(--coto-blue);
+}
+.coachcard {
+  position: fixed;
+  right: 22px;
+  bottom: 78px;
+  max-width: 320px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  box-shadow: var(--shadow-lg);
+  padding: 16px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+  z-index: 90;
+}
+.coachcard.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.coachcard-t {
+  font-weight: 700;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.coachcard-l {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.panel-menu-wrap {
+  position: relative;
+}
+.panel-menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  min-width: 200px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  flex-direction: column;
+  z-index: 10;
+}
+.panel-menu-wrap.open .panel-menu {
+  display: flex;
+}
+.ultimo-toco {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+@media (max-width: 860px) {
+  .gotop {
+    right: 14px;
+    bottom: 84px;
+  }
+  .coachcard {
+    right: 14px;
+    left: 14px;
+    max-width: none;
+    bottom: 84px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -8151,7 +8456,7 @@ async function guardarAhora(urgente) {
   saveBackup(doc, urgente);
   try {
     (await Store.save(doc, urgente), rememberFingerprints(state.cards));
-    ((state.saveError = false), (state.connOk = true), (guardadoPendiente = false));
+    ((state.saveError = false), (state.connOk = true), (guardadoPendiente = false), (state.lastSyncTs = Date.now()));
   } catch (err) {
     (console.error("No se pudo guardar:", err), (state.saveError = true), saveBackup(doc, true));
   }
@@ -8261,6 +8566,8 @@ const state = {
   savedViews: [],
   connOk: true,
   saveError: false,
+  reconectando: false,
+  lastSyncTs: null,
   eduSector: null,
   eduEst: "",
   eduQ: "",
@@ -8778,7 +9085,14 @@ function cardKanban(tarjeta) {
     tarjeta.id +
     '" title="Seleccionar">' +
     (flag ? "✓" : "") +
-    "</span>\n    " +
+    '</span>\n    <div class="kcard-quick">' +
+    '<button class="kq-btn" data-action="qedit:open" data-id="' +
+    tarjeta.id +
+    '" title="Edición rápida">✎</button><button class="kq-btn" data-action="kcard:dup" data-id="' +
+    tarjeta.id +
+    '" title="Duplicar">⧉</button><button class="kq-btn kq-del" data-action="kcard:del" data-id="' +
+    tarjeta.id +
+    '" title="Eliminar">🗑</button></div>\n    ' +
     (inInventory(tarjeta) ? '<span class="tag-flag">◎ activo</span>' : "") +
     '\n    <div class="kcard-top">\n      <span class="tipo-pill">' +
     tipo.icon +
@@ -8857,8 +9171,13 @@ function renderKanban() {
         TEAM.map((miembro) => '<option value="' + miembro.id + '">' + esc(miembro.nombre) + "</option>").join(
           "",
         ) +
+        '</select>\n    <select data-bulk="sector"><option value="">Sumar sector…</option>' +
+        Object.keys(SECTORES)
+          .map((arg) => '<option value="' + arg + '">' + esc(SECTORES[arg].nombre) + "</option>")
+          .join("") +
         '</select>\n    <button class="btn btn-sm" data-action="bulk:del" style="color:var(--bad)">🗑 Eliminar</button>\n    <span class="grow"></span>\n    <button class="btn btn-ghost btn-sm" data-action="bulk:clear">Cancelar</button>\n  </div>'
       : "",
+    kcolMax = Math.max(1, ...ESTADOS.map((estado) => lista2.filter((arg) => arg.estado === estado.id).length)),
     txt = ESTADOS.map((estado) => {
       const lista = sortCards(lista2.filter((arg) => arg.estado === estado.id)),
         cantidad2 = lista.filter(isOverdue).length;
@@ -8871,7 +9190,11 @@ function renderKanban() {
         (cantidad2 ? '<span class="kcol-over" title="vencidas">⚑ ' + cantidad2 + "</span>" : "") +
         '\n        <span class="kcol-count">' +
         lista.length +
-        '</span></div>\n      <div class="kcol-body" data-estado="' +
+        '</span></div>\n      <div class="kcol-load"><div class="kcol-load-bar" style="width:' +
+        Math.round((lista.length / kcolMax) * 100) +
+        "%;background:" +
+        estado.dot +
+        '"></div></div>\n      <div class="kcol-body" data-estado="' +
         estado.id +
         '">' +
         (lista.map(cardKanban).join("") ||
@@ -8894,12 +9217,21 @@ function applyBulk(val, value) {
         (tarjeta.estado = value));
     }),
       flash("✓ " + state.sel.length + " movida(s)"));
-  else
-    val === "resp" &&
+  else {
+    if (val === "resp")
       (state.cards.forEach((tarjeta) => {
         conjunto.has(tarjeta.id) && (tarjeta.responsable = value);
       }),
-      flash("✓ Responsable asignado a " + state.sel.length));
+        flash("✓ Responsable asignado a " + state.sel.length));
+    else
+      val === "sector" &&
+        (state.cards.forEach((tarjeta) => {
+          conjunto.has(tarjeta.id) &&
+            ((tarjeta.sectores = tarjeta.sectores || []),
+            !tarjeta.sectores.includes(value) && tarjeta.sectores.push(value));
+        }),
+        flash("✓ Sector sumado a " + state.sel.length));
+  }
   ((state.sel = []), touch(), render());
 }
 function cardsOnDay(lista, iso) {
@@ -9822,7 +10154,13 @@ function cursoCard(tarjeta) {
         esc(tarjeta.linkMoodle) +
         '" target="_blank" rel="noopener" onclick="event.stopPropagation()">Moodle ↗</a>'
       : '<span class="moodle" style="color:var(--ink-soft)">sin link</span>') +
-    "\n      </div>\n    </div>\n  </article>"
+    "\n      </div>\n      " +
+    (val && val !== "tbd"
+      ? '<button class="btn btn-ghost btn-sm rel-btn" data-action="mapa:relacionadas" data-sector="' +
+        val +
+        '" title="Ver tareas del Planner de este sector">📋 Ver tareas relacionadas</button>'
+      : "") +
+    "\n    </div>\n  </article>"
   );
 }
 function sectionEduPoints() {
@@ -10173,23 +10511,144 @@ function renderAgenda() {
     "\n  </div>"
   );
 }
+function kpiSnapKey() {
+  return "cf.kpiSnap";
+}
+// Sin histórico en el backend compartido: el snapshot vive solo en este
+// navegador (localStorage), así que la variación es una referencia local,
+// no un dato sincronizado entre el equipo.
+function kpiTrendHTML(key, actual) {
+  try {
+    const raw = localStorage.getItem(kpiSnapKey());
+    if (!raw) return "";
+    const snaps = JSON.parse(raw),
+      hace7 = isoOf(addDays(new Date(), -7)),
+      entry = snaps[hace7];
+    if (!entry || entry[key] == null) return "";
+    const diff = actual - entry[key];
+    if (!diff) return '<div class="kpi-trend flat">= vs. semana pasada</div>';
+    return (
+      '<div class="kpi-trend ' +
+      (diff > 0 ? "up" : "down") +
+      '">' +
+      (diff > 0 ? "▲ +" + diff : "▼ " + diff) +
+      " vs. semana pasada</div>"
+    );
+  } catch (e) {
+    return "";
+  }
+}
+function saveKpiSnapshot(map) {
+  try {
+    const raw = localStorage.getItem(kpiSnapKey()),
+      snaps = raw ? JSON.parse(raw) : {},
+      hoy = todayISO(),
+      corte = isoOf(addDays(new Date(), -30));
+    snaps[hoy] = map;
+    Object.keys(snaps).forEach((k) => {
+      if (k < corte) delete snaps[k];
+    });
+    localStorage.setItem(kpiSnapKey(), JSON.stringify(snaps));
+  } catch (e) {}
+}
+function weekStartISO(d) {
+  const dt = new Date(d),
+    dia = (dt.getDay() + 6) % 7;
+  dt.setDate(dt.getDate() - dia);
+  return isoOf(dt);
+}
+function throughputHTML() {
+  const semanas = 6,
+    hoy = new Date(),
+    buckets = {};
+  for (let i = semanas - 1; i >= 0; i--) buckets[weekStartISO(addDays(hoy, -7 * i))] = 0;
+  state.cards.forEach((tarjeta) => {
+    (tarjeta.actividad || []).forEach((entrada) => {
+      if (!/pasó a en revisión/i.test(entrada.texto || "")) return;
+      const semana = weekStartISO(new Date(entrada.ts));
+      if (semana in buckets) buckets[semana]++;
+    });
+  });
+  const claves = Object.keys(buckets),
+    tope = Math.max(1, ...Object.values(buckets));
+  return (
+    '<div class="throughput-row">' +
+    claves
+      .map((semana) => {
+        const cantidad = buckets[semana];
+        return (
+          '<div class="tp-bar-wrap" title="' +
+          cantidad +
+          " a En revisión · semana del " +
+          fmtShort(semana) +
+          '"><div class="tp-bar" style="height:' +
+          Math.max(4, Math.round((cantidad / tope) * 100)) +
+          '%"></div><span class="tp-n">' +
+          cantidad +
+          "</span></div>"
+        );
+      })
+      .join("") +
+    "</div>"
+  );
+}
+function lastMoveTs(tarjeta) {
+  const lista = (tarjeta.actividad || []).filter((arg) => /^pasó a /.test(arg.texto || ""));
+  return lista.length ? lista[lista.length - 1].ts : tarjeta.updatedAt || null;
+}
+function agingHTML(lista) {
+  const hoy = Date.now(),
+    umbral = 10 * 86400000,
+    estancadas = lista
+      .filter((tarjeta) => tarjeta.estado !== "en-revision")
+      .map((tarjeta) => ({ tarjeta, ts: lastMoveTs(tarjeta) }))
+      .filter((arg) => arg.ts && hoy - arg.ts >= umbral)
+      .sort((arg, arg2) => arg.ts - arg2.ts)
+      .slice(0, 6);
+  return estancadas.length
+    ? estancadas
+        .map(
+          (arg) =>
+            '<div class="venc" data-id="' +
+            arg.tarjeta.id +
+            '" data-action="card:open"><span class="venc-d over">' +
+            Math.floor((hoy - arg.ts) / 86400000) +
+            'd</span><span class="venc-t">' +
+            esc(arg.tarjeta.titulo) +
+            "</span>" +
+            stackHTML(arg.tarjeta) +
+            "</div>",
+        )
+        .join("")
+    : '<div style="color:var(--ink-soft);font-size:13px;padding:6px 0">Nada estancado 🎉</div>';
+}
 function renderResumen() {
   const lista = boardCards(),
     cantidad = state.cards.filter((tarjeta) => tarjeta.tipo === "curso" && inInventory(tarjeta)).length,
     cantidad2 = state.cards.filter((tarjeta) => tarjeta.tipo === "edu-point" && inInventory(tarjeta)).length,
     cantidad3 = lista.filter((arg) => arg.estado === "en-revision").length,
     cantidad4 = lista.filter(isOverdue).length,
-    fn = (cantidad5, txt, txt2, txt3, txt4, txt5) =>
-      '<div class="kpi" style="--kpi:' +
+    fn = (cantidad5, txt, txt2, txt3, txt4, txt5, filtEstado, quick) =>
+      '<div class="kpi' +
+      (txt4 ? " kpi-go" : "") +
+      '" style="--kpi:' +
       txt3 +
       '" ' +
-      (txt4 ? 'data-action="kpi:go" data-go="' + txt4 + '" ' + (txt5 ? 'data-sec="' + txt5 + '"' : "") : "") +
+      (txt4
+        ? 'data-action="kpi:go" data-go="' +
+          txt4 +
+          '" ' +
+          (txt5 ? 'data-sec="' + txt5 + '" ' : "") +
+          (filtEstado ? 'data-filt-estado="' + filtEstado + '" ' : "") +
+          (quick ? 'data-quick="' + quick + '" ' : "")
+        : "") +
       '>\n    <div class="kpi-num">' +
       cantidad5 +
       '</div><div class="kpi-lbl">' +
       txt +
       "</div>" +
       (txt2 ? '<div class="kpi-sub">' + txt2 + "</div>" : "") +
+      kpiTrendHTML(txt4 && filtEstado ? "estado:" + filtEstado : txt4 && quick ? "quick:" + quick : txt, cantidad5) +
       "</div>",
     cantidad6 = lista.length || 1,
     txt6 = ESTADOS.map((estado) => {
@@ -10248,21 +10707,56 @@ function renderResumen() {
         });
     }));
   const val3 = Math.max(1, ...Object.values(obj)),
-    txt8 = TEAM.map(
-      (miembro) =>
-        '<div class="bar-line"><span class="bl-lbl">' +
+    txt8 = TEAM.map((miembro) => {
+      const overload = obj[miembro.id] === val3 && val3 > 1;
+      return (
+        '<div class="bar-line' +
+        (overload ? " overload" : "") +
+        '"><span class="bl-lbl">' +
         avatarHTML(miembro.id, true) +
         " " +
         miembro.nombre +
+        (overload ? ' <span class="badge prio" style="margin-left:4px;font-size:10px">⚠ al palo</span>' : "") +
         '</span><div class="bl-track"><div class="bl-fill" style="width:' +
         Math.round((obj[miembro.id] / val3) * 100) +
         "%;background:" +
         miembro.color +
         '"></div></div><span class="bl-num">' +
         obj[miembro.id] +
-        "</span></div>",
-    ).join(""),
-    obj2 = {};
+        "</span></div>"
+      );
+    }).join(""),
+    objSec = {};
+  lista.forEach((tarjeta) => {
+    (tarjeta.sectores || []).forEach((s) => {
+      objSec[s] = (objSec[s] || 0) + 1;
+    });
+  });
+  const secMax = Math.max(1, ...Object.values(objSec)),
+    txt10 = Object.keys(objSec)
+      .sort((a, b) => objSec[b] - objSec[a])
+      .slice(0, 8)
+      .map(
+        (s) =>
+          '<button class="bar-line bar-line-btn" data-action="sec:go" data-sector="' +
+          s +
+          '" data-cat="' +
+          s +
+          '"><span class="bl-lbl">' +
+          esc(sectorName(s) || s) +
+          '</span><div class="bl-track"><div class="bl-fill" style="width:' +
+          Math.round((objSec[s] / secMax) * 100) +
+          '%;background:var(--cat)"></div></div><span class="bl-num">' +
+          objSec[s] +
+          "</span></button>",
+      )
+      .join("");
+  saveKpiSnapshot({
+    "Proyectos en el tablero": lista.length,
+    "estado:en-revision": cantidad3,
+    "quick:venc": cantidad4,
+  });
+  const obj2 = {};
   lista.forEach((arg) => (obj2[arg.tipo] = (obj2[arg.tipo] || 0) + 1));
   const txt9 = Object.keys(obj2)
     .sort((arg, arg2) => obj2[arg2] - obj2[arg])
@@ -10283,9 +10777,18 @@ function renderResumen() {
     ' 👋 — panorama de “lo que hacemos” y “lo que tenemos”.</div></div>\n    <div class="res-grid">\n      ' +
     fn(lista.length, "Proyectos en el tablero", "en movimiento", "var(--coto-blue)", "kanban") +
     "\n      " +
-    fn(cantidad3, "En revisión", "por publicar", "var(--warn)", "kanban") +
+    fn(cantidad3, "En revisión", "por publicar", "var(--warn)", "kanban", null, "en-revision") +
     "\n      " +
-    fn(cantidad4, "Vencidas", "requieren atención", cantidad4 ? "var(--bad)" : "var(--ok)", "kanban") +
+    fn(
+      cantidad4,
+      "Vencidas",
+      "requieren atención",
+      cantidad4 ? "var(--bad)" : "var(--ok)",
+      "kanban",
+      null,
+      null,
+      "venc",
+    ) +
     "\n      " +
     fn(cantidad, "Cursos activos", "en el mapa", "var(--ok)", "mapa", "cursos") +
     "\n      " +
@@ -10296,12 +10799,18 @@ function renderResumen() {
     txt7 +
     '</div>\n        <div class="res-card"><h3>🧩 Mezcla por tipo</h3><div>' +
     (txt9 || '<span style="color:var(--ink-soft)">—</span>') +
-    '</div></div>\n      </div>\n      <div>\n        <div class="res-card"><h3>◷ Por estado <span class="mini">' +
+    '</div></div>\n        <div class="res-card"><h3>🎨 Mezcla por sector</h3>' +
+    (txt10 || '<span style="color:var(--ink-soft)">—</span>') +
+    '</div>\n        <div class="res-card"><h3>📈 Velocidad · últimas semanas</h3>' +
+    throughputHTML(lista) +
+    '</div>\n      </div>\n      <div>\n        <div class="res-card"><h3>◷ Por estado <span class="mini">' +
     lista.length +
     " total</span></h3>" +
     txt6 +
     '</div>\n        <div class="res-card"><h3>👥 Carga del equipo <span class="mini">tablero</span></h3>' +
     txt8 +
+    '</div>\n        <div class="res-card"><h3>⏳ Estancadas <span class="mini">+10 días</span></h3>' +
+    agingHTML(lista) +
     "</div>\n      </div>\n    </div>"
   );
 }
@@ -10325,6 +10834,10 @@ function openDetail(id2) {
     $("#overlay").classList.remove("hidden"));
 }
 function closePanel() {
+  if (state.selectedId) {
+    if (guardadoPendiente) flash("💾 Guardando… se termina solo, no hace falta esperar");
+    else if (!state.saveError) flash("✓ Todo guardado");
+  }
   ($("#panel").classList.remove("open"),
     $("#overlay").classList.add("hidden"),
     (state.selectedId = null),
@@ -10383,6 +10896,79 @@ function renderSectorResults(value) {
     : value
       ? '<div class="sec-none">Sin coincidencias</div>'
       : "";
+}
+function datePresetsHTML(campo) {
+  return (
+    '<div class="datepresets"><button type="button" class="dp-btn" data-action="date:preset" data-field="' +
+    campo +
+    '" data-preset="hoy">Hoy</button><button type="button" class="dp-btn" data-action="date:preset" data-field="' +
+    campo +
+    '" data-preset="manana">Mañana</button><button type="button" class="dp-btn" data-action="date:preset" data-field="' +
+    campo +
+    '" data-preset="semana">+1 semana</button></div>'
+  );
+}
+function vinculosHTML(tarjeta) {
+  const lista = (tarjeta.vinculos || [])
+      .map((id) => state.cards.find((c) => c.id === id))
+      .filter(Boolean),
+    disponibles = state.cards.filter(
+      (c) => c.id !== tarjeta.id && inInventory(c) && !(tarjeta.vinculos || []).includes(c.id),
+    );
+  return (
+    '<details class="acc sec-acc" ' +
+    (lista.length ? "open" : "") +
+    '><summary class="sub">Vínculos con el Mapa · ' +
+    lista.length +
+    '<span class="ring"></span></summary>\n        <div class="acc-body">\n    ' +
+    (lista
+      .map(
+        (c) =>
+          '<div class="lnk"><span class="lnk-a" data-action="card:open" data-id="' +
+          c.id +
+          '" style="cursor:pointer">' +
+          ((allTipos()[c.tipo] || {}).icon || "•") +
+          " " +
+          esc(c.titulo) +
+          '</span><span class="chk-del" data-action="vinc:del" data-id="' +
+          c.id +
+          '" title="Quitar">✕</span></div>',
+      )
+      .join("") ||
+      '<div style="font-size:12px;color:var(--ink-soft)">Sin vínculos. Sumá un curso o Edu Point del Mapa relacionado.</div>') +
+    (disponibles.length
+      ? '\n    <select data-action-select="vinc:add" id="vincAdd" style="margin-top:6px"><option value="">+ Vincular curso / Edu Point…</option>' +
+        disponibles
+          .slice(0, 60)
+          .map((c) => '<option value="' + c.id + '">' + esc(c.titulo) + "</option>")
+          .join("") +
+        "</select>"
+      : "") +
+    "\n  </div></details>"
+  );
+}
+// Aproximación honesta a "quién está mirando esto": esta app sincroniza
+// por polling cada pocos segundos (no hay websockets), así que un
+// indicador de presencia en vivo sería poco confiable y, peor, escribir
+// una marca de "viendo" en cada tarjeta interferiría con el sistema de
+// huellas que resuelve conflictos de edición simultánea. En su lugar se
+// muestra quién la tocó por última vez y cuándo, usando el log de
+// actividad que ya existe — sin agregar campos nuevos al documento
+// sincronizado.
+function ultimoTocadoHTML(tarjeta) {
+  const lista = tarjeta.actividad || [];
+  if (!lista.length) return "";
+  const ultima = lista[lista.length - 1];
+  if (!ultima || ultima.autor === state.user) return "";
+  return (
+    ' <span class="ultimo-toco" title="Última actividad de ' +
+    esc(ultima.autor) +
+    '">👀 ' +
+    esc(ultima.autor) +
+    " · " +
+    relTime(ultima.ts) +
+    "</span>"
+  );
 }
 function renderPanel() {
   const tarjeta = current();
@@ -10652,17 +11238,21 @@ function renderPanel() {
     " " +
     ((allTipos()[tarjeta.tipo] || {}).nombre || tarjeta.tipo) +
     (inInventory(tarjeta) ? " · ◎ activo" : "") +
-    '</div>\n        <input class="chk-text" style="font-size:18px;font-weight:700;font-family:var(--titulo);width:100%;margin-top:4px" value="' +
+    ultimoTocadoHTML(tarjeta) +
+    '</div>\n        <input class="chk-text" style="font-size:18px;font-weight:700;font-family:var(--titulo);width:100%;margin-top:4px" placeholder="Ej: Cajas – Apertura del sector" value="' +
     esc(tarjeta.titulo) +
     '" data-field="titulo">\n      </div>\n      <div class="panel-headtop">' +
     savestateHTML() +
+    (state.view !== "kanban" && !inInventory(tarjeta)
+      ? '<button class="btn btn-icon btn-ghost" data-action="panel:goplanner" title="Ver en Planner">↗</button>'
+      : "") +
     '<button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>\n    </div>\n    <div class="panel-body">\n      ' +
     txt7 +
     '\n      <div class="fld-row">\n        <div class="fld"><label>Tipo</label><select data-field="tipo">' +
     txt +
     '</select></div>\n        <div class="fld"><label>Estado</label><select data-field="estado">' +
     txt2 +
-    '</select></div>\n      </div>\n      <div class="fld"><label>Responsable</label><select data-field="responsable"><option value="">— sin asignar —</option>' +
+    '</select></div>\n      </div>\n      <div class="fld"><label>Responsable</label><div style="display:flex;gap:6px"><select data-field="responsable" style="flex:1"><option value="">— sin asignar —</option>' +
     TEAM.map(
       (miembro) =>
         '<option value="' +
@@ -10673,7 +11263,11 @@ function renderPanel() {
         miembro.nombre +
         "</option>",
     ).join("") +
-    '</select><span class="fld-hint">Quién rinde cuentas por la tarjeta (uno solo).</span></div>\n\n      ' +
+    "</select>" +
+    (state.userId && tarjeta.responsable !== state.userId
+      ? '<button class="btn btn-ghost btn-sm" data-action="resp:me" title="Asignarme esta tarjeta">Asignarme</button>'
+      : "") +
+    '</div><span class="fld-hint">Quién rinde cuentas por la tarjeta (uno solo).</span></div>\n\n      ' +
     // "Más detalles" arranca colapsado en una tarjeta nueva: fechas, prioridad,
     // recurrencia, asignados y sectores no hacen falta para crear algo rápido.
     // Si la tarjeta ya trae alguno cargado, arranca abierto — lo que ya está
@@ -10688,11 +11282,15 @@ function renderPanel() {
       : "") +
     '><summary class="sub">Más detalles<span class="ring"></span></summary>\n        <div class="acc-body">\n      <div class="fld-row">\n        <div class="fld"><label>Inicio</label><input type="date" value="' +
     (tarjeta.inicio || "") +
-    '" data-field="inicio"></div>\n        <div class="fld"><label>Fin ' +
+    '" data-field="inicio">' +
+    datePresetsHTML("inicio") +
+    '</div>\n        <div class="fld"><label>Fin ' +
     (vencida ? '· <span style="color:var(--bad)">vencida</span>' : "") +
     '</label><input type="date" value="' +
     (tarjeta.fin || "") +
-    '" data-field="fin"></div>\n      </div>\n      <div class="fld-row"><div class="fld"><label>Prioridad</label><select data-field="prioridad"><option value="normal" ' +
+    '" data-field="fin">' +
+    datePresetsHTML("fin") +
+    '</div>\n      </div>\n      <div class="fld-row"><div class="fld"><label>Prioridad</label><select data-field="prioridad"><option value="normal" ' +
     (tarjeta.prioridad === "normal" ? "selected" : "") +
     '>Normal</option><option value="alta" ' +
     (tarjeta.prioridad === "alta" ? "selected" : "") +
@@ -10730,10 +11328,12 @@ function renderPanel() {
     "</textarea></div></details>\n      " +
     html4 +
     "\n      " +
+    vinculosHTML(tarjeta) +
+    "\n      " +
     html5 +
     "\n      " +
     html6 +
-    '\n\n      <div style="display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px">\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <button class="btn btn-sm" data-action="tpl:save">💾 Plantilla</button>\n        <button class="btn btn-sm" data-action="card:dup">⧉ Duplicar</button>\n        <button class="btn btn-ghost btn-sm" style="color:var(--bad);margin-left:auto" data-action="card:del">🗑 Eliminar</button>\n      </div>\n    </div>';
+    '\n\n      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:14px">\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
 }
 function openCarga() {
   const obj = {};
@@ -10889,6 +11489,19 @@ function openModal(html) {
     '<div class="modal-bg" data-action="modal:close"></div><div class="modal">' + html + "</div>"),
     $("#modal").classList.remove("hidden"));
 }
+// Reemplaza al confirm() nativo del navegador (que corta el flujo con un
+// cuadro gris fuera de estilo) por un modal propio. onYes se guarda en una
+// variable de módulo porque el modal es HTML plano: no hay closure posible
+// una vez que el botón vive en el DOM.
+let _confirmCb = null;
+function confirmar(mensaje, onYes) {
+  ((_confirmCb = onYes),
+    openModal(
+      '<h2>¿Confirmás?</h2><div class="sub-t">' +
+        esc(mensaje) +
+        '</div><div class="modal-foot"><button class="btn" data-action="confirm:no">Cancelar</button><button class="btn btn-primary" style="background:var(--bad);border-color:var(--bad)" data-action="confirm:yes">Sí, confirmar</button></div>',
+    ));
+}
 function openNuevo() {
   state.draftTipo = "curso";
   const txt = Object.keys(allTipos())
@@ -10965,7 +11578,11 @@ const STRUCTURAL = ["tipo", "estado", "responsable", "inicio", "fin", "prioridad
 document.addEventListener("click", (ev) => {
   const el3 = ev.target.closest(".tab[data-view]");
   if (el3) {
-    state.view !== el3.dataset.view && ((state.view = el3.dataset.view), pushNav(), render());
+    state.view !== el3.dataset.view &&
+      ((state.view = el3.dataset.view),
+      pushNav(),
+      render(),
+      guardarUltimaVista(state.view));
     return;
   }
   const el = ev.target.closest("[data-action]");
@@ -11044,7 +11661,18 @@ document.addEventListener("click", (ev) => {
     case "kpi:go":
       state.view = el.dataset.go;
       if (el.dataset.sec) state.mapaSec = el.dataset.sec;
+      if (el.dataset.filtEstado) ((state.filters = Object.assign({}, state.filters, { estado: el.dataset.filtEstado })), (state.quick = ""));
+      else if (el.dataset.quick) state.quick = el.dataset.quick;
       (pushNav(), render());
+      break;
+    case "sec:go":
+      ((state.view = "kanban"),
+        (state.filters = Object.assign({}, state.filters, { sector: el.dataset.sector })),
+        pushNav(),
+        render());
+      break;
+    case "panel:goplanner":
+      ((state.view = "kanban"), pushNav(), render(), renderPanel());
       break;
     case "hub:go":
       ((state.view = el.dataset.go), pushNav(), render());
@@ -11184,8 +11812,26 @@ document.addEventListener("click", (ev) => {
       break;
     case "bulk:del": {
       if (!state.sel.length) break;
-      if (!confirm("¿Eliminar " + state.sel.length + " tarjeta(s)?")) break;
-      (dropCards(state.sel), (state.sel = []), touch(), render(), flash("🗑 Eliminadas"));
+      const idsBulk = state.sel.slice();
+      confirmar("¿Eliminar " + idsBulk.length + " tarjeta(s)?", () => {
+        (dropCardsWithUndo(idsBulk), (state.sel = []), render());
+      });
+      break;
+    }
+    case "confirm:yes": {
+      const fn = _confirmCb;
+      ((_confirmCb = null), closeModal(), fn && fn());
+      break;
+    }
+    case "confirm:no":
+      ((_confirmCb = null), closeModal());
+      break;
+    case "undo:del":
+      undoBorrado();
+      break;
+    case "coach:close": {
+      const elCoach = el.closest(".coachcard");
+      if (elCoach) (elCoach.classList.remove("show"), setTimeout(() => elCoach.remove(), 250));
       break;
     }
     case "misemana:open":
@@ -11265,8 +11911,27 @@ document.addEventListener("click", (ev) => {
       ((state.quick = state.quick === el.dataset.q ? "" : el.dataset.q), render());
       break;
     case "card:link":
-      copyCardLink(current());
+      copyCardLink(val10 ? state.cards.find((c) => c.id === val10) : current());
       break;
+    case "qedit:open":
+      openQEdit(val10);
+      break;
+    case "qedit:save": {
+      const tarjeta9 = state.cards.find((c) => c.id === el.dataset.id);
+      if (tarjeta9) {
+        const resp = $("#qeResp"),
+          prio = $("#qePrio"),
+          fin = $("#qeFin");
+        (resp && (tarjeta9.responsable = resp.value || null),
+          prio && (tarjeta9.prioridad = prio.value),
+          fin && (tarjeta9.fin = fin.value || null),
+          touch(),
+          closeModal(),
+          render(),
+          flash("✓ Actualizada"));
+      }
+      break;
+    }
     case "cal:prev":
       calShift(-1);
       break;
@@ -11510,6 +12175,54 @@ document.addEventListener("click", (ev) => {
     case "card:del":
       doDelete();
       break;
+    case "kcard:dup":
+      doDup(val10);
+      break;
+    case "kcard:del":
+      doDelete(val10);
+      break;
+    case "vinc:add": {
+      const tarjeta5 = current();
+      if (tarjeta5 && val10) {
+        ((tarjeta5.vinculos = tarjeta5.vinculos || []),
+          !tarjeta5.vinculos.includes(val10) && tarjeta5.vinculos.push(val10),
+          touch(),
+          renderPanel());
+      }
+      break;
+    }
+    case "vinc:del": {
+      const tarjeta6 = current();
+      if (tarjeta6 && val10) {
+        ((tarjeta6.vinculos = (tarjeta6.vinculos || []).filter((arg) => arg !== val10)), touch(), renderPanel());
+      }
+      break;
+    }
+    case "mapa:relacionadas":
+      ((state.view = "kanban"),
+        (state.filters = Object.assign({}, state.filters, { sector: el.dataset.sector })),
+        pushNav(),
+        render());
+      break;
+    case "resp:me": {
+      const tarjeta7 = current();
+      if (tarjeta7 && state.userId) ((tarjeta7.responsable = state.userId), touch(), renderPanel());
+      break;
+    }
+    case "date:preset": {
+      const tarjeta8 = current(),
+        campo = el.dataset.field,
+        val22 = el.dataset.preset;
+      if (tarjeta8 && campo) {
+        const iso3 =
+          val22 === "hoy" ? todayISO() : val22 === "manana" ? isoOf(addDays(new Date(), 1)) : isoOf(addDays(new Date(), 7));
+        ((tarjeta8[campo] = iso3), touch(), renderPanel());
+      }
+      break;
+    }
+    case "panel:menu":
+      el.closest(".panel-menu-wrap") && el.closest(".panel-menu-wrap").classList.toggle("open");
+      break;
   }
 });
 function navState() {
@@ -11589,7 +12302,31 @@ function toggleArr(arg, txt, sector) {
     }
   }
 }),
+  document.addEventListener(
+    "blur",
+    (ev) => {
+      if (ev.target && ev.target.dataset && ev.target.dataset.field === "titulo" && !ev.target.value.trim()) {
+        const tarjeta11 = current();
+        if (tarjeta11) {
+          ((ev.target.value = "Sin título"), (tarjeta11.titulo = "Sin título"), touch());
+          flash("El título no puede quedar vacío", true);
+        }
+      }
+    },
+    true,
+  ),
   document.addEventListener("change", (ev) => {
+    if (ev.target.id === "vincAdd") {
+      const tarjeta10 = current(),
+        val0 = ev.target.value;
+      if (tarjeta10 && val0) {
+        ((tarjeta10.vinculos = tarjeta10.vinculos || []),
+          !tarjeta10.vinculos.includes(val0) && tarjeta10.vinculos.push(val0),
+          touch(),
+          renderPanel());
+      }
+      return;
+    }
     const val = ev.target.dataset.bulk;
     if (val) {
       applyBulk(val, ev.target.value);
@@ -11775,6 +12512,9 @@ function pushRecent(id2) {
   const elFiltros = $("#filtrosPop");
   if (elFiltros && !elFiltros.classList.contains("hidden") && !ev.target.closest(".filt-pop-wrap"))
     elFiltros.classList.add("hidden");
+  document.querySelectorAll(".panel-menu-wrap.open").forEach((wrap) => {
+    if (!wrap.contains(ev.target)) wrap.classList.remove("open");
+  });
 }),
   document.addEventListener("keydown", (ev) => {
     if ((ev.metaKey || ev.ctrlKey) && (ev.key === "k" || ev.key === "K")) {
@@ -11820,6 +12560,30 @@ function pushRecent(id2) {
         ((tarjeta.estado = val), logAct(tarjeta, "creada"), state.cards.push(tarjeta), touch(), render());
         const el3 = document.querySelector('[data-quickadd="' + val + '"]');
         if (el3) el3.focus();
+      }
+    }
+    // Enter en un ítem del checklist confirma el texto tipeado y abre uno
+    // nuevo con el foco puesto, para cargar varios sin soltar el teclado.
+    if (
+      ev.key === "Enter" &&
+      ev.target.dataset &&
+      ev.target.dataset.field &&
+      ev.target.dataset.field.indexOf("cl:") === 0
+    ) {
+      ev.preventDefault();
+      const tarjeta2 = current();
+      if (tarjeta2) {
+        const idActual = ev.target.dataset.field.slice(3),
+          hallado = (tarjeta2.checklist || []).find((arg) => arg.id === idActual);
+        if (hallado) hallado.text = ev.target.value;
+        const nuevoItem = {
+          id: uid(),
+          text: "",
+          done: false,
+        };
+        (tarjeta2.checklist.push(nuevoItem), touch(), renderPanel());
+        const el4 = document.querySelector('[data-field="cl:' + nuevoItem.id + '"]');
+        if (el4) el4.focus();
       }
     }
   }));
@@ -11879,8 +12643,8 @@ function doSaveTpl() {
     closeModal(),
     flash("🧩 Plantilla “" + txt + "” guardada"));
 }
-function doDup() {
-  const tarjeta2 = current();
+function doDup(id) {
+  const tarjeta2 = id ? state.cards.find((c) => c.id === id) : current();
   if (!tarjeta2) return;
   const tarjeta = JSON.parse(JSON.stringify(tarjeta2));
   ((tarjeta.id = uid()),
@@ -11890,15 +12654,144 @@ function doDup() {
     (tarjeta.fases || []).forEach((arg) => (arg.id = uid())),
     state.cards.push(tarjeta),
     touch(),
-    openDetail(tarjeta.id),
-    render());
+    flash("⧉ Tarjeta duplicada"),
+    id ? render() : (openDetail(tarjeta.id), render()));
 }
-function doDelete() {
-  const tarjeta = current();
+function doDelete(id) {
+  const tarjeta = id ? state.cards.find((c) => c.id === id) : current();
   if (!tarjeta) return;
-  if (!confirm("¿Eliminar “" + tarjeta.titulo + "”?")) return;
-  (dropCards([tarjeta.id]), touch(), closePanel());
+  confirmar("¿Eliminar “" + tarjeta.titulo + "”?", () => {
+    const eraSeleccionada = tarjeta.id === state.selectedId;
+    (dropCardsWithUndo([tarjeta.id]), eraSeleccionada ? closePanel() : render());
+  });
 }
+// Snackbar de "Deshacer" para el último borrado: guarda una copia completa
+// de las tarjetas justo antes de tirarlas, y las repone si nadie tocó nada
+// más en el medio.
+let _ultimoBorrado = null,
+  _undoTimer = null;
+function dropCardsWithUndo(ids) {
+  const snap = ids
+    .map((id) => state.cards.find((c) => c.id === id))
+    .filter(Boolean)
+    .map((c) => JSON.parse(JSON.stringify(c)));
+  if (!snap.length) return;
+  (dropCards(ids), touch());
+  ((_ultimoBorrado = snap), clearTimeout(_undoTimer), mostrarUndo(snap.length));
+  _undoTimer = setTimeout(() => {
+    ((_ultimoBorrado = null), ocultarUndo());
+  }, 6000);
+}
+function undoBorrado() {
+  if (!_ultimoBorrado) return;
+  (_ultimoBorrado.forEach((c) => {
+    (delete state.deleted[c.id], state.cards.push(c));
+  }),
+    (_ultimoBorrado = null),
+    clearTimeout(_undoTimer),
+    ocultarUndo(),
+    touch(),
+    render(),
+    flash("↩ Restaurada"));
+}
+function mostrarUndo(cantidad) {
+  let el = $("#undoBar");
+  (!el &&
+    ((el = document.createElement("div")), (el.id = "undoBar"), (el.className = "snackbar"),
+    document.body.appendChild(el)),
+    (el.innerHTML =
+      "<span>" +
+      (cantidad > 1 ? cantidad + " tarjetas eliminadas" : "Tarjeta eliminada") +
+      '</span><button class="btn btn-sm" data-action="undo:del">↩ Deshacer</button>'),
+    el.classList.add("show"));
+}
+function ocultarUndo() {
+  const el = $("#undoBar");
+  if (el) el.classList.remove("show");
+}
+// Edición rápida: un mini-modal con solo responsable/prioridad/fecha fin,
+// para no tener que abrir el panel completo por un cambio de un campo.
+function openQEdit(id) {
+  const tarjeta = state.cards.find((c) => c.id === id);
+  if (!tarjeta) return;
+  openModal(
+    '<h2 style="font-size:16px">✎ Edición rápida</h2><div class="sub-t">' +
+      esc(tarjeta.titulo) +
+      '</div><div class="fld"><label>Responsable</label><select id="qeResp"><option value="">— sin asignar —</option>' +
+      TEAM.map(
+        (m) =>
+          '<option value="' +
+          m.id +
+          '" ' +
+          (tarjeta.responsable === m.id ? "selected" : "") +
+          ">" +
+          esc(m.nombre) +
+          "</option>",
+      ).join("") +
+      '</select></div><div class="fld-row"><div class="fld"><label>Prioridad</label><select id="qePrio"><option value="normal" ' +
+      (tarjeta.prioridad === "normal" ? "selected" : "") +
+      '>Normal</option><option value="alta" ' +
+      (tarjeta.prioridad === "alta" ? "selected" : "") +
+      '>Alta</option></select></div><div class="fld"><label>Fecha fin</label><input type="date" id="qeFin" value="' +
+      (tarjeta.fin || "") +
+      '"></div></div><div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="qedit:save" data-id="' +
+      id +
+      '">Guardar</button></div>',
+  );
+}
+// Menú contextual (clic derecho) sobre una tarjeta del kanban: las acciones
+// más usadas a mano, sin tener que abrir el panel.
+function cerrarCtxMenu() {
+  const el = $("#ctxMenu");
+  if (el) el.remove();
+}
+function abrirCtxMenu(x, y, id) {
+  cerrarCtxMenu();
+  const el = document.createElement("div");
+  ((el.id = "ctxMenu"), (el.className = "ctxmenu"));
+  el.innerHTML =
+    '<button data-action="card:open" data-id="' +
+    id +
+    '">👁 Abrir</button><button data-action="qedit:open" data-id="' +
+    id +
+    '">✎ Edición rápida</button><button data-action="kcard:dup" data-id="' +
+    id +
+    '">⧉ Duplicar</button><button data-action="card:link" data-id="' +
+    id +
+    '">🔗 Copiar enlace</button><button data-action="kcard:del" data-id="' +
+    id +
+    '" style="color:var(--bad)">🗑 Eliminar</button>';
+  document.body.appendChild(el);
+  const rect = el.getBoundingClientRect(),
+    left = Math.min(x, window.innerWidth - rect.width - 8),
+    top = Math.min(y, window.innerHeight - rect.height - 8);
+  ((el.style.left = Math.max(4, left) + "px"), (el.style.top = Math.max(4, top) + "px"));
+  setTimeout(() => document.addEventListener("click", cerrarCtxMenu, { once: true }), 0);
+}
+document.addEventListener("contextmenu", (ev) => {
+  const el = ev.target.closest(".kcard");
+  if (!el) return;
+  (ev.preventDefault(), abrirCtxMenu(ev.clientX, ev.clientY, el.dataset.id));
+});
+// Botón "volver arriba": el Mapa y el Planner pueden crecer mucho (80+
+// tarjetas, columnas largas) y la app no tiene un scroll propio por
+// sección — es el documento entero el que se desplaza.
+(function initGoTop() {
+  const el = document.createElement("button");
+  ((el.id = "goTop"), (el.className = "gotop"), (el.title = "Volver arriba"), (el.setAttribute("aria-label", "Volver arriba")), (el.innerHTML = "↑"));
+  document.addEventListener("click", (ev) => {
+    if (ev.target.closest("#goTop")) window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  document.addEventListener("DOMContentLoaded", () => document.body.appendChild(el));
+  if (document.readyState !== "loading") document.body.appendChild(el);
+  window.addEventListener(
+    "scroll",
+    () => {
+      el.classList.toggle("show", window.scrollY > 480);
+    },
+    { passive: true },
+  );
+})();
 const ICON_SUN =
     '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
   ICON_MOON =
@@ -11941,9 +12834,14 @@ function mostrarPantallaSinConexion(err) {
 function showBanner() {
   const val = Store.mode();
   let val2;
-  if (val === "supabase")
+  if (state.reconectando)
     val2 =
-      '<div class="note" style="background:var(--ok-soft);border-color:color-mix(in srgb, var(--ok) 40%, transparent);color:var(--ok)">🟢 <b>Equipo conectado (Supabase)</b> — lo que carga cada uno lo ven todos en vivo.</div>';
+      '<div class="note warn">🟡 <b>Reconectando…</b> No se pudo sincronizar la última vez; reintentando cada ' +
+      Math.round(BACKEND.pollMs / 1000) +
+      "s. Tus cambios se guardan localmente mientras tanto.</div>";
+  else if (val === "supabase")
+    val2 =
+      '<div class="note" style="background:var(--ok-soft);border-color:color-mix(in srgb, var(--ok) 40%, transparent);color:var(--ok)">🟢 <b>Equipo conectado (Supabase)</b> — lo que carga cada uno lo ven todos en vivo. <span id="syncAgo" class="sync-ago"></span></div>';
   else {
     if (val === "error")
       val2 =
@@ -11956,8 +12854,13 @@ function showBanner() {
         val2 = '<div class="note">🔗 Persistencia compartida activa — lo que cargás lo ve el equipo.</div>';
     }
   }
-  $("#banner").innerHTML = val2;
+  ($("#banner").innerHTML = val2), updateSyncAgo();
 }
+function updateSyncAgo() {
+  const el = $("#syncAgo");
+  if (el && state.lastSyncTs) el.textContent = "· sincronizado " + relTime(state.lastSyncTs);
+}
+setInterval(updateSyncAgo, 1000);
 let flashT = null;
 function flash(txt, flag) {
   clearTimeout(flashT);
@@ -12007,6 +12910,7 @@ function enterAs(value) {
       "<span>" +
       esc(value) +
       '</span><span style="opacity:.45;font-size:11px">▾</span>'));
+  if (recordarUltimaVista()) render();
   try {
     const val = (location.hash || "").match(/card=([^&]+)/);
     if (val) {
@@ -12014,6 +12918,48 @@ function enterAs(value) {
       if (state.cards.some((tarjeta) => tarjeta.id === val2)) setTimeout(() => openDetail(val2), 60);
     }
   } catch (err) {}
+  mostrarOnboarding();
+}
+const VISTAS_VALIDAS = ["inicio", "resumen", "kanban", "calendario", "timeline", "agenda", "mapa"];
+function guardarUltimaVista(v) {
+  try {
+    if (VISTAS_VALIDAS.includes(v)) localStorage.setItem("cf.lastView", v);
+  } catch (e) {}
+}
+// Vuelve a la última pestaña que la persona miró, en vez de arrancar
+// siempre en el hub de Inicio. Solo local (localStorage): cada quien
+// recuerda la suya, no es un dato de equipo.
+function recordarUltimaVista() {
+  try {
+    const v = localStorage.getItem("cf.lastView");
+    if (v && VISTAS_VALIDAS.includes(v) && v !== state.view) {
+      state.view = v;
+      return true;
+    }
+  } catch (e) {}
+  return false;
+}
+// Onboarding contextual: un cartel breve, una única vez por navegador,
+// señalando funciones que ya existen pero cuestan de descubrir.
+function mostrarOnboarding() {
+  try {
+    if (localStorage.getItem("cf.onboardShown")) return;
+    localStorage.setItem("cf.onboardShown", "1");
+  } catch (e) {
+    return;
+  }
+  setTimeout(() => {
+    const el = document.createElement("div");
+    ((el.className = "coachcard"),
+      (el.innerHTML =
+        '<div class="coachcard-t">💡 Tres atajos que quizás no viste</div>' +
+        '<ul class="coachcard-l"><li><b>Ctrl+K</b> (o <b>/</b>) abre un buscador rápido: tarjetas, cursos, secciones.</li>' +
+        '<li>El botón <b>☰ Filtros</b> del Planner agrupa persona/sector/tipo/estado — el contador muestra cuántos hay activos.</li>' +
+        '<li>Clic derecho sobre una tarjeta del Planner abre un menú con las acciones más usadas.</li></ul>' +
+        '<button class="btn btn-sm btn-primary" data-action="coach:close">Entendido</button>'),
+      document.body.appendChild(el),
+      setTimeout(() => el.classList.add("show"), 30));
+  }, 900);
 }
 function updateGatePass() {
   const el = $("#gatePassInput");
@@ -12563,26 +13509,27 @@ function restoreBackup(ts) {
     flash("No encontré esa copia", true);
     return;
   }
-  if (!confirm("Restaurar la copia del " + fmtBackupDate(hit.ts) + "? Reemplaza el tablero actual.")) return;
-  let doc;
-  try {
-    doc = JSON.parse(hit.doc);
-  } catch (e) {
-    flash("La copia está dañada", true);
-    return;
-  }
-  const ids = new Set(doc.cards.map((c) => c.id));
-  (dropCards(state.cards.filter((c) => !ids.has(c.id)).map((c) => c.id)),
-    (state.cards = doc.cards),
-    (state.customTpl = doc.templates || {}));
-  if (doc.sectores) Object.assign(SECTORES, doc.sectores);
-  if (doc.agenda && typeof doc.agenda === "object") state.agenda = doc.agenda;
-  (Array.isArray(doc.team) && doc.team.length && ((TEAM.length = 0), doc.team.forEach((m) => TEAM.push(m))),
-    injectSectorStyles(),
-    touch(),
-    closeModal(),
-    render(),
-    flash("🛟 Copia restaurada"));
+  confirmar("Restaurar la copia del " + fmtBackupDate(hit.ts) + "? Reemplaza el tablero actual.", () => {
+    let doc;
+    try {
+      doc = JSON.parse(hit.doc);
+    } catch (e) {
+      flash("La copia está dañada", true);
+      return;
+    }
+    const ids = new Set(doc.cards.map((c) => c.id));
+    (dropCards(state.cards.filter((c) => !ids.has(c.id)).map((c) => c.id)),
+      (state.cards = doc.cards),
+      (state.customTpl = doc.templates || {}));
+    if (doc.sectores) Object.assign(SECTORES, doc.sectores);
+    if (doc.agenda && typeof doc.agenda === "object") state.agenda = doc.agenda;
+    (Array.isArray(doc.team) && doc.team.length && ((TEAM.length = 0), doc.team.forEach((m) => TEAM.push(m))),
+      injectSectorStyles(),
+      touch(),
+      closeModal(),
+      render(),
+      flash("🛟 Copia restaurada"));
+  });
 }
 function applySetting(val, value) {
   const partes = val.split(":");
@@ -12683,7 +13630,10 @@ function exportCSV() {
   const lista = [
     ["Titulo", "Tipo", "Estado", "Sectores", "Responsable", "Inicio", "Fin", "Prioridad", "Progreso"],
   ];
-  (boardCards().forEach((tarjeta) => {
+  // Respeta los filtros activos del Planner (persona/sector/tipo/estado/
+  // texto/chips rápidos/"Mis tareas"): lo que exportás es lo que estás
+  // viendo, no todo el tablero de memoria.
+  (filteredBoard().forEach((tarjeta) => {
     const avance = progress(tarjeta);
     lista.push([
       tarjeta.titulo,
@@ -12724,28 +13674,29 @@ function runImport() {
     flash('Backup sin "cards"', true);
     return;
   }
-  if (!confirm("Esto reemplaza todos los datos actuales. ¿Seguir?")) return;
-  const restoredIds = new Set(tarjeta.cards.map((c) => c.id));
-  (dropCards(state.cards.filter((c) => !restoredIds.has(c.id)).map((c) => c.id)),
-    (state.cards = tarjeta.cards),
-    (state.customTpl = tarjeta.templates || {}));
-  if (tarjeta.sectores) Object.assign(SECTORES, tarjeta.sectores);
-  (Array.isArray(tarjeta.team) &&
-    tarjeta.team.length &&
-    ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro))),
-    injectSectorStyles(),
-    touch(),
-    closeModal(),
-    render(),
-    flash("⬆ Datos importados"));
+  confirmar("Esto reemplaza todos los datos actuales. ¿Seguir?", () => {
+    const restoredIds = new Set(tarjeta.cards.map((c) => c.id));
+    (dropCards(state.cards.filter((c) => !restoredIds.has(c.id)).map((c) => c.id)),
+      (state.cards = tarjeta.cards),
+      (state.customTpl = tarjeta.templates || {}));
+    if (tarjeta.sectores) Object.assign(SECTORES, tarjeta.sectores);
+    (Array.isArray(tarjeta.team) &&
+      tarjeta.team.length &&
+      ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro))),
+      injectSectorStyles(),
+      touch(),
+      closeModal(),
+      render(),
+      flash("⬆ Datos importados"));
+  });
 }
 function resetSeed() {
-  if (
-    !confirm(
-      "Esto VACÍA el Planner (tablero/calendario/timeline) y (re)carga el catálogo de cursos en el Mapa — también en el backend compartido. La agenda y los Edu Points se conservan. Conviene exportar un backup antes. ¿Seguir?",
-    )
-  )
-    return;
+  confirmar(
+    "Esto VACÍA el Planner (tablero/calendario/timeline) y (re)carga el catálogo de cursos en el Mapa — también en el backend compartido. La agenda y los Edu Points se conservan. Conviene exportar un backup antes. ¿Seguir?",
+    () => resetSeedRun(),
+  );
+}
+function resetSeedRun() {
   ((state.cards = seedCards()),
     ingestCatalogo(CURSOS, {}),
     (state.selectedId = null),
@@ -12887,15 +13838,23 @@ async function boot() {
 }
 function startPolling() {
   if (!useSupabase()) return;
+  state.lastSyncTs = Date.now();
   setInterval(async () => {
     if (state.connOk === false) return;
     try {
       const editing = $("#panel").classList.contains("open") || !$("#modal").classList.contains("hidden"),
         changed = await mergeRemoteIntoState();
+      state.lastSyncTs = Date.now();
+      if (state.reconectando) ((state.reconectando = false), showBanner());
       if (!changed.length) return;
       if (editing) return;
       (injectSectorStyles(), render());
-    } catch (err) {}
+    } catch (err) {
+      // Un solo fallo de polling no significa que se cayó la conexión (el
+      // guardado igual reintenta): solo avisa "reconectando" para no gritar
+      // "sin conexión" por un hipo puntual de la red.
+      if (!state.reconectando) ((state.reconectando = true), showBanner());
+    }
   }, BACKEND.pollMs);
 }
 boot();

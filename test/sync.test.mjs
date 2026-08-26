@@ -217,10 +217,13 @@ async function pruebaBackups(browser, backend) {
     (await page.evaluate(() => state.cards.length)) === 0,
   );
 
+  // restoreBackup ya no usa el confirm() nativo del navegador: abre el
+  // modal propio de confirmación y espera el clic en "Sí, confirmar".
   await page.evaluate(() => {
-    window.confirm = () => true;
     restoreBackup(readBackups()[0].ts);
   });
+  await page.waitForTimeout(200);
+  await page.click('[data-action="confirm:yes"]');
   await page.waitForTimeout(2000);
 
   (check(
