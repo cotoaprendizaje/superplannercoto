@@ -5453,12 +5453,12 @@ function renderInicio() {
       ? ' · <b style="color:var(--bad)">' + cantidad + " vencida" + (cantidad !== 1 ? "s" : "") + "</b>"
       : "") +
     (cantidad2 ? " · <b>" + cantidad2 + "</b> alerta" + (cantidad2 !== 1 ? "s" : "") : "") +
-    '</p>\n    </div>\n    ' +
-    fraseWidgetHTML() +
-    '<div class="hub-grid">' +
+    '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
     html +
-    '</div>\n  </div><button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>'
+    "</div>\n    " +
+    fraseWidgetHTML() +
+    '\n  </div><button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>'
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
@@ -5542,35 +5542,47 @@ function tirarSlot() {
 // El "cartelito" fijo con la frase del día: solo aparece una vez que alguien
 // del equipo tiró de la palanca, y muestra la propia arriba de todo más un
 // mini ranking de quién sacó qué.
+const FRASE_PALETA = ["#006EA0", "#00C88C", "#8232C8", "#F0A032", "#D71E50", "#1EAADC", "#6E328C", "#CD1E1E", "#2E9E8F", "#E2A03F"];
+function colorForName(nombre) {
+  const miembro = TEAM.find((m) => m.nombre.toLowerCase() === (nombre || "").toLowerCase());
+  if (miembro) return miembro.color;
+  let hash = 0;
+  for (let i = 0; i < nombre.length; i++) hash = (hash * 31 + nombre.charCodeAt(i)) >>> 0;
+  return FRASE_PALETA[hash % FRASE_PALETA.length];
+}
+// El historial del día, centrado abajo del todo en Inicio: la propia frase
+// arriba y destacada, el resto del equipo debajo a modo de mini ranking.
 function fraseWidgetHTML() {
   ensureFraseDay();
-  const mia = state.cotofrase.porUsuario[state.user],
-    otros = Object.keys(state.cotofrase.porUsuario)
-      .filter((nombre) => nombre !== state.user)
-      .sort((a, b) => a.localeCompare(b, "es"));
-  if (!mia && !otros.length) return '<div class="frase-widget" id="fraseWidget" hidden></div>';
+  const porUsuario = state.cotofrase.porUsuario,
+    nombres = Object.keys(porUsuario);
+  if (!nombres.length) return '<div class="frase-widget" id="fraseWidget" hidden></div>';
+  const ordenados = nombres.slice().sort((a, b) => {
+    if (a === state.user) return -1;
+    if (b === state.user) return 1;
+    return a.localeCompare(b, "es");
+  });
   return (
-    '<div class="frase-widget" id="fraseWidget">' +
-    (mia
-      ? '<div class="frase-mia"><span class="frase-mia-tag">🎰 Tu CotoFrase de hoy</span><span class="frase-mia-txt">' +
-        esc(mia) +
-        "</span></div>"
-      : "") +
-    (otros.length
-      ? '<div class="frase-rank"><div class="frase-rank-t">Le tocó a…</div>' +
-        otros
-          .map(
-            (nombre) =>
-              '<div class="frase-rank-row"><span class="frase-rank-n">' +
-              esc(nombre) +
-              '</span><span class="frase-rank-f">' +
-              esc(state.cotofrase.porUsuario[nombre]) +
-              "</span></div>",
-          )
-          .join("") +
-        "</div>"
-      : "") +
-    "</div>"
+    '<div class="frase-widget" id="fraseWidget">\n      <div class="frase-card">\n        <div class="frase-card-t">🎰 CotoFrases de hoy</div>\n        <div class="frase-list">' +
+    ordenados
+      .map((nombre) => {
+        const mia = nombre === state.user;
+        return (
+          '<div class="frase-row' +
+          (mia ? " mine" : "") +
+          '"><span class="frase-avatar" style="background:' +
+          colorForName(nombre) +
+          '">' +
+          esc(nombre.slice(0, 1).toUpperCase()) +
+          '</span><span class="frase-row-n">' +
+          (mia ? "Vos" : esc(nombre)) +
+          '</span><span class="frase-row-f">' +
+          esc(porUsuario[nombre]) +
+          "</span></div>"
+        );
+      })
+      .join("") +
+    "</div>\n      </div>\n    </div>"
   );
 }
 function renderFraseWidget() {
