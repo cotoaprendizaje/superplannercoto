@@ -1492,6 +1492,21 @@ button {
   background: var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease;
+}
+.mapa-stat:hover {
+  transform: translateY(-2px);
+}
+.mapa-stat.active {
+  border-color: var(--coto-blue);
+  box-shadow:
+    0 0 0 1px var(--coto-blue),
+    var(--shadow);
 }
 .mapa-stat-ic {
   font-size: 18px;
@@ -1512,63 +1527,88 @@ button {
   color: var(--ink-soft);
   font-weight: 600;
 }
-.mapa-bubbles {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 18px 22px;
-  padding: 22px 12px 18px;
+/* Mapa de sectores: barra de composición (mismo lenguaje que un desglose de
+   almacenamiento o de lenguajes de un repo) + chips con nombre y número
+   debajo. Both filtran el resto del Mapa por sector al tocarlos. */
+.mapa-sectormap {
+  padding: 16px 18px 18px;
   margin-bottom: 6px;
   border-radius: var(--r-l);
   background: var(--surface-2);
   border: 1px solid var(--line);
 }
-.mapa-bubble-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  padding: 0;
-  font-family: inherit;
-}
-.mapa-bubble {
-  display: grid;
-  place-content: center;
-  border-radius: 50%;
-  background: var(--cat-grad, var(--cat, var(--coto-blue)));
-  color: var(--on-cat, #fff);
-  font-family: var(--titulo);
-  font-weight: 900;
-  font-size: 15px;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--cat, var(--coto-blue)) 45%, transparent);
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
-}
-.mapa-bubble-item:hover .mapa-bubble {
-  transform: scale(1.08);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--cat, var(--coto-blue)) 55%, transparent);
-}
-.mapa-bubble-item.active .mapa-bubble {
-  box-shadow:
-    0 0 0 3px var(--surface-2),
-    0 0 0 5px var(--cat, var(--coto-blue)),
-    0 8px 20px color-mix(in srgb, var(--cat, var(--coto-blue)) 55%, transparent);
-}
-.mapa-bubble-label {
+.mapa-sectormap-t {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
   color: var(--ink-soft);
-  max-width: 92px;
-  text-align: center;
-  line-height: 1.2;
+  margin-bottom: 10px;
 }
-.mapa-bubble-item.active .mapa-bubble-label {
+.mapa-distbar {
+  display: flex;
+  width: 100%;
+  height: 22px;
+  border-radius: var(--pill);
+  overflow: hidden;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+.mapa-distseg {
+  flex-shrink: 0;
+  min-width: 4px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: var(--cat-grad, var(--cat, var(--coto-blue)));
+  opacity: 0.88;
+  transition:
+    opacity 0.12s ease,
+    flex-basis 0.12s ease;
+}
+.mapa-distseg:hover,
+.mapa-distseg.active {
+  opacity: 1;
+}
+.mapa-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.mapa-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px 5px 8px;
+  border-radius: var(--pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--ink);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    border-color 0.1s ease;
+}
+.mapa-chip b {
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.mapa-chip:hover {
+  transform: translateY(-1px);
+}
+.mapa-chip.active {
+  border-color: var(--cat, var(--coto-blue));
+  background: color-mix(in srgb, var(--cat, var(--coto-blue)) 12%, var(--surface));
+}
+.mapa-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--cat, var(--coto-blue));
 }
 .mapa-secciones {
   display: flex;
