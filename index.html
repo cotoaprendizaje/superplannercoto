@@ -1539,6 +1539,21 @@ button {
   background: var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease;
+}
+.mapa-stat:hover {
+  transform: translateY(-2px);
+}
+.mapa-stat.active {
+  border-color: var(--coto-blue);
+  box-shadow:
+    0 0 0 1px var(--coto-blue),
+    var(--shadow);
 }
 .mapa-stat-ic {
   font-size: 18px;
@@ -1559,63 +1574,88 @@ button {
   color: var(--ink-soft);
   font-weight: 600;
 }
-.mapa-bubbles {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 18px 22px;
-  padding: 22px 12px 18px;
+/* Mapa de sectores: barra de composición (mismo lenguaje que un desglose de
+   almacenamiento o de lenguajes de un repo) + chips con nombre y número
+   debajo. Both filtran el resto del Mapa por sector al tocarlos. */
+.mapa-sectormap {
+  padding: 16px 18px 18px;
   margin-bottom: 6px;
   border-radius: var(--r-l);
   background: var(--surface-2);
   border: 1px solid var(--line);
 }
-.mapa-bubble-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  padding: 0;
-  font-family: inherit;
-}
-.mapa-bubble {
-  display: grid;
-  place-content: center;
-  border-radius: 50%;
-  background: var(--cat-grad, var(--cat, var(--coto-blue)));
-  color: var(--on-cat, #fff);
-  font-family: var(--titulo);
-  font-weight: 900;
-  font-size: 15px;
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--cat, var(--coto-blue)) 45%, transparent);
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease;
-}
-.mapa-bubble-item:hover .mapa-bubble {
-  transform: scale(1.08);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--cat, var(--coto-blue)) 55%, transparent);
-}
-.mapa-bubble-item.active .mapa-bubble {
-  box-shadow:
-    0 0 0 3px var(--surface-2),
-    0 0 0 5px var(--cat, var(--coto-blue)),
-    0 8px 20px color-mix(in srgb, var(--cat, var(--coto-blue)) 55%, transparent);
-}
-.mapa-bubble-label {
+.mapa-sectormap-t {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
   color: var(--ink-soft);
-  max-width: 92px;
-  text-align: center;
-  line-height: 1.2;
+  margin-bottom: 10px;
 }
-.mapa-bubble-item.active .mapa-bubble-label {
+.mapa-distbar {
+  display: flex;
+  width: 100%;
+  height: 22px;
+  border-radius: var(--pill);
+  overflow: hidden;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+.mapa-distseg {
+  flex-shrink: 0;
+  min-width: 4px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: var(--cat-grad, var(--cat, var(--coto-blue)));
+  opacity: 0.88;
+  transition:
+    opacity 0.12s ease,
+    flex-basis 0.12s ease;
+}
+.mapa-distseg:hover,
+.mapa-distseg.active {
+  opacity: 1;
+}
+.mapa-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.mapa-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px 5px 8px;
+  border-radius: var(--pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--ink);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    border-color 0.1s ease;
+}
+.mapa-chip b {
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.mapa-chip:hover {
+  transform: translateY(-1px);
+}
+.mapa-chip.active {
+  border-color: var(--cat, var(--coto-blue));
+  background: color-mix(in srgb, var(--cat, var(--coto-blue)) 12%, var(--surface));
+}
+.mapa-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--cat, var(--coto-blue));
 }
 .mapa-secciones {
   display: flex;
@@ -10400,7 +10440,9 @@ function renderTimeline() {
 function mapaFilter(lista) {
   const val = state.filters;
   return lista.filter((tarjeta) => {
-    if (val.sector && !(tarjeta.sectores || []).includes(val.sector)) return false;
+    if (val.sector === "__sin_sector__") {
+      if ((tarjeta.sectores || []).length) return false;
+    } else if (val.sector && !(tarjeta.sectores || []).includes(val.sector)) return false;
     if (val.cursoEstado === "activo" && tarjeta.enActualizacion) return false;
     if (val.cursoEstado === "actualizando" && !tarjeta.enActualizacion) return false;
     if (val.texto && !tarjeta.titulo.toLowerCase().includes(val.texto.toLowerCase())) return false;
@@ -10422,76 +10464,118 @@ function mapaStats() {
   return (
     '<div class="mapa-stats">' +
     [
-      ["✦", publicados, "Publicado"],
-      ["🚧", enDesarrollo, "En desarrollo"],
-      ["🎓", invCount("curso"), "Cursos"],
-      ["📍", invCount("edu-point"), "Edu Points"],
-      ["🎬", invCountKind("contenido"), "Contenido suelto"],
+      ["✦", publicados, "Publicado", "todos"],
+      ["🚧", enDesarrollo, "En desarrollo", "desarrollo"],
+      ["🎓", invCount("curso"), "Cursos", "cursos"],
+      ["📍", invCount("edu-point"), "Edu Points", "edu-points"],
+      ["🎬", invCountKind("contenido"), "Contenido suelto", "contenido"],
     ]
       .map(
         (arg) =>
-          '<div class="mapa-stat"><span class="mapa-stat-ic">' +
+          '<button class="mapa-stat' +
+          (state.mapaSec === arg[3] ? " active" : "") +
+          '" data-action="mapa:sec" data-sec="' +
+          arg[3] +
+          '"><span class="mapa-stat-ic">' +
           arg[0] +
           '</span><span class="mapa-stat-n">' +
           arg[1] +
           '</span><span class="mapa-stat-l">' +
           esc(arg[2]) +
-          "</span></div>",
+          "</span></button>",
       )
       .join("") +
     "</div>"
   );
 }
-// Un sector por burbuja, tamaño según cuánto tiene (publicado + en camino),
-// color de marca del sector: la foto de "qué tenemos por sector" de un
-// vistazo, y clickeable para filtrar el resto del Mapa por ese sector.
-function mapaBubbles() {
+// Barra de composición por sector (mismo lenguaje que el desglose de
+// almacenamiento o de lenguajes de un repo): un vistazo rápido de dónde
+// está concentrado el contenido y dónde hay poco, más una fila de chips
+// para elegir sector con nombre y número visibles. Clickear cualquiera de
+// los dos filtra el resto del Mapa por ese sector.
+function mapaSectorMap() {
   const conteo = {};
+  let sinSector = 0;
   state.cards
     .filter((tarjeta) => INV_TIPOS.has(tarjeta.tipo))
     .forEach((tarjeta) => {
-      (tarjeta.sectores || []).forEach((sec) => {
+      if (!(tarjeta.sectores || []).length) {
+        sinSector++;
+        return;
+      }
+      tarjeta.sectores.forEach((sec) => {
         conteo[sec] = (conteo[sec] || 0) + 1;
       });
     });
   const entradas = Object.keys(conteo)
     .map((sec) => [sec, conteo[sec]])
     .sort((a, b) => b[1] - a[1]);
+  if (sinSector) entradas.push(["", sinSector]);
   if (!entradas.length) return "";
-  const max = Math.max(...entradas.map((arg) => arg[1]));
+  const total = entradas.reduce((acc, arg) => acc + arg[1], 0);
+  const segmento = (arg) => {
+    const sec = arg[0],
+      n = arg[1],
+      nombre = sec ? sectorName(sec) || sec : "Sin sector",
+      activo = state.filters.sector === (sec || "__sin_sector__");
+    return {
+      sec,
+      n,
+      nombre,
+      activo,
+      attrs:
+        'data-action="mapa:bubble" data-sector="' +
+        (sec || "__sin_sector__") +
+        '"' +
+        (sec ? ' data-cat="' + sec + '"' : "") +
+        ' title="' +
+        esc(nombre) +
+        " · " +
+        n +
+        " (" +
+        Math.round((n / total) * 100) +
+        '%)"',
+    };
+  };
   return (
-    '<div class="mapa-bubbles">' +
+    '<div class="mapa-sectormap">\n      <div class="mapa-sectormap-t">Distribución por sector</div>\n      <div class="mapa-distbar">' +
     entradas
       .map((arg) => {
-        const sec = arg[0],
-          n = arg[1],
-          tam = Math.round(44 + Math.sqrt(n / max) * 68),
-          nombre = sectorName(sec) || sec,
-          activo = state.filters.sector === sec;
+        const s = segmento(arg);
         return (
-          '<button class="mapa-bubble-item' +
-          (activo ? " active" : "") +
-          '" data-action="mapa:bubble" data-sector="' +
-          sec +
-          '" data-cat="' +
-          sec +
-          '" title="' +
-          esc(nombre) +
-          " · " +
-          n +
-          '"><span class="mapa-bubble" style="width:' +
-          tam +
-          "px;height:" +
-          tam +
-          'px">' +
-          n +
-          '</span><span class="mapa-bubble-label">' +
-          esc(nombre) +
-          "</span></button>"
+          "<button class=\"mapa-distseg" +
+          (s.activo ? " active" : "") +
+          '" style="flex-grow:' +
+          s.n +
+          (s.sec ? "" : ";background:var(--ink-soft)") +
+          '" ' +
+          s.attrs +
+          "></button>"
         );
       })
       .join("") +
-    "</div>"
+    '</div>\n      <div class="mapa-chips">' +
+    entradas
+      .map((arg) => {
+        const s = segmento(arg);
+        return (
+          '<button class="mapa-chip' +
+          (s.activo ? " active" : "") +
+          '"' +
+          (s.sec ? ' data-cat="' + s.sec + '"' : "") +
+          " " +
+          s.attrs +
+          '><span class="mapa-chip-dot"' +
+          (s.sec ? "" : ' style="background:var(--ink-soft)"') +
+          '></span>' +
+          esc(s.nombre) +
+          ' <b>' +
+          s.n +
+          "</b></button>"
+        );
+      })
+      .join("") +
+    "</div>\n    </div>"
   );
 }
 function renderMapa() {
@@ -10540,7 +10624,7 @@ function renderMapa() {
     ],
     html =
       mapaStats() +
-      mapaBubbles() +
+      mapaSectorMap() +
       '<div class="mapa-secciones">' +
       lista
         .map(
@@ -10657,7 +10741,9 @@ function sectionTodos() {
       "Publicá cursos, Edu Points, apps o bases para verlos todos juntos acá.",
     );
   const txt = state.filters.sector
-    ? " de <b>" + esc(sectorName(state.filters.sector) || state.filters.sector) + "</b>"
+    ? " de <b>" +
+      esc(state.filters.sector === "__sin_sector__" ? "Sin sector" : sectorName(state.filters.sector) || state.filters.sector) +
+      "</b>"
     : "";
   return (
     '<div style="font-size:12.5px;color:var(--ink-soft);margin:-6px 0 12px">' +
