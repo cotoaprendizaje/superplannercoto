@@ -9395,7 +9395,7 @@ function renderKanban() {
       " tarjeta" +
       (lista2.length !== 1 ? "s" : "") +
       (state.mis && state.userId ? " · mías" : "") +
-      '</span>\n    <button class="roulette-btn" data-action="roulette:open">🎡 ¿Qué curso me toca?</button>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
+      '</span>\n    <button class="roulette-btn" data-action="roulette:open">🎡 ¿Qué curso me toca?</button>\n    <span class="grow"></span>\n    <button class="btn btn-ghost btn-sm" data-action="data:csv" title="Exportar a CSV lo que estás viendo (respeta los filtros activos)">⬇ CSV</button>\n    <button class="btn btn-ghost btn-sm" data-action="app:print" title="Imprimir o guardar como PDF">🖨 PDF</button>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
       (state.sort === "prioridad" ? "selected" : "") +
       '>Prioridad</option>\n      <option value="fecha" ' +
       (state.sort === "fecha" ? "selected" : "") +
