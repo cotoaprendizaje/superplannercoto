@@ -1189,6 +1189,25 @@ button {
 .stack {
   display: flex;
 }
+.stack-empty {
+  border: 1px dashed var(--line);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-content: center;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease;
+}
+.stack-empty:hover {
+  transform: scale(1.1);
+  border-color: var(--coto-blue);
+}
 .stack .avatar {
   margin-left: -7px;
 }
@@ -5024,88 +5043,235 @@ button.aday:hover {
     bottom: 84px;
   }
 }
-/* Máquina de la suerte: un extra sin pretensiones en el hub, frases
-   cortas para arrancar el día con una sonrisa. */
-.slot-widget {
-  margin-top: 28px;
-  max-width: 480px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-l);
-  padding: 18px;
-  box-shadow: var(--shadow);
+/* Máquina de la suerte: un botón flotante fijo al centro-derecha de la
+   pantalla; al tocarlo abre el juego como popup centrado (reutiliza el
+   modal existente), con 3 rodillos que frenan en cascada. */
+.slot-fab {
+  position: fixed;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(145deg, #ffd76a, #e8a815);
+  color: #3a2600;
+  font-size: 22px;
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  box-shadow:
+    0 6px 18px rgba(232, 168, 21, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  z-index: 39;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.slot-fab:hover {
+  transform: translateY(-50%) scale(1.08);
+  box-shadow:
+    0 8px 22px rgba(232, 168, 21, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.slot-fab:active {
+  transform: translateY(-50%) scale(0.95);
+}
+.slot-modal {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-}
-.slot-top {
-  display: flex;
   align-items: center;
-  gap: 12px;
-}
-.slot-emoji {
-  font-size: 28px;
-  line-height: 1;
-}
-.slot-t {
-  font-weight: 800;
-  font-size: 14px;
-}
-.slot-d {
-  font-size: 12px;
-  color: var(--ink-soft);
-  margin-top: 2px;
-}
-.slot-screen {
-  background: linear-gradient(135deg, var(--coto-navy), #16233b);
-  color: #fff;
-  border-radius: var(--r-sm);
-  padding: 18px 16px;
+  gap: 16px;
   text-align: center;
+  padding: 4px 4px 8px;
+}
+.slot-modal-t {
+  font-size: 19px;
   font-weight: 800;
-  font-size: 15px;
-  min-height: 24px;
+}
+.slot-modal-d {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-top: -10px;
+}
+.slot-reels {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.35);
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--r-l);
+  background: linear-gradient(160deg, #1b1300, #2c1f00);
+  border: 3px solid #e8a815;
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.6),
+    0 8px 24px rgba(232, 168, 21, 0.25);
 }
-.slot-screen.pop {
-  animation: slot-pop 0.4s ease;
+.slot-reel {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(180deg, #fffdf5, #f3e9c9);
+  border-radius: var(--r-sm);
+  display: grid;
+  place-content: center;
+  font-size: 32px;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.08);
 }
-@keyframes slot-pop {
+.slot-reel.stop {
+  animation: slot-reel-stop 0.3s ease;
+}
+@keyframes slot-reel-stop {
   0% {
-    transform: scale(0.94);
+    transform: scale(1.15) rotate(-3deg);
   }
-  55% {
-    transform: scale(1.045);
+  60% {
+    transform: scale(0.95) rotate(2deg);
   }
   100% {
-    transform: scale(1);
+    transform: scale(1) rotate(0);
   }
+}
+.slot-result {
+  min-height: 22px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+.slot-result.show {
+  opacity: 1;
+  transform: translateY(0);
 }
 .slot-lever {
   align-self: center;
   border: none;
-  background: linear-gradient(180deg, var(--coto-blue), color-mix(in srgb, var(--coto-blue) 65%, black));
+  background: linear-gradient(180deg, #ff5a5a, #c81e1e);
   color: #fff;
   font-weight: 800;
   font-size: 13.5px;
-  padding: 11px 22px;
+  padding: 12px 24px;
   border-radius: var(--pill);
   cursor: pointer;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--coto-blue) 45%, transparent);
-  transition: transform 0.12s ease;
+  box-shadow:
+    0 5px 0 #8f1414,
+    0 8px 18px rgba(200, 30, 30, 0.4);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
 }
 .slot-lever:hover {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 .slot-lever:active {
-  transform: translateY(1px) scale(0.98);
+  transform: translateY(3px);
+  box-shadow:
+    0 2px 0 #8f1414,
+    0 4px 10px rgba(200, 30, 30, 0.4);
 }
 .slot-lever:disabled {
   opacity: 0.65;
   cursor: default;
+  transform: none;
+}
+@media (max-width: 860px) {
+  .slot-fab {
+    right: 14px;
+    width: 44px;
+    height: 44px;
+    font-size: 19px;
+  }
+}
+/* ¿Qué curso me toca?: mismo lenguaje visual que la CotoFrase, pero con
+   dados en vez de tragamonedas — vive en la barra del Planner. */
+.dice-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  padding: 4px 4px 8px;
+}
+.dice-modal-t {
+  font-size: 19px;
+  font-weight: 800;
+}
+.dice-modal-d {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-top: -10px;
+}
+.dice-row {
+  display: flex;
+  gap: 8px;
+  padding: 16px;
+  border-radius: var(--r-l);
+  background: linear-gradient(160deg, #0d2a24, #123a30);
+  border: 3px solid #2e9e8f;
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.5),
+    0 8px 24px rgba(46, 158, 143, 0.25);
+}
+.dice {
+  width: 46px;
+  height: 46px;
+  background: linear-gradient(180deg, #fffdf5, #f0f3ea);
+  border-radius: var(--r-sm);
+  display: grid;
+  place-content: center;
+  font-size: 28px;
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.08);
+}
+.dice.stop {
+  animation: slot-reel-stop 0.3s ease;
+}
+.dice-result {
+  min-height: 22px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+.dice-result.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.dice-btn {
+  align-self: center;
+  border: none;
+  background: linear-gradient(180deg, #34c19b, #1c8f70);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13.5px;
+  padding: 12px 24px;
+  border-radius: var(--pill);
+  cursor: pointer;
+  box-shadow:
+    0 5px 0 #146552,
+    0 8px 18px rgba(28, 143, 112, 0.4);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
+}
+.dice-btn:hover {
+  transform: translateY(-1px);
+}
+.dice-btn:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 2px 0 #146552,
+    0 4px 10px rgba(28, 143, 112, 0.4);
+}
+.dice-btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+  transform: none;
 }
 
 </style>
@@ -5187,6 +5353,7 @@ button.aday:hover {
     </div>
   </footer>
   <button class="fab" data-action="nuevo:open" title="Nueva tarjeta (n)" aria-label="Nueva tarjeta">+</button>
+  <button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>
 </div>
 
 <!-- Panel lateral + overlay + modal -->
@@ -7192,19 +7359,12 @@ const TEMPLATES = {
         "Guion validado",
         "Maqueta visual",
         "Montaje Storyline",
-        "QA funcional",
         "Alta en Moodle",
       ],
     },
     "actualizacion-curso": {
       fases: ["Relevamiento de cambios", "Reescritura", "Rearmado", "Revisión", "Republicación"],
-      checklist: [
-        "Detectar desactualizaciones",
-        "Actualizar guion",
-        "Actualizar piezas",
-        "QA",
-        "Republicar en Moodle",
-      ],
+      checklist: ["Detectar desactualizaciones", "Actualizar guion", "Actualizar piezas", "Republicar en Moodle"],
     },
     video: {
       fases: ["Pre-producción", "Rodaje", "Post-producción"],
@@ -8318,10 +8478,12 @@ function stackHTML(tarjeta) {
   const lista = [tarjeta.responsable, ...(tarjeta.asignados || [])]
     .filter((arg2, arg3, arg) => arg2 && arg.indexOf(arg2) === arg3)
     .slice(0, 4);
+  if (!lista.length)
+    return '<button class="stack-empty" data-action="dice:open" title="Nadie asignado — probá tirar los dados">🎲</button>';
   return '<div class="stack">' + lista.map((arg) => avatarHTML(arg, true)).join("") + "</div>";
 }
 function sectoresBadges(lista) {
-  if (!lista || !lista.length) return '<span class="badge badge-tbd" data-action="noop">TBD</span>';
+  if (!lista || !lista.length) return '<span class="badge badge-tbd" data-action="noop">Sin sector</span>';
   return lista
     .map((arg) =>
       SECTORES[arg]
@@ -8881,7 +9043,7 @@ function seedCards() {
         asignados: ["dami", "flor"],
         inicio: fn2(-3),
         fin: fn2(18),
-        checklist: ["Brief aprobado", "Guion validado", "Maqueta visual", "Montaje", "QA", "Alta en Moodle"],
+        checklist: ["Brief aprobado", "Guion validado", "Maqueta visual", "Montaje", "Alta en Moodle"],
         fasesD: [
           {
             n: "Guion",
@@ -9337,7 +9499,7 @@ function renderKanban() {
       " tarjeta" +
       (lista2.length !== 1 ? "s" : "") +
       (state.mis && state.userId ? " · mías" : "") +
-      '</span>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
+      '</span>\n    <button class="btn btn-ghost btn-sm" data-action="dice:open" title="Elegir al azar un curso pendiente por arrancar">🎲 ¿Qué curso me toca?</button>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
       (state.sort === "prioridad" ? "selected" : "") +
       '>Prioridad</option>\n      <option value="fecha" ' +
       (state.sort === "fecha" ? "selected" : "") +
@@ -9685,7 +9847,7 @@ function groupCards(lista) {
       ((val2 = def ? def.nombre : "Sin responsable"), (txt = "👤"));
     } else
       state.tlGroup === "sector"
-        ? ((val = primaryCat(arg)), (val2 = sectorName(val) || "TBD"), (txt = "🎨"))
+        ? ((val = primaryCat(arg)), (val2 = sectorName(val) || "Sin sector"), (txt = "🎨"))
         : ((val = arg.tipo),
           (val2 = (allTipos()[arg.tipo] || {}).nombre || arg.tipo),
           (txt = (allTipos()[arg.tipo] || {}).icon || ""));
@@ -10458,10 +10620,11 @@ function renderInicio() {
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
     html +
-    '</div>\n    <div class="slot-widget">\n      <div class="slot-top"><span class="slot-emoji">🎰</span><div class="slot-tx"><div class="slot-t">Máquina de la suerte</div><div class="slot-d">Tirá de la palanca y a ver qué te toca.</div></div></div>\n      <div class="slot-screen" id="slotScreen">🍀 🍀 🍀</div>\n      <button class="slot-lever" id="slotLever" data-action="slot:pull">🎲 Tirar de la palanca</button>\n    </div>\n  </div>'
+    "</div>\n  </div>"
   );
 }
-const SLOT_FRASES = [
+const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
+  SLOT_FRASES = [
   "Ponete a laburar 😤",
   "Vas bien, dale que va 💪",
   "Te merecés un cafecito ☕",
@@ -10488,23 +10651,99 @@ const SLOT_FRASES = [
   "Un aplauso interno para vos 👏",
   "Todo bien por acá, seguí no más",
 ];
+function slotModalHTML() {
+  return (
+    '<div class="slot-modal">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Tirá de la palanca y a ver qué te toca.</div>\n      <div class="slot-reels">' +
+    [1, 2, 3].map((n) => '<div class="slot-reel" id="slotReel' + n + '">' + SLOT_SIMBOLOS[0] + "</div>").join("") +
+    '</div>\n      <div class="slot-result" id="slotResult"></div>\n      <button class="slot-lever" id="slotLever" data-action="slot:pull">🎲 Tirar de la palanca</button>\n    </div>'
+  );
+}
+function abrirSlot() {
+  openModal(slotModalHTML());
+}
+// Los 3 rodillos frenan en cascada (500 / 800 / 1150ms) para que se sienta
+// como una tragamonedas de verdad y no un simple sorteo instantáneo.
 function tirarSlot() {
-  const el = $("#slotScreen"),
+  const reels = [1, 2, 3].map((n) => $("#slotReel" + n)),
+    resultado = $("#slotResult"),
     boton = $("#slotLever");
-  if (!el || el.dataset.spinning) return;
-  ((el.dataset.spinning = "1"), boton && (boton.disabled = true));
-  let vueltas = 0;
-  const timer = setInterval(() => {
-    ((el.textContent = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)]), vueltas++);
-    if (vueltas > 10) {
+  if (!reels[0] || reels[0].dataset.spinning) return;
+  (reels.forEach((r) => (r.dataset.spinning = "1")),
+    boton && (boton.disabled = true),
+    resultado && (resultado.classList.remove("show"), (resultado.textContent = "")));
+  const paradas = [500, 800, 1150];
+  reels.forEach((reel, i) => {
+    const timer = setInterval(() => {
+      reel.textContent = SLOT_SIMBOLOS[Math.floor(Math.random() * SLOT_SIMBOLOS.length)];
+    }, 60);
+    setTimeout(() => {
       (clearInterval(timer),
-        (el.textContent = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)]),
-        el.classList.add("pop"),
-        setTimeout(() => el.classList.remove("pop"), 400),
-        delete el.dataset.spinning,
-        boton && (boton.disabled = false));
-    }
-  }, 70);
+        (reel.textContent = SLOT_SIMBOLOS[Math.floor(Math.random() * SLOT_SIMBOLOS.length)]),
+        delete reel.dataset.spinning,
+        reel.classList.add("stop"),
+        setTimeout(() => reel.classList.remove("stop"), 300));
+      if (i === reels.length - 1) {
+        (resultado &&
+          ((resultado.textContent = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)]),
+          resultado.classList.add("show")),
+          boton && (boton.disabled = false));
+      }
+    }, paradas[i]);
+  });
+}
+const DADO_CARAS = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+// "No iniciado" = una tarjeta de curso que ya está en el Planner pero
+// sigue en Pendiente: nadie la movió todavía a En desarrollo.
+function cursosPendientes() {
+  return boardCards().filter((tarjeta) => tarjeta.tipo === "curso" && tarjeta.estado === "pendiente");
+}
+function diceModalHTML() {
+  return (
+    '<div class="dice-modal">\n      <div class="dice-modal-t">🎲 ¿Qué curso me toca?</div>\n      <div class="dice-modal-d">Tirá los dados y te elegimos un curso pendiente para arrancar.</div>\n      <div class="dice-row">' +
+    [1, 2, 3, 4, 5].map((n) => '<div class="dice" id="dado' + n + '">' + DADO_CARAS[0] + "</div>").join("") +
+    '</div>\n      <div class="dice-result" id="dadoResult"></div>\n      <button class="dice-btn" id="dadoBtn" data-action="dice:roll">🎲 Tirar los dados</button>\n    </div>'
+  );
+}
+function abrirDados() {
+  openModal(diceModalHTML());
+}
+function tirarDados() {
+  const dados = [1, 2, 3, 4, 5].map((n) => $("#dado" + n)),
+    resultado = $("#dadoResult"),
+    boton = $("#dadoBtn");
+  if (!dados[0] || dados[0].dataset.spinning) return;
+  (dados.forEach((dado) => (dado.dataset.spinning = "1")),
+    boton && (boton.disabled = true),
+    resultado && (resultado.classList.remove("show"), (resultado.innerHTML = "")));
+  const paradas = [350, 480, 610, 740, 900];
+  dados.forEach((dado, i) => {
+    const timer = setInterval(() => {
+      dado.textContent = DADO_CARAS[Math.floor(Math.random() * DADO_CARAS.length)];
+    }, 60);
+    setTimeout(() => {
+      (clearInterval(timer),
+        (dado.textContent = DADO_CARAS[Math.floor(Math.random() * DADO_CARAS.length)]),
+        delete dado.dataset.spinning,
+        dado.classList.add("stop"),
+        setTimeout(() => dado.classList.remove("stop"), 300));
+      if (i === dados.length - 1 && resultado) {
+        const pendientes = cursosPendientes();
+        (resultado.classList.add("show"),
+          pendientes.length
+            ? (() => {
+                const elegido = pendientes[Math.floor(Math.random() * pendientes.length)];
+                resultado.innerHTML =
+                  "Te toca: <b>" +
+                  esc(elegido.titulo) +
+                  '</b><br><button class="btn btn-sm btn-primary" style="margin-top:8px" data-action="card:open" data-id="' +
+                  elegido.id +
+                  '">Abrir tarjeta</button>';
+              })()
+            : (resultado.innerHTML = "🎉 No hay cursos pendientes por arrancar."),
+          boton && (boton.disabled = false));
+      }
+    }, paradas[i]);
+  });
 }
 function agendaWindow() {
   const fecha = new Date(state.agendaRefY, state.agendaRefM, 1),
@@ -10935,7 +11174,7 @@ function renderResumen() {
         avatarHTML(miembro.id, true) +
         " " +
         miembro.nombre +
-        (overload ? ' <span class="badge prio" style="margin-left:4px;font-size:10px">⚠ al palo</span>' : "") +
+        (overload ? ' <span class="badge prio" style="margin-left:4px;font-size:10px">⚠ sobrecargado</span>' : "") +
         '</span><div class="bl-track"><div class="bl-fill" style="width:' +
         Math.round((obj[miembro.id] / val3) * 100) +
         "%;background:" +
@@ -11096,7 +11335,7 @@ function sectorPicker(tarjeta) {
             );
           })
           .join("")
-      : '<span style="font-size:12px;color:var(--ink-soft)">Sin sector (TBD)</span>';
+      : '<span style="font-size:12px;color:var(--ink-soft)">Sin sector</span>';
   return (
     '<div class="fld"><label>Sectores</label>\n    <div class="sec-selected">' +
     txt +
@@ -11587,7 +11826,7 @@ function openCarga() {
         '<div class="carga-info">\n      <div class="carga-name">' +
         miembro.nombre +
         " " +
-        (flag ? '<span class="badge prio" style="margin-left:4px">al palo</span>' : "") +
+        (flag ? '<span class="badge prio" style="margin-left:4px">sobrecargado</span>' : "") +
         '</div>\n      <div class="carga-rol">' +
         miembro.rol +
         '</div>\n      <div class="carga-bar"><div class="carga-fill" style="width:' +
@@ -11606,7 +11845,7 @@ function openCarga() {
     ($("#panel").innerHTML =
       '<div class="panel-head"><div style="flex:1"><div class="tipo-pill">👥 Equipo</div>\n    <div style="font-family:var(--titulo);font-size:18px;font-weight:700;margin-top:4px">Carga del equipo</div></div>\n    <button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>\n    <div class="panel-body"><div class="carga-list">' +
       txt +
-      '</div>\n    <div class="note">Cuenta tarjetas del tablero (responsable + asignados). Ayuda al reparto: el “al palo” es quien más acumula.</div></div>'),
+      '</div>\n    <div class="note">Cuenta tarjetas del tablero (responsable + asignados). Ayuda a ver el reparto de carga entre el equipo.</div></div>'),
     $("#panel").classList.add("open"),
     $("#overlay").classList.remove("hidden"));
 }
@@ -12050,8 +12289,17 @@ document.addEventListener("click", (ev) => {
     case "undo:del":
       undoBorrado();
       break;
+    case "slot:open":
+      abrirSlot();
+      break;
     case "slot:pull":
       tirarSlot();
+      break;
+    case "dice:open":
+      abrirDados();
+      break;
+    case "dice:roll":
+      tirarDados();
       break;
     case "coach:close": {
       const elCoach = el.closest(".coachcard");
@@ -13322,7 +13570,7 @@ function renderSearchResults(value) {
         '</div>\n      <div class="sr-m">' +
         esc(tipo.nombre || tarjeta.tipo) +
         " · " +
-        ((tarjeta.sectores || []).map((arg2) => sectorName(arg2) || arg2).join(", ") || "TBD") +
+        ((tarjeta.sectores || []).map((arg2) => sectorName(arg2) || arg2).join(", ") || "Sin sector") +
         '</div></div>\n      <span class="sr-where">' +
         txt +
         "</span></div>"
@@ -13381,7 +13629,7 @@ function paletteCommands() {
     },
     {
       t: "Carga del equipo",
-      d: "Quién está al palo",
+      d: "Quién tiene más carga",
       ic: "👥",
       act: "do",
       arg: "carga:open",
