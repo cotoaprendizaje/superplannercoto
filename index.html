@@ -1462,7 +1462,9 @@ button {
   align-items: flex-end;
   padding: 10px;
 }
-.curso-img::after {
+/* El puntillado es un relleno decorativo para cuando no hay foto todavía —
+   sobre una imagen real solo la ensucia, así que se apaga apenas hay <img>. */
+.curso-img:not(:has(img))::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -1856,41 +1858,60 @@ button {
   color: var(--ink-soft);
   margin-top: 1px;
 }
-/* El header del panel ahora lleva el color del sector de la tarjeta: de
-   un vistazo, sin leer nada, se sabe a qué sector pertenece lo que se
-   está editando. Sin sector, cae al celeste de marca. */
+/* Header del panel: blanco y prolijo, con solo una franja fina arriba del
+   color del sector — alcanza para ubicar de un vistazo a qué sector
+   pertenece sin volver a pintar todo el bloque de un color saturado. */
 .panel-head {
-  padding: 16px 18px;
-  background: var(--cat, var(--coto-blue));
-  color: var(--on-cat, #fff);
-  border-bottom: none;
+  position: relative;
+  padding: 18px 18px 16px;
+  background: var(--surface);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
   display: flex;
   align-items: flex-start;
   gap: 10px;
 }
+.panel-head::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: var(--r-l) var(--r-l) 0 0;
+  background: var(--cat-grad, var(--cat, var(--coto-blue)));
+}
 .panel-head .tipo-pill {
-  color: var(--on-cat, #fff);
-  opacity: 0.9;
+  display: inline-flex;
+  color: var(--cat, var(--coto-blue));
+  background: color-mix(in srgb, var(--cat, var(--coto-blue)) 12%, transparent);
+  padding: 2px 9px;
+  border-radius: var(--pill);
 }
 .panel-head input[data-field="titulo"] {
-  color: var(--on-cat, #fff);
-  background: color-mix(in srgb, var(--on-cat, #fff) 14%, transparent);
+  color: var(--ink);
+  background: transparent;
   border-radius: var(--r-sm);
   padding: 4px 8px;
   margin-left: -8px;
+  border: 1px solid transparent;
+}
+.panel-head input[data-field="titulo"]:hover {
+  background: var(--surface-2);
+}
+.panel-head input[data-field="titulo"]:focus {
+  background: var(--surface-2);
+  border-color: var(--line);
 }
 .panel-head input[data-field="titulo"]::placeholder {
-  color: color-mix(in srgb, var(--on-cat, #fff) 60%, transparent);
+  color: var(--ink-soft);
 }
 .panel-head .btn-ghost {
-  color: var(--on-cat, #fff);
+  color: var(--ink-soft);
 }
 .panel-head .btn-ghost:hover {
-  background: color-mix(in srgb, var(--on-cat, #fff) 16%, transparent);
-}
-.panel-head .savestate {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: transparent;
+  background: var(--surface-2);
+  color: var(--ink);
 }
 .panel-headtop {
   display: flex;
