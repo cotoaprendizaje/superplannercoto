@@ -3061,7 +3061,17 @@ const INV_KIND = {
   "edu-point": "edu-points",
   "app-web": "apps",
   "base-sistema": "bases",
+  video: "contenido",
+  presencial: "contenido",
+  poes: "contenido",
+  guia: "contenido",
 };
+// Tipos que eventualmente pueden terminar publicados en el Mapa — sirve para
+// mostrar, dentro del Mapa, lo que todavía está en el Planner camino a serlo.
+const INV_TIPOS = new Set(Object.keys(INV_KIND));
+function invCountKind(kind) {
+  return state.cards.filter((tarjeta) => INV_KIND[tarjeta.tipo] === kind && inInventory(tarjeta)).length;
+}
 function inventoryKind(tarjeta) {
   return INV_KIND[tarjeta.tipo] || null;
 }
@@ -4022,7 +4032,7 @@ const VIEW_TITLES = {
   kanban: ["Planner", "Tareas y proyectos por estado"],
   calendario: ["Calendario del planner", "Qué pasa y cuándo"],
   timeline: ["Timeline", "El panorama macro del área"],
-  mapa: ["Mapa del área", "Lo que tenemos: cursos, Edu Points, apps y bases"],
+  mapa: ["Mapa del área", "Todo lo publicado y lo que viene: cursos, Edu Points, contenido suelto y lo que está en desarrollo"],
 };
 function viewHeader() {
   const val = VIEW_TITLES[state.view];
@@ -4781,6 +4791,35 @@ function invCount(txt) {
 function invCard(arg) {
   return arg.tipo === "curso" ? cursoCard(arg) : arg.tipo === "edu-point" ? eduCard(arg) : recursoCard(arg);
 }
+function sectionDesarrolloAll() {
+  return boardCards().filter((tarjeta) => INV_TIPOS.has(tarjeta.tipo));
+}
+function mapaStats() {
+  const publicados = state.cards.filter(inInventory).length,
+    enDesarrollo = sectionDesarrolloAll().length;
+  return (
+    '<div class="mapa-stats">' +
+    [
+      ["✦", publicados, "Publicado"],
+      ["🚧", enDesarrollo, "En desarrollo"],
+      ["🎓", invCount("curso"), "Cursos"],
+      ["📍", invCount("edu-point"), "Edu Points"],
+      ["🎬", invCountKind("contenido"), "Contenido suelto"],
+    ]
+      .map(
+        (arg) =>
+          '<div class="mapa-stat"><span class="mapa-stat-ic">' +
+          arg[0] +
+          '</span><span class="mapa-stat-n">' +
+          arg[1] +
+          '</span><span class="mapa-stat-l">' +
+          esc(arg[2]) +
+          "</span></div>",
+      )
+      .join("") +
+    "</div>"
+  );
+}
 function renderMapa() {
   const cantidad = state.cards.filter(inInventory).length,
     lista = [
@@ -4788,6 +4827,11 @@ function renderMapa() {
         id: "todos",
         label: "✦ Todos",
         n: cantidad,
+      },
+      {
+        id: "desarrollo",
+        label: "🚧 En desarrollo",
+        n: sectionDesarrolloAll().length,
       },
       {
         id: "cursos",
@@ -4805,6 +4849,11 @@ function renderMapa() {
         n: EDU_DB.length,
       },
       {
+        id: "contenido",
+        label: "🎬 Contenido suelto",
+        n: invCountKind("contenido"),
+      },
+      {
         id: "apps",
         label: "🖥️ Aplicativos web",
         n: invCount("app-web"),
@@ -4816,6 +4865,7 @@ function renderMapa() {
       },
     ],
     html =
+      mapaStats() +
       '<div class="mapa-secciones">' +
       lista
         .map(
@@ -4835,33 +4885,93 @@ function renderMapa() {
   let txt = "";
   if (state.mapaSec === "todos") txt = sectionTodos();
   else {
-    if (state.mapaSec === "cursos") txt = sectionCursos();
+    if (state.mapaSec === "desarrollo") txt = sectionDesarrollo();
     else {
-      if (state.mapaSec === "edu-points") txt = sectionEduPoints();
+      if (state.mapaSec === "cursos") txt = sectionCursos();
       else {
-        if (state.mapaSec === "edu-archivos") txt = renderEduArchivos();
+        if (state.mapaSec === "edu-points") txt = sectionEduPoints();
         else {
-          if (state.mapaSec === "apps")
-            txt = sectionInv(
-              "app-web",
-              "🖥️",
-              "Sin aplicativos activos",
-              "Publicá un aplicativo web del tablero (botón en su ficha) para verlo acá.",
-            );
+          if (state.mapaSec === "edu-archivos") txt = renderEduArchivos();
           else {
-            if (state.mapaSec === "bases")
-              txt = sectionInv(
-                "base-sistema",
-                "🗄️",
-                "Sin bases activas",
-                "Publicá una base del sistema del tablero para verla acá.",
-              );
+            if (state.mapaSec === "contenido") txt = sectionContenido();
+            else {
+              if (state.mapaSec === "apps")
+                txt = sectionInv(
+                  "app-web",
+                  "🖥️",
+                  "Sin aplicativos activos",
+                  "Publicá un aplicativo web del tablero (botón en su ficha) para verlo acá.",
+                );
+              else {
+                if (state.mapaSec === "bases")
+                  txt = sectionInv(
+                    "base-sistema",
+                    "🗄️",
+                    "Sin bases activas",
+                    "Publicá una base del sistema del tablero para verla acá.",
+                  );
+              }
+            }
           }
         }
       }
     }
   }
   return html + txt;
+}
+function sectionContenido() {
+  const lista = mapaFilter(
+    state.cards.filter((tarjeta) => INV_KIND[tarjeta.tipo] === "contenido" && inInventory(tarjeta)),
+  );
+  if (!lista.length)
+    return emptyState(
+      "🎬",
+      "Sin contenido suelto activo",
+      "Publicá un video, guía, capacitación presencial o POES del tablero (botón en su ficha) para verlo acá.",
+    );
+  return '<div class="cursos-grid">' + lista.map(recursoCard).join("") + "</div>";
+}
+function sectionDesarrollo() {
+  const lista = mapaFilter(sectionDesarrolloAll());
+  if (!lista.length)
+    return emptyState(
+      "🚧",
+      "Nada en desarrollo ahora mismo",
+      "Todo lo que crees en el Planner con un tipo publicable (curso, Edu Point, video, guía, app, base…) va a aparecer acá hasta que lo publiques.",
+    );
+  return '<div class="cursos-grid">' + lista.map(desarrolloCard).join("") + "</div>";
+}
+function desarrolloCard(tarjeta) {
+  const val = primaryCat(tarjeta),
+    avance = progress(tarjeta),
+    estado = ESTADOS.find((e) => e.id === tarjeta.estado) || { nombre: tarjeta.estado, dot: "#999" };
+  return (
+    '<article class="curso" data-cat="' +
+    val +
+    '" data-id="' +
+    tarjeta.id +
+    '" data-action="card:open">\n    <div class="curso-img" style="height:78px"><span class="curso-estado upd">' +
+    ((TIPOS[tarjeta.tipo] || {}).icon || "") +
+    " " +
+    esc(estado.nombre) +
+    '</span></div>\n    <div class="curso-body">\n      <h4>' +
+    esc(tarjeta.titulo) +
+    '</h4>\n      <div class="badges">' +
+    sectoresBadges(tarjeta.sectores) +
+    "</div>\n      " +
+    (avance.total
+      ? '<div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
+        avance.pct +
+        '%"></div></div><span class="prog-num">' +
+        avance.done +
+        "/" +
+        avance.total +
+        "</span></div>"
+      : '<div class="curso-bajada">Todavía sin checklist cargado.</div>') +
+    '\n      <div class="curso-foot">' +
+    stackHTML(tarjeta) +
+    "</div>\n    </div>\n  </article>"
+  );
 }
 function sectionTodos() {
   const lista = mapaFilter(state.cards.filter(inInventory));
@@ -6332,23 +6442,34 @@ function renderPanel() {
   const val = inventoryKind(tarjeta);
   if (val) {
     const flag = tarjeta.tipo === "curso",
-      txt8 = flag ? "curso" : "Edu Point";
+      esEdu = tarjeta.tipo === "edu-point",
+      txt8 =
+        {
+          curso: "Este curso",
+          "edu-point": "Este Edu Point",
+          "app-web": "Este aplicativo",
+          "base-sistema": "Esta base",
+          video: "Este video",
+          presencial: "Esta capacitación",
+          poes: "Este POES",
+          guia: "Esta guía",
+        }[tarjeta.tipo] || "Este elemento";
     if (!tarjeta.publicado)
       txt7 =
-        '<div class="bridge"><div class="bridge-t">📝 En producción (tablero)</div>\n        <div class="bridge-d">Este ' +
+        '<div class="bridge"><div class="bridge-t">📝 En producción (tablero)</div>\n        <div class="bridge-d">' +
         txt8 +
         ' se está armando. Cuando esté listo, <b>publicalo</b> y aparece en el <b>Mapa</b> para todo el equipo.</div>\n        <button class="btn btn-primary btn-sm" data-action="curso:publicar">' +
-        (flag ? "Publicar curso" : "Marcar como colocado") +
+        (flag ? "Publicar curso" : esEdu ? "Marcar como colocado" : "Publicar") +
         "</button></div>";
     else
       tarjeta.enActualizacion
         ? (txt7 =
             '<div class="bridge"><div class="bridge-t">🔄 ' +
-            (flag ? "Activo · en actualización" : "Colocado · en revisión") +
+            (esEdu ? "Colocado · en revisión" : "Activo · en actualización") +
             '</div>\n        <div class="bridge-d">Sigue visible en el Mapa y volvió al tablero para editarlo. Cuando termines, <b>republicalo</b>.</div>\n        <button class="btn btn-primary btn-sm" data-action="curso:republicar">Republicar</button></div>')
         : (txt7 =
             '<div class="bridge"><div class="bridge-t">✅ ' +
-            (flag ? "Activo en el Mapa" : "Colocado en el Mapa") +
+            (esEdu ? "Colocado en el Mapa" : "Activo en el Mapa") +
             '</div>\n        <div class="bridge-d">Publicado y visible para el equipo. ¿Necesita cambios? Generá una <b>actualización</b>: vuelve al tablero sin perder la ficha.</div>\n        <button class="btn btn-sm" data-action="curso:actualizar">Generar actualización</button></div>');
   }
   const html = isCurso(tarjeta)
