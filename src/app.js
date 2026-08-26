@@ -1794,6 +1794,11 @@ const ESTADOS = [
       nombre: "En revisión",
       dot: "#E2A03F",
     },
+    {
+      id: "finalizado",
+      nombre: "Finalizados",
+      dot: "#2E9E8F",
+    },
   ],
   TIPOS = {
     curso: {
@@ -2409,7 +2414,7 @@ const TEMPLATES = {
       anio: 2025,
       duracion: "Curso largo",
       imagen: "",
-      personas: "",
+      personas: "Choferes de Flota Propia de Coto Digital.",
       descripcion:
         "Este curso recorre la jornada del chofer de Flota Propia, desde la asignación del móvil y los controles previos hasta la entrega de pedidos y el cierre del día. Se abordan las responsabilidades del rol, la documentación requerida, el checklist del vehículo, los controles de seguridad y los procedimientos ante imprevistos durante el recorrido.",
     },
@@ -2431,8 +2436,7 @@ const TEMPLATES = {
       anio: 2025,
       duracion: "Curso largo",
       imagen: "",
-      personas:
-        "Personal del sector Frescos. Armado de góndola de frutas y verduras Criterios esenciales para el cuidado, control de calidad y exhibición de frutas y verduras. Este curso aborda los conceptos fundamentales del sector de frutas y verduras, como la clasificación de productos, la estacionalidad y los controles de calidad. Se trabajan criterios de almacenamiento, control de temperaturas y buenas prácticas de exhibición e higiene para prevenir mermas y asegurar productos frescos y seguros para el consumo.",
+      personas: "Personal del sector Frescos.",
       descripcion:
         "Este curso desarrolla técnicas de corte, limpieza y presentación del cuarto trasero de la media res, trabajando piezas internas y externas. Se estudian cortes como cuadril, peceto, nalga, tortuguita, bola de lomo y osobuco, además de emprolijado, milanesas y uso correcto de cuchilla y sierra, cumpliendo normas de calidad y seguridad.",
     },
@@ -2866,8 +2870,7 @@ const TEMPLATES = {
       anio: 2021,
       duracion: "Curso largo",
       imagen: "",
-      personas:
-        "Gerentes, Jefes de Operaciones, Jefes de Recepción, Fiscalizadores y Recepcionistas. Recepción de proveedores Procedimiento estandarizado para una recepción de mercadería precisa y controlada. Este curso explica el procedimiento completo para la recepción de mercadería de proveedores directos. Aborda las etapas de carga de orden de compra, descarga y control de mercadería, registro de embalajes, confirmación del pedido, gestión de devoluciones y salida del proveedor, asegurando una recepción ordenada, precisa y sin desvíos.",
+      personas: "Gerentes, Jefes de Operaciones, Jefes de Recepción, Fiscalizadores y Recepcionistas.",
       descripcion:
         "Este curso presenta los distintos puestos del sector Seguridad en la sucursal y sus responsabilidades operativas. Aborda funciones de control en recepción, salón, cajas, electro, bodega, playa y CCTV, incluyendo manejo de productos críticos, control de frío, alarmado, rondines y coordinación con otras áreas para prevenir incidentes y desvíos.",
     },
@@ -2911,8 +2914,7 @@ const TEMPLATES = {
       anio: 2018,
       duracion: "Curso largo",
       imagen: "",
-      personas:
-        "Todo el personal de la compañía. Seguridad de la Información Lineamientos esenciales para proteger la información y los sistemas de la compañía. Este curso presenta los fundamentos de la Seguridad de la Información en COTO y el uso responsable de la información como activo estratégico. Aborda el Convenio de Confidencialidad, la clasificación de la información, la gestión de accesos y las responsabilidades de Sistemas y de los empleados para prevenir usos indebidos.",
+      personas: "Todo el personal de la compañía.",
       descripcion:
         "Este curso introduce los conceptos básicos de Seguridad e Higiene laboral en COTO. Aborda actos y condiciones inseguras, el uso correcto de los elementos de protección personal, señalizaciones, tipos de matafuegos y el rol de la ART, con el objetivo de concientizar sobre la prevención de riesgos y el cumplimiento de normas.",
     },
@@ -2923,8 +2925,7 @@ const TEMPLATES = {
       anio: 2023,
       duracion: "Curso medio",
       imagen: "",
-      personas:
-        "Curso de Cumpleaños de Zona E ¡Todo lo que necesitás para ser un gran anfitrión en los Cumples de Zona E! En este curso conocerás las propuestas de Zona Cumples y cómo comunicarlas de forma clara a los clientes. Se desarrollan las 5 etapas del cumple —venta, contratación, preparación, día del evento y post cumple— y las tareas clave en cada una, reforzando la importancia de una atención al cliente de calidad en todo el proceso.",
+      personas: "Todo el personal.",
       descripcion:
         "Este curso introduce a las enfermedades cardiovasculares como parte de las enfermedades no transmisibles (ENT) y explica cómo prevenirlas. Aborda los principales factores de riesgo, diferenciando entre modificables y no modificables, y promueve hábitos saludables para reducir el impacto de la hipertensión, el colesterol, la diabetes, el sedentarismo y el tabaquismo.",
     },
@@ -2947,50 +2948,53 @@ const TEMPLATES = {
       anio: 2024,
       duracion: "Curso largo",
       imagen: "",
-      personas:
-        "Camareros de Zona Gourmet. Edición 2026 Cualquier consulta comunicarse a aprendizaje@coto.com.ar",
+      personas: "Camareros de Zona Gourmet.",
       descripcion:
         "Este curso introduce a los camareros en la experiencia Zona Gourmet y los objetivos del rol. Aborda los preparativos de inicio y cierre de jornada y desarrolla los 16 pasos de la atención al cliente, desde la bienvenida y toma del pedido hasta el cobro, la despedida y la limpieza final de la mesa.",
     },
     {
       categoria: "frescos-1",
       titulo: "Armados de frutas y verduras",
-      bajada: "",
-      anio: "",
-      duracion: "",
+      bajada: "Criterios esenciales para el cuidado, control de calidad y exhibición de frutas y verduras.",
+      anio: 2017,
+      duracion: "Curso largo",
       imagen: "",
-      personas: "",
-      descripcion: "",
+      personas: "Personal del sector Verdulería.",
+      descripcion:
+        "Este curso aborda los conceptos fundamentales del sector de frutas y verduras, como la clasificación de productos, la estacionalidad y los controles de calidad. Se trabajan criterios de almacenamiento, control de temperaturas y buenas prácticas de exhibición e higiene para prevenir mermas y asegurar productos frescos y seguros para el consumo.",
     },
     {
       categoria: "seguridad",
       titulo: "Seguridad - Recepción de proveedores",
-      bajada: "",
-      anio: "",
-      duracion: "",
+      bajada: "Procedimiento estandarizado para una recepción de mercadería precisa y controlada.",
+      anio: 2016,
+      duracion: "Curso medio",
       imagen: "",
-      personas: "",
-      descripcion: "",
+      personas: "Gerentes, Jefes de Operaciones, Jefes de Recepción, Fiscalizadores y Recepcionistas.",
+      descripcion:
+        "Este curso explica el procedimiento completo para la recepción de mercadería de proveedores directos. Aborda las etapas de carga de orden de compra, descarga y control de mercadería, registro de embalajes, confirmación del pedido, gestión de devoluciones y salida del proveedor, asegurando una recepción ordenada, precisa y sin desvíos.",
     },
     {
       categoria: "sistemas",
       titulo: "Seguridad de la Información - Conceptos básicos",
-      bajada: "",
-      anio: "",
-      duracion: "",
+      bajada: "Lineamientos esenciales para proteger la información y los sistemas de la compañía.",
+      anio: 2024,
+      duracion: "Curso largo",
       imagen: "",
-      personas: "",
-      descripcion: "",
+      personas: "Todo el personal de la compañía.",
+      descripcion:
+        "Este curso presenta los fundamentos de la Seguridad de la Información en COTO y el uso responsable de la información como activo estratégico. Aborda el Convenio de Confidencialidad, la clasificación de la información, la gestión de accesos y las responsabilidades de Sistemas y de los empleados para prevenir usos indebidos.",
     },
     {
       categoria: "zona-e",
       titulo: "Cumpleaños de Zona E!",
-      bajada: "",
-      anio: "",
-      duracion: "",
+      bajada: "¡Todo lo que necesitás para ser un gran anfitrión en los Cumples de Zona E!",
+      anio: 2024,
+      duracion: "Curso medio",
       imagen: "",
-      personas: "",
-      descripcion: "",
+      personas: "Anfitriones de Zona E.",
+      descripcion:
+        "En este curso conocerás las propuestas de Zona Cumples y cómo comunicarlas de forma clara a los clientes. Se desarrollan las 5 etapas del cumple —venta, contratación, preparación, día del evento y post cumple— y las tareas clave en cada una, reforzando la importancia de una atención al cliente de calidad en todo el proceso.",
     },
   ],
   $ = (txt) => document.querySelector(txt),
@@ -3072,7 +3076,7 @@ function isInventory(tarjeta) {
 }
 function isOverdue(tarjeta) {
   const val = tarjeta.fin || tarjeta.inicio;
-  if (!val || isInventory(tarjeta)) return false;
+  if (!val || isInventory(tarjeta) || tarjeta.estado === "finalizado") return false;
   return val < todayISO();
 }
 function progress(tarjeta) {
@@ -3925,17 +3929,17 @@ function renderFilters() {
     // popover: cuatro (o tres, en el Mapa) selects siempre a la vista era
     // ruido para algo que se usa de vez en cuando. El buscador y los chips de
     // acceso rápido sí quedan afuera, porque esos se usan todo el tiempo.
-    activos = [tarjeta.persona, tarjeta.sector, !flag && tarjeta.tipo, tarjeta.estado, flag && tarjeta.cursoEstado]
-      .filter(Boolean).length,
+    activos = [
+      tarjeta.persona,
+      tarjeta.sector,
+      !flag && tarjeta.tipo,
+      tarjeta.estado,
+      flag && tarjeta.cursoEstado,
+      !flag && state.quick,
+    ].filter(Boolean).length,
     popoverFlds = (flag ? [html2, html5] : [html, html3, html2, html4])
       .map((h) => h.replace('<div class="filt">', '<div class="filt filt-pop-item">'))
       .join(""),
-    htmlFiltrosBtn =
-      '<div class="filt-pop-wrap"><button class="btn btn-ghost btn-sm" data-action="filtros:toggle" id="filtrosBtn">☰ Filtros' +
-      (activos ? '<span class="filt-badge">' + activos + "</span>" : "") +
-      '</button><div class="filt-pop hidden" id="filtrosPop">' +
-      popoverFlds +
-      '<button class="btn btn-ghost btn-sm" data-action="filt:clear" style="align-self:flex-start;margin-top:2px">Limpiar filtros</button></div></div>',
     lista = [
       {
         k: "venc",
@@ -3954,9 +3958,12 @@ function renderFilters() {
         l: "★ Alta",
       },
     ],
-    txt = flag
+    // Los chips rápidos y las vistas guardadas vivían sueltos en la barra;
+    // ahora quedan adentro del mismo popover de "☰ Filtros" para no saturar
+    // la barra con botones — todo lo que filtra, en un solo lugar.
+    quickHTML = flag
       ? ""
-      : '<div class="qchips">' +
+      : '<div class="filt-pop-sep"></div><div class="filt-pop-label">Accesos rápidos</div><div class="qchips qchips-pop">' +
         lista
           .map(
             (arg) =>
@@ -3970,9 +3977,9 @@ function renderFilters() {
           )
           .join("") +
         "</div>",
-    txt2 = flag
+    savedHTML = flag
       ? ""
-      : '<div class="vchips">' +
+      : '<div class="filt-pop-sep"></div><div class="filt-pop-label">Vistas guardadas</div><div class="vchips">' +
         (state.savedViews || [])
           .map(
             (arg) =>
@@ -3985,8 +3992,17 @@ function renderFilters() {
               '" title="Borrar vista">✕</span></button>',
           )
           .join("") +
-        '<button class="btn btn-ghost btn-sm" data-action="view:save" title="Guardar los filtros actuales como vista">💾 Guardar vista</button></div>';
-  $("#filters").innerHTML = html6 + htmlFiltrosBtn + txt + txt2;
+        '<button class="btn btn-ghost btn-sm" data-action="view:save" title="Guardar los filtros actuales como vista">💾 Guardar vista</button></div>',
+    htmlFiltrosBtn =
+      '<div class="filt-pop-wrap"><button class="btn btn-ghost btn-sm" data-action="filtros:toggle" id="filtrosBtn">☰ Filtros' +
+      (activos ? '<span class="filt-badge">' + activos + "</span>" : "") +
+      '</button><div class="filt-pop hidden" id="filtrosPop">' +
+      popoverFlds +
+      '<button class="btn btn-ghost btn-sm" data-action="filt:clear" style="align-self:flex-start;margin-top:2px">Limpiar filtros</button>' +
+      quickHTML +
+      savedHTML +
+      "</div></div>";
+  $("#filters").innerHTML = html6 + htmlFiltrosBtn;
   if (popAbierto) {
     const p = $("#filtrosPop");
     if (p) p.classList.remove("hidden");
@@ -4139,10 +4155,6 @@ function renderKanban() {
         (cantidad !== 1 ? "s" : "") +
         '</span>\n    <select data-bulk="estado"><option value="">Mover a estado…</option>' +
         ESTADOS.map((estado) => '<option value="' + estado.id + '">' + estado.nombre + "</option>").join("") +
-        '</select>\n    <select data-bulk="resp"><option value="">Asignar responsable…</option>' +
-        TEAM.map((miembro) => '<option value="' + miembro.id + '">' + esc(miembro.nombre) + "</option>").join(
-          "",
-        ) +
         '</select>\n    <select data-bulk="sector"><option value="">Sumar sector…</option>' +
         Object.keys(SECTORES)
           .map((arg) => '<option value="' + arg + '">' + esc(SECTORES[arg].nombre) + "</option>")
@@ -4189,21 +4201,14 @@ function applyBulk(val, value) {
         (tarjeta.estado = value));
     }),
       flash("✓ " + state.sel.length + " movida(s)"));
-  else {
-    if (val === "resp")
+  else
+    val === "sector" &&
       (state.cards.forEach((tarjeta) => {
-        conjunto.has(tarjeta.id) && (tarjeta.responsable = value);
+        conjunto.has(tarjeta.id) &&
+          ((tarjeta.sectores = tarjeta.sectores || []),
+          !tarjeta.sectores.includes(value) && tarjeta.sectores.push(value));
       }),
-        flash("✓ Responsable asignado a " + state.sel.length));
-    else
-      val === "sector" &&
-        (state.cards.forEach((tarjeta) => {
-          conjunto.has(tarjeta.id) &&
-            ((tarjeta.sectores = tarjeta.sectores || []),
-            !tarjeta.sectores.includes(value) && tarjeta.sectores.push(value));
-        }),
-        flash("✓ Sector sumado a " + state.sel.length));
-  }
+      flash("✓ Sector sumado a " + state.sel.length));
   ((state.sel = []), touch(), render());
 }
 function cardsOnDay(lista, iso) {
@@ -5743,18 +5748,27 @@ function renderResumen() {
         "</span>",
     )
     .join("");
+  const desc = (txt) => '<div class="res-desc">' + txt + "</div>";
   return (
     '<div style="margin-bottom:6px"><h2 style="font-size:21px">Resumen del área</h2>\n    <div style="color:var(--ink-soft);font-size:13px;margin:2px 0 14px">Hola ' +
     esc(state.user || "") +
-    ' 👋 — panorama de “lo que hacemos” y “lo que tenemos”.</div></div>\n    <div class="res-grid">\n      ' +
-    fn(lista.length, "Proyectos en el tablero", "en movimiento", "var(--coto-blue)", "kanban") +
+    ' 👋 — este panel mira dos cosas separadas: el <b>Planner</b> (las tareas que el equipo tiene en curso ahora) y el <b>Mapa</b> (el inventario ya publicado: cursos, Edu Points). Los 3 primeros números son del Planner; los últimos 2, del Mapa.</div></div>\n    <div class="res-grid">\n      ' +
+    fn(lista.length, "Proyectos en el tablero", "tareas activas ahora en el Planner", "var(--coto-blue)", "kanban") +
     "\n      " +
-    fn(cantidad3, "En revisión", "por publicar", "var(--warn)", "kanban", null, "en-revision") +
+    fn(
+      cantidad3,
+      "En revisión",
+      "en el Planner, esperando aprobación para publicarse",
+      "var(--warn)",
+      "kanban",
+      null,
+      "en-revision",
+    ) +
     "\n      " +
     fn(
       cantidad4,
       "Vencidas",
-      "requieren atención",
+      "pasaron su fecha límite sin cerrarse",
       cantidad4 ? "var(--bad)" : "var(--ok)",
       "kanban",
       null,
@@ -5762,26 +5776,34 @@ function renderResumen() {
       "venc",
     ) +
     "\n      " +
-    fn(cantidad, "Cursos activos", "en el mapa", "var(--ok)", "mapa", "cursos") +
+    fn(cantidad, "Cursos activos", "cursos e-learning ya publicados en el Mapa", "var(--ok)", "mapa", "cursos") +
     "\n      " +
-    fn(cantidad2, "Edu Points", "colocados", "#546E7A", "mapa", "edu-points") +
+    fn(cantidad2, "Edu Points", "piezas con QR ya colocadas en sucursal", "#546E7A", "mapa", "edu-points") +
     '\n    </div>\n    <div class="res-cols">\n      <div>\n        <div class="res-card"><h3>⚑ Próximos vencimientos <span class="mini">' +
     lista2.length +
     "</span></h3>" +
+    desc("Tareas del Planner con fecha en los próximos 45 días.") +
     txt7 +
-    '</div>\n        <div class="res-card"><h3>🧩 Mezcla por tipo</h3><div>' +
+    '</div>\n        <div class="res-card"><h3>🧩 Mezcla por tipo</h3>' +
+    desc("Cómo se reparten las tareas activas del Planner según su tipo.") +
+    "<div>" +
     (txt9 || '<span style="color:var(--ink-soft)">—</span>') +
     '</div></div>\n        <div class="res-card"><h3>🎨 Mezcla por sector</h3>' +
+    desc("En qué sector hay más tareas cargadas ahora mismo (Planner).") +
     (txt10 || '<span style="color:var(--ink-soft)">—</span>') +
     '</div>\n        <div class="res-card"><h3>📈 Velocidad · últimas semanas</h3>' +
+    desc("Tareas del Planner que pasaron a “Finalizados” cada semana, últimas 6 semanas.") +
     throughputHTML(lista) +
     '</div>\n      </div>\n      <div>\n        <div class="res-card"><h3>◷ Por estado <span class="mini">' +
     lista.length +
     " total</span></h3>" +
+    desc("Tareas activas del Planner agrupadas por su estado actual.") +
     txt6 +
     '</div>\n        <div class="res-card"><h3>👥 Carga del equipo <span class="mini">tablero</span></h3>' +
+    desc("Cuántas tareas del tablero (Planner) tiene asignadas cada persona.") +
     txt8 +
     '</div>\n        <div class="res-card"><h3>⏳ Estancadas <span class="mini">+10 días</span></h3>' +
+    desc("Tareas del Planner que llevan 10 días o más sin cambiar de estado.") +
     agingHTML(lista) +
     "</div>\n      </div>\n    </div>"
   );
@@ -6224,22 +6246,7 @@ function renderPanel() {
     txt +
     '</select></div>\n        <div class="fld"><label>Estado</label><select data-field="estado">' +
     txt2 +
-    '</select></div>\n      </div>\n      <div class="fld"><label>Responsable</label><div style="display:flex;gap:6px"><select data-field="responsable" style="flex:1"><option value="">— sin asignar —</option>' +
-    TEAM.map(
-      (miembro) =>
-        '<option value="' +
-        miembro.id +
-        '" ' +
-        (tarjeta.responsable === miembro.id ? "selected" : "") +
-        ">" +
-        miembro.nombre +
-        "</option>",
-    ).join("") +
-    "</select>" +
-    (state.userId && tarjeta.responsable !== state.userId
-      ? '<button class="btn btn-ghost btn-sm" data-action="resp:me" title="Asignarme esta tarjeta">Asignarme</button>'
-      : "") +
-    '</div><span class="fld-hint">Quién rinde cuentas por la tarjeta (uno solo).</span></div>\n\n      ' +
+    '</select></div>\n      </div>\n\n      ' +
     // "Más detalles" arranca colapsado en una tarjeta nueva: fechas, prioridad,
     // recurrencia, asignados y sectores no hacen falta para crear algo rápido.
     // Si la tarjeta ya trae alguno cargado, arranca abierto — lo que ya está
@@ -6305,7 +6312,7 @@ function renderPanel() {
     html5 +
     "\n      " +
     html6 +
-    '\n\n      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:14px">\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
+    '\n\n      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:14px">\n        <button class="btn btn-primary btn-sm" data-action="card:save" title="Guardar ahora">💾 Guardar</button>\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
 }
 function openCarga() {
   const obj = {};
@@ -6885,17 +6892,21 @@ document.addEventListener("click", (ev) => {
     case "card:link":
       copyCardLink(val10 ? state.cards.find((c) => c.id === val10) : current());
       break;
+    case "card:save":
+      // El guardado automático ya corre solo (debounce + polling), pero
+      // este botón fuerza un guardado inmediato y da una confirmación
+      // explícita para quien prefiere no confiar en el automático.
+      guardarAhora(false).then(() => flash(state.saveError ? "✗ No se pudo guardar" : "✓ Guardado"));
+      break;
     case "qedit:open":
       openQEdit(val10);
       break;
     case "qedit:save": {
       const tarjeta9 = state.cards.find((c) => c.id === el.dataset.id);
       if (tarjeta9) {
-        const resp = $("#qeResp"),
-          prio = $("#qePrio"),
+        const prio = $("#qePrio"),
           fin = $("#qeFin");
-        (resp && (tarjeta9.responsable = resp.value || null),
-          prio && (tarjeta9.prioridad = prio.value),
+        (prio && (tarjeta9.prioridad = prio.value),
           fin && (tarjeta9.fin = fin.value || null),
           touch(),
           closeModal(),
@@ -7176,11 +7187,6 @@ document.addEventListener("click", (ev) => {
         pushNav(),
         render());
       break;
-    case "resp:me": {
-      const tarjeta7 = current();
-      if (tarjeta7 && state.userId) ((tarjeta7.responsable = state.userId), touch(), renderPanel());
-      break;
-    }
     case "date:preset": {
       const tarjeta8 = current(),
         campo = el.dataset.field,
@@ -7689,18 +7695,7 @@ function openQEdit(id) {
   openModal(
     '<h2 style="font-size:16px">✎ Edición rápida</h2><div class="sub-t">' +
       esc(tarjeta.titulo) +
-      '</div><div class="fld"><label>Responsable</label><select id="qeResp"><option value="">— sin asignar —</option>' +
-      TEAM.map(
-        (m) =>
-          '<option value="' +
-          m.id +
-          '" ' +
-          (tarjeta.responsable === m.id ? "selected" : "") +
-          ">" +
-          esc(m.nombre) +
-          "</option>",
-      ).join("") +
-      '</select></div><div class="fld-row"><div class="fld"><label>Prioridad</label><select id="qePrio"><option value="normal" ' +
+      '</div><div class="fld-row"><div class="fld"><label>Prioridad</label><select id="qePrio"><option value="normal" ' +
       (tarjeta.prioridad === "normal" ? "selected" : "") +
       '>Normal</option><option value="alta" ' +
       (tarjeta.prioridad === "alta" ? "selected" : "") +
