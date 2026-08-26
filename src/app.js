@@ -4175,7 +4175,7 @@ function renderKanban() {
       " tarjeta" +
       (lista2.length !== 1 ? "s" : "") +
       (state.mis && state.userId ? " · mías" : "") +
-      '</span>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
+      '</span>\n    <button class="roulette-btn" data-action="roulette:open">🎡 ¿Qué curso me toca?</button>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
       (state.sort === "prioridad" ? "selected" : "") +
       '>Prioridad</option>\n      <option value="fecha" ' +
       (state.sort === "fecha" ? "selected" : "") +
@@ -4226,7 +4226,6 @@ function renderKanban() {
   return (
     html +
     html2 +
-    '<div class="roulette-launcher"><button class="roulette-btn" data-action="roulette:open">🎡 ¿Qué curso me toca?</button></div>' +
     '<div class="kanban">' +
     txt +
     "</div>"
@@ -4820,6 +4819,58 @@ function mapaStats() {
     "</div>"
   );
 }
+// Un sector por burbuja, tamaño según cuánto tiene (publicado + en camino),
+// color de marca del sector: la foto de "qué tenemos por sector" de un
+// vistazo, y clickeable para filtrar el resto del Mapa por ese sector.
+function mapaBubbles() {
+  const conteo = {};
+  state.cards
+    .filter((tarjeta) => INV_TIPOS.has(tarjeta.tipo))
+    .forEach((tarjeta) => {
+      (tarjeta.sectores || []).forEach((sec) => {
+        conteo[sec] = (conteo[sec] || 0) + 1;
+      });
+    });
+  const entradas = Object.keys(conteo)
+    .map((sec) => [sec, conteo[sec]])
+    .sort((a, b) => b[1] - a[1]);
+  if (!entradas.length) return "";
+  const max = Math.max(...entradas.map((arg) => arg[1]));
+  return (
+    '<div class="mapa-bubbles">' +
+    entradas
+      .map((arg) => {
+        const sec = arg[0],
+          n = arg[1],
+          tam = Math.round(44 + Math.sqrt(n / max) * 68),
+          nombre = sectorName(sec) || sec,
+          activo = state.filters.sector === sec;
+        return (
+          '<button class="mapa-bubble-item' +
+          (activo ? " active" : "") +
+          '" data-action="mapa:bubble" data-sector="' +
+          sec +
+          '" data-cat="' +
+          sec +
+          '" title="' +
+          esc(nombre) +
+          " · " +
+          n +
+          '"><span class="mapa-bubble" style="width:' +
+          tam +
+          "px;height:" +
+          tam +
+          'px">' +
+          n +
+          '</span><span class="mapa-bubble-label">' +
+          esc(nombre) +
+          "</span></button>"
+        );
+      })
+      .join("") +
+    "</div>"
+  );
+}
 function renderMapa() {
   const cantidad = state.cards.filter(inInventory).length,
     lista = [
@@ -4866,6 +4917,7 @@ function renderMapa() {
     ],
     html =
       mapaStats() +
+      mapaBubbles() +
       '<div class="mapa-secciones">' +
       lista
         .map(
@@ -7019,6 +7071,11 @@ document.addEventListener("click", (ev) => {
         pushNav(),
         render());
       break;
+    case "mapa:bubble": {
+      const sec2 = el.dataset.sector;
+      ((state.filters.sector = state.filters.sector === sec2 ? "" : sec2), (state.mapaSec = "todos"), render());
+      break;
+    }
     case "edu:sec":
       ((state.eduSector = el.dataset.sec), (state.eduEst = ""), (state.eduQ = ""), pushNav(), render());
       break;
@@ -9177,7 +9234,14 @@ async function boot() {
       if (tarjeta.cotofrase && typeof tarjeta.cotofrase === "object") state.cotofrase = tarjeta.cotofrase;
       ensureFraseDay();
       (ensureTeam(), injectSectorStyles(), renderGateTeam());
-      if (invCount("curso") === 0 && CURSOS.length) {
+      // ingestCatalogo() con replace:false es no-destructivo: solo agrega los
+      // títulos del catálogo que todavía no existen como curso. Antes esto
+      // solo corría si el inventario estaba vacío, así que un tablero real
+      // con apenas un par de cursos de ejemplo nunca llegaba a sumar el
+      // resto del catálogo — quedaba "atascado" para siempre. Corriéndolo
+      // siempre, cada título faltante se suma solo, sin duplicar ni pisar
+      // nada de lo que ya está cargado.
+      if (CURSOS.length) {
         const val = ingestCatalogo(CURSOS, {});
         if (val > 0)
           try {
