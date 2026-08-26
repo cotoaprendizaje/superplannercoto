@@ -990,6 +990,15 @@ button {
   gap: 8px;
   animation: 0.16s viewIn;
 }
+@media (max-width: 760px) {
+  .filt-pop {
+    left: auto;
+    right: 0;
+    min-width: 0;
+    width: calc(100vw - 28px);
+    max-width: 270px;
+  }
+}
 .filt-pop-item {
   width: 100%;
 }
