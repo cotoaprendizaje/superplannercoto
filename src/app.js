@@ -6764,6 +6764,9 @@ document.addEventListener("click", (ev) => {
     case "notif:markread":
       (marcarAlertasLeidas(computeAlerts().map(alertaKey)), openNotif(), updateBell());
       break;
+    case "help:open":
+      openHelp();
+      break;
     case "settings:open":
       openSettings();
       break;
@@ -7049,7 +7052,10 @@ document.addEventListener("click", (ev) => {
                       else {
                         if (val21 === "settings:open") openSettings();
                         else {
-                          if (val21 === "theme:toggle") toggleTheme();
+                          if (val21 === "help:open") openHelp();
+                          else {
+                            if (val21 === "theme:toggle") toggleTheme();
+                          }
                         }
                       }
                     }
@@ -8110,6 +8116,14 @@ function paletteCommands() {
       kw: "ajustes config sectores backup",
     },
     {
+      t: "Ayuda",
+      d: "Funciones que cuestan de encontrar",
+      ic: "❓",
+      act: "do",
+      arg: "help:open",
+      kw: "ayuda faq como funciona atajos tips",
+    },
+    {
       t: "Cambiar tema",
       d: "Claro / oscuro",
       ic: "◐",
@@ -8350,6 +8364,35 @@ function openNotif() {
     "</div>"),
     $("#panel").classList.add("open"),
     $("#overlay").classList.remove("hidden"));
+}
+// Reemplaza al cartel de onboarding automático que aparecía solo la
+// primera vez: en vez de imponerse, esto se abre cuando alguien lo pide.
+function openHelp() {
+  const faq = [
+    ["Ctrl+K (o tecla /)", "Abre un buscador rápido para saltar a una tarjeta, un curso o directamente a una sección."],
+    ["☰ Filtros del Planner", "Agrupa persona, sector, tipo y estado en un solo botón — el contador muestra cuántos hay activos. También te deja guardar combinaciones de filtros frecuentes."],
+    ["Acciones rápidas en las tarjetas", "Pasá el mouse sobre una tarjeta del Planner: aparecen accesos directos para edición rápida, duplicar, copiar el enlace y eliminar, sin tener que abrir el panel completo."],
+    ["Exportar CSV / PDF", "En la barra del Planner, junto al orden. Exporta lo que estás viendo en pantalla — respeta los filtros activos."],
+    ["🔔 Alertas", "Vencidas y por vencer. \"Marcar todas como leídas\" las oculta hasta que algo cambie en esa tarjeta puntual (nueva fecha, otro estado)."],
+    ["Menú de usuario (▾)", "Mi semana (tu foco de los próximos días), Carga del equipo, e Imprimir/PDF están ahí."],
+    ["🎲 ¿Qué curso me toca?", "Botón en la barra del Planner: sortea entre los cursos que todavía no arrancaron."],
+    ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
+    ["Mapa del área", "Todo lo publicado (cursos, Edu Points) y lo que está en desarrollo, organizado por sector y filtrable con un clic."],
+  ];
+  openModal(
+    '<h2>❓ Ayuda</h2><div class="sub-t">Funciones que ya existen pero a veces cuestan de encontrar.</div>\n    <div style="margin-top:4px">' +
+      faq
+        .map(
+          (par) =>
+            '<details class="acc"><summary class="sub" style="margin-top:0">' +
+            esc(par[0]) +
+            '</summary><div style="margin-top:6px;margin-bottom:10px;font-size:13px;color:var(--ink-soft);line-height:1.5">' +
+            esc(par[1]) +
+            "</div></details>",
+        )
+        .join("") +
+      '</div>\n    <div class="modal-foot"><button class="btn btn-primary" data-action="modal:close">Listo</button></div>',
+  );
 }
 function openSettings() {
   const txt = Object.keys(SECTORES)
