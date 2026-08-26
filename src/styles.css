@@ -1476,6 +1476,42 @@ button {
   margin-left: auto;
   font-weight: 700;
 }
+.mapa-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 4px 0 18px;
+}
+.mapa-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: var(--r-l);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.mapa-stat-ic {
+  font-size: 18px;
+  margin-bottom: 2px;
+}
+.mapa-stat-n {
+  font-family: var(--titulo);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--coto-navy);
+  line-height: 1;
+}
+[data-theme="dark"] .mapa-stat-n {
+  color: var(--ink);
+}
+.mapa-stat-l {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
 .mapa-secciones {
   display: flex;
   gap: 10px;
