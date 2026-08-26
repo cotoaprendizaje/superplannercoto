@@ -5261,10 +5261,11 @@ function renderInicio() {
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
     html +
-    '</div>\n    <div class="slot-widget">\n      <div class="slot-top"><span class="slot-emoji">🎰</span><div class="slot-tx"><div class="slot-t">Máquina de la suerte</div><div class="slot-d">Tirá de la palanca y a ver qué te toca.</div></div></div>\n      <div class="slot-screen" id="slotScreen">🍀 🍀 🍀</div>\n      <button class="slot-lever" id="slotLever" data-action="slot:pull">🎲 Tirar de la palanca</button>\n    </div>\n  </div>'
+    "</div>\n  </div>"
   );
 }
-const SLOT_FRASES = [
+const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
+  SLOT_FRASES = [
   "Ponete a laburar 😤",
   "Vas bien, dale que va 💪",
   "Te merecés un cafecito ☕",
@@ -5291,23 +5292,45 @@ const SLOT_FRASES = [
   "Un aplauso interno para vos 👏",
   "Todo bien por acá, seguí no más",
 ];
+function slotModalHTML() {
+  return (
+    '<div class="slot-modal">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Tirá de la palanca y a ver qué te toca.</div>\n      <div class="slot-reels">' +
+    [1, 2, 3].map((n) => '<div class="slot-reel" id="slotReel' + n + '">' + SLOT_SIMBOLOS[0] + "</div>").join("") +
+    '</div>\n      <div class="slot-result" id="slotResult"></div>\n      <button class="slot-lever" id="slotLever" data-action="slot:pull">🎲 Tirar de la palanca</button>\n    </div>'
+  );
+}
+function abrirSlot() {
+  openModal(slotModalHTML());
+}
+// Los 3 rodillos frenan en cascada (500 / 800 / 1150ms) para que se sienta
+// como una tragamonedas de verdad y no un simple sorteo instantáneo.
 function tirarSlot() {
-  const el = $("#slotScreen"),
+  const reels = [1, 2, 3].map((n) => $("#slotReel" + n)),
+    resultado = $("#slotResult"),
     boton = $("#slotLever");
-  if (!el || el.dataset.spinning) return;
-  ((el.dataset.spinning = "1"), boton && (boton.disabled = true));
-  let vueltas = 0;
-  const timer = setInterval(() => {
-    ((el.textContent = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)]), vueltas++);
-    if (vueltas > 10) {
+  if (!reels[0] || reels[0].dataset.spinning) return;
+  (reels.forEach((r) => (r.dataset.spinning = "1")),
+    boton && (boton.disabled = true),
+    resultado && (resultado.classList.remove("show"), (resultado.textContent = "")));
+  const paradas = [500, 800, 1150];
+  reels.forEach((reel, i) => {
+    const timer = setInterval(() => {
+      reel.textContent = SLOT_SIMBOLOS[Math.floor(Math.random() * SLOT_SIMBOLOS.length)];
+    }, 60);
+    setTimeout(() => {
       (clearInterval(timer),
-        (el.textContent = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)]),
-        el.classList.add("pop"),
-        setTimeout(() => el.classList.remove("pop"), 400),
-        delete el.dataset.spinning,
-        boton && (boton.disabled = false));
-    }
-  }, 70);
+        (reel.textContent = SLOT_SIMBOLOS[Math.floor(Math.random() * SLOT_SIMBOLOS.length)]),
+        delete reel.dataset.spinning,
+        reel.classList.add("stop"),
+        setTimeout(() => reel.classList.remove("stop"), 300));
+      if (i === reels.length - 1) {
+        (resultado &&
+          ((resultado.textContent = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)]),
+          resultado.classList.add("show")),
+          boton && (boton.disabled = false));
+      }
+    }, paradas[i]);
+  });
 }
 function agendaWindow() {
   const fecha = new Date(state.agendaRefY, state.agendaRefM, 1),
@@ -6852,6 +6875,9 @@ document.addEventListener("click", (ev) => {
       break;
     case "undo:del":
       undoBorrado();
+      break;
+    case "slot:open":
+      abrirSlot();
       break;
     case "slot:pull":
       tirarSlot();
