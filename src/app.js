@@ -5749,18 +5749,27 @@ function renderResumen() {
         "</span>",
     )
     .join("");
+  const desc = (txt) => '<div class="res-desc">' + txt + "</div>";
   return (
     '<div style="margin-bottom:6px"><h2 style="font-size:21px">Resumen del área</h2>\n    <div style="color:var(--ink-soft);font-size:13px;margin:2px 0 14px">Hola ' +
     esc(state.user || "") +
-    ' 👋 — panorama de “lo que hacemos” y “lo que tenemos”.</div></div>\n    <div class="res-grid">\n      ' +
-    fn(lista.length, "Proyectos en el tablero", "en movimiento", "var(--coto-blue)", "kanban") +
+    ' 👋 — este panel mira dos cosas separadas: el <b>Planner</b> (las tareas que el equipo tiene en curso ahora) y el <b>Mapa</b> (el inventario ya publicado: cursos, Edu Points). Los 3 primeros números son del Planner; los últimos 2, del Mapa.</div></div>\n    <div class="res-grid">\n      ' +
+    fn(lista.length, "Proyectos en el tablero", "tareas activas ahora en el Planner", "var(--coto-blue)", "kanban") +
     "\n      " +
-    fn(cantidad3, "En revisión", "por publicar", "var(--warn)", "kanban", null, "en-revision") +
+    fn(
+      cantidad3,
+      "En revisión",
+      "en el Planner, esperando aprobación para publicarse",
+      "var(--warn)",
+      "kanban",
+      null,
+      "en-revision",
+    ) +
     "\n      " +
     fn(
       cantidad4,
       "Vencidas",
-      "requieren atención",
+      "pasaron su fecha límite sin cerrarse",
       cantidad4 ? "var(--bad)" : "var(--ok)",
       "kanban",
       null,
@@ -5768,26 +5777,34 @@ function renderResumen() {
       "venc",
     ) +
     "\n      " +
-    fn(cantidad, "Cursos activos", "en el mapa", "var(--ok)", "mapa", "cursos") +
+    fn(cantidad, "Cursos activos", "cursos e-learning ya publicados en el Mapa", "var(--ok)", "mapa", "cursos") +
     "\n      " +
-    fn(cantidad2, "Edu Points", "colocados", "#546E7A", "mapa", "edu-points") +
+    fn(cantidad2, "Edu Points", "piezas con QR ya colocadas en sucursal", "#546E7A", "mapa", "edu-points") +
     '\n    </div>\n    <div class="res-cols">\n      <div>\n        <div class="res-card"><h3>⚑ Próximos vencimientos <span class="mini">' +
     lista2.length +
     "</span></h3>" +
+    desc("Tareas del Planner con fecha en los próximos 45 días.") +
     txt7 +
-    '</div>\n        <div class="res-card"><h3>🧩 Mezcla por tipo</h3><div>' +
+    '</div>\n        <div class="res-card"><h3>🧩 Mezcla por tipo</h3>' +
+    desc("Cómo se reparten las tareas activas del Planner según su tipo.") +
+    "<div>" +
     (txt9 || '<span style="color:var(--ink-soft)">—</span>') +
     '</div></div>\n        <div class="res-card"><h3>🎨 Mezcla por sector</h3>' +
+    desc("En qué sector hay más tareas cargadas ahora mismo (Planner).") +
     (txt10 || '<span style="color:var(--ink-soft)">—</span>') +
     '</div>\n        <div class="res-card"><h3>📈 Velocidad · últimas semanas</h3>' +
+    desc("Tareas del Planner que pasaron a “Finalizados” cada semana, últimas 6 semanas.") +
     throughputHTML(lista) +
     '</div>\n      </div>\n      <div>\n        <div class="res-card"><h3>◷ Por estado <span class="mini">' +
     lista.length +
     " total</span></h3>" +
+    desc("Tareas activas del Planner agrupadas por su estado actual.") +
     txt6 +
     '</div>\n        <div class="res-card"><h3>👥 Carga del equipo <span class="mini">tablero</span></h3>' +
+    desc("Cuántas tareas del tablero (Planner) tiene asignadas cada persona.") +
     txt8 +
     '</div>\n        <div class="res-card"><h3>⏳ Estancadas <span class="mini">+10 días</span></h3>' +
+    desc("Tareas del Planner que llevan 10 días o más sin cambiar de estado.") +
     agingHTML(lista) +
     "</div>\n      </div>\n    </div>"
   );
