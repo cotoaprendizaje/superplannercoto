@@ -5221,7 +5221,7 @@ button.aday:hover {
 .frase-widget {
   display: flex;
   justify-content: center;
-  margin: 28px 0 4px;
+  margin: 56px 0 4px;
 }
 .frase-widget[hidden] {
   display: none;
