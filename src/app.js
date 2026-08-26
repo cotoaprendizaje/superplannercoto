@@ -1995,19 +1995,12 @@ const TEMPLATES = {
         "Guion validado",
         "Maqueta visual",
         "Montaje Storyline",
-        "QA funcional",
         "Alta en Moodle",
       ],
     },
     "actualizacion-curso": {
       fases: ["Relevamiento de cambios", "Reescritura", "Rearmado", "Revisión", "Republicación"],
-      checklist: [
-        "Detectar desactualizaciones",
-        "Actualizar guion",
-        "Actualizar piezas",
-        "QA",
-        "Republicar en Moodle",
-      ],
+      checklist: ["Detectar desactualizaciones", "Actualizar guion", "Actualizar piezas", "Republicar en Moodle"],
     },
     video: {
       fases: ["Pre-producción", "Rodaje", "Post-producción"],
@@ -3121,10 +3114,12 @@ function stackHTML(tarjeta) {
   const lista = [tarjeta.responsable, ...(tarjeta.asignados || [])]
     .filter((arg2, arg3, arg) => arg2 && arg.indexOf(arg2) === arg3)
     .slice(0, 4);
+  if (!lista.length)
+    return '<button class="stack-empty" data-action="dice:open" title="Nadie asignado — probá tirar los dados">🎲</button>';
   return '<div class="stack">' + lista.map((arg) => avatarHTML(arg, true)).join("") + "</div>";
 }
 function sectoresBadges(lista) {
-  if (!lista || !lista.length) return '<span class="badge badge-tbd" data-action="noop">TBD</span>';
+  if (!lista || !lista.length) return '<span class="badge badge-tbd" data-action="noop">Sin sector</span>';
   return lista
     .map((arg) =>
       SECTORES[arg]
@@ -3684,7 +3679,7 @@ function seedCards() {
         asignados: ["dami", "flor"],
         inicio: fn2(-3),
         fin: fn2(18),
-        checklist: ["Brief aprobado", "Guion validado", "Maqueta visual", "Montaje", "QA", "Alta en Moodle"],
+        checklist: ["Brief aprobado", "Guion validado", "Maqueta visual", "Montaje", "Alta en Moodle"],
         fasesD: [
           {
             n: "Guion",
@@ -4140,7 +4135,7 @@ function renderKanban() {
       " tarjeta" +
       (lista2.length !== 1 ? "s" : "") +
       (state.mis && state.userId ? " · mías" : "") +
-      '</span>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
+      '</span>\n    <button class="btn btn-ghost btn-sm" data-action="dice:open" title="Elegir al azar un curso pendiente por arrancar">🎲 ¿Qué curso me toca?</button>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
       (state.sort === "prioridad" ? "selected" : "") +
       '>Prioridad</option>\n      <option value="fecha" ' +
       (state.sort === "fecha" ? "selected" : "") +
@@ -4488,7 +4483,7 @@ function groupCards(lista) {
       ((val2 = def ? def.nombre : "Sin responsable"), (txt = "👤"));
     } else
       state.tlGroup === "sector"
-        ? ((val = primaryCat(arg)), (val2 = sectorName(val) || "TBD"), (txt = "🎨"))
+        ? ((val = primaryCat(arg)), (val2 = sectorName(val) || "Sin sector"), (txt = "🎨"))
         : ((val = arg.tipo),
           (val2 = (allTipos()[arg.tipo] || {}).nombre || arg.tipo),
           (txt = (allTipos()[arg.tipo] || {}).icon || ""));
@@ -5332,6 +5327,60 @@ function tirarSlot() {
     }, paradas[i]);
   });
 }
+const DADO_CARAS = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+// "No iniciado" = una tarjeta de curso que ya está en el Planner pero
+// sigue en Pendiente: nadie la movió todavía a En desarrollo.
+function cursosPendientes() {
+  return boardCards().filter((tarjeta) => tarjeta.tipo === "curso" && tarjeta.estado === "pendiente");
+}
+function diceModalHTML() {
+  return (
+    '<div class="dice-modal">\n      <div class="dice-modal-t">🎲 ¿Qué curso me toca?</div>\n      <div class="dice-modal-d">Tirá los dados y te elegimos un curso pendiente para arrancar.</div>\n      <div class="dice-row">' +
+    [1, 2, 3, 4, 5].map((n) => '<div class="dice" id="dado' + n + '">' + DADO_CARAS[0] + "</div>").join("") +
+    '</div>\n      <div class="dice-result" id="dadoResult"></div>\n      <button class="dice-btn" id="dadoBtn" data-action="dice:roll">🎲 Tirar los dados</button>\n    </div>'
+  );
+}
+function abrirDados() {
+  openModal(diceModalHTML());
+}
+function tirarDados() {
+  const dados = [1, 2, 3, 4, 5].map((n) => $("#dado" + n)),
+    resultado = $("#dadoResult"),
+    boton = $("#dadoBtn");
+  if (!dados[0] || dados[0].dataset.spinning) return;
+  (dados.forEach((dado) => (dado.dataset.spinning = "1")),
+    boton && (boton.disabled = true),
+    resultado && (resultado.classList.remove("show"), (resultado.innerHTML = "")));
+  const paradas = [350, 480, 610, 740, 900];
+  dados.forEach((dado, i) => {
+    const timer = setInterval(() => {
+      dado.textContent = DADO_CARAS[Math.floor(Math.random() * DADO_CARAS.length)];
+    }, 60);
+    setTimeout(() => {
+      (clearInterval(timer),
+        (dado.textContent = DADO_CARAS[Math.floor(Math.random() * DADO_CARAS.length)]),
+        delete dado.dataset.spinning,
+        dado.classList.add("stop"),
+        setTimeout(() => dado.classList.remove("stop"), 300));
+      if (i === dados.length - 1 && resultado) {
+        const pendientes = cursosPendientes();
+        (resultado.classList.add("show"),
+          pendientes.length
+            ? (() => {
+                const elegido = pendientes[Math.floor(Math.random() * pendientes.length)];
+                resultado.innerHTML =
+                  "Te toca: <b>" +
+                  esc(elegido.titulo) +
+                  '</b><br><button class="btn btn-sm btn-primary" style="margin-top:8px" data-action="card:open" data-id="' +
+                  elegido.id +
+                  '">Abrir tarjeta</button>';
+              })()
+            : (resultado.innerHTML = "🎉 No hay cursos pendientes por arrancar."),
+          boton && (boton.disabled = false));
+      }
+    }, paradas[i]);
+  });
+}
 function agendaWindow() {
   const fecha = new Date(state.agendaRefY, state.agendaRefM, 1),
     iso = isoOf(new Date(fecha.getFullYear(), fecha.getMonth() - 1, 1)),
@@ -5761,7 +5810,7 @@ function renderResumen() {
         avatarHTML(miembro.id, true) +
         " " +
         miembro.nombre +
-        (overload ? ' <span class="badge prio" style="margin-left:4px;font-size:10px">⚠ al palo</span>' : "") +
+        (overload ? ' <span class="badge prio" style="margin-left:4px;font-size:10px">⚠ sobrecargado</span>' : "") +
         '</span><div class="bl-track"><div class="bl-fill" style="width:' +
         Math.round((obj[miembro.id] / val3) * 100) +
         "%;background:" +
@@ -5922,7 +5971,7 @@ function sectorPicker(tarjeta) {
             );
           })
           .join("")
-      : '<span style="font-size:12px;color:var(--ink-soft)">Sin sector (TBD)</span>';
+      : '<span style="font-size:12px;color:var(--ink-soft)">Sin sector</span>';
   return (
     '<div class="fld"><label>Sectores</label>\n    <div class="sec-selected">' +
     txt +
@@ -6413,7 +6462,7 @@ function openCarga() {
         '<div class="carga-info">\n      <div class="carga-name">' +
         miembro.nombre +
         " " +
-        (flag ? '<span class="badge prio" style="margin-left:4px">al palo</span>' : "") +
+        (flag ? '<span class="badge prio" style="margin-left:4px">sobrecargado</span>' : "") +
         '</div>\n      <div class="carga-rol">' +
         miembro.rol +
         '</div>\n      <div class="carga-bar"><div class="carga-fill" style="width:' +
@@ -6432,7 +6481,7 @@ function openCarga() {
     ($("#panel").innerHTML =
       '<div class="panel-head"><div style="flex:1"><div class="tipo-pill">👥 Equipo</div>\n    <div style="font-family:var(--titulo);font-size:18px;font-weight:700;margin-top:4px">Carga del equipo</div></div>\n    <button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>\n    <div class="panel-body"><div class="carga-list">' +
       txt +
-      '</div>\n    <div class="note">Cuenta tarjetas del tablero (responsable + asignados). Ayuda al reparto: el “al palo” es quien más acumula.</div></div>'),
+      '</div>\n    <div class="note">Cuenta tarjetas del tablero (responsable + asignados). Ayuda a ver el reparto de carga entre el equipo.</div></div>'),
     $("#panel").classList.add("open"),
     $("#overlay").classList.remove("hidden"));
 }
@@ -6881,6 +6930,12 @@ document.addEventListener("click", (ev) => {
       break;
     case "slot:pull":
       tirarSlot();
+      break;
+    case "dice:open":
+      abrirDados();
+      break;
+    case "dice:roll":
+      tirarDados();
       break;
     case "coach:close": {
       const elCoach = el.closest(".coachcard");
@@ -8151,7 +8206,7 @@ function renderSearchResults(value) {
         '</div>\n      <div class="sr-m">' +
         esc(tipo.nombre || tarjeta.tipo) +
         " · " +
-        ((tarjeta.sectores || []).map((arg2) => sectorName(arg2) || arg2).join(", ") || "TBD") +
+        ((tarjeta.sectores || []).map((arg2) => sectorName(arg2) || arg2).join(", ") || "Sin sector") +
         '</div></div>\n      <span class="sr-where">' +
         txt +
         "</span></div>"
@@ -8210,7 +8265,7 @@ function paletteCommands() {
     },
     {
       t: "Carga del equipo",
-      d: "Quién está al palo",
+      d: "Quién tiene más carga",
       ic: "👥",
       act: "do",
       arg: "carga:open",
