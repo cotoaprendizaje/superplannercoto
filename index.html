@@ -5046,36 +5046,55 @@ button.aday:hover {
 /* Máquina de la suerte: un botón flotante fijo al centro-derecha de la
    pantalla; al tocarlo abre el juego como popup centrado (reutiliza el
    modal existente), con 3 rodillos que frenan en cascada. */
-.slot-fab {
+.slot-fab,
+.dice-fab {
   position: fixed;
   right: 22px;
   top: 50%;
   transform: translateY(-50%);
-  width: 50px;
-  height: 50px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(145deg, #ffd76a, #e8a815);
-  color: #3a2600;
-  font-size: 22px;
+  font-size: 28px;
   display: grid;
   place-content: center;
   cursor: pointer;
-  box-shadow:
-    0 6px 18px rgba(232, 168, 21, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
   z-index: 39;
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
 }
+.slot-fab {
+  background: linear-gradient(145deg, #ffd76a, #e8a815);
+  color: #3a2600;
+  box-shadow:
+    0 6px 18px rgba(232, 168, 21, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
 .slot-fab:hover {
-  transform: translateY(-50%) scale(1.08);
   box-shadow:
     0 8px 22px rgba(232, 168, 21, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
-.slot-fab:active {
+.dice-fab {
+  background: linear-gradient(145deg, #4fd6ae, #1c8f70);
+  color: #06251d;
+  box-shadow:
+    0 6px 18px rgba(28, 143, 112, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.dice-fab:hover {
+  box-shadow:
+    0 8px 22px rgba(28, 143, 112, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+.slot-fab:hover,
+.dice-fab:hover {
+  transform: translateY(-50%) scale(1.08);
+}
+.slot-fab:active,
+.dice-fab:active {
   transform: translateY(-50%) scale(0.95);
 }
 .slot-modal {
@@ -5177,11 +5196,12 @@ button.aday:hover {
   transform: none;
 }
 @media (max-width: 860px) {
-  .slot-fab {
+  .slot-fab,
+  .dice-fab {
     right: 14px;
-    width: 44px;
-    height: 44px;
-    font-size: 19px;
+    width: 54px;
+    height: 54px;
+    font-size: 23px;
   }
 }
 /* ¿Qué curso me toca?: mismo lenguaje visual que la CotoFrase, pero con
@@ -5353,7 +5373,6 @@ button.aday:hover {
     </div>
   </footer>
   <button class="fab" data-action="nuevo:open" title="Nueva tarjeta (n)" aria-label="Nueva tarjeta">+</button>
-  <button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>
 </div>
 
 <!-- Panel lateral + overlay + modal -->
@@ -9499,7 +9518,7 @@ function renderKanban() {
       " tarjeta" +
       (lista2.length !== 1 ? "s" : "") +
       (state.mis && state.userId ? " · mías" : "") +
-      '</span>\n    <button class="btn btn-ghost btn-sm" data-action="dice:open" title="Elegir al azar un curso pendiente por arrancar">🎲 ¿Qué curso me toca?</button>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
+      '</span>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
       (state.sort === "prioridad" ? "selected" : "") +
       '>Prioridad</option>\n      <option value="fecha" ' +
       (state.sort === "fecha" ? "selected" : "") +
@@ -9547,7 +9566,13 @@ function renderKanban() {
         '" placeholder="+ Agregar… (Enter)"></div>\n    </section>'
       );
     }).join("");
-  return html + html2 + ('<div class="kanban">' + txt + "</div>");
+  return (
+    html +
+    html2 +
+    '<div class="kanban">' +
+    txt +
+    '</div><button class="dice-fab" data-action="dice:open" title="¿Qué curso me toca?" aria-label="¿Qué curso me toca?">🎲</button>'
+  );
 }
 function applyBulk(val, value) {
   if (!value || !state.sel.length) return;
@@ -10620,7 +10645,7 @@ function renderInicio() {
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
     html +
-    "</div>\n  </div>"
+    '</div>\n  </div><button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>'
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],

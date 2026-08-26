@@ -4135,7 +4135,7 @@ function renderKanban() {
       " tarjeta" +
       (lista2.length !== 1 ? "s" : "") +
       (state.mis && state.userId ? " · mías" : "") +
-      '</span>\n    <button class="btn btn-ghost btn-sm" data-action="dice:open" title="Elegir al azar un curso pendiente por arrancar">🎲 ¿Qué curso me toca?</button>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
+      '</span>\n    <span class="grow"></span>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
       (state.sort === "prioridad" ? "selected" : "") +
       '>Prioridad</option>\n      <option value="fecha" ' +
       (state.sort === "fecha" ? "selected" : "") +
@@ -4183,7 +4183,13 @@ function renderKanban() {
         '" placeholder="+ Agregar… (Enter)"></div>\n    </section>'
       );
     }).join("");
-  return html + html2 + ('<div class="kanban">' + txt + "</div>");
+  return (
+    html +
+    html2 +
+    '<div class="kanban">' +
+    txt +
+    '</div><button class="dice-fab" data-action="dice:open" title="¿Qué curso me toca?" aria-label="¿Qué curso me toca?">🎲</button>'
+  );
 }
 function applyBulk(val, value) {
   if (!value || !state.sel.length) return;
@@ -5256,7 +5262,7 @@ function renderInicio() {
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
     html +
-    "</div>\n  </div>"
+    '</div>\n  </div><button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>'
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
