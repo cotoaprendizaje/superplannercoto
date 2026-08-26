@@ -3559,12 +3559,6 @@ const state = {
   eduEst: "",
   eduQ: "",
   appPassHash: "1waoja",
-  agendaRefY: new Date().getFullYear(),
-  agendaRefM: new Date().getMonth(),
-  agendaMode: "mi",
-  agendaTool: "home",
-  agendaEdit: "",
-  agendaWho: "",
   agenda: {},
   cotofrase: { day: "", porUsuario: {} },
   deleted: {},
@@ -3921,7 +3915,7 @@ function renderFilters() {
   const popAbierto = $("#filtrosPop") && !$("#filtrosPop").classList.contains("hidden");
   const misFlag = $("#misFlag");
   if (misFlag) misFlag.textContent = state.mis ? "ON" : "";
-  if (state.view === "inicio" || state.view === "agenda") {
+  if (state.view === "inicio") {
     $("#filters").innerHTML = "";
     return;
   }
@@ -4081,10 +4075,7 @@ function renderView() {
       else {
         if (state.view === "timeline") txt = renderTimeline();
         else {
-          if (state.view === "agenda") txt = renderAgenda();
-          else {
-            if (state.view === "mapa") txt = renderMapa();
-          }
+          if (state.view === "mapa") txt = renderMapa();
         }
       }
     }
@@ -5418,13 +5409,6 @@ function renderInicio() {
         d: "El panorama macro del área.",
       },
       {
-        go: "agenda",
-        cat: "recursos-humanos",
-        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4c4.4 0 8 2.7 8 6H4c0-3.3 3.6-6 8-6z"/><path d="M12 10v9"/><path d="M12 19a2.2 2.2 0 0 0 3.2-.8"/></svg>',
-        t: "Agenda del equipo",
-        d: "Home y vacaciones, todo el año.",
-      },
-      {
         go: "mapa",
         cat: "servicio-medico",
         ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></svg>',
@@ -5447,7 +5431,7 @@ function renderInicio() {
       esc(arg.d) +
       '</span></span>\n    <span class="hub-arrow">→</span></button>';
   return (
-    '<div class="hub">\n    <div class="hub-hero">\n      <h1 class="hub-title">Hola, ' +
+    '<div class="hub">\n    <div class="hub-main">\n    <div class="hub-hero">\n      <h1 class="hub-title">Hola, ' +
     esc(state.user || "equipo") +
     '</h1>\n      <p class="hub-sub">¿Qué querés ver hoy?' +
     (cantidad
@@ -5458,9 +5442,10 @@ function renderInicio() {
     lista.map(fn).join("") +
     "</div>\n    " +
     renderResumen() +
-    "\n    " +
+    '\n    </div>\n    <div class="hub-side">' +
+    slotWidgetHTML() +
     fraseWidgetHTML() +
-    '\n  </div><button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>'
+    "</div>\n  </div>"
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
@@ -5491,23 +5476,22 @@ const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣",
   "Un aplauso interno para vos 👏",
   "Todo bien por acá, seguí no más",
 ];
-function slotModalHTML() {
+// La máquina vive fija en la barra lateral de Inicio (no en un modal): se
+// juega ahí mismo, y el historial de abajo se actualiza al toque.
+function slotWidgetHTML() {
   ensureFraseDay();
   const mia = state.cotofrase.porUsuario[state.user];
   if (mia)
     return (
-      '<div class="slot-modal locked">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Ya tiraste de la palanca hoy — volvé mañana por otra.</div>\n      <div class="slot-result show">' +
+      '<div class="slot-widget locked">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Ya tiraste de la palanca hoy — volvé mañana por otra.</div>\n      <div class="slot-result show">' +
       esc(mia) +
       "</div>\n    </div>"
     );
   return (
-    '<div class="slot-modal">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Tirá de la palanca y a ver qué te toca. Una vez por día.</div>\n      <div class="slot-reels">' +
+    '<div class="slot-widget">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Tirá de la palanca y a ver qué te toca. Una vez por día.</div>\n      <div class="slot-reels">' +
     [1, 2, 3].map((n) => '<div class="slot-reel" id="slotReel' + n + '">' + SLOT_SIMBOLOS[0] + "</div>").join("") +
     '</div>\n      <div class="slot-result" id="slotResult"></div>\n      <button class="slot-lever" id="slotLever" data-action="slot:pull">🎲 Tirar de la palanca</button>\n    </div>'
   );
-}
-function abrirSlot() {
-  openModal(slotModalHTML());
 }
 // Los 3 rodillos frenan en cascada (500 / 800 / 1150ms) para que se sienta
 // como una tragamonedas de verdad y no un simple sorteo instantáneo.
@@ -5532,9 +5516,11 @@ function tirarSlot() {
         setTimeout(() => reel.classList.remove("stop"), 300));
       if (i === reels.length - 1) {
         ensureFraseDay();
-        const frase = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)];
+        const frase = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)],
+          desc = $("#slotLever") && $("#slotLever").closest(".slot-widget").querySelector(".slot-modal-d");
         ((state.cotofrase.porUsuario[state.user] = frase), touch());
         (resultado && ((resultado.textContent = frase), resultado.classList.add("show")),
+          desc && (desc.textContent = "Ya tiraste de la palanca hoy — volvé mañana por otra."),
           boton && (boton.remove()));
         renderFraseWidget();
       }
@@ -5676,230 +5662,6 @@ function tirarRuleta() {
           '">Abrir tarjeta</button>')),
       boton && (boton.disabled = false));
   }, 3200);
-}
-function agendaWindow() {
-  const fecha = new Date(state.agendaRefY, state.agendaRefM, 1),
-    iso = isoOf(new Date(fecha.getFullYear(), fecha.getMonth() - 1, 1)),
-    iso2 = isoOf(new Date(fecha.getFullYear(), fecha.getMonth() + 2, 0));
-  return [iso, iso2];
-}
-function agendaTotals(id2, arg, arg2) {
-  const obj = state.agenda[id2] || {};
-  let n = 0,
-    n2 = 0;
-  for (const val in obj) {
-    if (val >= arg && val <= arg2) {
-      if (obj[val] === "home") n++;
-      else {
-        if (obj[val] === "vac") n2++;
-      }
-    }
-  }
-  return {
-    h: n,
-    v: n2,
-  };
-}
-function agendaChips(val) {
-  val = val || agendaWindow();
-  const flag = state.agendaMode === "equipo",
-    val2 = state.agendaWho;
-  return TEAM.map((miembro) => {
-    const { h: home, v: vacaciones } = agendaTotals(miembro.id, val[0], val[1]),
-      flag2 = flag && val2 === miembro.id,
-      flag3 = flag && val2 && !flag2;
-    return (
-      '<button class="aperson' +
-      (flag2 ? " on" : "") +
-      (flag3 ? " dim" : "") +
-      '" data-action="agenda:who" data-who="' +
-      miembro.id +
-      '" style="--pc:' +
-      miembro.color +
-      '" title="' +
-      esc(miembro.nombre) +
-      " — " +
-      (flag ? "tocá para ver sólo a esta persona" : "Home " + home + " · Vacaciones " + vacaciones) +
-      '">' +
-      avatarHTML(miembro.id, true) +
-      '<span class="ap-n">' +
-      esc(miembro.nombre) +
-      '</span><span class="ap-c">🏠 ' +
-      home +
-      '</span><span class="ap-c">🌴 ' +
-      vacaciones +
-      "</span></button>"
-    );
-  }).join("");
-}
-function agendaMonth(n, n2, val2, iso) {
-  const n3 = (new Date(n, n2, 1).getDay() + 6) % 7,
-    n4 = new Date(n, n2 + 1, 0).getDate();
-  let txt = "";
-  for (let i = 0; i < n3; i++) txt += '<span class="aday out"></span>';
-  for (let n5 = 1; n5 <= n4; n5++) {
-    const txt2 = n + "-" + pad(n2 + 1) + "-" + pad(n5),
-      flag = txt2 === iso;
-    if (val2 === "mi") {
-      const val3 = (state.agenda[state.agendaEdit] || {})[txt2];
-      txt +=
-        '<button class="aday' +
-        (val3 ? " " + val3 : "") +
-        (flag ? " today" : "") +
-        '" data-action="agenda:day" data-iso="' +
-        txt2 +
-        '">' +
-        n5 +
-        "</button>";
-    } else {
-      const val4 = state.agendaWho,
-        lista = TEAM.filter((miembro) => !val4 || miembro.id === val4)
-          .map((miembro) => {
-            const val5 = (state.agenda[miembro.id] || {})[txt2];
-            return val5
-              ? {
-                  c: miembro.color,
-                  mk: val5,
-                  n: miembro.nombre,
-                }
-              : null;
-          })
-          .filter(Boolean);
-      if (!lista.length)
-        txt +=
-          '<span class="aday eq' + (flag ? " today" : "") + '"><span class="anum">' + n5 + "</span></span>";
-      else {
-        if (lista.length === 1) {
-          const val = lista[0];
-          txt +=
-            '<span class="aday eq ' +
-            val.mk +
-            " on" +
-            (flag ? " today" : "") +
-            '" style="--u-color:' +
-            val.c +
-            '" title="' +
-            esc(val.n) +
-            ": " +
-            (val.mk === "vac" ? "Vacaciones" : "Home") +
-            '"><span class="anum">' +
-            n5 +
-            "</span></span>";
-        } else {
-          const txt3 = lista
-            .slice(0, 6)
-            .map(
-              (arg) =>
-                '<i class="aseg ' +
-                arg.mk +
-                '" style="--sc:' +
-                arg.c +
-                '" title="' +
-                esc(arg.n) +
-                ": " +
-                (arg.mk === "vac" ? "Vacaciones" : "Home") +
-                '"></i>',
-            )
-            .join("");
-          txt +=
-            '<span class="aday eq multi' +
-            (flag ? " today" : "") +
-            '"><span class="anum">' +
-            n5 +
-            '</span><span class="asegs">' +
-            txt3 +
-            "</span></span>";
-        }
-      }
-    }
-  }
-  return (
-    '<section class="amonth"><header class="amonth-h">' +
-    MESES[n2] +
-    ' <span class="amonth-y">' +
-    n +
-    '</span></header><div class="adow">' +
-    DOW.map((dia) => "<span>" + dia[0] + "</span>").join("") +
-    '</div><div class="adays">' +
-    txt +
-    "</div></section>"
-  );
-}
-function renderAgenda() {
-  const val = state.agendaMode,
-    iso = todayISO();
-  if (!member(state.agendaEdit))
-    state.agendaEdit = (member(state.userId) ? state.userId : TEAM[0] && TEAM[0].id) || "";
-  const miembro2 = member(state.agendaEdit) ||
-      TEAM[0] || {
-        color: "#006EA0",
-        nombre: "",
-      },
-    fecha = new Date(state.agendaRefY, state.agendaRefM, 1),
-    lista = [-1, 0, 1].map((arg) => new Date(fecha.getFullYear(), fecha.getMonth() + arg, 1)),
-    val2 = agendaWindow(),
-    txt = MESES[fecha.getMonth()] + " " + fecha.getFullYear(),
-    html =
-      '<div class="ag-year"><button class="btn btn-icon btn-ghost" data-action="agenda:month" data-dir="-1" title="Mes anterior">‹</button><b>' +
-      txt +
-      '</b><button class="btn btn-icon btn-ghost" data-action="agenda:month" data-dir="1" title="Mes siguiente">›</button><button class="btn btn-sm btn-ghost" data-action="agenda:hoy" title="Volver al mes actual" style="margin-left:2px">Hoy</button></div>',
-    html2 =
-      '<div class="ag-modes"><button class="ag-mode' +
-      (val === "mi" ? " on" : "") +
-      '" data-action="agenda:mode" data-mode="mi">🙂 Mi agenda</button><button class="ag-mode' +
-      (val === "equipo" ? " on" : "") +
-      '" data-action="agenda:mode" data-mode="equipo">👥 Equipo</button></div>';
-  let txt2 = "";
-  if (val === "mi") {
-    const val3 = state.agendaTool,
-      txt3 = TEAM.map(
-        (miembro) =>
-          '<button class="ew' +
-          (miembro.id === state.agendaEdit ? " on" : "") +
-          '" data-action="agenda:edit" data-who="' +
-          miembro.id +
-          '" style="--pc:' +
-          miembro.color +
-          '" title="' +
-          esc(miembro.nombre) +
-          '">' +
-          avatarHTML(miembro.id, true) +
-          "</button>",
-      ).join("");
-    txt2 =
-      '<div class="ag-tools">\n      <span class="ag-editwho">✎ Editás:' +
-      txt3 +
-      '</span>\n      <div class="ag-paint">\n        <button class="ag-pt home' +
-      (val3 === "home" ? " on" : "") +
-      '" data-action="agenda:tool" data-tool="home" title="Enmarcar días de Home (oficina en casa)">🏠 Home</button>\n        <button class="ag-pt vac' +
-      (val3 === "vac" ? " on" : "") +
-      '" data-action="agenda:tool" data-tool="vac" title="Pintar días de Vacaciones">🌴 Vacaciones</button>\n        <button class="ag-pt clear' +
-      (val3 === "clear" ? " on" : "") +
-      '" data-action="agenda:tool" data-tool="clear" title="Borrar marcas">🧽 Borrar</button>\n      </div></div>';
-  } else
-    txt2 =
-      '<div class="ag-legend"><span class="lg"><i class="lgbox vac"></i> Vacaciones (día pintado)</span><span class="lg"><i class="lgbox home"></i> Home (día enmarcado)</span><span class="ag-hint">Tocá una persona abajo para verla sola.</span></div>';
-  const html3 =
-    '<div class="agenda-grid m3">' +
-    lista.map((fecha2) => agendaMonth(fecha2.getFullYear(), fecha2.getMonth(), val, iso)).join("") +
-    "</div>";
-  return (
-    '<div class="agenda" style="--u-color:' +
-    miembro2.color +
-    '">\n    <div class="view-head"><h2>Agenda del equipo</h2><p>Home y vacaciones — mes anterior, actual y siguiente, cada uno con su color. ' +
-    (val === "mi"
-      ? "Elegí la herramienta y tocá los días."
-      : "Vista del equipo: quién está fuera y cuándo.") +
-    '</p></div>\n    <div class="agenda-bar">' +
-    html +
-    html2 +
-    txt2 +
-    '</div>\n    <div class="agenda-people" id="agendaPeople">' +
-    agendaChips(val2) +
-    "</div>\n    " +
-    html3 +
-    "\n  </div>"
-  );
 }
 function renderResumen() {
   const lista = boardCards(),
@@ -6990,53 +6752,6 @@ document.addEventListener("click", (ev) => {
     case "hub:go":
       ((state.view = el.dataset.go), pushNav(), render());
       break;
-    case "agenda:month": {
-      let txt = state.agendaRefM + (parseInt(el.dataset.dir, 10) || 0),
-        val11 = state.agendaRefY;
-      while (txt < 0) {
-        ((txt += 12), val11--);
-      }
-      while (txt > 11) {
-        ((txt -= 12), val11++);
-      }
-      ((state.agendaRefY = val11), (state.agendaRefM = txt), render());
-      break;
-    }
-    case "agenda:hoy":
-      ((state.agendaRefY = new Date().getFullYear()), (state.agendaRefM = new Date().getMonth()), render());
-      break;
-    case "agenda:mode":
-      ((state.agendaMode = el.dataset.mode), render());
-      break;
-    case "agenda:tool":
-      ((state.agendaTool = el.dataset.tool), render());
-      break;
-    case "agenda:edit":
-      ((state.agendaEdit = el.dataset.who), render());
-      break;
-    case "agenda:who":
-      state.agendaMode === "equipo" &&
-        ((state.agendaWho = state.agendaWho === el.dataset.who ? "" : el.dataset.who), render());
-      break;
-    case "agenda:day": {
-      if (state.agendaMode !== "mi") break;
-      const val12 = el.dataset.iso;
-      if (!member(state.agendaEdit)) {
-        flash("Elegí quién sos para marcar 🙂", true);
-        break;
-      }
-      const val13 = state.agenda[state.agendaEdit] || (state.agenda[state.agendaEdit] = {}),
-        val14 = val13[val12],
-        val15 = state.agendaTool;
-      if (val15 === "clear" || val14 === val15) delete val13[val12];
-      else val13[val12] = val15;
-      el.className =
-        "aday" + (val13[val12] ? " " + val13[val12] : "") + (val12 === todayISO() ? " today" : "");
-      const el7 = $("#agendaPeople");
-      if (el7) el7.innerHTML = agendaChips();
-      persist();
-      break;
-    }
     case "search:open":
       openPalette();
       break;
@@ -7122,9 +6837,6 @@ document.addEventListener("click", (ev) => {
       break;
     case "undo:del":
       undoBorrado();
-      break;
-    case "slot:open":
-      abrirSlot();
       break;
     case "slot:pull":
       tirarSlot();
@@ -8149,7 +7861,6 @@ function enterAs(value) {
   ((state.user = value), $("#gate").classList.add("hidden"));
   const hallado = TEAM.find((miembro) => miembro.nombre.toLowerCase() === value.toLowerCase());
   ((state.userId = hallado ? hallado.id : null),
-    (state.agendaEdit = state.userId || ""),
     ($("#userChip").innerHTML =
       (hallado
         ? avatarHTML(hallado.id)
@@ -8338,7 +8049,6 @@ function paletteCommands() {
     fn("Planner", "kanban", "planner tablero kanban tareas estados"),
     fn("Calendario", "calendario", "fechas mes semana"),
     fn("Timeline", "timeline", "gantt cronograma"),
-    fn("Agenda del equipo", "agenda", "home vacaciones equipo"),
     fn("Mapa del área", "mapa", "cursos edu points apps bases inventario"),
     {
       t: "Nueva tarjeta",
@@ -8950,8 +8660,8 @@ document.addEventListener("keydown", (ev) => {
   else {
     if (ev.key.toLowerCase() === "n") openNuevo();
     else {
-      if (ev.key >= "1" && ev.key <= "6") {
-        const val = ["inicio", "kanban", "calendario", "timeline", "agenda", "mapa"][+ev.key - 1];
+      if (ev.key >= "1" && ev.key <= "5") {
+        const val = ["inicio", "kanban", "calendario", "timeline", "mapa"][+ev.key - 1];
         val && ((state.view = val), render());
       }
     }
