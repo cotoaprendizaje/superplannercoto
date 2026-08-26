@@ -3551,11 +3551,9 @@ const state = {
   recent: [],
   dragCal: null,
   dragTl: null,
-  sel: [],
   savedViews: [],
   connOk: true,
   saveError: false,
-  reconectando: false,
   lastSyncTs: null,
   eduSector: null,
   eduEst: "",
@@ -4106,22 +4104,13 @@ function cardKanban(tarjeta) {
       nombre: tarjeta.tipo,
       icon: "•",
     },
-    vencida = isOverdue(tarjeta),
-    flag = state.sel.includes(tarjeta.id);
+    vencida = isOverdue(tarjeta);
   return (
-    '<article class="kcard' +
-    (flag ? " sel" : "") +
-    '" draggable="true" data-id="' +
+    '<article class="kcard" draggable="true" data-id="' +
     tarjeta.id +
     '" data-cat="' +
     primaryCat(tarjeta) +
-    '" data-action="card:open">\n    <span class="kcard-sel' +
-    (flag ? " on" : "") +
-    '" data-action="card:sel" data-id="' +
-    tarjeta.id +
-    '" title="Seleccionar">' +
-    (flag ? "✓" : "") +
-    '</span>\n    <div class="kcard-quick">' +
+    '" data-action="card:open">\n    <div class="kcard-quick">' +
     '<button class="kq-btn" data-action="qedit:open" data-id="' +
     tarjeta.id +
     '" title="Edición rápida">✎</button><button class="kq-btn" data-action="kcard:dup" data-id="' +
@@ -4201,20 +4190,6 @@ function renderKanban() {
       '>Fecha</option>\n      <option value="titulo" ' +
       (state.sort === "titulo" ? "selected" : "") +
       ">Título</option>\n    </select></div></div>",
-    cantidad = state.sel.length,
-    html2 = cantidad
-      ? '<div class="bulkbar">\n    <span class="bulk-n">✓ ' +
-        cantidad +
-        " seleccionada" +
-        (cantidad !== 1 ? "s" : "") +
-        '</span>\n    <select data-bulk="estado"><option value="">Mover a estado…</option>' +
-        ESTADOS.map((estado) => '<option value="' + estado.id + '">' + estado.nombre + "</option>").join("") +
-        '</select>\n    <select data-bulk="sector"><option value="">Sumar sector…</option>' +
-        Object.keys(SECTORES)
-          .map((arg) => '<option value="' + arg + '">' + esc(SECTORES[arg].nombre) + "</option>")
-          .join("") +
-        '</select>\n    <button class="btn btn-sm" data-action="bulk:del" style="color:var(--bad)">🗑 Eliminar</button>\n    <span class="grow"></span>\n    <button class="btn btn-ghost btn-sm" data-action="bulk:clear">Cancelar</button>\n  </div>'
-      : "",
     kcolMax = Math.max(1, ...ESTADOS.map((estado) => lista2.filter((arg) => arg.estado === estado.id).length)),
     txt = ESTADOS.map((estado) => {
       const lista = sortCards(lista2.filter((arg) => arg.estado === estado.id)),
@@ -4244,33 +4219,10 @@ function renderKanban() {
     }).join("");
   return (
     html +
-    html2 +
     '<div class="kanban">' +
     txt +
     "</div>"
   );
-}
-function applyBulk(val, value) {
-  if (!value || !state.sel.length) return;
-  const conjunto = new Set(state.sel);
-  if (val === "estado")
-    (state.cards.forEach((tarjeta) => {
-      conjunto.has(tarjeta.id) &&
-        tarjeta.estado !== value &&
-        (logAct(tarjeta, "pasó a " + ((ESTADOS.find((estado) => estado.id === value) || {}).nombre || value)),
-        value === "en-revision" && (tarjeta.revisionDesde = isoOf(new Date())),
-        (tarjeta.estado = value));
-    }),
-      flash("✓ " + state.sel.length + " movida(s)"));
-  else
-    val === "sector" &&
-      (state.cards.forEach((tarjeta) => {
-        conjunto.has(tarjeta.id) &&
-          ((tarjeta.sectores = tarjeta.sectores || []),
-          !tarjeta.sectores.includes(value) && tarjeta.sectores.push(value));
-      }),
-      flash("✓ Sector sumado a " + state.sel.length));
-  ((state.sel = []), touch(), render());
 }
 function cardsOnDay(lista, iso) {
   return lista.filter((arg) => {
@@ -5957,117 +5909,6 @@ function renderAgenda() {
     "\n  </div>"
   );
 }
-function kpiSnapKey() {
-  return "cf.kpiSnap";
-}
-// Sin histórico en el backend compartido: el snapshot vive solo en este
-// navegador (localStorage), así que la variación es una referencia local,
-// no un dato sincronizado entre el equipo.
-function kpiTrendHTML(key, actual) {
-  try {
-    const raw = localStorage.getItem(kpiSnapKey());
-    if (!raw) return "";
-    const snaps = JSON.parse(raw),
-      hace7 = isoOf(addDays(new Date(), -7)),
-      entry = snaps[hace7];
-    if (!entry || entry[key] == null) return "";
-    const diff = actual - entry[key];
-    if (!diff) return '<div class="kpi-trend flat">= vs. semana pasada</div>';
-    return (
-      '<div class="kpi-trend ' +
-      (diff > 0 ? "up" : "down") +
-      '">' +
-      (diff > 0 ? "▲ +" + diff : "▼ " + diff) +
-      " vs. semana pasada</div>"
-    );
-  } catch (e) {
-    return "";
-  }
-}
-function saveKpiSnapshot(map) {
-  try {
-    const raw = localStorage.getItem(kpiSnapKey()),
-      snaps = raw ? JSON.parse(raw) : {},
-      hoy = todayISO(),
-      corte = isoOf(addDays(new Date(), -30));
-    snaps[hoy] = map;
-    Object.keys(snaps).forEach((k) => {
-      if (k < corte) delete snaps[k];
-    });
-    localStorage.setItem(kpiSnapKey(), JSON.stringify(snaps));
-  } catch (e) {}
-}
-function weekStartISO(d) {
-  const dt = new Date(d),
-    dia = (dt.getDay() + 6) % 7;
-  dt.setDate(dt.getDate() - dia);
-  return isoOf(dt);
-}
-function throughputHTML() {
-  const semanas = 6,
-    hoy = new Date(),
-    buckets = {};
-  for (let i = semanas - 1; i >= 0; i--) buckets[weekStartISO(addDays(hoy, -7 * i))] = 0;
-  state.cards.forEach((tarjeta) => {
-    (tarjeta.actividad || []).forEach((entrada) => {
-      if (!/pasó a en revisión/i.test(entrada.texto || "")) return;
-      const semana = weekStartISO(new Date(entrada.ts));
-      if (semana in buckets) buckets[semana]++;
-    });
-  });
-  const claves = Object.keys(buckets),
-    tope = Math.max(1, ...Object.values(buckets));
-  return (
-    '<div class="throughput-row">' +
-    claves
-      .map((semana) => {
-        const cantidad = buckets[semana];
-        return (
-          '<div class="tp-bar-wrap" title="' +
-          cantidad +
-          " a En revisión · semana del " +
-          fmtShort(semana) +
-          '"><div class="tp-bar" style="height:' +
-          Math.max(4, Math.round((cantidad / tope) * 100)) +
-          '%"></div><span class="tp-n">' +
-          cantidad +
-          "</span></div>"
-        );
-      })
-      .join("") +
-    "</div>"
-  );
-}
-function lastMoveTs(tarjeta) {
-  const lista = (tarjeta.actividad || []).filter((arg) => /^pasó a /.test(arg.texto || ""));
-  return lista.length ? lista[lista.length - 1].ts : tarjeta.updatedAt || null;
-}
-function agingHTML(lista) {
-  const hoy = Date.now(),
-    umbral = 10 * 86400000,
-    estancadas = lista
-      .filter((tarjeta) => tarjeta.estado !== "en-revision")
-      .map((tarjeta) => ({ tarjeta, ts: lastMoveTs(tarjeta) }))
-      .filter((arg) => arg.ts && hoy - arg.ts >= umbral)
-      .sort((arg, arg2) => arg.ts - arg2.ts)
-      .slice(0, 6);
-  return estancadas.length
-    ? estancadas
-        .map(
-          (arg) =>
-            '<div class="venc" data-id="' +
-            arg.tarjeta.id +
-            '" data-action="card:open"><span class="venc-d over">' +
-            Math.floor((hoy - arg.ts) / 86400000) +
-            'd</span><span class="venc-t">' +
-            esc(arg.tarjeta.titulo) +
-            "</span>" +
-            stackHTML(arg.tarjeta) +
-            "</div>",
-        )
-        .join("")
-    : '<div style="color:var(--ink-soft);font-size:13px;padding:6px 0">Nada estancado 🎉</div>';
-}
 function renderResumen() {
   const lista = boardCards(),
     cantidad = state.cards.filter((tarjeta) => tarjeta.tipo === "curso" && inInventory(tarjeta)).length,
@@ -6094,7 +5935,6 @@ function renderResumen() {
       txt +
       "</div>" +
       (txt2 ? '<div class="kpi-sub">' + txt2 + "</div>" : "") +
-      kpiTrendHTML(txt4 && filtEstado ? "estado:" + filtEstado : txt4 && quick ? "quick:" + quick : txt, cantidad5) +
       "</div>",
     cantidad6 = lista.length || 1,
     txt6 = ESTADOS.map((estado) => {
@@ -6197,11 +6037,6 @@ function renderResumen() {
           "</span></button>",
       )
       .join("");
-  saveKpiSnapshot({
-    "Proyectos en el tablero": lista.length,
-    "estado:en-revision": cantidad3,
-    "quick:venc": cantidad4,
-  });
   const obj2 = {};
   lista.forEach((arg) => (obj2[arg.tipo] = (obj2[arg.tipo] || 0) + 1));
   const txt9 = Object.keys(obj2)
@@ -6260,9 +6095,6 @@ function renderResumen() {
     '</div></div>\n        <div class="res-card"><h3>🎨 Mezcla por sector</h3>' +
     desc("En qué sector hay más tareas cargadas ahora mismo (Planner).") +
     (txt10 || '<span style="color:var(--ink-soft)">—</span>') +
-    '</div>\n        <div class="res-card"><h3>📈 Velocidad · últimas semanas</h3>' +
-    desc("Tareas del Planner que pasaron a “Finalizados” cada semana, últimas 6 semanas.") +
-    throughputHTML(lista) +
     '</div>\n      </div>\n      <div>\n        <div class="res-card"><h3>◷ Por estado <span class="mini">' +
     lista.length +
     " total</span></h3>" +
@@ -6271,9 +6103,6 @@ function renderResumen() {
     '</div>\n        <div class="res-card"><h3>👥 Carga del equipo <span class="mini">tablero</span></h3>' +
     desc("Cuántas tareas del tablero (Planner) tiene asignadas cada persona.") +
     txt8 +
-    '</div>\n        <div class="res-card"><h3>⏳ Estancadas <span class="mini">+10 días</span></h3>' +
-    desc("Tareas del Planner que llevan 10 días o más sin cambiar de estado.") +
-    agingHTML(lista) +
     "</div>\n      </div>\n    </div>"
   );
 }
@@ -7071,10 +6900,7 @@ document.addEventListener("click", (ev) => {
   const el3 = ev.target.closest(".tab[data-view]");
   if (el3) {
     state.view !== el3.dataset.view &&
-      ((state.view = el3.dataset.view),
-      pushNav(),
-      render(),
-      guardarUltimaVista(state.view));
+      ((state.view = el3.dataset.view), pushNav(), render());
     return;
   }
   const el = ev.target.closest("[data-action]");
@@ -7296,25 +7122,6 @@ document.addEventListener("click", (ev) => {
     case "panel:close":
       closePanel();
       break;
-    case "card:sel": {
-      const val17 = el.dataset.id;
-      ((state.sel = state.sel.includes(val17)
-        ? state.sel.filter((arg) => arg !== val17)
-        : [...state.sel, val17]),
-        render());
-      break;
-    }
-    case "bulk:clear":
-      ((state.sel = []), render());
-      break;
-    case "bulk:del": {
-      if (!state.sel.length) break;
-      const idsBulk = state.sel.slice();
-      confirmar("¿Eliminar " + idsBulk.length + " tarjeta(s)?", () => {
-        (dropCardsWithUndo(idsBulk), (state.sel = []), render());
-      });
-      break;
-    }
     case "confirm:yes": {
       const fn = _confirmCb;
       ((_confirmCb = null), closeModal(), fn && fn());
@@ -7338,11 +7145,6 @@ document.addEventListener("click", (ev) => {
     case "roulette:spin":
       tirarRuleta();
       break;
-    case "coach:close": {
-      const elCoach = el.closest(".coachcard");
-      if (elCoach) (elCoach.classList.remove("show"), setTimeout(() => elCoach.remove(), 250));
-      break;
-    }
     case "misemana:open":
       openMiSemana();
       break;
@@ -7839,11 +7641,6 @@ function toggleArr(arg, txt, sector) {
       }
       return;
     }
-    const val = ev.target.dataset.bulk;
-    if (val) {
-      applyBulk(val, ev.target.value);
-      return;
-    }
     const val2 = ev.target.dataset.filter;
     if (val2) {
       ((state.filters[val2] = ev.target.value), render());
@@ -8240,40 +8037,6 @@ function openQEdit(id) {
       '">Guardar</button></div>',
   );
 }
-// Menú contextual (clic derecho) sobre una tarjeta del kanban: las acciones
-// más usadas a mano, sin tener que abrir el panel.
-function cerrarCtxMenu() {
-  const el = $("#ctxMenu");
-  if (el) el.remove();
-}
-function abrirCtxMenu(x, y, id) {
-  cerrarCtxMenu();
-  const el = document.createElement("div");
-  ((el.id = "ctxMenu"), (el.className = "ctxmenu"));
-  el.innerHTML =
-    '<button data-action="card:open" data-id="' +
-    id +
-    '">👁 Abrir</button><button data-action="qedit:open" data-id="' +
-    id +
-    '">✎ Edición rápida</button><button data-action="kcard:dup" data-id="' +
-    id +
-    '">⧉ Duplicar</button><button data-action="card:link" data-id="' +
-    id +
-    '">🔗 Copiar enlace</button><button data-action="kcard:del" data-id="' +
-    id +
-    '" style="color:var(--bad)">🗑 Eliminar</button>';
-  document.body.appendChild(el);
-  const rect = el.getBoundingClientRect(),
-    left = Math.min(x, window.innerWidth - rect.width - 8),
-    top = Math.min(y, window.innerHeight - rect.height - 8);
-  ((el.style.left = Math.max(4, left) + "px"), (el.style.top = Math.max(4, top) + "px"));
-  setTimeout(() => document.addEventListener("click", cerrarCtxMenu, { once: true }), 0);
-}
-document.addEventListener("contextmenu", (ev) => {
-  const el = ev.target.closest(".kcard");
-  if (!el) return;
-  (ev.preventDefault(), abrirCtxMenu(ev.clientX, ev.clientY, el.dataset.id));
-});
 // Botón "volver arriba": el Mapa y el Planner pueden crecer mucho (80+
 // tarjetas, columnas largas) y la app no tiene un scroll propio por
 // sección — es el documento entero el que se desplaza.
@@ -8335,12 +8098,7 @@ function mostrarPantallaSinConexion(err) {
 function showBanner() {
   const val = Store.mode();
   let val2;
-  if (state.reconectando)
-    val2 =
-      '<div class="note warn">🟡 <b>Reconectando…</b> No se pudo sincronizar la última vez; reintentando cada ' +
-      Math.round(BACKEND.pollMs / 1000) +
-      "s. Tus cambios se guardan localmente mientras tanto.</div>";
-  else if (val === "supabase")
+  if (val === "supabase")
     val2 =
       '<div class="note" style="background:var(--ok-soft);border-color:color-mix(in srgb, var(--ok) 40%, transparent);color:var(--ok)">🟢 <b>Equipo conectado (Supabase)</b> — lo que carga cada uno lo ven todos en vivo. <span id="syncAgo" class="sync-ago"></span></div>';
   else {
@@ -8411,7 +8169,6 @@ function enterAs(value) {
       "<span>" +
       esc(value) +
       '</span><span style="opacity:.45;font-size:11px">▾</span>'));
-  if (recordarUltimaVista()) render();
   try {
     const val = (location.hash || "").match(/card=([^&]+)/);
     if (val) {
@@ -8419,48 +8176,6 @@ function enterAs(value) {
       if (state.cards.some((tarjeta) => tarjeta.id === val2)) setTimeout(() => openDetail(val2), 60);
     }
   } catch (err) {}
-  mostrarOnboarding();
-}
-const VISTAS_VALIDAS = ["inicio", "resumen", "kanban", "calendario", "timeline", "agenda", "mapa"];
-function guardarUltimaVista(v) {
-  try {
-    if (VISTAS_VALIDAS.includes(v)) localStorage.setItem("cf.lastView", v);
-  } catch (e) {}
-}
-// Vuelve a la última pestaña que la persona miró, en vez de arrancar
-// siempre en el hub de Inicio. Solo local (localStorage): cada quien
-// recuerda la suya, no es un dato de equipo.
-function recordarUltimaVista() {
-  try {
-    const v = localStorage.getItem("cf.lastView");
-    if (v && VISTAS_VALIDAS.includes(v) && v !== state.view) {
-      state.view = v;
-      return true;
-    }
-  } catch (e) {}
-  return false;
-}
-// Onboarding contextual: un cartel breve, una única vez por navegador,
-// señalando funciones que ya existen pero cuestan de descubrir.
-function mostrarOnboarding() {
-  try {
-    if (localStorage.getItem("cf.onboardShown")) return;
-    localStorage.setItem("cf.onboardShown", "1");
-  } catch (e) {
-    return;
-  }
-  setTimeout(() => {
-    const el = document.createElement("div");
-    ((el.className = "coachcard"),
-      (el.innerHTML =
-        '<div class="coachcard-t">💡 Tres atajos que quizás no viste</div>' +
-        '<ul class="coachcard-l"><li><b>Ctrl+K</b> (o <b>/</b>) abre un buscador rápido: tarjetas, cursos, secciones.</li>' +
-        '<li>El botón <b>☰ Filtros</b> del Planner agrupa persona/sector/tipo/estado — el contador muestra cuántos hay activos.</li>' +
-        '<li>Clic derecho sobre una tarjeta del Planner abre un menú con las acciones más usadas.</li></ul>' +
-        '<button class="btn btn-sm btn-primary" data-action="coach:close">Entendido</button>'),
-      document.body.appendChild(el),
-      setTimeout(() => el.classList.add("show"), 30));
-  }, 900);
 }
 function updateGatePass() {
   const el = $("#gatePassInput");
@@ -9231,7 +8946,6 @@ function resetSeedRun() {
   ((state.cards = seedCards()),
     ingestCatalogo(CURSOS, {}),
     (state.selectedId = null),
-    (state.sel = []),
     touch(),
     closeModal(),
     (state.view = "mapa"),
@@ -9390,15 +9104,13 @@ function startPolling() {
       const editing = $("#panel").classList.contains("open") || !$("#modal").classList.contains("hidden"),
         changed = await mergeRemoteIntoState();
       state.lastSyncTs = Date.now();
-      if (state.reconectando) ((state.reconectando = false), showBanner());
       if (!changed.length) return;
       if (editing) return;
       (injectSectorStyles(), render());
     } catch (err) {
       // Un solo fallo de polling no significa que se cayó la conexión (el
-      // guardado igual reintenta): solo avisa "reconectando" para no gritar
-      // "sin conexión" por un hipo puntual de la red.
-      if (!state.reconectando) ((state.reconectando = true), showBanner());
+      // guardado igual reintenta en segundo plano); no hace falta avisar
+      // por un hipo puntual de la red.
     }
   }, BACKEND.pollMs);
 }

@@ -4716,70 +4716,6 @@ button.aday:hover {
   background: color-mix(in srgb, var(--coto-blue) 15%, var(--surface));
   box-shadow: inset 0 0 0 2px var(--coto-blue);
 }
-.kcard-sel {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 20px;
-  height: 20px;
-  border-radius: 7px;
-  border: 1.5px solid var(--line);
-  background: var(--surface);
-  display: grid;
-  place-items: center;
-  font-size: 12px;
-  font-weight: 800;
-  color: #fff;
-  cursor: pointer;
-  opacity: 0;
-  transition: 0.15s var(--ease);
-  z-index: 3;
-}
-.kcard-sel.on,
-.kcard:hover .kcard-sel {
-  opacity: 1;
-}
-.kcard-sel.on {
-  background: var(--coto-blue);
-  border-color: var(--coto-blue);
-}
-.kcard.sel {
-  box-shadow:
-    0 0 0 2px var(--coto-blue),
-    var(--shadow-lg) !important;
-}
-.bulkbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin: 0 0 14px;
-  padding: 10px 14px;
-  border-radius: var(--r-l);
-  background: color-mix(in srgb, var(--coto-blue) 10%, var(--glass));
-  border: 1px solid color-mix(in srgb, var(--coto-blue) 25%, var(--glass-brd));
-  -webkit-backdrop-filter: var(--blur);
-  backdrop-filter: var(--blur);
-  box-shadow: var(--shadow);
-}
-.bulk-n {
-  font-weight: 800;
-  color: var(--coto-blue);
-  font-size: 13px;
-}
-.bulkbar select {
-  font-family: inherit;
-  font-size: 13px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  color: var(--ink);
-  border-radius: var(--r-sm);
-  padding: 7px 10px;
-  outline: 0;
-}
-.bulkbar .grow {
-  flex: 1;
-}
 .vchips {
   display: flex;
   gap: 6px;
@@ -4838,11 +4774,9 @@ button.aday:hover {
   #modal,
   .appfoot,
   .aurora,
-  .bulkbar,
   .fab,
   .filters,
   .kbar,
-  .kcard-sel,
   .overlay,
   .panel,
   .quick-add,
@@ -4882,21 +4816,6 @@ button.aday:hover {
 }
 .kpi-go:hover {
   transform: translateY(-2px);
-}
-.kpi-trend {
-  margin-top: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  opacity: 0.9;
-}
-.kpi-trend.up {
-  color: #d7ffe9;
-}
-.kpi-trend.down {
-  color: #ffe0d9;
-}
-.kpi-trend.flat {
-  color: rgba(255, 255, 255, 0.75);
 }
 .bar-line-btn {
   cursor: pointer;
@@ -5002,31 +4921,6 @@ button.aday:hover {
   border-color: transparent;
   color: #fff;
 }
-.ctxmenu {
-  position: fixed;
-  z-index: 96;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  box-shadow: var(--shadow-lg);
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  min-width: 190px;
-}
-.ctxmenu button {
-  border: none;
-  background: none;
-  text-align: left;
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  cursor: pointer;
-  color: var(--ink);
-}
-.ctxmenu button:hover {
-  background: var(--surface-2);
-}
 .datepresets {
   display: flex;
   gap: 4px;
@@ -5044,33 +4938,6 @@ button.aday:hover {
 .dp-btn:hover {
   background: var(--surface-2);
   color: var(--ink);
-}
-.throughput-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  height: 72px;
-  padding-top: 6px;
-}
-.tp-bar-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-  gap: 4px;
-}
-.tp-bar {
-  width: 100%;
-  max-width: 22px;
-  border-radius: 5px 5px 0 0;
-  background: var(--coto-blue);
-}
-.tp-n {
-  font-size: 10px;
-  color: var(--ink-soft);
-  font-weight: 700;
 }
 .sync-ago {
   opacity: 0.75;
@@ -5105,41 +4972,6 @@ button.aday:hover {
 .gotop:hover {
   background: var(--coto-blue);
 }
-.coachcard {
-  position: fixed;
-  right: 22px;
-  bottom: 78px;
-  max-width: 320px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--r-l);
-  box-shadow: var(--shadow-lg);
-  padding: 16px;
-  opacity: 0;
-  transform: translateY(10px);
-  transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
-  z-index: 90;
-}
-.coachcard.show {
-  opacity: 1;
-  transform: translateY(0);
-}
-.coachcard-t {
-  font-weight: 700;
-  margin-bottom: 8px;
-  font-size: 13px;
-}
-.coachcard-l {
-  margin: 0 0 12px;
-  padding-left: 18px;
-  font-size: 12.5px;
-  color: var(--ink-soft);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
 .panel-menu-wrap {
   position: relative;
 }
@@ -5171,12 +5003,6 @@ button.aday:hover {
   .gotop {
     right: 16px;
     bottom: 156px;
-  }
-  .coachcard {
-    right: 14px;
-    left: 14px;
-    max-width: none;
-    bottom: 84px;
   }
 }
 /* Máquina de la suerte: un botón flotante fijo al centro-derecha de la
