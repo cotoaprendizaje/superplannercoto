@@ -3826,6 +3826,51 @@ html {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--chrome-line);
 }
+.search-promo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px 8px 14px;
+  border-radius: var(--pill);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--chrome-line);
+  color: var(--chrome-ink-soft);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  min-width: 220px;
+  transition:
+    background 0.2s var(--ease),
+    border-color 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+.search-promo:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: color-mix(in srgb, var(--coto-blue) 50%, var(--chrome-line));
+  color: var(--chrome-ink);
+}
+.search-promo svg {
+  flex: none;
+  opacity: 0.85;
+}
+.search-promo-t {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-promo-k {
+  flex: none;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--chrome-ink-soft);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--chrome-line);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
 .ticon {
   display: grid;
   place-items: center;
@@ -4227,6 +4272,18 @@ html {
   }
   .brand-t {
     font-size: 16px;
+  }
+  .search-promo {
+    min-width: 0;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .search-promo-t,
+  .search-promo-k {
+    display: none;
   }
   .tabs {
     position: fixed;
