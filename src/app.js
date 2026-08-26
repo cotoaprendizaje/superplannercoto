@@ -1794,6 +1794,11 @@ const ESTADOS = [
       nombre: "En revisión",
       dot: "#E2A03F",
     },
+    {
+      id: "finalizado",
+      nombre: "Finalizados",
+      dot: "#2E9E8F",
+    },
   ],
   TIPOS = {
     curso: {
@@ -3072,7 +3077,7 @@ function isInventory(tarjeta) {
 }
 function isOverdue(tarjeta) {
   const val = tarjeta.fin || tarjeta.inicio;
-  if (!val || isInventory(tarjeta)) return false;
+  if (!val || isInventory(tarjeta) || tarjeta.estado === "finalizado") return false;
   return val < todayISO();
 }
 function progress(tarjeta) {
@@ -3925,17 +3930,17 @@ function renderFilters() {
     // popover: cuatro (o tres, en el Mapa) selects siempre a la vista era
     // ruido para algo que se usa de vez en cuando. El buscador y los chips de
     // acceso rápido sí quedan afuera, porque esos se usan todo el tiempo.
-    activos = [tarjeta.persona, tarjeta.sector, !flag && tarjeta.tipo, tarjeta.estado, flag && tarjeta.cursoEstado]
-      .filter(Boolean).length,
+    activos = [
+      tarjeta.persona,
+      tarjeta.sector,
+      !flag && tarjeta.tipo,
+      tarjeta.estado,
+      flag && tarjeta.cursoEstado,
+      !flag && state.quick,
+    ].filter(Boolean).length,
     popoverFlds = (flag ? [html2, html5] : [html, html3, html2, html4])
       .map((h) => h.replace('<div class="filt">', '<div class="filt filt-pop-item">'))
       .join(""),
-    htmlFiltrosBtn =
-      '<div class="filt-pop-wrap"><button class="btn btn-ghost btn-sm" data-action="filtros:toggle" id="filtrosBtn">☰ Filtros' +
-      (activos ? '<span class="filt-badge">' + activos + "</span>" : "") +
-      '</button><div class="filt-pop hidden" id="filtrosPop">' +
-      popoverFlds +
-      '<button class="btn btn-ghost btn-sm" data-action="filt:clear" style="align-self:flex-start;margin-top:2px">Limpiar filtros</button></div></div>',
     lista = [
       {
         k: "venc",
@@ -3954,9 +3959,12 @@ function renderFilters() {
         l: "★ Alta",
       },
     ],
-    txt = flag
+    // Los chips rápidos y las vistas guardadas vivían sueltos en la barra;
+    // ahora quedan adentro del mismo popover de "☰ Filtros" para no saturar
+    // la barra con botones — todo lo que filtra, en un solo lugar.
+    quickHTML = flag
       ? ""
-      : '<div class="qchips">' +
+      : '<div class="filt-pop-sep"></div><div class="filt-pop-label">Accesos rápidos</div><div class="qchips qchips-pop">' +
         lista
           .map(
             (arg) =>
@@ -3970,9 +3978,9 @@ function renderFilters() {
           )
           .join("") +
         "</div>",
-    txt2 = flag
+    savedHTML = flag
       ? ""
-      : '<div class="vchips">' +
+      : '<div class="filt-pop-sep"></div><div class="filt-pop-label">Vistas guardadas</div><div class="vchips">' +
         (state.savedViews || [])
           .map(
             (arg) =>
@@ -3985,8 +3993,17 @@ function renderFilters() {
               '" title="Borrar vista">✕</span></button>',
           )
           .join("") +
-        '<button class="btn btn-ghost btn-sm" data-action="view:save" title="Guardar los filtros actuales como vista">💾 Guardar vista</button></div>';
-  $("#filters").innerHTML = html6 + htmlFiltrosBtn + txt + txt2;
+        '<button class="btn btn-ghost btn-sm" data-action="view:save" title="Guardar los filtros actuales como vista">💾 Guardar vista</button></div>',
+    htmlFiltrosBtn =
+      '<div class="filt-pop-wrap"><button class="btn btn-ghost btn-sm" data-action="filtros:toggle" id="filtrosBtn">☰ Filtros' +
+      (activos ? '<span class="filt-badge">' + activos + "</span>" : "") +
+      '</button><div class="filt-pop hidden" id="filtrosPop">' +
+      popoverFlds +
+      '<button class="btn btn-ghost btn-sm" data-action="filt:clear" style="align-self:flex-start;margin-top:2px">Limpiar filtros</button>' +
+      quickHTML +
+      savedHTML +
+      "</div></div>";
+  $("#filters").innerHTML = html6 + htmlFiltrosBtn;
   if (popAbierto) {
     const p = $("#filtrosPop");
     if (p) p.classList.remove("hidden");
@@ -4139,10 +4156,6 @@ function renderKanban() {
         (cantidad !== 1 ? "s" : "") +
         '</span>\n    <select data-bulk="estado"><option value="">Mover a estado…</option>' +
         ESTADOS.map((estado) => '<option value="' + estado.id + '">' + estado.nombre + "</option>").join("") +
-        '</select>\n    <select data-bulk="resp"><option value="">Asignar responsable…</option>' +
-        TEAM.map((miembro) => '<option value="' + miembro.id + '">' + esc(miembro.nombre) + "</option>").join(
-          "",
-        ) +
         '</select>\n    <select data-bulk="sector"><option value="">Sumar sector…</option>' +
         Object.keys(SECTORES)
           .map((arg) => '<option value="' + arg + '">' + esc(SECTORES[arg].nombre) + "</option>")
@@ -4189,21 +4202,14 @@ function applyBulk(val, value) {
         (tarjeta.estado = value));
     }),
       flash("✓ " + state.sel.length + " movida(s)"));
-  else {
-    if (val === "resp")
+  else
+    val === "sector" &&
       (state.cards.forEach((tarjeta) => {
-        conjunto.has(tarjeta.id) && (tarjeta.responsable = value);
+        conjunto.has(tarjeta.id) &&
+          ((tarjeta.sectores = tarjeta.sectores || []),
+          !tarjeta.sectores.includes(value) && tarjeta.sectores.push(value));
       }),
-        flash("✓ Responsable asignado a " + state.sel.length));
-    else
-      val === "sector" &&
-        (state.cards.forEach((tarjeta) => {
-          conjunto.has(tarjeta.id) &&
-            ((tarjeta.sectores = tarjeta.sectores || []),
-            !tarjeta.sectores.includes(value) && tarjeta.sectores.push(value));
-        }),
-        flash("✓ Sector sumado a " + state.sel.length));
-  }
+      flash("✓ Sector sumado a " + state.sel.length));
   ((state.sel = []), touch(), render());
 }
 function cardsOnDay(lista, iso) {
@@ -6224,22 +6230,7 @@ function renderPanel() {
     txt +
     '</select></div>\n        <div class="fld"><label>Estado</label><select data-field="estado">' +
     txt2 +
-    '</select></div>\n      </div>\n      <div class="fld"><label>Responsable</label><div style="display:flex;gap:6px"><select data-field="responsable" style="flex:1"><option value="">— sin asignar —</option>' +
-    TEAM.map(
-      (miembro) =>
-        '<option value="' +
-        miembro.id +
-        '" ' +
-        (tarjeta.responsable === miembro.id ? "selected" : "") +
-        ">" +
-        miembro.nombre +
-        "</option>",
-    ).join("") +
-    "</select>" +
-    (state.userId && tarjeta.responsable !== state.userId
-      ? '<button class="btn btn-ghost btn-sm" data-action="resp:me" title="Asignarme esta tarjeta">Asignarme</button>'
-      : "") +
-    '</div><span class="fld-hint">Quién rinde cuentas por la tarjeta (uno solo).</span></div>\n\n      ' +
+    '</select></div>\n      </div>\n\n      ' +
     // "Más detalles" arranca colapsado en una tarjeta nueva: fechas, prioridad,
     // recurrencia, asignados y sectores no hacen falta para crear algo rápido.
     // Si la tarjeta ya trae alguno cargado, arranca abierto — lo que ya está
@@ -6305,7 +6296,7 @@ function renderPanel() {
     html5 +
     "\n      " +
     html6 +
-    '\n\n      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:14px">\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
+    '\n\n      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:14px">\n        <button class="btn btn-primary btn-sm" data-action="card:save" title="Guardar ahora">💾 Guardar</button>\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
 }
 function openCarga() {
   const obj = {};
@@ -6885,17 +6876,21 @@ document.addEventListener("click", (ev) => {
     case "card:link":
       copyCardLink(val10 ? state.cards.find((c) => c.id === val10) : current());
       break;
+    case "card:save":
+      // El guardado automático ya corre solo (debounce + polling), pero
+      // este botón fuerza un guardado inmediato y da una confirmación
+      // explícita para quien prefiere no confiar en el automático.
+      guardarAhora(false).then(() => flash(state.saveError ? "✗ No se pudo guardar" : "✓ Guardado"));
+      break;
     case "qedit:open":
       openQEdit(val10);
       break;
     case "qedit:save": {
       const tarjeta9 = state.cards.find((c) => c.id === el.dataset.id);
       if (tarjeta9) {
-        const resp = $("#qeResp"),
-          prio = $("#qePrio"),
+        const prio = $("#qePrio"),
           fin = $("#qeFin");
-        (resp && (tarjeta9.responsable = resp.value || null),
-          prio && (tarjeta9.prioridad = prio.value),
+        (prio && (tarjeta9.prioridad = prio.value),
           fin && (tarjeta9.fin = fin.value || null),
           touch(),
           closeModal(),
@@ -7176,11 +7171,6 @@ document.addEventListener("click", (ev) => {
         pushNav(),
         render());
       break;
-    case "resp:me": {
-      const tarjeta7 = current();
-      if (tarjeta7 && state.userId) ((tarjeta7.responsable = state.userId), touch(), renderPanel());
-      break;
-    }
     case "date:preset": {
       const tarjeta8 = current(),
         campo = el.dataset.field,
@@ -7689,18 +7679,7 @@ function openQEdit(id) {
   openModal(
     '<h2 style="font-size:16px">✎ Edición rápida</h2><div class="sub-t">' +
       esc(tarjeta.titulo) +
-      '</div><div class="fld"><label>Responsable</label><select id="qeResp"><option value="">— sin asignar —</option>' +
-      TEAM.map(
-        (m) =>
-          '<option value="' +
-          m.id +
-          '" ' +
-          (tarjeta.responsable === m.id ? "selected" : "") +
-          ">" +
-          esc(m.nombre) +
-          "</option>",
-      ).join("") +
-      '</select></div><div class="fld-row"><div class="fld"><label>Prioridad</label><select id="qePrio"><option value="normal" ' +
+      '</div><div class="fld-row"><div class="fld"><label>Prioridad</label><select id="qePrio"><option value="normal" ' +
       (tarjeta.prioridad === "normal" ? "selected" : "") +
       '>Normal</option><option value="alta" ' +
       (tarjeta.prioridad === "alta" ? "selected" : "") +
