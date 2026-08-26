@@ -3921,7 +3921,7 @@ function renderFilters() {
   const popAbierto = $("#filtrosPop") && !$("#filtrosPop").classList.contains("hidden");
   const misFlag = $("#misFlag");
   if (misFlag) misFlag.textContent = state.mis ? "ON" : "";
-  if (state.view === "resumen" || state.view === "inicio" || state.view === "agenda") {
+  if (state.view === "inicio" || state.view === "agenda") {
     $("#filters").innerHTML = "";
     return;
   }
@@ -4075,18 +4075,15 @@ function renderView() {
   let txt = "";
   if (state.view === "inicio") txt = renderInicio();
   else {
-    if (state.view === "resumen") txt = renderResumen();
+    if (state.view === "kanban") txt = renderKanban();
     else {
-      if (state.view === "kanban") txt = renderKanban();
+      if (state.view === "calendario") txt = renderCalendario();
       else {
-        if (state.view === "calendario") txt = renderCalendario();
+        if (state.view === "timeline") txt = renderTimeline();
         else {
-          if (state.view === "timeline") txt = renderTimeline();
+          if (state.view === "agenda") txt = renderAgenda();
           else {
-            if (state.view === "agenda") txt = renderAgenda();
-            else {
-              if (state.view === "mapa") txt = renderMapa();
-            }
+            if (state.view === "mapa") txt = renderMapa();
           }
         }
       }
@@ -5434,13 +5431,6 @@ function renderInicio() {
         t: "Mapa del área",
         d: "Cursos, Edu Points, apps y bases.",
       },
-      {
-        go: "resumen",
-        cat: "tci",
-        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V11M9.3 20V5M14.6 20v-6M20 20v-9"/></svg>',
-        t: "Resumen",
-        d: "Indicadores y carga del equipo.",
-      },
     ],
     fn = (arg, arg2) =>
       '<button class="hub-card" data-cat="' +
@@ -5467,6 +5457,8 @@ function renderInicio() {
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
     "</div>\n    " +
+    renderResumen() +
+    "\n    " +
     fraseWidgetHTML() +
     '\n  </div><button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>'
   );
@@ -6054,9 +6046,7 @@ function renderResumen() {
     .join("");
   const desc = (txt) => '<div class="res-desc">' + txt + "</div>";
   return (
-    '<div style="margin-bottom:6px"><h2 style="font-size:21px">Resumen del área</h2>\n    <div style="color:var(--ink-soft);font-size:13px;margin:2px 0 14px">Hola ' +
-    esc(state.user || "") +
-    ' 👋 — este panel mira dos cosas separadas: el <b>Planner</b> (las tareas que el equipo tiene en curso ahora) y el <b>Mapa</b> (el inventario ya publicado: cursos, Edu Points). Los 3 primeros números son del Planner; los últimos 2, del Mapa.</div></div>\n    <div class="res-grid">\n      ' +
+    '<div style="margin:40px 0 6px;padding-top:32px;border-top:1px solid var(--line)"><h2 style="font-size:21px">Resumen del área</h2>\n    <div style="color:var(--ink-soft);font-size:13px;margin:2px 0 14px">Este panel mira dos cosas separadas: el <b>Planner</b> (las tareas que el equipo tiene en curso ahora) y el <b>Mapa</b> (el inventario ya publicado: cursos, Edu Points). Los 3 primeros números son del Planner; los últimos 2, del Mapa.</div></div>\n    <div class="res-grid">\n      ' +
     fn(lista.length, "Proyectos en el tablero", "tareas activas ahora en el Planner", "var(--coto-blue)", "kanban") +
     "\n      " +
     fn(
@@ -7906,7 +7896,7 @@ function doCreate() {
   const txt = ($("#nuevoTitulo").value || "").trim() || "Sin título",
     tarjeta = newCard(state.draftTipo, txt);
   (logAct(tarjeta, "creada"), state.cards.push(tarjeta), touch(), closeModal());
-  if (state.view === "resumen" || state.view === "mapa") state.view = "kanban";
+  if (state.view === "mapa") state.view = "kanban";
   (render(), openDetail(tarjeta.id));
 }
 function doIngest() {
@@ -8344,8 +8334,7 @@ function paletteCommands() {
     kw: txt3,
   });
   return [
-    fn("Inicio", "inicio", "home panel principal"),
-    fn("Resumen", "resumen", "dashboard kpi indicadores carga"),
+    fn("Inicio", "inicio", "home panel principal resumen dashboard kpi indicadores carga"),
     fn("Planner", "kanban", "planner tablero kanban tareas estados"),
     fn("Calendario", "calendario", "fechas mes semana"),
     fn("Timeline", "timeline", "gantt cronograma"),
@@ -8961,8 +8950,8 @@ document.addEventListener("keydown", (ev) => {
   else {
     if (ev.key.toLowerCase() === "n") openNuevo();
     else {
-      if (ev.key >= "1" && ev.key <= "7") {
-        const val = ["inicio", "resumen", "kanban", "calendario", "timeline", "agenda", "mapa"][+ev.key - 1];
+      if (ev.key >= "1" && ev.key <= "6") {
+        const val = ["inicio", "kanban", "calendario", "timeline", "agenda", "mapa"][+ev.key - 1];
         val && ((state.view = val), render());
       }
     }
