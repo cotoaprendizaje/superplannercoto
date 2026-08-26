@@ -9519,6 +9519,25 @@ function ingestCatalogo(lista, { replace: replace = false } = {}) {
     n
   );
 }
+// Los cursos que ya estaban cargados (de una ingesta anterior, antes de que
+// CURSOS tuviera fotos) nunca los reciben: ingestCatalogo() con
+// replace:false los salta por completo porque el título ya existe. Esta
+// pasada es la contraparte no-destructiva: solo completa catalogo.imagen
+// cuando está vacío, sin tocar estado, sectores, checklist ni nada más que
+// el equipo ya haya cargado a mano.
+function backfillCatalogoImages() {
+  let n = 0;
+  const imagenPorTitulo = new Map();
+  CURSOS.forEach((c) => {
+    if (c.imagen) imagenPorTitulo.set(String(c.titulo || "").trim().toLowerCase(), c.imagen);
+  });
+  state.cards.forEach((tarjeta) => {
+    if (!isCurso(tarjeta) || !tarjeta.catalogo || tarjeta.catalogo.imagen) return;
+    const imagen = imagenPorTitulo.get(String(tarjeta.titulo || "").trim().toLowerCase());
+    if (imagen) ((tarjeta.catalogo.imagen = imagen), n++);
+  });
+  return n;
+}
 function boardCards() {
   return state.cards.filter((tarjeta) => !isInventory(tarjeta));
 }
@@ -14963,7 +14982,7 @@ async function boot() {
       // siempre, cada título faltante se suma solo, sin duplicar ni pisar
       // nada de lo que ya está cargado.
       if (CURSOS.length) {
-        const val = ingestCatalogo(CURSOS, {});
+        const val = ingestCatalogo(CURSOS, {}) + backfillCatalogoImages();
         if (val > 0)
           try {
             await Store.save({
