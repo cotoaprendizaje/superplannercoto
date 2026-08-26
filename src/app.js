@@ -5385,7 +5385,7 @@ function eduCard(tarjeta) {
 function renderInicio() {
   const lista2 = boardCards(),
     cantidad = lista2.filter(isOverdue).length,
-    cantidad2 = computeAlerts().length,
+    cantidad2 = alertasSinLeer().length,
     lista = [
       {
         go: "kanban",
@@ -6760,6 +6760,9 @@ document.addEventListener("click", (ev) => {
       break;
     case "notif:open":
       openNotif();
+      break;
+    case "notif:markread":
+      (marcarAlertasLeidas(computeAlerts().map(alertaKey)), openNotif(), updateBell());
       break;
     case "settings:open":
       openSettings();
@@ -8278,15 +8281,40 @@ function computeAlerts() {
     return ((obj[arg.c.id] = 1), true);
   });
 }
+// Las alertas se recalculan en vivo desde las tarjetas (no son un log
+// guardado), así que "leídas" no las borra: solo las oculta hasta que
+// algo cambie en esa tarjeta (nueva fecha, otro estado). Queda en este
+// navegador (localStorage), no es un dato de equipo.
+function alertaKey(recurso) {
+  return recurso.c.id + "|" + recurso.kind + "|" + recurso.sub;
+}
+function alertasLeidas() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem("cf.alertasLeidas") || "[]"));
+  } catch (e) {
+    return new Set();
+  }
+}
+function marcarAlertasLeidas(claves) {
+  try {
+    const set = alertasLeidas();
+    claves.forEach((clave) => set.add(clave));
+    localStorage.setItem("cf.alertasLeidas", JSON.stringify([...set]));
+  } catch (e) {}
+}
+function alertasSinLeer() {
+  const leidas = alertasLeidas();
+  return computeAlerts().filter((recurso) => !leidas.has(alertaKey(recurso)));
+}
 function updateBell() {
   const el = $("#notifBadge");
   if (!el || !el.classList) return;
-  const cantidad = computeAlerts().length;
+  const cantidad = alertasSinLeer().length;
   if (cantidad) ((el.textContent = cantidad), el.classList.remove("hidden"));
   else el.classList.add("hidden");
 }
 function openNotif() {
-  const lista = computeAlerts();
+  const lista = alertasSinLeer();
   state.selectedId = null;
   const txt = lista.length
     ? lista
@@ -8313,7 +8341,11 @@ function openNotif() {
     lista.length +
     " pendiente" +
     (lista.length !== 1 ? "s" : "") +
-    '</div></div><button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div><div class="panel-body">' +
+    '</div></div>' +
+    (lista.length
+      ? '<button class="btn btn-ghost btn-sm" data-action="notif:markread">✓ Marcar todas como leídas</button>'
+      : "") +
+    '<button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div><div class="panel-body">' +
     txt +
     "</div>"),
     $("#panel").classList.add("open"),
