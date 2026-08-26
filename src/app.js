@@ -3119,7 +3119,7 @@ function stackHTML(tarjeta) {
     .filter((arg2, arg3, arg) => arg2 && arg.indexOf(arg2) === arg3)
     .slice(0, 4);
   if (!lista.length)
-    return '<button class="stack-empty" data-action="dice:open" title="Nadie asignado — probá tirar los dados">🎲</button>';
+    return '<button class="stack-empty" data-action="roulette:open" title="Nadie asignado — probá girar la ruleta">🎡</button>';
   return '<div class="stack">' + lista.map((arg) => avatarHTML(arg, true)).join("") + "</div>";
 }
 function sectoresBadges(lista) {
@@ -3343,6 +3343,7 @@ function docSnapshot() {
     team: TEAM,
     appPassHash: state.appPassHash,
     agenda: state.agenda,
+    cotofrase: state.cotofrase,
     deleted: state.deleted,
   };
 }
@@ -3396,6 +3397,9 @@ async function mergeRemoteIntoState() {
     ((TEAM.length = 0), remote.team.forEach((m) => TEAM.push(m)));
   if (remote.agenda && typeof remote.agenda === "object")
     state.agenda = Object.assign({}, remote.agenda, state.agenda);
+  ensureFraseDay();
+  if (remote.cotofrase && remote.cotofrase.day === isoOf(new Date()))
+    state.cotofrase.porUsuario = Object.assign({}, remote.cotofrase.porUsuario, state.cotofrase.porUsuario);
   return state.cards.filter((c) => before.get(c.id) !== cardFingerprint(c));
 }
 let saveTimer = null;
@@ -3554,8 +3558,15 @@ const state = {
   agendaEdit: "",
   agendaWho: "",
   agenda: {},
+  cotofrase: { day: "", porUsuario: {} },
   deleted: {},
 };
+// Si cambió el día desde la última visita, la ronda de frases arranca de
+// cero: nadie "ya tiró hoy" con una frase de ayer.
+function ensureFraseDay() {
+  const hoy = isoOf(new Date());
+  if (state.cotofrase.day !== hoy) state.cotofrase = { day: hoy, porUsuario: {} };
+}
 function hashStr(lista) {
   lista = String(lista);
   let n = 5381;
@@ -4025,6 +4036,11 @@ function render() {
   }
   (renderFilters(), renderView(), updateBell());
 }
+// Si el re-render es de la MISMA vista (por ej. editar una tarjeta del
+// Planner sin cambiar de pestaña), el documento entero se vuelve a armar
+// desde cero y el scroll se pierde. Cambiar de pestaña sí debe arrancar
+// arriba de todo; quedarse en la misma vista no debería moverte del lugar.
+let ultimaVistaRenderizada = null;
 function renderView() {
   document
     .querySelectorAll(".tab")
@@ -4049,7 +4065,11 @@ function renderView() {
       }
     }
   }
-  $("#view").innerHTML = '<div class="view-in">' + viewHeader() + txt + "</div>";
+  const mismaVista = ultimaVistaRenderizada === state.view,
+    scrollY = window.scrollY;
+  ($("#view").innerHTML = '<div class="view-in">' + viewHeader() + txt + "</div>"),
+    (ultimaVistaRenderizada = state.view);
+  window.scrollTo(0, mismaVista ? scrollY : 0);
 }
 function cardKanban(tarjeta) {
   const avance = progress(tarjeta),
@@ -4096,7 +4116,13 @@ function cardKanban(tarjeta) {
     '">📅 ' +
     dateLabel(tarjeta) +
     (vencida ? " · vencida" : "") +
-    "</span>\n    </div>\n    " +
+    "</span>" +
+    (tarjeta.estado === "en-revision" && tarjeta.revisionDesde
+      ? '<span class="date rev-age" title="Esperando revisión de otros sectores">🕓 ' +
+        Math.max(0, daysBetween(tarjeta.revisionDesde, isoOf(new Date()))) +
+        "d en revisión</span>"
+      : "") +
+    "\n    </div>\n    " +
     (avance.total
       ? '<div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
         avance.pct +
@@ -4190,9 +4216,10 @@ function renderKanban() {
   return (
     html +
     html2 +
+    '<div class="roulette-launcher"><button class="roulette-btn" data-action="roulette:open">🎡 ¿Qué curso me toca?</button></div>' +
     '<div class="kanban">' +
     txt +
-    '</div><button class="dice-fab" data-action="dice:open" title="¿Qué curso me toca?" aria-label="¿Qué curso me toca?">🎲</button>'
+    "</div>"
   );
 }
 function applyBulk(val, value) {
@@ -4203,6 +4230,7 @@ function applyBulk(val, value) {
       conjunto.has(tarjeta.id) &&
         tarjeta.estado !== value &&
         (logAct(tarjeta, "pasó a " + ((ESTADOS.find((estado) => estado.id === value) || {}).nombre || value)),
+        value === "en-revision" && (tarjeta.revisionDesde = isoOf(new Date())),
         (tarjeta.estado = value));
     }),
       flash("✓ " + state.sel.length + " movida(s)"));
@@ -5263,7 +5291,9 @@ function renderInicio() {
       ? ' · <b style="color:var(--bad)">' + cantidad + " vencida" + (cantidad !== 1 ? "s" : "") + "</b>"
       : "") +
     (cantidad2 ? " · <b>" + cantidad2 + "</b> alerta" + (cantidad2 !== 1 ? "s" : "") : "") +
-    '</p>\n    </div>\n    <div class="hub-grid">' +
+    '</p>\n    </div>\n    ' +
+    fraseWidgetHTML() +
+    '<div class="hub-grid">' +
     lista.map(fn).join("") +
     html +
     '</div>\n  </div><button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>'
@@ -5298,8 +5328,16 @@ const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣",
   "Todo bien por acá, seguí no más",
 ];
 function slotModalHTML() {
+  ensureFraseDay();
+  const mia = state.cotofrase.porUsuario[state.user];
+  if (mia)
+    return (
+      '<div class="slot-modal locked">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Ya tiraste de la palanca hoy — volvé mañana por otra.</div>\n      <div class="slot-result show">' +
+      esc(mia) +
+      "</div>\n    </div>"
+    );
   return (
-    '<div class="slot-modal">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Tirá de la palanca y a ver qué te toca.</div>\n      <div class="slot-reels">' +
+    '<div class="slot-modal">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Tirá de la palanca y a ver qué te toca. Una vez por día.</div>\n      <div class="slot-reels">' +
     [1, 2, 3].map((n) => '<div class="slot-reel" id="slotReel' + n + '">' + SLOT_SIMBOLOS[0] + "</div>").join("") +
     '</div>\n      <div class="slot-result" id="slotResult"></div>\n      <button class="slot-lever" id="slotLever" data-action="slot:pull">🎲 Tirar de la palanca</button>\n    </div>'
   );
@@ -5329,67 +5367,139 @@ function tirarSlot() {
         reel.classList.add("stop"),
         setTimeout(() => reel.classList.remove("stop"), 300));
       if (i === reels.length - 1) {
-        (resultado &&
-          ((resultado.textContent = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)]),
-          resultado.classList.add("show")),
-          boton && (boton.disabled = false));
+        ensureFraseDay();
+        const frase = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)];
+        ((state.cotofrase.porUsuario[state.user] = frase), touch());
+        (resultado && ((resultado.textContent = frase), resultado.classList.add("show")),
+          boton && (boton.remove()));
+        renderFraseWidget();
       }
     }, paradas[i]);
   });
 }
-const DADO_CARAS = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+// El "cartelito" fijo con la frase del día: solo aparece una vez que alguien
+// del equipo tiró de la palanca, y muestra la propia arriba de todo más un
+// mini ranking de quién sacó qué.
+function fraseWidgetHTML() {
+  ensureFraseDay();
+  const mia = state.cotofrase.porUsuario[state.user],
+    otros = Object.keys(state.cotofrase.porUsuario)
+      .filter((nombre) => nombre !== state.user)
+      .sort((a, b) => a.localeCompare(b, "es"));
+  if (!mia && !otros.length) return '<div class="frase-widget" id="fraseWidget" hidden></div>';
+  return (
+    '<div class="frase-widget" id="fraseWidget">' +
+    (mia
+      ? '<div class="frase-mia"><span class="frase-mia-tag">🎰 Tu CotoFrase de hoy</span><span class="frase-mia-txt">' +
+        esc(mia) +
+        "</span></div>"
+      : "") +
+    (otros.length
+      ? '<div class="frase-rank"><div class="frase-rank-t">Le tocó a…</div>' +
+        otros
+          .map(
+            (nombre) =>
+              '<div class="frase-rank-row"><span class="frase-rank-n">' +
+              esc(nombre) +
+              '</span><span class="frase-rank-f">' +
+              esc(state.cotofrase.porUsuario[nombre]) +
+              "</span></div>",
+          )
+          .join("") +
+        "</div>"
+      : "") +
+    "</div>"
+  );
+}
+function renderFraseWidget() {
+  const el = $("#fraseWidget");
+  if (el) el.outerHTML = fraseWidgetHTML();
+}
+const ROULETTE_COLORS = ["#006EA0", "#1EAADC", "#00C88C", "#F0A032", "#D71E50", "#8232C8", "#2E9E8F", "#CD1E1E"];
 // "No iniciado" = una tarjeta de curso que ya está en el Planner pero
 // sigue en Pendiente: nadie la movió todavía a En desarrollo.
 function cursosPendientes() {
   return boardCards().filter((tarjeta) => tarjeta.tipo === "curso" && tarjeta.estado === "pendiente");
 }
-function diceModalHTML() {
+function rouletteModalHTML() {
+  const pendientes = cursosPendientes();
+  if (!pendientes.length)
+    return (
+      '<div class="roulette-modal">\n      <div class="roulette-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="roulette-modal-d">🎉 No hay cursos pendientes por arrancar.</div>\n    </div>'
+    );
+  const n = pendientes.length,
+    segAngle = 360 / n,
+    tam = Math.max(220, Math.min(300, 190 + n * 5)),
+    fuente = n > 16 ? 8 : n > 10 ? 9 : 10,
+    corte = n > 16 ? 12 : n > 10 ? 16 : 22,
+    gradient = pendientes
+      .map((c, i) => ROULETTE_COLORS[i % ROULETTE_COLORS.length] + " " + i * segAngle + "deg " + (i + 1) * segAngle + "deg")
+      .join(", "),
+    labels = pendientes
+      .map((c, i) => {
+        const mid = i * segAngle + segAngle / 2,
+          txt = c.titulo.length > corte ? c.titulo.slice(0, corte - 1) + "…" : c.titulo;
+        return (
+          '<span class="roulette-label" style="font-size:' +
+          fuente +
+          "px;transform:rotate(" +
+          mid +
+          "deg) translateY(" +
+          (tam / 2 - 34) +
+          'px)">' +
+          esc(txt) +
+          "</span>"
+        );
+      })
+      .join("");
   return (
-    '<div class="dice-modal">\n      <div class="dice-modal-t">🎲 ¿Qué curso me toca?</div>\n      <div class="dice-modal-d">Tirá los dados y te elegimos un curso pendiente para arrancar.</div>\n      <div class="dice-row">' +
-    [1, 2, 3, 4, 5].map((n) => '<div class="dice" id="dado' + n + '">' + DADO_CARAS[0] + "</div>").join("") +
-    '</div>\n      <div class="dice-result" id="dadoResult"></div>\n      <button class="dice-btn" id="dadoBtn" data-action="dice:roll">🎲 Tirar los dados</button>\n    </div>'
+    '<div class="roulette-modal">\n      <div class="roulette-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="roulette-modal-d">Giramos entre los cursos pendientes sin arrancar.</div>\n      <div class="roulette-wrap" style="width:' +
+    tam +
+    "px;height:" +
+    tam +
+    'px">\n        <div class="roulette-pointer">▼</div>\n        <div class="roulette-wheel" id="rouletteWheel" style="background:conic-gradient(' +
+    gradient +
+    ')">' +
+    labels +
+    '<div class="roulette-hub"></div></div>\n      </div>\n      <div class="roulette-result" id="rouletteResult"></div>\n      <button class="roulette-spin" id="rouletteSpin" data-action="roulette:spin">🎡 Girar la ruleta</button>\n    </div>'
   );
 }
-function abrirDados() {
-  openModal(diceModalHTML());
+function abrirRuleta() {
+  openModal(rouletteModalHTML());
 }
-function tirarDados() {
-  const dados = [1, 2, 3, 4, 5].map((n) => $("#dado" + n)),
-    resultado = $("#dadoResult"),
-    boton = $("#dadoBtn");
-  if (!dados[0] || dados[0].dataset.spinning) return;
-  (dados.forEach((dado) => (dado.dataset.spinning = "1")),
+function tirarRuleta() {
+  const wheel = $("#rouletteWheel"),
+    resultado = $("#rouletteResult"),
+    boton = $("#rouletteSpin"),
+    pendientes = cursosPendientes();
+  if (!wheel || wheel.dataset.spinning || !pendientes.length) return;
+  const n = pendientes.length,
+    segAngle = 360 / n,
+    idx = Math.floor(Math.random() * n),
+    elegido = pendientes[idx],
+    centerAngle = idx * segAngle + segAngle / 2,
+    prevRot = parseFloat(wheel.dataset.rot || "0"),
+    vueltas = 5 + Math.floor(Math.random() * 3),
+    finalMod = (360 - centerAngle) % 360,
+    delta = (finalMod - (prevRot % 360) + 360) % 360,
+    nuevoRot = prevRot + vueltas * 360 + delta;
+  ((wheel.dataset.spinning = "1"),
+    (wheel.dataset.rot = String(nuevoRot)),
     boton && (boton.disabled = true),
-    resultado && (resultado.classList.remove("show"), (resultado.innerHTML = "")));
-  const paradas = [350, 480, 610, 740, 900];
-  dados.forEach((dado, i) => {
-    const timer = setInterval(() => {
-      dado.textContent = DADO_CARAS[Math.floor(Math.random() * DADO_CARAS.length)];
-    }, 60);
-    setTimeout(() => {
-      (clearInterval(timer),
-        (dado.textContent = DADO_CARAS[Math.floor(Math.random() * DADO_CARAS.length)]),
-        delete dado.dataset.spinning,
-        dado.classList.add("stop"),
-        setTimeout(() => dado.classList.remove("stop"), 300));
-      if (i === dados.length - 1 && resultado) {
-        const pendientes = cursosPendientes();
+    resultado && (resultado.classList.remove("show"), (resultado.innerHTML = "")),
+    (wheel.style.transform = "rotate(" + nuevoRot + "deg)"));
+  setTimeout(() => {
+    (delete wheel.dataset.spinning,
+      resultado &&
         (resultado.classList.add("show"),
-          pendientes.length
-            ? (() => {
-                const elegido = pendientes[Math.floor(Math.random() * pendientes.length)];
-                resultado.innerHTML =
-                  "Te toca: <b>" +
-                  esc(elegido.titulo) +
-                  '</b><br><button class="btn btn-sm btn-primary" style="margin-top:8px" data-action="card:open" data-id="' +
-                  elegido.id +
-                  '">Abrir tarjeta</button>';
-              })()
-            : (resultado.innerHTML = "🎉 No hay cursos pendientes por arrancar."),
-          boton && (boton.disabled = false));
-      }
-    }, paradas[i]);
-  });
+        (resultado.innerHTML =
+          "Te toca: <b>" +
+          esc(elegido.titulo) +
+          '</b><br><button class="btn btn-sm btn-primary" style="margin-top:8px" data-action="card:open" data-id="' +
+          elegido.id +
+          '">Abrir tarjeta</button>')),
+      boton && (boton.disabled = false));
+  }, 3200);
 }
 function agendaWindow() {
   const fecha = new Date(state.agendaRefY, state.agendaRefM, 1),
@@ -6391,6 +6501,7 @@ function renderPanel() {
     '<details class="acc sec-acc" ' +
     (tarjeta.inicio ||
     tarjeta.fin ||
+    tarjeta.revisionDesde ||
     tarjeta.prioridad === "alta" ||
     (tarjeta.asignados || []).length ||
     (tarjeta.sectores || []).length
@@ -6400,13 +6511,24 @@ function renderPanel() {
     (tarjeta.inicio || "") +
     '" data-field="inicio">' +
     datePresetsHTML("inicio") +
-    '</div>\n        <div class="fld"><label>Fin ' +
+    '</div>\n        <div class="fld"><label>Fin (nuestro equipo) ' +
     (vencida ? '· <span style="color:var(--bad)">vencida</span>' : "") +
     '</label><input type="date" value="' +
     (tarjeta.fin || "") +
     '" data-field="fin">' +
     datePresetsHTML("fin") +
-    '</div>\n      </div>\n      <div class="fld-row"><div class="fld"><label>Prioridad</label><select data-field="prioridad"><option value="normal" ' +
+    "</div>\n      </div>\n      " +
+    (tarjeta.revisionDesde
+      ? '<div class="fld-hint" style="margin:-4px 0 10px">🕓 En revisión desde ' +
+        fmtShort(tarjeta.revisionDesde) +
+        (tarjeta.estado === "en-revision"
+          ? " · lleva <b>" +
+            Math.max(0, daysBetween(tarjeta.revisionDesde, isoOf(new Date()))) +
+            "</b> días esperando a otros sectores"
+          : " (última vez que pasó por revisión)") +
+        "</div>"
+      : "") +
+    '\n      <div class="fld-row"><div class="fld"><label>Prioridad</label><select data-field="prioridad"><option value="normal" ' +
     (tarjeta.prioridad === "normal" ? "selected" : "") +
     '>Normal</option><option value="alta" ' +
     (tarjeta.prioridad === "alta" ? "selected" : "") +
@@ -6683,7 +6805,18 @@ function applyField(tarjeta, val, el) {
             const [, faseId, campo] = val.split(":"),
               hallado4 = (tarjeta.fases || []).find((arg) => arg.id === faseId);
             if (hallado4) hallado4[campo] = value;
-          } else tarjeta[val] = value;
+          } else {
+            // El <select> de estado dispara "input" y "change" para el mismo
+            // cambio: applyField() se llama dos veces, así que el chequeo de
+            // "cambió de verdad" tiene que vivir acá adentro (antes de pisar
+            // el valor viejo), no en el handler de "change" — para cuando ese
+            // corre, el de "input" ya dejó tarjeta.estado igual al nuevo valor.
+            if (val === "estado" && tarjeta.estado !== value) {
+              logAct(tarjeta, "pasó a " + ((ESTADOS.find((estado) => estado.id === value) || {}).nombre || value));
+              if (value === "en-revision") tarjeta.revisionDesde = isoOf(new Date());
+            }
+            tarjeta[val] = value;
+          }
         }
       }
     }
@@ -6951,11 +7084,11 @@ document.addEventListener("click", (ev) => {
     case "slot:pull":
       tirarSlot();
       break;
-    case "dice:open":
-      abrirDados();
+    case "roulette:open":
+      abrirRuleta();
       break;
-    case "dice:roll":
-      tirarDados();
+    case "roulette:spin":
+      tirarRuleta();
       break;
     case "coach:close": {
       const elCoach = el.closest(".coachcard");
@@ -7482,14 +7615,13 @@ function toggleArr(arg, txt, sector) {
     if (val5) {
       const val6 = current();
       if (val6) {
-        val5 === "estado" &&
-          logAct(
-            val6,
-            "pasó a " +
-              ((ESTADOS.find((estado) => estado.id === ev.target.value) || {}).nombre || ev.target.value),
-          );
         applyField(val6, val5, ev.target);
-        if (STRUCTURAL.includes(val5)) (renderPanel(), render());
+        // Los inputs de fecha nativos disparan "change" más de una vez
+        // mientras se completa el valor (por ej. al tipear cada dígito del
+        // año): si renderPanel() reconstruye el <input> en el medio, el
+        // usuario pierde el foco y no puede terminar de elegir el año.
+        if (val5 === "inicio" || val5 === "fin") render();
+        else if (STRUCTURAL.includes(val5)) (renderPanel(), render());
         else render();
       }
     }
@@ -7566,6 +7698,7 @@ function toggleArr(arg, txt, sector) {
           hallado,
           "pasó a " + ((ESTADOS.find((estado) => estado.id === el2.dataset.estado) || {}).nombre || ""),
         ),
+        el2.dataset.estado === "en-revision" && (hallado.revisionDesde = isoOf(new Date())),
         (hallado.estado = el2.dataset.estado),
         touch());
       ((state.dragId = null), render());
@@ -8643,6 +8776,8 @@ function restoreBackup(ts) {
       (state.customTpl = doc.templates || {}));
     if (doc.sectores) Object.assign(SECTORES, doc.sectores);
     if (doc.agenda && typeof doc.agenda === "object") state.agenda = doc.agenda;
+    if (doc.cotofrase && typeof doc.cotofrase === "object") state.cotofrase = doc.cotofrase;
+    ensureFraseDay();
     (Array.isArray(doc.team) && doc.team.length && ((TEAM.length = 0), doc.team.forEach((m) => TEAM.push(m))),
       injectSectorStyles(),
       touch(),
@@ -8918,6 +9053,8 @@ async function boot() {
         ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro)));
       if (typeof tarjeta.appPassHash === "string") state.appPassHash = tarjeta.appPassHash;
       if (tarjeta.agenda && typeof tarjeta.agenda === "object") state.agenda = tarjeta.agenda;
+      if (tarjeta.cotofrase && typeof tarjeta.cotofrase === "object") state.cotofrase = tarjeta.cotofrase;
+      ensureFraseDay();
       (ensureTeam(), injectSectorStyles(), renderGateTeam());
       if (invCount("curso") === 0 && CURSOS.length) {
         const val = ingestCatalogo(CURSOS, {});
@@ -8930,20 +9067,25 @@ async function boot() {
               team: TEAM,
               appPassHash: state.appPassHash,
               agenda: state.agenda,
+              cotofrase: state.cotofrase,
             });
           } catch (err) {}
       }
-    } else
-      ((state.cards = seedCards()),
+    } else {
+      (ensureFraseDay(),
+        (state.cards = seedCards()),
         ingestCatalogo(CURSOS, {}),
         await Store.save({
           cards: state.cards,
           templates: state.customTpl,
           sectores: SECTORES,
           team: TEAM,
+          cotofrase: state.cotofrase,
         }));
+    }
   } catch (err2) {
     console.error(err2);
+    ensureFraseDay();
     // Si no se pudo leer el backend NO se arma un tablero de demo: mostrar
     // tarjetas inventadas hace creer que la app anda y el equipo termina
     // trabajando sobre algo que no existe y que no se va a guardar.
