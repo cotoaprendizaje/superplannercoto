@@ -5449,43 +5449,43 @@ function renderInicio() {
     lista = [
       {
         go: "kanban",
-        cat: "control-de-calidad",
-        ic: "▦",
+        cat: "coto-digital",
+        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4v16M12 4v11M19 4v13"/></svg>',
         t: "Planner",
         d: "Lo que estamos haciendo, por estado.",
       },
       {
         go: "calendario",
-        cat: "coto-digital",
-        ic: "▣",
+        cat: "salon",
+        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
         t: "Calendario",
         d: "Qué pasa y cuándo, mes a mes.",
       },
       {
         go: "timeline",
         cat: "mantenimiento",
-        ic: "▬",
+        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M8 12h11M4 17h7"/></svg>',
         t: "Timeline",
         d: "El panorama macro del área.",
       },
       {
         go: "agenda",
         cat: "recursos-humanos",
-        ic: "⛱",
+        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4c4.4 0 8 2.7 8 6H4c0-3.3 3.6-6 8-6z"/><path d="M12 10v9"/><path d="M12 19a2.2 2.2 0 0 0 3.2-.8"/></svg>',
         t: "Agenda del equipo",
         d: "Home y vacaciones, todo el año.",
       },
       {
         go: "mapa",
         cat: "servicio-medico",
-        ic: "◎",
+        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></svg>',
         t: "Mapa del área",
         d: "Cursos, Edu Points, apps y bases.",
       },
       {
         go: "resumen",
-        cat: "flota-propia",
-        ic: "◆",
+        cat: "tci",
+        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V11M9.3 20V5M14.6 20v-6M20 20v-9"/></svg>',
         t: "Resumen",
         d: "Indicadores y carga del equipo.",
       },
@@ -5503,15 +5503,9 @@ function renderInicio() {
       arg.t +
       '</span><span class="hub-d">' +
       esc(arg.d) +
-      '</span></span>\n    <span class="hub-arrow">→</span></button>',
-    html =
-      '<button class="hub-card hub-cta" data-cat="salon" data-action="nuevo:open" style="animation-delay:' +
-      lista.length * 55 +
-      'ms">\n    <span class="hub-ic">＋</span><span class="hub-tx"><span class="hub-t">Nueva tarjeta</span><span class="hub-d">Sumá trabajo al tablero.</span></span>\n    <span class="hub-arrow">→</span></button>';
+      '</span></span>\n    <span class="hub-arrow">→</span></button>';
   return (
-    '<div class="hub">\n    <div class="hub-hero">\n      ' +
-    logoLockup() +
-    '\n      <h1 class="hub-title" style="margin-top:18px">Hola, ' +
+    '<div class="hub">\n    <div class="hub-hero">\n      <h1 class="hub-title">Hola, ' +
     esc(state.user || "equipo") +
     '</h1>\n      <p class="hub-sub">¿Qué querés ver hoy?' +
     (cantidad
@@ -5520,7 +5514,6 @@ function renderInicio() {
     (cantidad2 ? " · <b>" + cantidad2 + "</b> alerta" + (cantidad2 !== 1 ? "s" : "") : "") +
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
-    html +
     "</div>\n    " +
     fraseWidgetHTML() +
     '\n  </div><button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>'
