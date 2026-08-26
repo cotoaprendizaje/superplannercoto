@@ -390,6 +390,19 @@
   --cat-grad: linear-gradient(135deg, #bed20a, #6e328c);
   --on-cat: #ffffff;
 }
+[data-cat="aprendizaje"] {
+  --cat-1: #003c56;
+  --cat-2: #005478;
+  --cat-3: #006ea0;
+  --cat-4: #1e8ac8;
+  --cat-5: #50aae0;
+  --cat-6: #82c4ee;
+  --cat: #006ea0;
+  --cat-strong: #003c56;
+  --cat-soft: #50aae0;
+  --cat-grad: linear-gradient(135deg, #005478, #1e8ac8);
+  --on-cat: #ffffff;
+}
 :root {
   --titulo: "Faible", "Roboto", system-ui, "Segoe UI", sans-serif;
   --texto: "Roboto", system-ui, "Segoe UI", sans-serif;
@@ -684,7 +697,7 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  background: #fff;
+  background: var(--coto-navy);
   border-radius: var(--pill);
   padding: 5px 12px;
   box-shadow: var(--shadow);
@@ -697,8 +710,8 @@ button {
 .logo-div {
   width: 1px;
   height: 18px;
-  background: #1e2d46;
-  opacity: 0.22;
+  background: #fff;
+  opacity: 0.25;
 }
 .gate .logo-lockup {
   padding: 8px 16px;
@@ -1137,7 +1150,8 @@ button {
 .kcard-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px 10px;
   font-size: 12px;
   color: var(--ink-soft);
   margin-bottom: 8px;
@@ -1150,6 +1164,10 @@ button {
 .date.overdue {
   color: var(--bad);
   font-weight: 700;
+}
+.date.rev-age {
+  color: #b47a00;
+  font-weight: 600;
 }
 .progress {
   height: 8px;
@@ -1647,6 +1665,16 @@ button {
   font-size: 12px;
   color: var(--ink-soft);
   padding: 6px 9px;
+}
+.sec-create {
+  color: var(--coto-blue);
+  font-weight: 600;
+  border-top: 1px solid var(--line);
+  margin-top: 2px;
+  padding-top: 9px;
+}
+.sec-create:hover {
+  background: color-mix(in srgb, var(--coto-blue) 10%, transparent);
 }
 .acc {
   border-top: 1px dashed transparent;
@@ -4942,8 +4970,8 @@ button.aday:hover {
 }
 .gotop {
   position: fixed;
-  right: 22px;
-  bottom: 24px;
+  right: 26px;
+  bottom: 96px;
   width: 42px;
   height: 42px;
   border-radius: 50%;
@@ -5033,8 +5061,8 @@ button.aday:hover {
 }
 @media (max-width: 860px) {
   .gotop {
-    right: 14px;
-    bottom: 84px;
+    right: 16px;
+    bottom: 156px;
   }
   .coachcard {
     right: 14px;
@@ -5046,8 +5074,7 @@ button.aday:hover {
 /* Máquina de la suerte: un botón flotante fijo al centro-derecha de la
    pantalla; al tocarlo abre el juego como popup centrado (reutiliza el
    modal existente), con 3 rodillos que frenan en cascada. */
-.slot-fab,
-.dice-fab {
+.slot-fab {
   position: fixed;
   right: 22px;
   top: 50%;
@@ -5064,8 +5091,6 @@ button.aday:hover {
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
-}
-.slot-fab {
   background: linear-gradient(145deg, #ffd76a, #e8a815);
   color: #3a2600;
   box-shadow:
@@ -5076,26 +5101,98 @@ button.aday:hover {
   box-shadow:
     0 8px 22px rgba(232, 168, 21, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-.dice-fab {
-  background: linear-gradient(145deg, #4fd6ae, #1c8f70);
-  color: #06251d;
-  box-shadow:
-    0 6px 18px rgba(28, 143, 112, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-.dice-fab:hover {
-  box-shadow:
-    0 8px 22px rgba(28, 143, 112, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
-}
-.slot-fab:hover,
-.dice-fab:hover {
   transform: translateY(-50%) scale(1.08);
 }
-.slot-fab:active,
-.dice-fab:active {
+.slot-fab:active {
   transform: translateY(-50%) scale(0.95);
+}
+/* Cartelito con la CotoFrase del día + mini ranking del equipo. Vive en el
+   flujo normal de Inicio (no position:fixed) para que nunca tape las
+   tarjetas del hub, sea cual sea el alto de la ventana. */
+.frase-widget {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+.frase-widget[hidden] {
+  display: none;
+}
+.frase-mia {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 16px;
+  border-radius: var(--r-l);
+  background: linear-gradient(145deg, #ffd76a, #e8a815);
+  color: #3a2600;
+  box-shadow:
+    0 6px 18px rgba(232, 168, 21, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+.frase-mia-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  opacity: 0.75;
+}
+.frase-mia-txt {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.frase-rank {
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+  max-height: 96px;
+  overflow-y: auto;
+  padding: 8px 12px;
+  border-radius: var(--r-l);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.frase-rank-t {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.frase-rank-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  padding: 3px 0;
+  border-top: 1px solid var(--line);
+}
+.frase-rank-row:first-of-type {
+  border-top: none;
+}
+.frase-rank-n {
+  font-weight: 700;
+  color: var(--ink);
+  flex: none;
+}
+.frase-rank-f {
+  color: var(--ink-soft);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 860px) {
+  .frase-widget {
+    flex-direction: column;
+  }
+  .frase-rank {
+    max-width: none;
+  }
 }
 .slot-modal {
   display: flex;
@@ -5196,17 +5293,46 @@ button.aday:hover {
   transform: none;
 }
 @media (max-width: 860px) {
-  .slot-fab,
-  .dice-fab {
+  .slot-fab {
     right: 14px;
     width: 54px;
     height: 54px;
     font-size: 23px;
   }
 }
-/* ¿Qué curso me toca?: mismo lenguaje visual que la CotoFrase, pero con
-   dados en vez de tragamonedas — vive en la barra del Planner. */
-.dice-modal {
+/* ¿Qué curso me toca?: ruleta arriba, al centro, del Planner — solo cursos
+   pendientes sin arrancar entran como opciones. */
+.roulette-launcher {
+  display: flex;
+  justify-content: center;
+  margin: 2px 0 16px;
+}
+.roulette-btn {
+  border: none;
+  background: linear-gradient(180deg, #34c19b, #1c8f70);
+  color: #fff;
+  font-weight: 800;
+  font-size: 13.5px;
+  padding: 11px 22px;
+  border-radius: var(--pill);
+  cursor: pointer;
+  box-shadow:
+    0 5px 0 #146552,
+    0 8px 18px rgba(28, 143, 112, 0.35);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease;
+}
+.roulette-btn:hover {
+  transform: translateY(-1px);
+}
+.roulette-btn:active {
+  transform: translateY(3px);
+  box-shadow:
+    0 2px 0 #146552,
+    0 4px 10px rgba(28, 143, 112, 0.35);
+}
+.roulette-modal {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -5214,43 +5340,68 @@ button.aday:hover {
   text-align: center;
   padding: 4px 4px 8px;
 }
-.dice-modal-t {
+.roulette-modal-t {
   font-size: 19px;
   font-weight: 800;
 }
-.dice-modal-d {
+.roulette-modal-d {
   font-size: 12.5px;
   color: var(--ink-soft);
   margin-top: -10px;
 }
-.dice-row {
-  display: flex;
-  gap: 8px;
-  padding: 16px;
-  border-radius: var(--r-l);
-  background: linear-gradient(160deg, #0d2a24, #123a30);
-  border: 3px solid #2e9e8f;
+.roulette-wrap {
+  position: relative;
+}
+.roulette-pointer {
+  position: absolute;
+  top: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 22px;
+  color: var(--coto-navy);
+  z-index: 2;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+.roulette-wheel {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 6px solid #fff;
   box-shadow:
-    inset 0 2px 10px rgba(0, 0, 0, 0.5),
-    0 8px 24px rgba(46, 158, 143, 0.25);
+    0 10px 28px rgba(0, 0, 0, 0.3),
+    inset 0 0 0 2px rgba(0, 0, 0, 0.08);
+  transform: rotate(0deg);
+  transition: transform 3.2s cubic-bezier(0.17, 0.67, 0.16, 1);
 }
-.dice {
-  width: 46px;
-  height: 46px;
-  background: linear-gradient(180deg, #fffdf5, #f0f3ea);
-  border-radius: var(--r-sm);
-  display: grid;
-  place-content: center;
-  font-size: 28px;
-  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.08);
-}
-.dice.stop {
-  animation: slot-reel-stop 0.3s ease;
-}
-.dice-result {
-  min-height: 22px;
-  font-size: 14.5px;
+.roulette-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 90px;
+  margin-left: -45px;
+  text-align: center;
   font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  transform-origin: 50% 0;
+  line-height: 1.15;
+  pointer-events: none;
+}
+.roulette-hub {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.roulette-result {
+  min-height: 22px;
+  font-size: 15px;
+  font-weight: 800;
   color: var(--ink);
   opacity: 0;
   transform: translateY(6px);
@@ -5258,11 +5409,11 @@ button.aday:hover {
     opacity 0.25s ease,
     transform 0.25s ease;
 }
-.dice-result.show {
+.roulette-result.show {
   opacity: 1;
   transform: translateY(0);
 }
-.dice-btn {
+.roulette-spin {
   align-self: center;
   border: none;
   background: linear-gradient(180deg, #34c19b, #1c8f70);
@@ -5279,16 +5430,16 @@ button.aday:hover {
     transform 0.08s ease,
     box-shadow 0.08s ease;
 }
-.dice-btn:hover {
+.roulette-spin:hover {
   transform: translateY(-1px);
 }
-.dice-btn:active {
+.roulette-spin:active {
   transform: translateY(3px);
   box-shadow:
     0 2px 0 #146552,
     0 4px 10px rgba(28, 143, 112, 0.4);
 }
-.dice-btn:disabled {
+.roulette-spin:disabled {
   opacity: 0.65;
   cursor: default;
   transform: none;
@@ -7322,6 +7473,10 @@ const ESTADOS = [
       nombre: "Zona Cumples",
       cat: "#6E328C",
     },
+    aprendizaje: {
+      nombre: "Aprendizaje",
+      cat: "#006EA0",
+    },
   },
   OFFICIAL_CATS = new Set(Object.keys(SECTORES)),
   SLUG_MAP = {
@@ -8498,7 +8653,7 @@ function stackHTML(tarjeta) {
     .filter((arg2, arg3, arg) => arg2 && arg.indexOf(arg2) === arg3)
     .slice(0, 4);
   if (!lista.length)
-    return '<button class="stack-empty" data-action="dice:open" title="Nadie asignado — probá tirar los dados">🎲</button>';
+    return '<button class="stack-empty" data-action="roulette:open" title="Nadie asignado — probá girar la ruleta">🎡</button>';
   return '<div class="stack">' + lista.map((arg) => avatarHTML(arg, true)).join("") + "</div>";
 }
 function sectoresBadges(lista) {
@@ -8722,6 +8877,7 @@ function docSnapshot() {
     team: TEAM,
     appPassHash: state.appPassHash,
     agenda: state.agenda,
+    cotofrase: state.cotofrase,
     deleted: state.deleted,
   };
 }
@@ -8775,6 +8931,9 @@ async function mergeRemoteIntoState() {
     ((TEAM.length = 0), remote.team.forEach((m) => TEAM.push(m)));
   if (remote.agenda && typeof remote.agenda === "object")
     state.agenda = Object.assign({}, remote.agenda, state.agenda);
+  ensureFraseDay();
+  if (remote.cotofrase && remote.cotofrase.day === isoOf(new Date()))
+    state.cotofrase.porUsuario = Object.assign({}, remote.cotofrase.porUsuario, state.cotofrase.porUsuario);
   return state.cards.filter((c) => before.get(c.id) !== cardFingerprint(c));
 }
 let saveTimer = null;
@@ -8933,8 +9092,15 @@ const state = {
   agendaEdit: "",
   agendaWho: "",
   agenda: {},
+  cotofrase: { day: "", porUsuario: {} },
   deleted: {},
 };
+// Si cambió el día desde la última visita, la ronda de frases arranca de
+// cero: nadie "ya tiró hoy" con una frase de ayer.
+function ensureFraseDay() {
+  const hoy = isoOf(new Date());
+  if (state.cotofrase.day !== hoy) state.cotofrase = { day: hoy, porUsuario: {} };
+}
 function hashStr(lista) {
   lista = String(lista);
   let n = 5381;
@@ -9404,6 +9570,11 @@ function render() {
   }
   (renderFilters(), renderView(), updateBell());
 }
+// Si el re-render es de la MISMA vista (por ej. editar una tarjeta del
+// Planner sin cambiar de pestaña), el documento entero se vuelve a armar
+// desde cero y el scroll se pierde. Cambiar de pestaña sí debe arrancar
+// arriba de todo; quedarse en la misma vista no debería moverte del lugar.
+let ultimaVistaRenderizada = null;
 function renderView() {
   document
     .querySelectorAll(".tab")
@@ -9428,7 +9599,11 @@ function renderView() {
       }
     }
   }
-  $("#view").innerHTML = '<div class="view-in">' + viewHeader() + txt + "</div>";
+  const mismaVista = ultimaVistaRenderizada === state.view,
+    scrollY = window.scrollY;
+  ($("#view").innerHTML = '<div class="view-in">' + viewHeader() + txt + "</div>"),
+    (ultimaVistaRenderizada = state.view);
+  window.scrollTo(0, mismaVista ? scrollY : 0);
 }
 function cardKanban(tarjeta) {
   const avance = progress(tarjeta),
@@ -9475,7 +9650,13 @@ function cardKanban(tarjeta) {
     '">📅 ' +
     dateLabel(tarjeta) +
     (vencida ? " · vencida" : "") +
-    "</span>\n    </div>\n    " +
+    "</span>" +
+    (tarjeta.estado === "en-revision" && tarjeta.revisionDesde
+      ? '<span class="date rev-age" title="Esperando revisión de otros sectores">🕓 ' +
+        Math.max(0, daysBetween(tarjeta.revisionDesde, isoOf(new Date()))) +
+        "d en revisión</span>"
+      : "") +
+    "\n    </div>\n    " +
     (avance.total
       ? '<div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
         avance.pct +
@@ -9569,9 +9750,10 @@ function renderKanban() {
   return (
     html +
     html2 +
+    '<div class="roulette-launcher"><button class="roulette-btn" data-action="roulette:open">🎡 ¿Qué curso me toca?</button></div>' +
     '<div class="kanban">' +
     txt +
-    '</div><button class="dice-fab" data-action="dice:open" title="¿Qué curso me toca?" aria-label="¿Qué curso me toca?">🎲</button>'
+    "</div>"
   );
 }
 function applyBulk(val, value) {
@@ -9582,6 +9764,7 @@ function applyBulk(val, value) {
       conjunto.has(tarjeta.id) &&
         tarjeta.estado !== value &&
         (logAct(tarjeta, "pasó a " + ((ESTADOS.find((estado) => estado.id === value) || {}).nombre || value)),
+        value === "en-revision" && (tarjeta.revisionDesde = isoOf(new Date())),
         (tarjeta.estado = value));
     }),
       flash("✓ " + state.sel.length + " movida(s)"));
@@ -10642,7 +10825,9 @@ function renderInicio() {
       ? ' · <b style="color:var(--bad)">' + cantidad + " vencida" + (cantidad !== 1 ? "s" : "") + "</b>"
       : "") +
     (cantidad2 ? " · <b>" + cantidad2 + "</b> alerta" + (cantidad2 !== 1 ? "s" : "") : "") +
-    '</p>\n    </div>\n    <div class="hub-grid">' +
+    '</p>\n    </div>\n    ' +
+    fraseWidgetHTML() +
+    '<div class="hub-grid">' +
     lista.map(fn).join("") +
     html +
     '</div>\n  </div><button class="slot-fab" data-action="slot:open" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>'
@@ -10677,8 +10862,16 @@ const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣",
   "Todo bien por acá, seguí no más",
 ];
 function slotModalHTML() {
+  ensureFraseDay();
+  const mia = state.cotofrase.porUsuario[state.user];
+  if (mia)
+    return (
+      '<div class="slot-modal locked">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Ya tiraste de la palanca hoy — volvé mañana por otra.</div>\n      <div class="slot-result show">' +
+      esc(mia) +
+      "</div>\n    </div>"
+    );
   return (
-    '<div class="slot-modal">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Tirá de la palanca y a ver qué te toca.</div>\n      <div class="slot-reels">' +
+    '<div class="slot-modal">\n      <div class="slot-modal-t">🎰 CotoFrase del día</div>\n      <div class="slot-modal-d">Tirá de la palanca y a ver qué te toca. Una vez por día.</div>\n      <div class="slot-reels">' +
     [1, 2, 3].map((n) => '<div class="slot-reel" id="slotReel' + n + '">' + SLOT_SIMBOLOS[0] + "</div>").join("") +
     '</div>\n      <div class="slot-result" id="slotResult"></div>\n      <button class="slot-lever" id="slotLever" data-action="slot:pull">🎲 Tirar de la palanca</button>\n    </div>'
   );
@@ -10708,67 +10901,139 @@ function tirarSlot() {
         reel.classList.add("stop"),
         setTimeout(() => reel.classList.remove("stop"), 300));
       if (i === reels.length - 1) {
-        (resultado &&
-          ((resultado.textContent = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)]),
-          resultado.classList.add("show")),
-          boton && (boton.disabled = false));
+        ensureFraseDay();
+        const frase = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)];
+        ((state.cotofrase.porUsuario[state.user] = frase), touch());
+        (resultado && ((resultado.textContent = frase), resultado.classList.add("show")),
+          boton && (boton.remove()));
+        renderFraseWidget();
       }
     }, paradas[i]);
   });
 }
-const DADO_CARAS = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+// El "cartelito" fijo con la frase del día: solo aparece una vez que alguien
+// del equipo tiró de la palanca, y muestra la propia arriba de todo más un
+// mini ranking de quién sacó qué.
+function fraseWidgetHTML() {
+  ensureFraseDay();
+  const mia = state.cotofrase.porUsuario[state.user],
+    otros = Object.keys(state.cotofrase.porUsuario)
+      .filter((nombre) => nombre !== state.user)
+      .sort((a, b) => a.localeCompare(b, "es"));
+  if (!mia && !otros.length) return '<div class="frase-widget" id="fraseWidget" hidden></div>';
+  return (
+    '<div class="frase-widget" id="fraseWidget">' +
+    (mia
+      ? '<div class="frase-mia"><span class="frase-mia-tag">🎰 Tu CotoFrase de hoy</span><span class="frase-mia-txt">' +
+        esc(mia) +
+        "</span></div>"
+      : "") +
+    (otros.length
+      ? '<div class="frase-rank"><div class="frase-rank-t">Le tocó a…</div>' +
+        otros
+          .map(
+            (nombre) =>
+              '<div class="frase-rank-row"><span class="frase-rank-n">' +
+              esc(nombre) +
+              '</span><span class="frase-rank-f">' +
+              esc(state.cotofrase.porUsuario[nombre]) +
+              "</span></div>",
+          )
+          .join("") +
+        "</div>"
+      : "") +
+    "</div>"
+  );
+}
+function renderFraseWidget() {
+  const el = $("#fraseWidget");
+  if (el) el.outerHTML = fraseWidgetHTML();
+}
+const ROULETTE_COLORS = ["#006EA0", "#1EAADC", "#00C88C", "#F0A032", "#D71E50", "#8232C8", "#2E9E8F", "#CD1E1E"];
 // "No iniciado" = una tarjeta de curso que ya está en el Planner pero
 // sigue en Pendiente: nadie la movió todavía a En desarrollo.
 function cursosPendientes() {
   return boardCards().filter((tarjeta) => tarjeta.tipo === "curso" && tarjeta.estado === "pendiente");
 }
-function diceModalHTML() {
+function rouletteModalHTML() {
+  const pendientes = cursosPendientes();
+  if (!pendientes.length)
+    return (
+      '<div class="roulette-modal">\n      <div class="roulette-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="roulette-modal-d">🎉 No hay cursos pendientes por arrancar.</div>\n    </div>'
+    );
+  const n = pendientes.length,
+    segAngle = 360 / n,
+    tam = Math.max(220, Math.min(300, 190 + n * 5)),
+    fuente = n > 16 ? 8 : n > 10 ? 9 : 10,
+    corte = n > 16 ? 12 : n > 10 ? 16 : 22,
+    gradient = pendientes
+      .map((c, i) => ROULETTE_COLORS[i % ROULETTE_COLORS.length] + " " + i * segAngle + "deg " + (i + 1) * segAngle + "deg")
+      .join(", "),
+    labels = pendientes
+      .map((c, i) => {
+        const mid = i * segAngle + segAngle / 2,
+          txt = c.titulo.length > corte ? c.titulo.slice(0, corte - 1) + "…" : c.titulo;
+        return (
+          '<span class="roulette-label" style="font-size:' +
+          fuente +
+          "px;transform:rotate(" +
+          mid +
+          "deg) translateY(" +
+          (tam / 2 - 34) +
+          'px)">' +
+          esc(txt) +
+          "</span>"
+        );
+      })
+      .join("");
   return (
-    '<div class="dice-modal">\n      <div class="dice-modal-t">🎲 ¿Qué curso me toca?</div>\n      <div class="dice-modal-d">Tirá los dados y te elegimos un curso pendiente para arrancar.</div>\n      <div class="dice-row">' +
-    [1, 2, 3, 4, 5].map((n) => '<div class="dice" id="dado' + n + '">' + DADO_CARAS[0] + "</div>").join("") +
-    '</div>\n      <div class="dice-result" id="dadoResult"></div>\n      <button class="dice-btn" id="dadoBtn" data-action="dice:roll">🎲 Tirar los dados</button>\n    </div>'
+    '<div class="roulette-modal">\n      <div class="roulette-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="roulette-modal-d">Giramos entre los cursos pendientes sin arrancar.</div>\n      <div class="roulette-wrap" style="width:' +
+    tam +
+    "px;height:" +
+    tam +
+    'px">\n        <div class="roulette-pointer">▼</div>\n        <div class="roulette-wheel" id="rouletteWheel" style="background:conic-gradient(' +
+    gradient +
+    ')">' +
+    labels +
+    '<div class="roulette-hub"></div></div>\n      </div>\n      <div class="roulette-result" id="rouletteResult"></div>\n      <button class="roulette-spin" id="rouletteSpin" data-action="roulette:spin">🎡 Girar la ruleta</button>\n    </div>'
   );
 }
-function abrirDados() {
-  openModal(diceModalHTML());
+function abrirRuleta() {
+  openModal(rouletteModalHTML());
 }
-function tirarDados() {
-  const dados = [1, 2, 3, 4, 5].map((n) => $("#dado" + n)),
-    resultado = $("#dadoResult"),
-    boton = $("#dadoBtn");
-  if (!dados[0] || dados[0].dataset.spinning) return;
-  (dados.forEach((dado) => (dado.dataset.spinning = "1")),
+function tirarRuleta() {
+  const wheel = $("#rouletteWheel"),
+    resultado = $("#rouletteResult"),
+    boton = $("#rouletteSpin"),
+    pendientes = cursosPendientes();
+  if (!wheel || wheel.dataset.spinning || !pendientes.length) return;
+  const n = pendientes.length,
+    segAngle = 360 / n,
+    idx = Math.floor(Math.random() * n),
+    elegido = pendientes[idx],
+    centerAngle = idx * segAngle + segAngle / 2,
+    prevRot = parseFloat(wheel.dataset.rot || "0"),
+    vueltas = 5 + Math.floor(Math.random() * 3),
+    finalMod = (360 - centerAngle) % 360,
+    delta = (finalMod - (prevRot % 360) + 360) % 360,
+    nuevoRot = prevRot + vueltas * 360 + delta;
+  ((wheel.dataset.spinning = "1"),
+    (wheel.dataset.rot = String(nuevoRot)),
     boton && (boton.disabled = true),
-    resultado && (resultado.classList.remove("show"), (resultado.innerHTML = "")));
-  const paradas = [350, 480, 610, 740, 900];
-  dados.forEach((dado, i) => {
-    const timer = setInterval(() => {
-      dado.textContent = DADO_CARAS[Math.floor(Math.random() * DADO_CARAS.length)];
-    }, 60);
-    setTimeout(() => {
-      (clearInterval(timer),
-        (dado.textContent = DADO_CARAS[Math.floor(Math.random() * DADO_CARAS.length)]),
-        delete dado.dataset.spinning,
-        dado.classList.add("stop"),
-        setTimeout(() => dado.classList.remove("stop"), 300));
-      if (i === dados.length - 1 && resultado) {
-        const pendientes = cursosPendientes();
+    resultado && (resultado.classList.remove("show"), (resultado.innerHTML = "")),
+    (wheel.style.transform = "rotate(" + nuevoRot + "deg)"));
+  setTimeout(() => {
+    (delete wheel.dataset.spinning,
+      resultado &&
         (resultado.classList.add("show"),
-          pendientes.length
-            ? (() => {
-                const elegido = pendientes[Math.floor(Math.random() * pendientes.length)];
-                resultado.innerHTML =
-                  "Te toca: <b>" +
-                  esc(elegido.titulo) +
-                  '</b><br><button class="btn btn-sm btn-primary" style="margin-top:8px" data-action="card:open" data-id="' +
-                  elegido.id +
-                  '">Abrir tarjeta</button>';
-              })()
-            : (resultado.innerHTML = "🎉 No hay cursos pendientes por arrancar."),
-          boton && (boton.disabled = false));
-      }
-    }, paradas[i]);
-  });
+        (resultado.innerHTML =
+          "Te toca: <b>" +
+          esc(elegido.titulo) +
+          '</b><br><button class="btn btn-sm btn-primary" style="margin-top:8px" data-action="card:open" data-id="' +
+          elegido.id +
+          '">Abrir tarjeta</button>')),
+      boton && (boton.disabled = false));
+  }, 3200);
 }
 function agendaWindow() {
   const fecha = new Date(state.agendaRefY, state.agendaRefM, 1),
@@ -11370,7 +11635,8 @@ function sectorPicker(tarjeta) {
 function renderSectorResults(value) {
   const el = $("#sectorResults");
   if (!el) return;
-  value = (value || "").trim().toLowerCase();
+  const raw = (value || "").trim();
+  value = raw.toLowerCase();
   const tarjeta = current(),
     conjunto = new Set((tarjeta && tarjeta.sectores) || []),
     lista = Object.keys(SECTORES)
@@ -11379,23 +11645,32 @@ function renderSectorResults(value) {
           !conjunto.has(arg) &&
           (!value || SECTORES[arg].nombre.toLowerCase().includes(value) || arg.includes(value)),
       )
-      .slice(0, 8);
-  el.innerHTML = lista.length
-    ? lista
-        .map(
-          (arg) =>
-            '<button class="sec-opt" data-cat="' +
-            arg +
-            '" data-action="sector:add" data-sector="' +
-            arg +
-            '"><span class="sec-dot"></span>' +
-            esc(SECTORES[arg].nombre) +
-            "</button>",
-        )
-        .join("")
-    : value
-      ? '<div class="sec-none">Sin coincidencias</div>'
-      : "";
+      .slice(0, 8),
+    hayExacto = raw && Object.values(SECTORES).some((arg) => arg.nombre.toLowerCase() === value);
+  el.innerHTML =
+    (lista.length
+      ? lista
+          .map(
+            (arg) =>
+              '<button class="sec-opt" data-cat="' +
+              arg +
+              '" data-action="sector:add" data-sector="' +
+              arg +
+              '"><span class="sec-dot"></span>' +
+              esc(SECTORES[arg].nombre) +
+              "</button>",
+          )
+          .join("")
+      : value
+        ? '<div class="sec-none">Sin coincidencias</div>'
+        : "") +
+    (raw && !hayExacto
+      ? '<button class="sec-opt sec-create" data-action="sector:create" data-sector-name="' +
+        esc(raw) +
+        '">➕ Crear sector "' +
+        esc(raw) +
+        '"</button>'
+      : "");
 }
 function datePresetsHTML(campo) {
   return (
@@ -11760,6 +12035,7 @@ function renderPanel() {
     '<details class="acc sec-acc" ' +
     (tarjeta.inicio ||
     tarjeta.fin ||
+    tarjeta.revisionDesde ||
     tarjeta.prioridad === "alta" ||
     (tarjeta.asignados || []).length ||
     (tarjeta.sectores || []).length
@@ -11769,13 +12045,24 @@ function renderPanel() {
     (tarjeta.inicio || "") +
     '" data-field="inicio">' +
     datePresetsHTML("inicio") +
-    '</div>\n        <div class="fld"><label>Fin ' +
+    '</div>\n        <div class="fld"><label>Fin (nuestro equipo) ' +
     (vencida ? '· <span style="color:var(--bad)">vencida</span>' : "") +
     '</label><input type="date" value="' +
     (tarjeta.fin || "") +
     '" data-field="fin">' +
     datePresetsHTML("fin") +
-    '</div>\n      </div>\n      <div class="fld-row"><div class="fld"><label>Prioridad</label><select data-field="prioridad"><option value="normal" ' +
+    "</div>\n      </div>\n      " +
+    (tarjeta.revisionDesde
+      ? '<div class="fld-hint" style="margin:-4px 0 10px">🕓 En revisión desde ' +
+        fmtShort(tarjeta.revisionDesde) +
+        (tarjeta.estado === "en-revision"
+          ? " · lleva <b>" +
+            Math.max(0, daysBetween(tarjeta.revisionDesde, isoOf(new Date()))) +
+            "</b> días esperando a otros sectores"
+          : " (última vez que pasó por revisión)") +
+        "</div>"
+      : "") +
+    '\n      <div class="fld-row"><div class="fld"><label>Prioridad</label><select data-field="prioridad"><option value="normal" ' +
     (tarjeta.prioridad === "normal" ? "selected" : "") +
     '>Normal</option><option value="alta" ' +
     (tarjeta.prioridad === "alta" ? "selected" : "") +
@@ -12052,7 +12339,18 @@ function applyField(tarjeta, val, el) {
             const [, faseId, campo] = val.split(":"),
               hallado4 = (tarjeta.fases || []).find((arg) => arg.id === faseId);
             if (hallado4) hallado4[campo] = value;
-          } else tarjeta[val] = value;
+          } else {
+            // El <select> de estado dispara "input" y "change" para el mismo
+            // cambio: applyField() se llama dos veces, así que el chequeo de
+            // "cambió de verdad" tiene que vivir acá adentro (antes de pisar
+            // el valor viejo), no en el handler de "change" — para cuando ese
+            // corre, el de "input" ya dejó tarjeta.estado igual al nuevo valor.
+            if (val === "estado" && tarjeta.estado !== value) {
+              logAct(tarjeta, "pasó a " + ((ESTADOS.find((estado) => estado.id === value) || {}).nombre || value));
+              if (value === "en-revision") tarjeta.revisionDesde = isoOf(new Date());
+            }
+            tarjeta[val] = value;
+          }
         }
       }
     }
@@ -12320,11 +12618,11 @@ document.addEventListener("click", (ev) => {
     case "slot:pull":
       tirarSlot();
       break;
-    case "dice:open":
-      abrirDados();
+    case "roulette:open":
+      abrirRuleta();
       break;
-    case "dice:roll":
-      tirarDados();
+    case "roulette:spin":
+      tirarRuleta();
       break;
     case "coach:close": {
       const elCoach = el.closest(".coachcard");
@@ -12479,6 +12777,10 @@ document.addEventListener("click", (ev) => {
       (toggleArr(current(), "sectores", el.dataset.sector), renderPanel());
       const el8 = $("#sectorSearch");
       if (el8) el8.focus();
+      break;
+    }
+    case "sector:create": {
+      createSectorInline(el.dataset.sectorName);
       break;
     }
     case "asig:toggle":
@@ -12847,14 +13149,13 @@ function toggleArr(arg, txt, sector) {
     if (val5) {
       const val6 = current();
       if (val6) {
-        val5 === "estado" &&
-          logAct(
-            val6,
-            "pasó a " +
-              ((ESTADOS.find((estado) => estado.id === ev.target.value) || {}).nombre || ev.target.value),
-          );
         applyField(val6, val5, ev.target);
-        if (STRUCTURAL.includes(val5)) (renderPanel(), render());
+        // Los inputs de fecha nativos disparan "change" más de una vez
+        // mientras se completa el valor (por ej. al tipear cada dígito del
+        // año): si renderPanel() reconstruye el <input> en el medio, el
+        // usuario pierde el foco y no puede terminar de elegir el año.
+        if (val5 === "inicio" || val5 === "fin") render();
+        else if (STRUCTURAL.includes(val5)) (renderPanel(), render());
         else render();
       }
     }
@@ -12931,6 +13232,7 @@ function toggleArr(arg, txt, sector) {
           hallado,
           "pasó a " + ((ESTADOS.find((estado) => estado.id === el2.dataset.estado) || {}).nombre || ""),
         ),
+        el2.dataset.estado === "en-revision" && (hallado.revisionDesde = isoOf(new Date())),
         (hallado.estado = el2.dataset.estado),
         touch());
       ((state.dragId = null), render());
@@ -14008,6 +14310,8 @@ function restoreBackup(ts) {
       (state.customTpl = doc.templates || {}));
     if (doc.sectores) Object.assign(SECTORES, doc.sectores);
     if (doc.agenda && typeof doc.agenda === "object") state.agenda = doc.agenda;
+    if (doc.cotofrase && typeof doc.cotofrase === "object") state.cotofrase = doc.cotofrase;
+    ensureFraseDay();
     (Array.isArray(doc.team) && doc.team.length && ((TEAM.length = 0), doc.team.forEach((m) => TEAM.push(m))),
       injectSectorStyles(),
       touch(),
@@ -14051,6 +14355,34 @@ function addSector() {
     openSettings(),
     render(),
     flash("🎨 Sector agregado"));
+}
+const SEC_PALETTE = ["#006EA0", "#00C88C", "#8232C8", "#F0A032", "#D71E50", "#1EAADC", "#6E328C", "#CD1E1E"];
+function createSectorInline(nombre) {
+  const txt = (nombre || "").trim();
+  if (!txt) return;
+  let val = txt
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  if (!val || SECTORES[val]) val = "sector-" + Date.now();
+  ((SECTORES[val] = {
+    nombre: txt,
+    cat: SEC_PALETTE[Object.keys(SECTORES).length % SEC_PALETTE.length],
+  }),
+    injectSectorStyles(),
+    persist());
+  const tarjeta = current();
+  if (tarjeta) {
+    ((tarjeta.sectores = tarjeta.sectores || []),
+      tarjeta.sectores.includes(val) || tarjeta.sectores.push(val),
+      touch());
+  }
+  renderPanel();
+  flash('🎨 Sector "' + txt + '" creado');
+  const el = $("#sectorSearch");
+  if (el) ((el.value = ""), el.focus());
 }
 function addMember() {
   const txt = ($("#newMemNombre").value || "").trim();
@@ -14255,6 +14587,8 @@ async function boot() {
         ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro)));
       if (typeof tarjeta.appPassHash === "string") state.appPassHash = tarjeta.appPassHash;
       if (tarjeta.agenda && typeof tarjeta.agenda === "object") state.agenda = tarjeta.agenda;
+      if (tarjeta.cotofrase && typeof tarjeta.cotofrase === "object") state.cotofrase = tarjeta.cotofrase;
+      ensureFraseDay();
       (ensureTeam(), injectSectorStyles(), renderGateTeam());
       if (invCount("curso") === 0 && CURSOS.length) {
         const val = ingestCatalogo(CURSOS, {});
@@ -14267,20 +14601,25 @@ async function boot() {
               team: TEAM,
               appPassHash: state.appPassHash,
               agenda: state.agenda,
+              cotofrase: state.cotofrase,
             });
           } catch (err) {}
       }
-    } else
-      ((state.cards = seedCards()),
+    } else {
+      (ensureFraseDay(),
+        (state.cards = seedCards()),
         ingestCatalogo(CURSOS, {}),
         await Store.save({
           cards: state.cards,
           templates: state.customTpl,
           sectores: SECTORES,
           team: TEAM,
+          cotofrase: state.cotofrase,
         }));
+    }
   } catch (err2) {
     console.error(err2);
+    ensureFraseDay();
     // Si no se pudo leer el backend NO se arma un tablero de demo: mostrar
     // tarjetas inventadas hace creer que la app anda y el equipo termina
     // trabajando sobre algo que no existe y que no se va a guardar.
