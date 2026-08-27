@@ -3255,34 +3255,32 @@ button {
   }
 }
 .hub {
-  max-width: 1320px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 10px 0 50px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 30px;
-  align-items: start;
 }
 .hub-main {
   min-width: 0;
 }
 .hub-side {
-  position: sticky;
-  top: 84px;
+  position: fixed;
+  right: 20px;
+  top: 280px;
+  width: 200px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
+  z-index: 25;
+  max-height: calc(100vh - 120px);
 }
-@media (max-width: 1100px) {
-  .hub {
-    grid-template-columns: 1fr;
-    max-width: 1000px;
-  }
+@media (max-width: 1440px) {
   .hub-side {
     position: static;
+    transform: none;
     width: 100%;
-    max-width: 420px;
-    margin: 0 auto;
+    max-width: 300px;
+    margin: 36px auto 0;
+    max-height: none;
   }
 }
 .hub-hero {
@@ -4827,7 +4825,7 @@ html {
 }
 .frase-card {
   width: 100%;
-  padding: 18px 20px 14px;
+  padding: 12px 14px 10px;
   border-radius: var(--r-l);
   background: var(--surface);
   border: 1px solid var(--line);
@@ -4836,46 +4834,46 @@ html {
 .frase-card-t {
   text-align: center;
   font-family: var(--titulo);
-  font-size: 14px;
+  font-size: 11.5px;
   font-weight: 800;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .frase-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-height: 220px;
+  max-height: 160px;
   overflow-y: auto;
 }
 .frase-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 6px;
+  gap: 7px;
+  padding: 5px 5px;
   border-radius: var(--r-s);
 }
 .frase-row.mine {
   background: linear-gradient(145deg, #ffd76a, #e8a815);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 .frase-avatar {
   flex: none;
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: grid;
   place-content: center;
   color: #fff;
   font-weight: 800;
-  font-size: 11.5px;
+  font-size: 9.5px;
 }
 .frase-row-n {
   flex: none;
   font-weight: 700;
-  font-size: 12px;
+  font-size: 10.5px;
   color: var(--ink);
-  max-width: 70px;
+  max-width: 50px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4885,7 +4883,7 @@ html {
 }
 .frase-row-f {
   flex: 1;
-  font-size: 12px;
+  font-size: 10.5px;
   color: var(--ink-soft);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -4899,27 +4897,27 @@ html {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 10px;
   text-align: center;
-  padding: 20px 18px 22px;
+  padding: 14px 12px 16px;
   border-radius: var(--r-l);
   background: var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-lg);
 }
 .slot-modal-t {
-  font-size: 19px;
+  font-size: 14px;
   font-weight: 800;
 }
 .slot-modal-d {
-  font-size: 12.5px;
+  font-size: 10.5px;
   color: var(--ink-soft);
-  margin-top: -10px;
+  margin-top: -6px;
 }
 .slot-reels {
   display: flex;
-  gap: 10px;
-  padding: 16px;
+  gap: 6px;
+  padding: 10px;
   border-radius: var(--r-l);
   background: linear-gradient(160deg, #1b1300, #2c1f00);
   border: 3px solid #e8a815;
@@ -4928,13 +4926,13 @@ html {
     0 8px 24px rgba(232, 168, 21, 0.25);
 }
 .slot-reel {
-  width: 64px;
-  height: 64px;
+  width: 40px;
+  height: 40px;
   background: linear-gradient(180deg, #fffdf5, #f3e9c9);
   border-radius: var(--r-sm);
   display: grid;
   place-content: center;
-  font-size: 32px;
+  font-size: 20px;
   box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.08);
 }
 .slot-reel.stop {
@@ -4952,8 +4950,8 @@ html {
   }
 }
 .slot-result {
-  min-height: 22px;
-  font-size: 15px;
+  min-height: 18px;
+  font-size: 12px;
   font-weight: 800;
   color: var(--ink);
   opacity: 0;
@@ -4972,8 +4970,8 @@ html {
   background: linear-gradient(180deg, #ff5a5a, #c81e1e);
   color: #fff;
   font-weight: 800;
-  font-size: 13.5px;
-  padding: 12px 24px;
+  font-size: 11px;
+  padding: 8px 16px;
   border-radius: var(--pill);
   cursor: pointer;
   box-shadow:
@@ -5205,6 +5203,7 @@ html {
   </header>
   <div class="filters" id="filters"></div>
   <main id="view" class="view"><div class="spinner"></div></main>
+  <div id="hubSide" class="hub-side" hidden></div>
   <div id="banner"></div>
   <footer class="appfoot">
     <div class="appfoot-in">
@@ -9319,6 +9318,21 @@ function renderView() {
   ($("#view").innerHTML = '<div class="view-in">' + viewHeader() + txt + "</div>"),
     (ultimaVistaRenderizada = state.view);
   window.scrollTo(0, mismaVista ? scrollY : 0);
+  // Vive fuera de .view-in a propósito: esa capa tiene una animación de
+  // entrada por transform, y mientras esté activa cualquier descendiente
+  // position:fixed queda anclado a ELLA en vez de al viewport — por eso
+  // el widget flotante se arma como hermano, no como hijo.
+  const elSide = $("#hubSide");
+  if (elSide) {
+    if (state.view === "inicio") {
+      ((elSide.innerHTML = slotWidgetHTML() + fraseWidgetHTML()), elSide.removeAttribute("hidden"));
+      // Alineado arriba con las tarjetas del hub, no centrado en la
+      // ventana: así queda a la altura de lo primero que se ve, no
+      // "flotando" a mitad de una pantalla que puede ser muy alta.
+      const elGrid = $(".hub-grid");
+      if (elGrid) elSide.style.top = elGrid.getBoundingClientRect().top + "px";
+    } else ((elSide.hidden = true), (elSide.innerHTML = ""));
+  }
 }
 function cardKanban(tarjeta) {
   const avance = progress(tarjeta),
@@ -10676,10 +10690,7 @@ function renderInicio() {
     lista.map(fn).join("") +
     "</div>\n    " +
     renderResumen() +
-    '\n    </div>\n    <div class="hub-side">' +
-    slotWidgetHTML() +
-    fraseWidgetHTML() +
-    "</div>\n  </div>"
+    "\n    </div>\n  </div>"
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
