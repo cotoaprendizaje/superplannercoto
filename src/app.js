@@ -4100,7 +4100,12 @@ function renderView() {
       if (elGrid) elSide.style.top = elGrid.getBoundingClientRect().top + "px";
     } else {
       if (state.view === "kanban") {
+        const abierta = $("#roulettePop") && !$("#roulettePop").classList.contains("hidden");
         ((elSide.innerHTML = rouletteWidgetHTML()), elSide.removeAttribute("hidden"));
+        if (abierta) {
+          const pop = $("#roulettePop");
+          if (pop) pop.classList.remove("hidden");
+        }
         const elBar = $(".kbar");
         if (elBar) elSide.style.top = elBar.getBoundingClientRect().top + "px";
       } else ((elSide.hidden = true), (elSide.innerHTML = ""));
@@ -5601,18 +5606,20 @@ function cursosPendientes() {
   return boardCards().filter((tarjeta) => tarjeta.tipo === "curso" && tarjeta.estado === "pendiente");
 }
 // Vive fija en la barra lateral del Planner, igual que la máquina de
-// CotoFrase en Inicio: nada de modal ni de rueda — un solo rodillo de
-// texto que recorre los cursos pendientes y se frena en uno.
+// CotoFrase en Inicio, pero colapsada: un botón chico con ícono que al
+// tocarlo despliega el widget (como el popover de Filtros), para no
+// competir con las columnas del tablero mientras se trabaja.
 function rouletteWidgetHTML() {
-  const pendientes = cursosPendientes();
-  if (!pendientes.length)
-    return (
-      '<div class="roulette-widget">\n      <div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">🎉 No hay cursos pendientes por arrancar.</div>\n    </div>'
-    );
+  const pendientes = cursosPendientes(),
+    body = !pendientes.length
+      ? '<div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">🎉 No hay cursos pendientes por arrancar.</div>'
+      : '<div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">Girá entre los cursos pendientes sin arrancar.</div>\n      <div class="roulette-reel"><span id="rouletteReelText">' +
+        esc(pendientes[0].titulo) +
+        '</span></div>\n      <div class="slot-result" id="rouletteResult"></div>\n      <button class="roulette-spin" id="rouletteSpin" data-action="roulette:spin">🎲 Girar</button>';
   return (
-    '<div class="roulette-widget">\n      <div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">Girá entre los cursos pendientes sin arrancar.</div>\n      <div class="roulette-reel"><span id="rouletteReelText">' +
-    esc(pendientes[0].titulo) +
-    '</span></div>\n      <div class="slot-result" id="rouletteResult"></div>\n      <button class="roulette-spin" id="rouletteSpin" data-action="roulette:spin">🎲 Girar</button>\n    </div>'
+    '<div class="roulette-launcher">\n    <button class="roulette-fab" data-action="roulette:toggle" title="¿Qué curso me toca?" aria-label="¿Qué curso me toca?">🎡</button>\n    <div class="roulette-widget hidden" id="roulettePop">\n      ' +
+    body +
+    "\n    </div>\n  </div>"
   );
 }
 function tirarRuleta() {
@@ -6827,14 +6834,19 @@ document.addEventListener("click", (ev) => {
     case "slot:pull":
       tirarSlot();
       break;
+    case "roulette:toggle": {
+      const el7b = $("#roulettePop");
+      if (el7b) el7b.classList.toggle("hidden");
+      break;
+    }
     case "roulette:open": {
       // El hint "Nadie asignado" puede tocarse desde cualquier vista:
-      // si no estás en el Planner, saltamos ahí y recién entonces
-      // giramos (el widget necesita estar en el DOM para animarse).
+      // si no estás en el Planner, saltamos ahí, desplegamos el
+      // popover y recién entonces giramos.
       if (state.view !== "kanban") ((state.view = "kanban"), pushNav(), render());
       setTimeout(() => {
-        const elW = $("#hubSide");
-        (elW && (elW.classList.add("pulse"), setTimeout(() => elW.classList.remove("pulse"), 700)), tirarRuleta());
+        const pop = $("#roulettePop");
+        (pop && pop.classList.remove("hidden"), tirarRuleta());
       }, 60);
       break;
     }
@@ -7520,6 +7532,9 @@ function pushRecent(id2) {
   const elFiltros = $("#filtrosPop");
   if (elFiltros && !elFiltros.classList.contains("hidden") && !ev.target.closest(".filt-pop-wrap"))
     elFiltros.classList.add("hidden");
+  const elRoulettePop = $("#roulettePop");
+  if (elRoulettePop && !elRoulettePop.classList.contains("hidden") && !ev.target.closest(".roulette-launcher"))
+    elRoulettePop.classList.add("hidden");
   document.querySelectorAll(".panel-menu-wrap.open").forEach((wrap) => {
     if (!wrap.contains(ev.target)) wrap.classList.remove("open");
   });
@@ -8363,7 +8378,7 @@ function openHelp() {
     ["Exportar CSV / PDF", "En la barra del Planner, junto al orden. Exporta lo que estás viendo en pantalla — respeta los filtros activos."],
     ["🔔 Alertas", "Vencidas y por vencer. \"Marcar todas como leídas\" las oculta hasta que algo cambie en esa tarjeta puntual (nueva fecha, otro estado)."],
     ["Menú de usuario (▾)", "Mi semana (tu foco de los próximos días), Carga del equipo, e Imprimir/PDF están ahí."],
-    ["🎲 ¿Qué curso me toca?", "Widget flotante a la derecha del Planner: sortea entre los cursos que todavía no arrancaron."],
+    ["🎲 ¿Qué curso me toca?", "Botoncito flotante a la derecha del Planner (🎡): tocalo para desplegar el sorteo entre los cursos que todavía no arrancaron."],
     ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
     ["Mapa del área", "Todo lo publicado (cursos, Edu Points) y lo que está en desarrollo, organizado por sector y filtrable con un clic."],
   ];
