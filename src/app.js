@@ -4085,6 +4085,21 @@ function renderView() {
   ($("#view").innerHTML = '<div class="view-in">' + viewHeader() + txt + "</div>"),
     (ultimaVistaRenderizada = state.view);
   window.scrollTo(0, mismaVista ? scrollY : 0);
+  // Vive fuera de .view-in a propósito: esa capa tiene una animación de
+  // entrada por transform, y mientras esté activa cualquier descendiente
+  // position:fixed queda anclado a ELLA en vez de al viewport — por eso
+  // el widget flotante se arma como hermano, no como hijo.
+  const elSide = $("#hubSide");
+  if (elSide) {
+    if (state.view === "inicio") {
+      ((elSide.innerHTML = slotWidgetHTML() + fraseWidgetHTML()), elSide.removeAttribute("hidden"));
+      // Alineado arriba con las tarjetas del hub, no centrado en la
+      // ventana: así queda a la altura de lo primero que se ve, no
+      // "flotando" a mitad de una pantalla que puede ser muy alta.
+      const elGrid = $(".hub-grid");
+      if (elGrid) elSide.style.top = elGrid.getBoundingClientRect().top + "px";
+    } else ((elSide.hidden = true), (elSide.innerHTML = ""));
+  }
 }
 function cardKanban(tarjeta) {
   const avance = progress(tarjeta),
@@ -5442,10 +5457,7 @@ function renderInicio() {
     lista.map(fn).join("") +
     "</div>\n    " +
     renderResumen() +
-    '\n    </div>\n    <div class="hub-side">' +
-    slotWidgetHTML() +
-    fraseWidgetHTML() +
-    "</div>\n  </div>"
+    "\n    </div>\n  </div>"
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
