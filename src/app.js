@@ -4098,7 +4098,13 @@ function renderView() {
       // "flotando" a mitad de una pantalla que puede ser muy alta.
       const elGrid = $(".hub-grid");
       if (elGrid) elSide.style.top = elGrid.getBoundingClientRect().top + "px";
-    } else ((elSide.hidden = true), (elSide.innerHTML = ""));
+    } else {
+      if (state.view === "kanban") {
+        ((elSide.innerHTML = rouletteWidgetHTML()), elSide.removeAttribute("hidden"));
+        const elBar = $(".kbar");
+        if (elBar) elSide.style.top = elBar.getBoundingClientRect().top + "px";
+      } else ((elSide.hidden = true), (elSide.innerHTML = ""));
+    }
   }
 }
 function cardKanban(tarjeta) {
@@ -4186,7 +4192,7 @@ function renderKanban() {
       " tarjeta" +
       (lista2.length !== 1 ? "s" : "") +
       (state.mis && state.userId ? " · mías" : "") +
-      '</span>\n    <button class="roulette-btn" data-action="roulette:open">🎡 ¿Qué curso me toca?</button>\n    <span class="grow"></span>\n    <button class="btn btn-ghost btn-sm" data-action="data:csv" title="Exportar a CSV lo que estás viendo (respeta los filtros activos)">⬇ CSV</button>\n    <button class="btn btn-ghost btn-sm" data-action="app:print" title="Imprimir o guardar como PDF">🖨 PDF</button>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
+      '</span>\n    <span class="grow"></span>\n    <button class="btn btn-ghost btn-sm" data-action="data:csv" title="Exportar a CSV lo que estás viendo (respeta los filtros activos)">⬇ CSV</button>\n    <button class="btn btn-ghost btn-sm" data-action="app:print" title="Imprimir o guardar como PDF">🖨 PDF</button>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
       (state.sort === "prioridad" ? "selected" : "") +
       '>Prioridad</option>\n      <option value="fecha" ' +
       (state.sort === "fecha" ? "selected" : "") +
@@ -5589,91 +5595,53 @@ function renderFraseWidget() {
   const el = $("#fraseWidget");
   if (el) el.outerHTML = fraseWidgetHTML();
 }
-const ROULETTE_COLORS = ["#006EA0", "#1EAADC", "#00C88C", "#F0A032", "#D71E50", "#8232C8", "#2E9E8F", "#CD1E1E"];
 // "No iniciado" = una tarjeta de curso que ya está en el Planner pero
 // sigue en Pendiente: nadie la movió todavía a En desarrollo.
 function cursosPendientes() {
   return boardCards().filter((tarjeta) => tarjeta.tipo === "curso" && tarjeta.estado === "pendiente");
 }
-function rouletteModalHTML() {
+// Vive fija en la barra lateral del Planner, igual que la máquina de
+// CotoFrase en Inicio: nada de modal ni de rueda — un solo rodillo de
+// texto que recorre los cursos pendientes y se frena en uno.
+function rouletteWidgetHTML() {
   const pendientes = cursosPendientes();
   if (!pendientes.length)
     return (
-      '<div class="roulette-modal">\n      <div class="roulette-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="roulette-modal-d">🎉 No hay cursos pendientes por arrancar.</div>\n    </div>'
+      '<div class="roulette-widget">\n      <div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">🎉 No hay cursos pendientes por arrancar.</div>\n    </div>'
     );
-  const n = pendientes.length,
-    segAngle = 360 / n,
-    tam = Math.max(220, Math.min(300, 190 + n * 5)),
-    fuente = n > 16 ? 8 : n > 10 ? 9 : 10,
-    corte = n > 16 ? 12 : n > 10 ? 16 : 22,
-    gradient = pendientes
-      .map((c, i) => ROULETTE_COLORS[i % ROULETTE_COLORS.length] + " " + i * segAngle + "deg " + (i + 1) * segAngle + "deg")
-      .join(", "),
-    labels = pendientes
-      .map((c, i) => {
-        const mid = i * segAngle + segAngle / 2,
-          txt = c.titulo.length > corte ? c.titulo.slice(0, corte - 1) + "…" : c.titulo;
-        return (
-          '<span class="roulette-label" style="font-size:' +
-          fuente +
-          "px;transform:rotate(" +
-          mid +
-          "deg) translateY(" +
-          (tam / 2 - 34) +
-          'px)">' +
-          esc(txt) +
-          "</span>"
-        );
-      })
-      .join("");
   return (
-    '<div class="roulette-modal">\n      <div class="roulette-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="roulette-modal-d">Giramos entre los cursos pendientes sin arrancar.</div>\n      <div class="roulette-wrap" style="width:' +
-    tam +
-    "px;height:" +
-    tam +
-    'px">\n        <div class="roulette-pointer">▼</div>\n        <div class="roulette-wheel" id="rouletteWheel" style="background:conic-gradient(' +
-    gradient +
-    ')">' +
-    labels +
-    '<div class="roulette-hub"></div></div>\n      </div>\n      <div class="roulette-result" id="rouletteResult"></div>\n      <button class="roulette-spin" id="rouletteSpin" data-action="roulette:spin">🎡 Girar la ruleta</button>\n    </div>'
+    '<div class="roulette-widget">\n      <div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">Girá entre los cursos pendientes sin arrancar.</div>\n      <div class="roulette-reel"><span id="rouletteReelText">' +
+    esc(pendientes[0].titulo) +
+    '</span></div>\n      <div class="slot-result" id="rouletteResult"></div>\n      <button class="roulette-spin" id="rouletteSpin" data-action="roulette:spin">🎲 Girar</button>\n    </div>'
   );
 }
-function abrirRuleta() {
-  openModal(rouletteModalHTML());
-}
 function tirarRuleta() {
-  const wheel = $("#rouletteWheel"),
+  const reel = $("#rouletteReelText"),
     resultado = $("#rouletteResult"),
     boton = $("#rouletteSpin"),
     pendientes = cursosPendientes();
-  if (!wheel || wheel.dataset.spinning || !pendientes.length) return;
-  const n = pendientes.length,
-    segAngle = 360 / n,
-    idx = Math.floor(Math.random() * n),
-    elegido = pendientes[idx],
-    centerAngle = idx * segAngle + segAngle / 2,
-    prevRot = parseFloat(wheel.dataset.rot || "0"),
-    vueltas = 5 + Math.floor(Math.random() * 3),
-    finalMod = (360 - centerAngle) % 360,
-    delta = (finalMod - (prevRot % 360) + 360) % 360,
-    nuevoRot = prevRot + vueltas * 360 + delta;
-  ((wheel.dataset.spinning = "1"),
-    (wheel.dataset.rot = String(nuevoRot)),
+  if (!reel || reel.dataset.spinning || !pendientes.length) return;
+  const elegido = pendientes[Math.floor(Math.random() * pendientes.length)];
+  ((reel.dataset.spinning = "1"),
     boton && (boton.disabled = true),
-    resultado && (resultado.classList.remove("show"), (resultado.innerHTML = "")),
-    (wheel.style.transform = "rotate(" + nuevoRot + "deg)"));
+    resultado && (resultado.classList.remove("show"), (resultado.innerHTML = "")));
+  const timer = setInterval(() => {
+    reel.textContent = pendientes[Math.floor(Math.random() * pendientes.length)].titulo;
+  }, 70);
   setTimeout(() => {
-    (delete wheel.dataset.spinning,
+    (clearInterval(timer),
+      (reel.textContent = elegido.titulo),
+      delete reel.dataset.spinning,
       resultado &&
         (resultado.classList.add("show"),
         (resultado.innerHTML =
           "Te toca: <b>" +
           esc(elegido.titulo) +
-          '</b><br><button class="btn btn-sm btn-primary" style="margin-top:8px" data-action="card:open" data-id="' +
+          '</b><br><button class="btn btn-sm btn-primary" style="margin-top:6px" data-action="card:open" data-id="' +
           elegido.id +
           '">Abrir tarjeta</button>')),
       boton && (boton.disabled = false));
-  }, 3200);
+  }, 1300);
 }
 function renderResumen() {
   const lista = boardCards(),
@@ -6859,9 +6827,17 @@ document.addEventListener("click", (ev) => {
     case "slot:pull":
       tirarSlot();
       break;
-    case "roulette:open":
-      abrirRuleta();
+    case "roulette:open": {
+      // El hint "Nadie asignado" puede tocarse desde cualquier vista:
+      // si no estás en el Planner, saltamos ahí y recién entonces
+      // giramos (el widget necesita estar en el DOM para animarse).
+      if (state.view !== "kanban") ((state.view = "kanban"), pushNav(), render());
+      setTimeout(() => {
+        const elW = $("#hubSide");
+        (elW && (elW.classList.add("pulse"), setTimeout(() => elW.classList.remove("pulse"), 700)), tirarRuleta());
+      }, 60);
       break;
+    }
     case "roulette:spin":
       tirarRuleta();
       break;
@@ -8387,7 +8363,7 @@ function openHelp() {
     ["Exportar CSV / PDF", "En la barra del Planner, junto al orden. Exporta lo que estás viendo en pantalla — respeta los filtros activos."],
     ["🔔 Alertas", "Vencidas y por vencer. \"Marcar todas como leídas\" las oculta hasta que algo cambie en esa tarjeta puntual (nueva fecha, otro estado)."],
     ["Menú de usuario (▾)", "Mi semana (tu foco de los próximos días), Carga del equipo, e Imprimir/PDF están ahí."],
-    ["🎲 ¿Qué curso me toca?", "Botón en la barra del Planner: sortea entre los cursos que todavía no arrancaron."],
+    ["🎲 ¿Qué curso me toca?", "Widget flotante a la derecha del Planner: sortea entre los cursos que todavía no arrancaron."],
     ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
     ["Mapa del área", "Todo lo publicado (cursos, Edu Points) y lo que está en desarrollo, organizado por sector y filtrable con un clic."],
   ];
