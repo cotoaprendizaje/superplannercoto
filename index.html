@@ -2800,81 +2800,6 @@ button {
   color: var(--ink-soft);
   opacity: 0.8;
 }
-.search-modal {
-  position: relative;
-  background: var(--surface);
-  border-radius: var(--r-l);
-  box-shadow: var(--shadow-lg);
-  width: 620px;
-  max-width: 96vw;
-  max-height: 80vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-.search-top {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--line);
-}
-.search-top input {
-  flex: 1;
-  border: none;
-  background: 0 0;
-  font-family: inherit;
-  font-size: 17px;
-  color: var(--ink);
-  outline: 0;
-}
-.search-top .kbd {
-  font-size: 11px;
-  color: var(--ink-soft);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 2px 6px;
-}
-.search-results {
-  overflow-y: auto;
-  padding: 8px;
-  max-height: 60vh;
-}
-.sr-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  border-left: 3px solid var(--cat, var(--line));
-}
-.sr-item.sel,
-.sr-item:hover {
-  background: var(--surface-2);
-}
-.sr-t {
-  flex: 1;
-  font-size: 13.5px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.sr-m {
-  font-size: 11px;
-  color: var(--ink-soft);
-}
-.sr-where {
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--coto-blue);
-  background: color-mix(in srgb, var(--coto-blue) 10%, transparent);
-  padding: 2px 7px;
-  border-radius: var(--pill);
-}
 .notif-badge {
   position: absolute;
   top: -3px;
@@ -4638,6 +4563,9 @@ html {
   outline-offset: -2px;
   background: color-mix(in srgb, var(--coto-blue) 5%, transparent);
 }
+.print-meta {
+  display: none;
+}
 @media print {
   #banner,
   #modal,
@@ -4655,6 +4583,17 @@ html {
   body,
   html {
     background: #fff !important;
+  }
+  .print-meta {
+    display: block !important;
+    padding: 0 0 12px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ccc;
+    font-size: 11px;
+    color: #444;
+  }
+  .print-meta b {
+    color: #000;
   }
   .view {
     padding: 0 !important;
@@ -5205,6 +5144,7 @@ html {
 
 <!-- APP -->
 <div id="app" class="app hidden">
+  <div id="printMeta" class="print-meta"></div>
   <header class="topbar">
     <div class="brand" data-action="hub:go" data-go="inicio" title="Ir al inicio">
       <div class="logo-slot"></div>
@@ -9184,6 +9124,38 @@ function passBoard(tarjeta) {
 function filteredBoard() {
   return boardCards().filter(passBoard);
 }
+// Sello que se agrega arriba de todo justo antes de imprimir: el topbar y la
+// barra de filtros se ocultan en @media print, así que sin esto un
+// Calendario o Timeline impreso queda sin decir cuándo se sacó ni qué
+// filtros estaban puestos.
+function printMetaHTML() {
+  const tarjeta = state.filters,
+    partes = [];
+  if (tarjeta.persona) {
+    const miembro = member(tarjeta.persona);
+    if (miembro) partes.push("Persona: " + miembro.nombre);
+  }
+  if (tarjeta.sector) partes.push("Sector: " + (sectorName(tarjeta.sector) || tarjeta.sector));
+  if (tarjeta.tipo) partes.push("Tipo: " + ((allTipos()[tarjeta.tipo] || {}).nombre || tarjeta.tipo));
+  if (tarjeta.estado) {
+    const estado = ESTADOS.find((arg) => arg.id === tarjeta.estado);
+    partes.push("Estado: " + (estado ? estado.nombre : tarjeta.estado));
+  }
+  if (tarjeta.texto) partes.push('Buscando: "' + tarjeta.texto + '"');
+  if (state.quick) partes.push("Filtro rápido: " + state.quick);
+  const fecha = new Date().toLocaleString("es-AR", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return (
+    "<b>Cotonetes Forever</b> · Impreso " +
+    esc(fecha) +
+    (partes.length ? " · Filtros: " + esc(partes.join(" · ")) : " · Sin filtros activos")
+  );
+}
 function renderFilters() {
   // Elegir un filtro reconstruye toda la barra (así se actualiza el contador
   // del botón), lo que cerraría el popover después de cada click si no se
@@ -9294,7 +9266,9 @@ function renderFilters() {
               arg.id +
               '" title="Aplicar vista guardada">⭐ ' +
               esc(arg.name) +
-              '<span class="vx" data-action="view:del" data-id="' +
+              '<span class="vx" data-action="view:rename" data-id="' +
+              arg.id +
+              '" title="Renombrar vista">✏</span><span class="vx" data-action="view:del" data-id="' +
               arg.id +
               '" title="Borrar vista">✕</span></button>',
           )
@@ -9406,6 +9380,9 @@ function cardKanban(tarjeta) {
     '" data-cat="' +
     primaryCat(tarjeta) +
     '" data-action="card:open">\n    <div class="kcard-quick">' +
+    (state.userId && tarjeta.responsable !== state.userId && !(tarjeta.asignados || []).includes(state.userId)
+      ? '<button class="kq-btn" data-action="kcard:assignme" data-id="' + tarjeta.id + '" title="Asignarme">🙋</button>'
+      : "") +
     '<button class="kq-btn" data-action="qedit:open" data-id="' +
     tarjeta.id +
     '" title="Edición rápida">✎</button><button class="kq-btn" data-action="kcard:dup" data-id="' +
@@ -9757,16 +9734,6 @@ function cellHTML(arg, iso, flag) {
     "</div>"
   );
 }
-function monthCells(arg, fecha) {
-  const fecha3 = new Date(fecha.getFullYear(), fecha.getMonth(), 1),
-    fecha4 = weekStart(fecha3);
-  let txt = "";
-  for (let i = 0; i < 42; i++) {
-    const fecha2 = addDays(fecha4, i);
-    txt += cellHTML(arg, isoOf(fecha2), fecha2.getMonth() !== fecha.getMonth());
-  }
-  return txt;
-}
 function weekCells(tarjetas, fecha) {
   const fecha2 = weekStart(fecha);
   let txt = "";
@@ -10116,6 +10083,8 @@ function mapaSectorMap() {
   if (sinSector) entradas.push(["", sinSector]);
   if (!entradas.length) return "";
   const total = entradas.reduce((acc, arg) => acc + arg[1], 0);
+  const filtroActivo = state.filters.sector,
+    nombreFiltro = filtroActivo === "__sin_sector__" ? "Sin sector" : sectorName(filtroActivo) || filtroActivo;
   const segmento = (arg) => {
     const sec = arg[0],
       n = arg[1],
@@ -10141,7 +10110,13 @@ function mapaSectorMap() {
     };
   };
   return (
-    '<div class="mapa-sectormap">\n      <div class="mapa-sectormap-t">Distribución por sector</div>\n      <div class="mapa-distbar">' +
+    '<div class="mapa-sectormap">\n      <div class="mapa-sectormap-t" style="display:flex;align-items:center;gap:8px">Distribución por sector' +
+    (filtroActivo
+      ? ' <span style="text-transform:none;letter-spacing:0;font-weight:600;color:var(--ink-soft)">· filtrando ' +
+        esc(nombreFiltro) +
+        '</span><button class="btn btn-ghost btn-sm" data-action="mapa:sector-clear" style="margin-left:auto;padding:2px 9px;font-size:11px">✕ Quitar filtro</button>'
+      : "") +
+    '</div>\n      <div class="mapa-distbar">' +
     entradas
       .map((arg) => {
         const s = segmento(arg);
@@ -10723,12 +10698,28 @@ function renderInicio() {
         t: "Mapa del área",
         d: "Cursos, Edu Points, apps y bases.",
       },
+      {
+        action: "misemana:open",
+        cat: "sistemas",
+        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/></svg>',
+        t: "Mi semana",
+        d: "Tu foco de los próximos días.",
+      },
+      {
+        action: "carga:open",
+        cat: "recursos-humanos",
+        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20c0-3.5 2.5-6 5.5-6s5.5 2.5 5.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M14.5 20c.3-2.7 1.8-4.6 4-5.3"/></svg>',
+        t: "Carga del equipo",
+        d: "Quién tiene qué, para repartir mejor.",
+      },
     ],
     fn = (arg, arg2) =>
       '<button class="hub-card" data-cat="' +
       arg.cat +
-      '" data-action="hub:go" data-go="' +
-      arg.go +
+      '" data-action="' +
+      (arg.action || "hub:go") +
+      '" data-go="' +
+      (arg.go || "") +
       '" style="animation-delay:' +
       arg2 * 55 +
       'ms">\n    ' +
@@ -11717,7 +11708,11 @@ function openCarga() {
         val3 = Math.round((val.n / val2) * 100),
         flag = val.n === val2 && val2 > 1;
       return (
-        '<div class="carga-row">' +
+        '<div class="carga-row" data-action="carga:go" data-id="' +
+        miembro.id +
+        '" style="cursor:pointer" title="Ver las tarjetas de ' +
+        esc(miembro.nombre) +
+        ' en el Planner">' +
         avatarHTML(miembro.id) +
         '<div class="carga-info">\n      <div class="carga-name">' +
         miembro.nombre +
@@ -12018,6 +12013,9 @@ document.addEventListener("click", (ev) => {
       ((state.filters.sector = state.filters.sector === sec2 ? "" : sec2), (state.mapaSec = "todos"), render());
       break;
     }
+    case "mapa:sector-clear":
+      ((state.filters.sector = ""), render());
+      break;
     case "edu:sec":
       ((state.eduSector = el.dataset.sec), (state.eduEst = ""), (state.eduQ = ""), pushNav(), render());
       break;
@@ -12049,14 +12047,14 @@ document.addEventListener("click", (ev) => {
     case "search:open":
       openPalette();
       break;
-    case "sr:open":
-      (closeModal(), openDetail(el.dataset.id));
-      break;
     case "notif:open":
       openNotif();
       break;
     case "notif:markread":
       (marcarAlertasLeidas(computeAlerts().map(alertaKey)), openNotif(), updateBell());
+      break;
+    case "notif:solomias":
+      ((state.alertasMias = !state.alertasMias), openNotif());
       break;
     case "help:open":
       openHelp();
@@ -12092,6 +12090,15 @@ document.addEventListener("click", (ev) => {
       break;
     case "set:add-sector":
       addSector();
+      break;
+    case "set:del-sector":
+      delSector(el.dataset.sec);
+      break;
+    case "set:del-member":
+      delMember(el.dataset.mem);
+      break;
+    case "carga:go":
+      ((state.filters.persona = el.dataset.id), (state.view = "kanban"), closePanel(), pushNav(), render());
       break;
     case "set:pass": {
       const txt2 = ($("#setPass").value || "").trim();
@@ -12217,9 +12224,20 @@ document.addEventListener("click", (ev) => {
         render());
       break;
     }
-    case "app:print":
+    case "view:rename": {
+      const hallado2 = state.savedViews.find((arg) => arg.id === el.dataset.id);
+      if (!hallado2) break;
+      const txt4 = (prompt("Nuevo nombre para la vista", hallado2.name) || "").trim();
+      if (!txt4) break;
+      ((hallado2.name = txt4), saveViews(), render(), flash("✏️ Vista renombrada"));
+      break;
+    }
+    case "app:print": {
+      const elMeta = $("#printMeta");
+      if (elMeta) elMeta.innerHTML = printMetaHTML();
       window.print();
       break;
+    }
     case "carga:open":
       openCarga();
       break;
@@ -12362,7 +12380,11 @@ document.addEventListener("click", (ev) => {
               else {
                 if (val21 === "misemana:open") openMiSemana();
                 else {
-                  if (val21 === "app:print") window.print();
+                  if (val21 === "app:print") {
+                    const elMetaPal = $("#printMeta");
+                    if (elMetaPal) elMetaPal.innerHTML = printMetaHTML();
+                    window.print();
+                  }
                   else {
                     if (val21 === "carga:open") openCarga();
                     else {
@@ -12529,6 +12551,9 @@ document.addEventListener("click", (ev) => {
     case "kcard:del":
       doDelete(val10);
       break;
+    case "kcard:assignme":
+      asignarme(val10);
+      break;
     case "vinc:add": {
       const tarjeta5 = current();
       if (tarjeta5 && val10) {
@@ -12613,10 +12638,6 @@ function toggleArr(arg, txt, sector) {
   touch();
 }
 (document.addEventListener("input", (ev) => {
-  if (ev.target.id === "searchInput") {
-    renderSearchResults(ev.target.value);
-    return;
-  }
   if (ev.target.id === "cmdkInput") {
     renderPalette(ev.target.value);
     return;
@@ -13008,6 +13029,20 @@ function doDup(id) {
     flash("⧉ Tarjeta duplicada"),
     id ? render() : (openDetail(tarjeta.id), render()));
 }
+function asignarme(id) {
+  if (!state.userId) {
+    flash("Entrá con tu nombre del equipo para asignarte", true);
+    return;
+  }
+  const tarjeta = state.cards.find((c) => c.id === id);
+  if (!tarjeta) return;
+  if (!tarjeta.responsable) tarjeta.responsable = state.userId;
+  else {
+    ((tarjeta.asignados = tarjeta.asignados || []),
+      tarjeta.asignados.includes(state.userId) || tarjeta.asignados.push(state.userId));
+  }
+  (touch(), render(), flash("🙋 Te asignaste la tarjeta"));
+}
 function doDelete(id) {
   const tarjeta = id ? state.cards.find((c) => c.id === id) : current();
   if (!tarjeta) return;
@@ -13322,59 +13357,6 @@ function recurrar(val) {
     tarjeta
   );
 }
-function openSearch() {
-  (openModal(
-    '<div class="search-modal"><div class="search-top">🔎<input id="searchInput" placeholder="Buscar tarjetas, cursos, apps, sectores..." autocomplete="off"><span class="kbd">esc</span></div><div class="search-results" id="searchResults"></div></div>',
-  ),
-    setTimeout(() => {
-      const el = $("#searchInput");
-      el && (el.focus(), renderSearchResults(""));
-    }, 40));
-}
-function renderSearchResults(value) {
-  const el = $("#searchResults");
-  if (!el) return;
-  value = (value || "").trim().toLowerCase();
-  let lista = state.cards.slice();
-  if (value)
-    lista = lista.filter(
-      (tarjeta) =>
-        tarjeta.titulo.toLowerCase().includes(value) ||
-        (tarjeta.sectores || []).some((arg) => (sectorName(arg) || arg).toLowerCase().includes(value)) ||
-        ((allTipos()[tarjeta.tipo] || {}).nombre || "").toLowerCase().includes(value) ||
-        (tarjeta.catalogo && (tarjeta.catalogo.bajada || "").toLowerCase().includes(value)),
-    );
-  lista = lista.slice(0, 14);
-  if (!lista.length) {
-    el.innerHTML = '<div style="padding:18px;text-align:center;color:var(--ink-soft)">Sin resultados</div>';
-    return;
-  }
-  el.innerHTML = lista
-    .map((tarjeta, arg) => {
-      const txt = inInventory(tarjeta) ? "Mapa" : "Tablero",
-        tipo = allTipos()[tarjeta.tipo] || {};
-      return (
-        '<div class="sr-item ' +
-        (arg === 0 ? "sel" : "") +
-        '" data-cat="' +
-        primaryCat(tarjeta) +
-        '" data-action="sr:open" data-id="' +
-        tarjeta.id +
-        '">\n      <span>' +
-        (tipo.icon || "•") +
-        '</span><div style="flex:1;overflow:hidden"><div class="sr-t">' +
-        esc(tarjeta.titulo) +
-        '</div>\n      <div class="sr-m">' +
-        esc(tipo.nombre || tarjeta.tipo) +
-        " · " +
-        ((tarjeta.sectores || []).map((arg2) => sectorName(arg2) || arg2).join(", ") || "Sin sector") +
-        '</div></div>\n      <span class="sr-where">' +
-        txt +
-        "</span></div>"
-      );
-    })
-    .join("");
-}
 function paletteCommands() {
   const fn = (txt, txt2, txt3) => ({
     t: txt,
@@ -13663,7 +13645,8 @@ function updateBell() {
   document.title = cantidad ? "(" + cantidad + ") Cotonetes Forever" : "Cotonetes Forever · COTO Aprendizaje e-Learning";
 }
 function openNotif() {
-  const lista = alertasSinLeer();
+  const lista0 = alertasSinLeer(),
+    lista = state.alertasMias ? lista0.filter((recurso) => mine(recurso.c)) : lista0;
   state.selectedId = null;
   const txt = lista.length
     ? lista
@@ -13684,13 +13667,24 @@ function openNotif() {
             "</div></div></div>",
         )
         .join("")
-    : '<div class="empty"><div class="big">✅</div><div style="font-weight:700;color:var(--ink)">Todo al día</div><div style="margin-top:4px">Sin vencidas ni alertas.</div></div>';
+    : state.alertasMias && lista0.length
+      ? '<div class="empty"><div class="big">✅</div><div style="font-weight:700;color:var(--ink)">Nada tuyo pendiente</div><div style="margin-top:4px">Hay ' +
+        lista0.length +
+        " alerta" +
+        (lista0.length !== 1 ? "s" : "") +
+        " del equipo, pero ninguna es tuya.</div></div>"
+      : '<div class="empty"><div class="big">✅</div><div style="font-weight:700;color:var(--ink)">Todo al día</div><div style="margin-top:4px">Sin vencidas ni alertas.</div></div>';
   (($("#panel").innerHTML =
     '<div class="panel-head"><div style="flex:1"><div class="tipo-pill">🔔 Alertas</div><div style="font-family:var(--titulo);font-size:18px;font-weight:700;margin-top:4px">' +
     lista.length +
     " pendiente" +
     (lista.length !== 1 ? "s" : "") +
     '</div></div>' +
+    (state.userId
+      ? '<button class="btn btn-ghost btn-sm" data-action="notif:solomias" title="Ver solo las alertas de mis tarjetas">' +
+        (state.alertasMias ? "★ Solo lo mío" : "☆ Solo lo mío") +
+        "</button>"
+      : "") +
     (lista.length
       ? '<button class="btn btn-ghost btn-sm" data-action="notif:markread">✓ Marcar todas como leídas</button>'
       : "") +
@@ -13705,6 +13699,7 @@ function openNotif() {
 function openHelp() {
   const faq = [
     ["Ctrl+K (o tecla /)", "Abre un buscador rápido para saltar a una tarjeta, un curso o directamente a una sección."],
+    ["Atajos de teclado", "Con el foco fuera de un campo de texto: N crea una tarjeta nueva, y del 1 al 5 salta directo a Inicio, Planner, Calendario, Timeline o Mapa."],
     ["☰ Filtros del Planner", "Agrupa persona, sector, tipo y estado en un solo botón — el contador muestra cuántos hay activos. También te deja guardar combinaciones de filtros frecuentes."],
     ["Acciones rápidas en las tarjetas", "Pasá el mouse sobre una tarjeta del Planner: aparecen accesos directos para edición rápida, duplicar, copiar el enlace y eliminar, sin tener que abrir el panel completo."],
     ["Exportar CSV / PDF", "En la barra del Planner, junto al orden. Exporta lo que estás viendo en pantalla — respeta los filtros activos."],
@@ -13743,7 +13738,11 @@ function openSettings() {
           esc(SECTORES[arg].nombre) +
           '"><span style="font-size:11px;color:var(--ink-soft);min-width:118px">' +
           esc(arg) +
-          "</span></div>",
+          "</span>" +
+          (OFFICIAL_CATS.has(arg)
+            ? ""
+            : '<span class="chk-del" data-action="set:del-sector" data-sec="' + arg + '" title="Borrar sector">✕</span>') +
+          "</div>",
       )
       .join(""),
     txt2 = TEAM.map(
@@ -13762,7 +13761,10 @@ function openSettings() {
         miembro.id +
         ':email" value="' +
         esc(miembro.email || "") +
-        '" placeholder="📧 email para alertas" style="flex:1 1 100%;min-width:0"></div>',
+        '" placeholder="📧 email para alertas" style="flex:1 1 100%;min-width:0">' +
+        '<span class="chk-del" data-action="set:del-member" data-mem="' +
+        miembro.id +
+        '" title="Sacar del equipo">✕</span></div>',
     ).join(""),
     txt3 = Object.keys(state.customTpl).length
       ? Object.keys(state.customTpl)
@@ -13944,6 +13946,22 @@ function addMember() {
 }
 function delTpl(arg) {
   (delete state.customTpl[arg], persist(), openSettings());
+}
+function delSector(key) {
+  if (!key || !SECTORES[key] || OFFICIAL_CATS.has(key)) return;
+  const nombre = SECTORES[key].nombre;
+  confirmar('¿Borrar el sector "' + nombre + '"? Las tarjetas que lo tenían van a perder esa etiqueta.', () => {
+    (delete SECTORES[key], persist(), openSettings(), render(), flash("🗑 Sector borrado"));
+  });
+}
+function delMember(id) {
+  const miembro = member(id);
+  if (!miembro) return;
+  confirmar('¿Sacar a "' + miembro.nombre + '" del equipo? Sus tarjetas asignadas van a quedar sin esa persona.', () => {
+    const idx = TEAM.findIndex((arg) => arg.id === id);
+    if (idx >= 0) TEAM.splice(idx, 1);
+    (persist(), openSettings(), render(), flash("🗑 Se sacó del equipo"));
+  });
 }
 function download(txt, json, txt2) {
   try {
