@@ -5417,6 +5417,7 @@ function renderInicio() {
   const lista2 = boardCards(),
     cantidad = lista2.filter(isOverdue).length,
     cantidad2 = alertasSinLeer().length,
+    cantidad3 = lista2.filter((arg) => arg.estado === "en-revision").length,
     lista = [
       {
         go: "kanban",
@@ -5454,7 +5455,11 @@ function renderInicio() {
       arg.go +
       '" style="animation-delay:' +
       arg2 * 55 +
-      'ms">\n    <span class="hub-ic">' +
+      'ms">\n    ' +
+      (arg.go === "kanban" && cantidad3
+        ? '<span class="hub-badge" title="' + cantidad3 + " en revisión, esperando aprobación\">" + cantidad3 + "</span>\n    "
+        : "") +
+      '<span class="hub-ic">' +
       arg.ic +
       '</span>\n    <span class="hub-tx"><span class="hub-t">' +
       arg.t +
@@ -5472,8 +5477,18 @@ function renderInicio() {
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
     "</div>\n    " +
+    agendaAvisoHTML() +
     renderResumen() +
     "\n    </div>\n  </div>"
+  );
+}
+// Aviso breve y descartable donde antes vivía la pestaña de Agenda, para
+// que el equipo no se quede buscándola — se va a rehacer de cero más
+// adelante, esto no es un error.
+function agendaAvisoHTML() {
+  if (localStorage.getItem("cf.avisoAgendaOculto") === "1") return "";
+  return (
+    '<div class="note warn hub-aviso">\n    <span>📅 Sacamos la Agenda del equipo por un tiempo — la vamos a rehacer de cero. Vuelve pronto.</span>\n    <button class="hub-aviso-x" data-action="agendaAviso:cerrar" title="Cerrar aviso" aria-label="Cerrar aviso">✕</button>\n  </div>'
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
@@ -5628,7 +5643,7 @@ function cursosPendientes() {
 function rouletteWidgetHTML() {
   const pendientes = cursosPendientes(),
     body = !pendientes.length
-      ? '<div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">🎉 No hay cursos pendientes por arrancar.</div>'
+      ? '<div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">🎉 No hay cursos pendientes por arrancar.</div>\n      <button class="roulette-spin" data-action="hub:go" data-go="mapa">🗺 Ver el Mapa del área</button>'
       : '<div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">Girá entre los cursos pendientes sin arrancar.</div>\n      <div class="roulette-reel"><span id="rouletteReelText">' +
         esc(pendientes[0].titulo) +
         '</span></div>\n      <div class="slot-result" id="rouletteResult"></div>\n      <button class="roulette-spin" id="rouletteSpin" data-action="roulette:spin">🎲 Girar</button>';
@@ -6860,6 +6875,12 @@ document.addEventListener("click", (ev) => {
       if (el7c) el7c.classList.toggle("hidden");
       break;
     }
+    case "agendaAviso:cerrar": {
+      localStorage.setItem("cf.avisoAgendaOculto", "1");
+      const elAviso = ev.target.closest(".hub-aviso");
+      if (elAviso) elAviso.remove();
+      break;
+    }
     case "roulette:open": {
       // El hint "Nadie asignado" puede tocarse desde cualquier vista:
       // si no estás en el Planner, saltamos ahí, desplegamos el
@@ -7588,6 +7609,13 @@ function pushRecent(id2) {
       if (el2 && !el2.classList.contains("hidden")) {
         el2.classList.add("hidden");
         return;
+      }
+      for (const sel of ["#filtrosPop", "#roulettePop", "#cotofracePop"]) {
+        const pop = $(sel);
+        if (pop && !pop.classList.contains("hidden")) {
+          pop.classList.add("hidden");
+          return;
+        }
       }
       if (!$("#modal").classList.contains("hidden")) closeModal();
       else {
@@ -8348,11 +8376,15 @@ function alertasSinLeer() {
   return computeAlerts().filter((recurso) => !leidas.has(alertaKey(recurso)));
 }
 function updateBell() {
-  const el = $("#notifBadge");
-  if (!el || !el.classList) return;
   const cantidad = alertasSinLeer().length;
-  if (cantidad) ((el.textContent = cantidad), el.classList.remove("hidden"));
-  else el.classList.add("hidden");
+  const el = $("#notifBadge");
+  if (el && el.classList) {
+    if (cantidad) ((el.textContent = cantidad), el.classList.remove("hidden"));
+    else el.classList.add("hidden");
+  }
+  // Señal liviana además de la campana: se nota en la pestaña del navegador
+  // aunque el equipo esté mirando otra ventana.
+  document.title = cantidad ? "(" + cantidad + ") Cotonetes Forever" : "Cotonetes Forever · COTO Aprendizaje e-Learning";
 }
 function openNotif() {
   const lista = alertasSinLeer();

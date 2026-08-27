@@ -918,6 +918,29 @@ button {
   border-color: #4d421f;
   color: #e0c074;
 }
+.hub-aviso {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0;
+  border-radius: var(--r-m);
+}
+.hub-aviso-x {
+  border: none;
+  background: 0 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0.65;
+  padding: 2px 4px;
+  flex: none;
+}
+.hub-aviso-x:hover {
+  opacity: 1;
+}
 .filters {
   display: flex;
   align-items: center;
@@ -2822,6 +2845,24 @@ button {
   padding: 0 4px;
   box-shadow: 0 0 0 2px var(--surface);
 }
+.hub-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: var(--warn);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  min-width: 19px;
+  height: 19px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  box-shadow: 0 0 0 2px var(--surface);
+  z-index: 1;
+}
 .notif-item {
   display: flex;
   align-items: center;
@@ -3236,6 +3277,12 @@ button {
   .hub-side:has(.roulette-launcher),
   .hub-side:has(.cotofrase-launcher) {
     width: auto;
+  }
+  /* El tablero del Planner es de borde a borde (a diferencia del hub de
+     Inicio, que está centrado con max-width): sin este margen la última
+     columna queda tapada por el botón flotante de la ruleta. */
+  .view:has(.kanban) {
+    padding-right: 90px;
   }
 }
 @media (max-width: 1440px) {
