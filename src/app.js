@@ -4092,7 +4092,12 @@ function renderView() {
   const elSide = $("#hubSide");
   if (elSide) {
     if (state.view === "inicio") {
-      ((elSide.innerHTML = slotWidgetHTML() + fraseWidgetHTML()), elSide.removeAttribute("hidden"));
+      const abiertaF = $("#cotofracePop") && !$("#cotofracePop").classList.contains("hidden");
+      ((elSide.innerHTML = cotofraseLauncherHTML()), elSide.removeAttribute("hidden"));
+      if (abiertaF) {
+        const popF = $("#cotofracePop");
+        if (popF) popF.classList.remove("hidden");
+      }
       // Alineado arriba con las tarjetas del hub, no centrado en la
       // ventana: así queda a la altura de lo primero que se ve, no
       // "flotando" a mitad de una pantalla que puede ser muy alta.
@@ -5600,6 +5605,17 @@ function renderFraseWidget() {
   const el = $("#fraseWidget");
   if (el) el.outerHTML = fraseWidgetHTML();
 }
+// Mismo patrón que la ruleta del Planner: colapsada a un botón chico
+// que despliega la máquina + el historial, en vez de una tarjeta
+// siempre abierta compitiendo con el resto de Inicio.
+function cotofraseLauncherHTML() {
+  return (
+    '<div class="cotofrase-launcher">\n    <button class="cotofrase-fab" data-action="cotofrase:toggle" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>\n    <div class="cotofrase-pop hidden" id="cotofracePop">\n      ' +
+    slotWidgetHTML() +
+    fraseWidgetHTML() +
+    "\n    </div>\n  </div>"
+  );
+}
 // "No iniciado" = una tarjeta de curso que ya está en el Planner pero
 // sigue en Pendiente: nadie la movió todavía a En desarrollo.
 function cursosPendientes() {
@@ -6839,6 +6855,11 @@ document.addEventListener("click", (ev) => {
       if (el7b) el7b.classList.toggle("hidden");
       break;
     }
+    case "cotofrase:toggle": {
+      const el7c = $("#cotofracePop");
+      if (el7c) el7c.classList.toggle("hidden");
+      break;
+    }
     case "roulette:open": {
       // El hint "Nadie asignado" puede tocarse desde cualquier vista:
       // si no estás en el Planner, saltamos ahí, desplegamos el
@@ -7535,6 +7556,9 @@ function pushRecent(id2) {
   const elRoulettePop = $("#roulettePop");
   if (elRoulettePop && !elRoulettePop.classList.contains("hidden") && !ev.target.closest(".roulette-launcher"))
     elRoulettePop.classList.add("hidden");
+  const elCotofracePop = $("#cotofracePop");
+  if (elCotofracePop && !elCotofracePop.classList.contains("hidden") && !ev.target.closest(".cotofrase-launcher"))
+    elCotofracePop.classList.add("hidden");
   document.querySelectorAll(".panel-menu-wrap.open").forEach((wrap) => {
     if (!wrap.contains(ev.target)) wrap.classList.remove("open");
   });
