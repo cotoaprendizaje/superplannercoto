@@ -965,6 +965,29 @@ button {
   border-color: #4d421f;
   color: #e0c074;
 }
+.hub-aviso {
+  display: flex;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0;
+  border-radius: var(--r-m);
+}
+.hub-aviso-x {
+  border: none;
+  background: 0 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 13px;
+  opacity: 0.65;
+  padding: 2px 4px;
+  flex: none;
+}
+.hub-aviso-x:hover {
+  opacity: 1;
+}
 .filters {
   display: flex;
   align-items: center;
@@ -2869,6 +2892,24 @@ button {
   padding: 0 4px;
   box-shadow: 0 0 0 2px var(--surface);
 }
+.hub-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: var(--warn);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  min-width: 19px;
+  height: 19px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  box-shadow: 0 0 0 2px var(--surface);
+  z-index: 1;
+}
 .notif-item {
   display: flex;
   align-items: center;
@@ -3283,6 +3324,12 @@ button {
   .hub-side:has(.roulette-launcher),
   .hub-side:has(.cotofrase-launcher) {
     width: auto;
+  }
+  /* El tablero del Planner es de borde a borde (a diferencia del hub de
+     Inicio, que está centrado con max-width): sin este margen la última
+     columna queda tapada por el botón flotante de la ruleta. */
+  .view:has(.kanban) {
+    padding-right: 90px;
   }
 }
 @media (max-width: 1440px) {
@@ -5181,6 +5228,7 @@ html {
       <div class="top-tools">
         <button class="ticon" data-action="notif:open" id="notifBtn" title="Alertas" aria-label="Alertas" style="position:relative"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 5 1.8 6 1.8 6H4.2S6 14 6 9"/><path d="M10 19a2 2 0 0 0 4 0"/></svg><span id="notifBadge" class="notif-badge hidden"></span></button>
         <button class="ticon" data-action="theme:toggle" title="Modo oscuro/claro" id="themeBtn" aria-label="Tema"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+        <button class="ticon" data-action="help:open" title="Ayuda" aria-label="Ayuda"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 9a2.5 2.5 0 1 1 3.7 2.2c-.9.5-1.2 1-1.2 2v.3"/><circle cx="12" cy="17.2" r=".2" fill="currentColor"/><circle cx="12" cy="12" r="9"/></svg></button>
       </div>
       <div class="menu-wrap">
         <div class="userchip" data-action="menu:toggle" id="userChip"></div>
@@ -5190,7 +5238,6 @@ html {
           <button class="menu-item" data-action="carga:open"><span>👥</span> Carga del equipo</button>
           <button class="menu-item" data-action="app:print"><span>🖨️</span> Imprimir / PDF</button>
           <button class="menu-item" data-action="settings:open"><span>⚙</span> Ajustes y datos</button>
-          <button class="menu-item" data-action="help:open"><span>❓</span> Ayuda</button>
           <div class="menu-sep"></div>
           <button class="menu-item" data-action="user:logout"><span>⎋</span> Salir</button>
         </div>
@@ -10646,6 +10693,7 @@ function renderInicio() {
   const lista2 = boardCards(),
     cantidad = lista2.filter(isOverdue).length,
     cantidad2 = alertasSinLeer().length,
+    cantidad3 = lista2.filter((arg) => arg.estado === "en-revision").length,
     lista = [
       {
         go: "kanban",
@@ -10683,7 +10731,11 @@ function renderInicio() {
       arg.go +
       '" style="animation-delay:' +
       arg2 * 55 +
-      'ms">\n    <span class="hub-ic">' +
+      'ms">\n    ' +
+      (arg.go === "kanban" && cantidad3
+        ? '<span class="hub-badge" title="' + cantidad3 + " en revisión, esperando aprobación\">" + cantidad3 + "</span>\n    "
+        : "") +
+      '<span class="hub-ic">' +
       arg.ic +
       '</span>\n    <span class="hub-tx"><span class="hub-t">' +
       arg.t +
@@ -10701,8 +10753,18 @@ function renderInicio() {
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
     "</div>\n    " +
+    agendaAvisoHTML() +
     renderResumen() +
     "\n    </div>\n  </div>"
+  );
+}
+// Aviso breve y descartable donde antes vivía la pestaña de Agenda, para
+// que el equipo no se quede buscándola — se va a rehacer de cero más
+// adelante, esto no es un error.
+function agendaAvisoHTML() {
+  if (localStorage.getItem("cf.avisoAgendaOculto") === "1") return "";
+  return (
+    '<div class="note warn hub-aviso">\n    <span>📅 Sacamos la Agenda del equipo por un tiempo — la vamos a rehacer de cero. Vuelve pronto.</span>\n    <button class="hub-aviso-x" data-action="agendaAviso:cerrar" title="Cerrar aviso" aria-label="Cerrar aviso">✕</button>\n  </div>'
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
@@ -10857,7 +10919,7 @@ function cursosPendientes() {
 function rouletteWidgetHTML() {
   const pendientes = cursosPendientes(),
     body = !pendientes.length
-      ? '<div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">🎉 No hay cursos pendientes por arrancar.</div>'
+      ? '<div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">🎉 No hay cursos pendientes por arrancar.</div>\n      <button class="roulette-spin" data-action="hub:go" data-go="mapa">🗺 Ver el Mapa del área</button>'
       : '<div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">Girá entre los cursos pendientes sin arrancar.</div>\n      <div class="roulette-reel"><span id="rouletteReelText">' +
         esc(pendientes[0].titulo) +
         '</span></div>\n      <div class="slot-result" id="rouletteResult"></div>\n      <button class="roulette-spin" id="rouletteSpin" data-action="roulette:spin">🎲 Girar</button>';
@@ -12089,6 +12151,12 @@ document.addEventListener("click", (ev) => {
       if (el7c) el7c.classList.toggle("hidden");
       break;
     }
+    case "agendaAviso:cerrar": {
+      localStorage.setItem("cf.avisoAgendaOculto", "1");
+      const elAviso = ev.target.closest(".hub-aviso");
+      if (elAviso) elAviso.remove();
+      break;
+    }
     case "roulette:open": {
       // El hint "Nadie asignado" puede tocarse desde cualquier vista:
       // si no estás en el Planner, saltamos ahí, desplegamos el
@@ -12817,6 +12885,13 @@ function pushRecent(id2) {
       if (el2 && !el2.classList.contains("hidden")) {
         el2.classList.add("hidden");
         return;
+      }
+      for (const sel of ["#filtrosPop", "#roulettePop", "#cotofracePop"]) {
+        const pop = $(sel);
+        if (pop && !pop.classList.contains("hidden")) {
+          pop.classList.add("hidden");
+          return;
+        }
       }
       if (!$("#modal").classList.contains("hidden")) closeModal();
       else {
@@ -13577,11 +13652,15 @@ function alertasSinLeer() {
   return computeAlerts().filter((recurso) => !leidas.has(alertaKey(recurso)));
 }
 function updateBell() {
-  const el = $("#notifBadge");
-  if (!el || !el.classList) return;
   const cantidad = alertasSinLeer().length;
-  if (cantidad) ((el.textContent = cantidad), el.classList.remove("hidden"));
-  else el.classList.add("hidden");
+  const el = $("#notifBadge");
+  if (el && el.classList) {
+    if (cantidad) ((el.textContent = cantidad), el.classList.remove("hidden"));
+    else el.classList.add("hidden");
+  }
+  // Señal liviana además de la campana: se nota en la pestaña del navegador
+  // aunque el equipo esté mirando otra ventana.
+  document.title = cantidad ? "(" + cantidad + ") Cotonetes Forever" : "Cotonetes Forever · COTO Aprendizaje e-Learning";
 }
 function openNotif() {
   const lista = alertasSinLeer();
