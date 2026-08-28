@@ -4563,6 +4563,163 @@ html {
   outline-offset: -2px;
   background: color-mix(in srgb, var(--coto-blue) 5%, transparent);
 }
+/* ===== Seguimiento técnico ===== */
+.tec-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.tec-top .filt input {
+  min-width: 260px;
+}
+.tec-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.tec-table {
+  width: 100%;
+  min-width: 980px;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.tec-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-2);
+  text-align: left;
+  padding: 9px 10px;
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.tec-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.tec-cat-row td {
+  background: var(--surface-2);
+  font-weight: 800;
+  font-size: 12.5px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+}
+.tec-cat-n {
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.tec-add-row td {
+  padding: 6px 10px;
+}
+.tec-curso input,
+.tec-pub input,
+.tec-estado input {
+  width: 100%;
+  border: none;
+  background: 0 0;
+  font: inherit;
+  color: var(--ink);
+  padding: 6px 5px;
+  border-radius: 6px;
+}
+.tec-curso input {
+  min-width: 230px;
+  font-weight: 600;
+}
+.tec-pub input {
+  min-width: 96px;
+  font-variant-numeric: tabular-nums;
+}
+.tec-estado input {
+  min-width: 200px;
+  color: var(--ink-soft);
+}
+.tec-curso input:focus,
+.tec-pub input:focus,
+.tec-estado input:focus {
+  background: var(--surface-2);
+  color: var(--ink);
+  outline: 0;
+}
+.tec-chk {
+  text-align: center;
+}
+.tec-chk input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--coto-blue);
+  cursor: pointer;
+}
+.tec-diseno select {
+  width: 100%;
+  min-width: 118px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 6px;
+  font-size: 11.5px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--ink);
+}
+.tec-link,
+.tec-link-x {
+  border: 1px dashed var(--line);
+  background: 0 0;
+  color: var(--ink-soft);
+  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: var(--pill);
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.tec-link.on {
+  border-style: solid;
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+  font-weight: 700;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tec-link-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.tec-pick-results {
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.tec-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: 13px;
+}
+.tec-pick-row:hover {
+  background: var(--surface-2);
+}
+@media (max-width: 760px) {
+  .tec-top .filt input {
+    min-width: 0;
+    width: 100%;
+  }
+}
 .print-meta {
   display: none;
 }
@@ -5158,6 +5315,7 @@ html {
       <button class="tab" data-view="timeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M8 12h11M4 17h7"/></svg> Timeline</button>
       <span class="sep"></span>
       <button class="tab" data-view="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></svg> Mapa</button>
+      <button class="tab" data-view="tecnico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4l-2.7 2.7-2-2 2.7-2.7z"/></svg> Técnico</button>
     </nav>
     <button class="search-promo" data-action="search:open" title="Buscar (tecla / o Ctrl+K)" aria-label="Buscar">
       <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.1-4.1"/></svg>
@@ -8223,6 +8381,147 @@ const TEMPLATES = {
           '"': "&quot;",
         })[arg],
     );
+// Semilla de "Seguimiento técnico": estado inicial cargado una sola vez desde
+// el Excel de Categorías y Cursos que armó el equipo. Campos cortos (c/t/p/
+// po/mo/ev/tx/d/e) a propósito, para no repetir 108 veces nombres largos de
+// propiedad — seedTecnico() los expande a la forma completa de cada fila.
+const TECNICO_SEED = [
+  {c:"Cajas",t:"Curso Básico de Envíos",p:"2016-05-16",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Cajas",t:"Curso de Cadetes",p:"2017-01-06",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Cajas",t:"Curso de Resolución de Conflictos en Línea de Cajas",p:"2018-05-29",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Cajas",t:"Curso de Reconocimiento de Pesos",p:"2019-03-19",po:true,mo:true,ev:false,tx:false,d:"Storyline V1",e:""},
+  {c:"Cajas",t:"Curso de Reconocimiento de Dólares",p:"2019-03-20",po:true,mo:true,ev:false,tx:false,d:"Storyline V1",e:""},
+  {c:"Cajas",t:"Curso de Reconocimiento de Euros",p:"2019-03-21",po:true,mo:true,ev:false,tx:false,d:"Storyline V1",e:""},
+  {c:"Cajas",t:"Medios de Pago",p:"01/012026",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"OK"},
+  {c:"Cajas",t:"Introducción al STS",p:"2026-01-01",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"OK"},
+  {c:"Cajas",t:"Curso Básico de Cajas",p:"2014-07-14",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Cajas",t:"Curso de Mantenimiento de Terminales",p:"2012-12-06",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Cajas",t:"Curso Básico de Tarjetas y Documentos",p:"2010-10-19",po:true,mo:true,ev:false,tx:false,d:"X",e:"Reemplazado por Medios de Pago"},
+  {c:"Cajas",t:"Curso de Cobro de Transacciones",p:"2015-04-29",po:true,mo:true,ev:false,tx:false,d:"X",e:"Reemplazado por Medios de Pago"},
+  {c:"Frescos 1",t:"Instructivo de uso de máquina empaquetadora ULMA",p:"",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Frescos 1",t:"Curso de Introducción al Sector Carniceria",p:"2016-01-08",po:true,mo:true,ev:false,tx:false,d:"HTML",e:"(Se abre en otra ventana el curso)"},
+  {c:"Frescos 1",t:"Curso de Desposte de Media Res",p:"2016-09-02",po:true,mo:true,ev:false,tx:false,d:"HTML",e:"(Se abre en otra ventana el curso)"},
+  {c:"Frescos 1",t:"Cortes de media res - Cuarto Delantero",p:"2024-03-21",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"Falta portada audiovisual"},
+  {c:"Frescos 1",t:"Cortes de media res - Cuarto Trasero",p:"2024-11-12",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"Falta portada audiovisual"},
+  {c:"Frescos 1",t:"Cortes de media res - Pecho",p:"2024-11-12",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"Falta portada audiovisual"},
+  {c:"Frescos 1",t:"Curso de Frutas y Verduras",p:"2017-03-15",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Frescos 1",t:"Armados de frutas y verduras",p:"2026-01-01",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"Chequear si cambiar color + icono x verde de Frutas y Verduras // Falta portada audiovisual"},
+  {c:"Frescos 2",t:"Curso de Corte de Quesos",p:"2020-03-02",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Frescos 2",t:"Curso de Armado de Picadas",p:"2020-03-03",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Frescos 2",t:"Curso de Exhibición de Productos de Pescadería",p:"2025-04-03",po:true,mo:true,ev:false,tx:false,d:"Storyline V2",e:"Faltan las primeras y últimas diapos del último diseño + Portadas audiovisuales"},
+  {c:"Elaborados",t:"Curso de Elaboración de Facturas",p:"2020-03-02",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Seguridad e Higiene",t:"Curso de Uso Seguro del Montacargas",p:"2018-09-11",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Seguridad e Higiene",t:"Capacitaciones de Seguridad e Higiene - 2026",p:"",po:true,mo:true,ev:false,tx:false,d:"Videos",e:"OK"},
+  {c:"Seguridad e Higiene",t:"Inducción en Prevención de Riesgos Laborales",p:"",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"OK"},
+  {c:"Seguridad e Higiene",t:"Inducción en Seguridad e Higiene",p:"2018-07-06",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Salón",t:"Curso de Flujo del Hueco de Salón",p:"2022-02-21",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Salón",t:"Curso de Prioridad de Reposición de Salón",p:"2022-04-18",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Salón",t:"Curso de \"N\" Días de Salón",p:"2022-04-20",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Salón",t:"Curso de Relevamiento de Clases de Salón",p:"2022-06-01",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Salón",t:"Curso de Traspasos de Sucursal a 126 de Salón",p:"2022-11-07",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Mantenimiento",t:"Curso de Detección de Incendios",p:"2013-09-25",po:true,mo:true,ev:false,tx:false,d:"HTML",e:"(Se abre en otra ventana el curso)"},
+  {c:"Mantenimiento",t:"Curso Básico de Electricidad",p:"2014-03-26",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Mantenimiento",t:"Curso de Seguridad Eléctrica",p:"2015-04-30",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Mantenimiento",t:"Curso de Circuito de Service",p:"2018-03-12",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Mantenimiento",t:"Curso de Puesta a Punto de ULMA Superchick 3.0",p:"2020-07-27",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Mantenimiento",t:"Control de Vehículos Industriales",p:"2025-04-10",po:true,mo:true,ev:false,tx:false,d:"Storyline V2",e:"Faltan las primeras y últimas diapos del último diseño + Portadas audiovisuales"},
+  {c:"Control de Calidad",t:"Inspecciones - Control de Calidad",p:"2012-09-26",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Control de Calidad",t:"Curso de Seguridad Alimentaria",p:"2015-06-08",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Control de Calidad",t:"Curso Manual POES",p:"2017-02-06",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Control de Calidad",t:"Curso de Productos ECONOR",p:"2023-12-05",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"OK"},
+  {c:"Control de Calidad",t:"Curso de Productos VICTORY",p:"2024-08-27",po:true,mo:true,ev:false,tx:false,d:"Storyline V2",e:"Faltan las primeras y últimas diapos del último diseño + Portadas audiovisuales"},
+  {c:"Servicio Médico",t:"Curso de Prevención Cardiovascular",p:"2023-10-24",po:true,mo:true,ev:false,tx:false,d:"Claude",e:"(Chequear inicio de curso)"},
+  {c:"Coto Digital",t:"Curso Básico de Coto Digital",p:"2020-05-26",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Coto Digital",t:"Curso de Coto Digital Picking",p:"2020-12-29",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Coto Digital",t:"Curso Auxiliares administrativos de Coto Digital - Parte 1",p:"",po:true,mo:true,ev:false,tx:false,d:"Storyline V2",e:"Faltan las primeras y últimas diapos del último diseño"},
+  {c:"Coto Digital",t:"Curso Auxiliares administrativos de Coto Digital - Parte 2",p:"",po:true,mo:true,ev:false,tx:false,d:"Storyline V2",e:"Faltan las primeras y últimas diapos del último diseño // No tiene el formato corto"},
+  {c:"Coto Digital",t:"Curso de Armadores de Coto Digital",p:"",po:true,mo:true,ev:false,tx:false,d:"Storyline V1",e:""},
+  {c:"Coto Digital",t:"Cobradores de Coto Digital",p:"",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"OK"},
+  {c:"Seguridad de la Información",t:"Curso de Seguridad de la Información",p:"2024-03-27",po:true,mo:true,ev:false,tx:false,d:"Rediseñando",e:"Actualmente en proceso de rediseño"},
+  {c:"Flota Propia",t:"Curso de Choferes de Flota Propia",p:"2025-01-21",po:true,mo:true,ev:false,tx:false,d:"Storyline V1",e:"Faltan las primeras y últimas diapos del último diseño + Portadas audiovisuales"},
+  {c:"No Alimentos",t:"Curso Básico de Ventas",p:"2015-10-16",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"No Alimentos",t:"Curso Básico de Coto Hogar",p:"2013-03-07",po:true,mo:true,ev:false,tx:false,d:"HTML",e:"Dado de baja"},
+  {c:"No Alimentos",t:"Curso de Prioridad de Reposición de NOA",p:"2024-07-19",po:true,mo:true,ev:false,tx:false,d:"Storyline V1",e:""},
+  {c:"No Alimentos",t:"Relevamiento de clases de NOA",p:"",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"Corregir algunas pequeñas cositas"},
+  {c:"No Alimentos",t:"Curso de Análisis de Archivos de Auditoría Textil/Bazar",p:"2020-01-13",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"No Alimentos",t:"Curso de Carpeta Compartida Textil/Bazar",p:"2020-01-13",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"No Alimentos",t:"Curso de GDM Pedido de Repuestos Textil/Bazar",p:"2020-01-13",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Administración",t:"Curso de Stock Conceptos Básicos",p:"2015-09-21",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Administración",t:"Curso de Administración de Personal \"Operatorias de Cajas\"",p:"2016-01-25",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Administración",t:"Curso Operativo de Cajas \" Apertura del Sector\"",p:"2016-09-23",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Administración",t:"Curso de Análisis de Mermas",p:"2016-12-30",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Administración",t:"Curso de Balanzas",p:"2019-05-30",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Administración",t:"Curso de Toma de Inventario \"¿Qué es un inventario?\"",p:"2020-02-07",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Administración",t:"Curso de Toma de Inventario \"Tipos de Inventario\"",p:"2020-12-03",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Administración",t:"Introductorio de toma de inventario",p:"",po:true,mo:true,ev:false,tx:false,d:"Storyline V2",e:""},
+  {c:"Administración",t:"Toma de inventario - Electro",p:"",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"Está el revés la diapo de Objetivos/Introducción"},
+  {c:"Recursos Humanos",t:"Manual de Administración de Recursos Humanos \"Capítulo 1\"",p:"2023-12-01",po:true,mo:true,ev:false,tx:false,d:"Storyline V1",e:""},
+  {c:"Recursos Humanos",t:"Manual de Administración de Recursos Humanos \"Capítulo 2\"",p:"2024-09-11",po:true,mo:true,ev:false,tx:false,d:"Storyline V1",e:""},
+  {c:"Recursos Humanos",t:"Guías - Procesos de Administración RRHH",p:"",po:true,mo:false,ev:false,tx:false,d:"Archivo PDF",e:""},
+  {c:"Recursos Humanos",t:"Manual de Recursos Humanos - Capítulo 2",p:"2018-02-26",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Recursos Humanos",t:"Manual de Recursos Humanos - Capítulo 3",p:"2018-02-26",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Recursos Humanos",t:"Manual de Recursos Humanos - Capítulo 4",p:"2018-02-26",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Recursos Humanos",t:"Manual de Recursos Humanos - Capítulo 5",p:"2018-02-26",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Recursos Humanos",t:"Manual de Recursos Humanos - Capítulo 6",p:"2018-02-26",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Recursos Humanos",t:"Manual de Recursos Humanos - Capítulo 7",p:"2018-02-26",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Recursos Humanos",t:"Manual de Recursos Humanos - Capítulo 8",p:"2018-02-26",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Gestión Comercial",t:"Curso Básico Comercial",p:"2014-12-19",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Gestión Comercial",t:"Curso de Estudio de Casos \"Clavos\"",p:"2016-10-27",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Gestión Comercial",t:"Curso de Panel de Control",p:"2018-07-06",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Gestión Comercial",t:"Curso de la Aplicación \"Sucursales 3\"",p:"2019-05-22",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"TCI",t:"Curso del Contrato de la Tarjeta TCI",p:"2025-02-12",po:true,mo:true,ev:false,tx:false,d:"Storyline V2",e:""},
+  {c:"TCI",t:"Curso de Aplicativo TCI",p:"",po:true,mo:true,ev:false,tx:false,d:"Storyline V2",e:""},
+  {c:"TCI",t:"Prevención de LA/FT/FP",p:"2025-02-12",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"Falta confeti + Portada audiovisual"},
+  {c:"Atención al cliente",t:"Curso de Conociendo al Cliente",p:"2013-10-02",po:true,mo:true,ev:false,tx:false,d:"HTML",e:"OK"},
+  {c:"Seguridad",t:"Curso de Puestos de Operaciones en Sucursal",p:"2021-10-21",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Seguridad",t:"Curso de Modalidades de Hurto y Controles",p:"2024-03-01",po:true,mo:true,ev:false,tx:false,d:"Storyline V1",e:""},
+  {c:"Seguridad",t:"Curso de Recepciones del Centro de Distribución",p:"2013-10-21",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Seguridad",t:"Curso de Recepción de Proveedores",p:"2016-08-10",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Zona E!",t:"Curso de Anfitriones",p:"2014-07-11",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Zona E!",t:"Patio de Comidas - Cocineros",p:"2014-04-07",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
+  {c:"Zona E!",t:"Curso de Camareros de Zona Gourmet",p:"2024-01-03",po:true,mo:true,ev:false,tx:false,d:"Storyline V2",e:""},
+  {c:"Zona E!",t:"Cumples de Zona",p:"2024-07-11",po:true,mo:true,ev:false,tx:false,d:"Storyline",e:"Portadas de unidades en video"},
+  {c:"Zona E!",t:"Curso de Cumpleaños",p:"2014-10-17",po:true,mo:true,ev:false,tx:false,d:"X",e:"Dado de baja"},
+  {c:"Pañol",t:"-",p:"",po:false,mo:false,ev:true,tx:true,d:"X",e:"Todavía no hay curso"},
+  {c:"Centro de Distribución",t:"Frescos - Clark",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+  {c:"Centro de Distribución",t:"Frescos - Picking",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+  {c:"Centro de Distribución",t:"Frescos - Cargador",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+  {c:"Centro de Distribución",t:"Frescos - Recepción",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+  {c:"Centro de Distribución",t:"No Alimentos - Picking",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+  {c:"Centro de Distribución",t:"No Alimentos - Clark",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+  {c:"Centro de Distribución",t:"No Alimentos - Recepción",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+  {c:"Centro de Distribución",t:"Secos - Picking",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+  {c:"Centro de Distribución",t:"Secos - Cargador",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+  {c:"Centro de Distribución",t:"Secos - Clark",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+  {c:"Centro de Distribución",t:"Secos - Recepción",p:"2013-03-28",po:false,mo:false,ev:true,tx:true,d:"X",e:"Curso inutilizado"},
+];
+const TECNICO_DISENO_OPTS = [
+  "HTML",
+  "Storyline",
+  "Storyline V1",
+  "Storyline V2",
+  "Claude",
+  "Videos",
+  "Archivo PDF",
+  "Rediseñando",
+  "X",
+];
+function seedTecnico() {
+  return TECNICO_SEED.map((s) => ({
+    id: uid(),
+    categoria: s.c,
+    curso: s.t,
+    publicacion: s.p,
+    portada: s.po,
+    mosaico: s.mo,
+    evaluacion: s.ev,
+    textos: s.tx,
+    diseno: s.d,
+    estado: s.e,
+    cardId: null,
+    updatedAt: Date.now(),
+  }));
+}
 function mentionize(texto) {
   let txt = esc(texto || "");
   const lista = TEAM.map((miembro) => miembro.nombre).filter(Boolean);
@@ -8417,13 +8716,13 @@ const BACKEND = {
         obj || {},
       );
     }
-    async function leerDeSupabase() {
+    async function leerDeSupabase(fila) {
       const txt =
           BACKEND.supabaseUrl +
           "/rest/v1/" +
           BACKEND.tabla +
           "?id=eq." +
-          encodeURIComponent(BACKEND.fila) +
+          encodeURIComponent(fila) +
           "&select=data",
         resp = await fetch(txt, {
           headers: cabeceras(),
@@ -8433,7 +8732,7 @@ const BACKEND = {
       const datos = await resp.json();
       return datos && datos[0] ? datos[0].data : null;
     }
-    async function escribirEnSupabase(obj, urgente) {
+    async function escribirEnSupabase(fila, obj, urgente) {
       const txt = BACKEND.supabaseUrl + "/rest/v1/" + BACKEND.tabla,
         resp = await fetch(txt, {
           method: "POST",
@@ -8447,32 +8746,41 @@ const BACKEND = {
             Prefer: "resolution=merge-duplicates,return=minimal",
           }),
           body: JSON.stringify({
-            id: BACKEND.fila,
+            id: fila,
             data: obj,
           }),
         });
       if (!resp.ok) throw new Error("Supabase " + resp.status);
     }
+    // "fila" es opcional en las tres funciones: por defecto apunta a la fila
+    // principal (BACKEND.fila). Seguimiento técnico usa una fila propia
+    // (TEC_FILA) para no engordar el documento del tablero — ese sí tiene que
+    // entrar siempre bajo el tope de 64 KB del POST urgente al cerrar la
+    // pestaña.
     return {
       mode: () => modo,
-      async load() {
+      async load(fila) {
+        fila = fila || BACKEND.fila;
+        const key = fila === BACKEND.fila ? KEY : KEY + "." + fila;
         if (useSupabase()) {
           let val2;
           try {
-            val2 = await leerDeSupabase();
+            val2 = await leerDeSupabase(fila);
           } catch (e) {
             throw ((modo = "error"), e);
           }
           return ((modo = "supabase"), val2);
         }
         try {
-          const val = await leerDeStorage(KEY);
+          const val = await leerDeStorage(key);
           return ((modo = "storage"), val ? JSON.parse(val) : null);
         } catch (err) {
-          return ((modo = "memoria"), memoria[KEY] ? JSON.parse(memoria[KEY]) : null);
+          return ((modo = "memoria"), memoria[key] ? JSON.parse(memoria[key]) : null);
         }
       },
-      async save(obj, urgente) {
+      async save(obj, urgente, fila) {
+        fila = fila || BACKEND.fila;
+        const key = fila === BACKEND.fila ? KEY : KEY + "." + fila;
         const json = JSON.stringify(obj);
         if (useSupabase()) {
           // Guardado urgente (la pestaña se está por cerrar): un solo intento
@@ -8481,10 +8789,10 @@ const BACKEND = {
           // las fallas son un pico de red que se resuelve solo.
           if (urgente) {
             try {
-              await escribirEnSupabase(obj, true);
+              await escribirEnSupabase(fila, obj, true);
               modo = "supabase";
             } catch (err) {
-              ((modo = "error"), (memoria[KEY] = json));
+              ((modo = "error"), (memoria[key] = json));
               throw err;
             }
             return;
@@ -8492,26 +8800,28 @@ const BACKEND = {
           let ultimoError = null;
           for (let intento = 0; intento < 3; intento++) {
             try {
-              return ((await escribirEnSupabase(obj)), (modo = "supabase"), undefined);
+              return ((await escribirEnSupabase(fila, obj)), (modo = "supabase"), undefined);
             } catch (err) {
               ultimoError = err;
               if (intento < 2) await new Promise((r) => setTimeout(r, 400 * (intento + 1)));
             }
           }
-          ((modo = "error"), (memoria[KEY] = json));
+          ((modo = "error"), (memoria[key] = json));
           throw ultimoError;
         }
         try {
-          (await escribirEnStorage(KEY, json), (modo = "storage"));
+          (await escribirEnStorage(key, json), (modo = "storage"));
         } catch (err2) {
-          ((modo = "memoria"), (memoria[KEY] = json));
+          ((modo = "memoria"), (memoria[key] = json));
         }
       },
-      async remote() {
-        return useSupabase() ? await leerDeSupabase() : null;
+      async remote(fila) {
+        fila = fila || BACKEND.fila;
+        return useSupabase() ? await leerDeSupabase(fila) : null;
       },
     };
-  })();
+  })(),
+  TEC_FILA = BACKEND.fila + "-tecnico";
 const TOMBSTONE_TTL = 30 * 24 * 60 * 60 * 1000;
 function cardFingerprint(card) {
   const { updatedAt, ...rest } = card;
@@ -8537,6 +8847,28 @@ function dropCards(ids) {
     gone.forEach((id) => {
       ((state.deleted[id] = now), savedFingerprints.delete(id));
     }));
+}
+// Mismo esquema de fingerprint/tombstone que las tarjetas del Planner, pero
+// para las filas de Seguimiento técnico — son arrays con la misma forma
+// (id + updatedAt), así que mergeCards() sirve tal cual para las dos cosas.
+let savedFingerprintsTec = new Map();
+function stampEditedTecnico() {
+  const now = Date.now();
+  for (const fila of state.tecnico) {
+    const fp = cardFingerprint(fila);
+    if (savedFingerprintsTec.get(fila.id) !== fp) {
+      ((fila.updatedAt = now), savedFingerprintsTec.set(fila.id, fp));
+    }
+  }
+}
+function rememberFingerprintsTec(filas) {
+  savedFingerprintsTec = new Map(filas.map((f) => [f.id, cardFingerprint(f)]));
+}
+function dropTecnico(id) {
+  const now = Date.now();
+  ((state.tecnico = state.tecnico.filter((f) => f.id !== id)),
+    (state.deletedTecnico[id] = now),
+    savedFingerprintsTec.delete(id));
 }
 function pruneTombstones(deleted) {
   const cutoff = Date.now() - TOMBSTONE_TTL,
@@ -8571,6 +8903,16 @@ function docSnapshot() {
     agenda: state.agenda,
     cotofrase: state.cotofrase,
     deleted: state.deleted,
+  };
+}
+// Seguimiento técnico vive en su propia fila del backend (ver TEC_FILA):
+// mezclarlo acá adentro haría que hasta el guardado urgente de una tarjeta
+// del Planner (con tope de 64 KB) tuviera que arrastrar las 108 filas del
+// Excel semilla.
+function docSnapshotTecnico() {
+  return {
+    tecnico: state.tecnico,
+    deletedTecnico: state.deletedTecnico,
   };
 }
 const BACKUP_KEY = "coto.superplanner.backups",
@@ -8778,6 +9120,9 @@ const state = {
   agenda: {},
   cotofrase: { day: "", porUsuario: {} },
   deleted: {},
+  tecnico: [],
+  deletedTecnico: {},
+  tecFiltro: "",
 };
 // Si cambió el día desde la última visita, la ronda de frases arranca de
 // cero: nadie "ya tiró hoy" con una frase de ayer.
@@ -9163,7 +9508,7 @@ function renderFilters() {
   const popAbierto = $("#filtrosPop") && !$("#filtrosPop").classList.contains("hidden");
   const misFlag = $("#misFlag");
   if (misFlag) misFlag.textContent = state.mis ? "ON" : "";
-  if (state.view === "inicio") {
+  if (state.view === "inicio" || state.view === "tecnico") {
     $("#filters").innerHTML = "";
     return;
   }
@@ -9294,6 +9639,7 @@ const VIEW_TITLES = {
   calendario: ["Calendario del planner", "Qué pasa y cuándo"],
   timeline: ["Timeline", "El panorama macro del área"],
   mapa: ["Mapa del área", "Todo lo publicado y lo que viene: cursos, Edu Points, contenido suelto y lo que está en desarrollo"],
+  tecnico: ["Seguimiento técnico", "Publicación, portada, mosaico, evaluación, textos y diseño de cada curso — para no volver al Excel."],
 };
 function viewHeader() {
   const val = VIEW_TITLES[state.view];
@@ -9326,6 +9672,9 @@ function renderView() {
         if (state.view === "timeline") txt = renderTimeline();
         else {
           if (state.view === "mapa") txt = renderMapa();
+          else {
+            if (state.view === "tecnico") txt = renderTecnico();
+          }
         }
       }
     }
@@ -10255,6 +10604,202 @@ function renderMapa() {
     }
   }
   return html + txt;
+}
+// ===== Seguimiento técnico =====
+// Grilla editable que reemplaza al Excel de Categorías y Cursos: cada fila
+// vive en state.tecnico (mismo esquema de sync que las tarjetas del
+// Planner, ver mergeCards/stampEditedTecnico). Los checkboxes/selects
+// escriben directo sobre el estado y no vuelven a dibujar la fila entera —
+// así nadie pierde el foco a mitad de una edición.
+function tecRows() {
+  const filtro = (state.tecFiltro || "").trim().toLowerCase();
+  if (!filtro) return state.tecnico;
+  return state.tecnico.filter(
+    (fila) => fila.curso.toLowerCase().includes(filtro) || (fila.categoria || "").toLowerCase().includes(filtro),
+  );
+}
+function tecGroups() {
+  const orden = [],
+    grupos = {};
+  tecRows().forEach((fila) => {
+    const key = fila.categoria || "Sin categoría";
+    if (!grupos[key]) {
+      grupos[key] = [];
+      orden.push(key);
+    }
+    grupos[key].push(fila);
+  });
+  return orden.map((key) => ({ categoria: key, filas: grupos[key] }));
+}
+function tecCheckbox(fila, campo) {
+  return (
+    '<input type="checkbox" data-tec-id="' +
+    fila.id +
+    '" data-tec-field="' +
+    campo +
+    '"' +
+    (fila[campo] ? " checked" : "") +
+    ">"
+  );
+}
+function tecDisenoSelect(fila) {
+  const opts = TECNICO_DISENO_OPTS.includes(fila.diseno) || !fila.diseno ? TECNICO_DISENO_OPTS : [fila.diseno, ...TECNICO_DISENO_OPTS];
+  return (
+    '<select data-tec-id="' +
+    fila.id +
+    '" data-tec-field="diseno">' +
+    (fila.diseno ? "" : '<option value="">—</option>') +
+    opts
+      .map(
+        (o) => '<option value="' + esc(o) + '"' + (fila.diseno === o ? " selected" : "") + ">" + esc(o) + "</option>",
+      )
+      .join("") +
+    "</select>"
+  );
+}
+function tecLinkHTML(fila) {
+  const card = fila.cardId ? state.cards.find((c) => c.id === fila.cardId) : null;
+  if (card) {
+    const titulo = card.titulo.length > 26 ? card.titulo.slice(0, 26) + "…" : card.titulo;
+    return (
+      '<div class="tec-link-wrap"><button class="tec-link on" data-action="card:open" data-id="' +
+      card.id +
+      '" title="Abrir en el Mapa/Planner">📍 ' +
+      esc(titulo) +
+      '</button><span class="chk-del" data-action="tec:unlink" data-id="' +
+      fila.id +
+      '" title="Quitar vínculo">✕</span></div>'
+    );
+  }
+  return (
+    '<button class="tec-link" data-action="tec:link" data-id="' +
+    fila.id +
+    '" title="Vincular con una tarjeta del Mapa">🔗 Vincular</button>'
+  );
+}
+function tecRowHTML(fila) {
+  return (
+    '<tr data-tec-row="' +
+    fila.id +
+    '"><td class="tec-curso"><input type="text" data-tec-id="' +
+    fila.id +
+    '" data-tec-field="curso" value="' +
+    esc(fila.curso) +
+    '"></td><td class="tec-pub"><input type="text" data-tec-id="' +
+    fila.id +
+    '" data-tec-field="publicacion" value="' +
+    esc(fila.publicacion) +
+    '" placeholder="AAAA-MM-DD"></td><td class="tec-chk">' +
+    tecCheckbox(fila, "portada") +
+    '</td><td class="tec-chk">' +
+    tecCheckbox(fila, "mosaico") +
+    '</td><td class="tec-chk">' +
+    tecCheckbox(fila, "evaluacion") +
+    '</td><td class="tec-chk">' +
+    tecCheckbox(fila, "textos") +
+    '</td><td class="tec-diseno">' +
+    tecDisenoSelect(fila) +
+    '</td><td class="tec-estado"><input type="text" data-tec-id="' +
+    fila.id +
+    '" data-tec-field="estado" value="' +
+    esc(fila.estado) +
+    '" placeholder="Comentario…"></td><td class="tec-linkcell">' +
+    tecLinkHTML(fila) +
+    '</td><td class="tec-delcell"><span class="chk-del" data-action="tec:del" data-id="' +
+    fila.id +
+    '" title="Borrar fila">✕</span></td></tr>'
+  );
+}
+function tecGroupHTML(grupo) {
+  return (
+    '<tbody class="tec-group"><tr class="tec-cat-row"><td colspan="10">' +
+    esc(grupo.categoria) +
+    ' <span class="tec-cat-n">' +
+    grupo.filas.length +
+    "</span></td></tr>" +
+    grupo.filas.map(tecRowHTML).join("") +
+    '<tr class="tec-add-row"><td colspan="10"><button class="btn btn-ghost btn-sm" data-action="tec:add" data-cat="' +
+    esc(grupo.categoria) +
+    '">+ Agregar curso a ' +
+    esc(grupo.categoria) +
+    "</button></td></tr></tbody>"
+  );
+}
+const TEC_HEAD =
+  '<thead><tr><th>Curso</th><th>Publicación</th><th>Portada</th><th>Mosaico</th><th>Evaluación</th><th>Textos</th><th>Diseño</th><th>Estado / Comentario</th><th>Mapa</th><th></th></tr></thead>';
+function tecListHTML() {
+  const grupos = tecGroups();
+  if (!grupos.length)
+    return '<div class="empty"><div class="big">🔍</div><div style="font-weight:700;color:var(--ink)">Sin resultados</div><div style="margin-top:4px">Probá con otra búsqueda.</div></div>';
+  return (
+    '<div class="tec-table-wrap"><table class="tec-table">' + TEC_HEAD + grupos.map(tecGroupHTML).join("") + "</table></div>"
+  );
+}
+function renderTecList() {
+  const el = $("#tecList");
+  if (el) el.innerHTML = tecListHTML();
+}
+function tecKpi(n, label, color) {
+  return (
+    '<div class="kpi" style="--kpi:' + color + '"><div class="kpi-num">' + n + '</div><div class="kpi-lbl">' +
+    esc(label) +
+    "</div></div>"
+  );
+}
+function tecKpisHTML() {
+  const lista = state.tecnico,
+    total = lista.length,
+    pendientes = lista.filter((f) => f.diseno === "X" || f.diseno === "Rediseñando").length,
+    conObs = lista.filter((f) => f.estado && f.estado.trim() && f.estado.trim().toLowerCase() !== "ok").length,
+    vinculados = lista.filter((f) => f.cardId).length;
+  return (
+    '<div class="res-grid">' +
+    tecKpi(total, "Cursos en seguimiento", "var(--coto-blue)") +
+    tecKpi(pendientes, "Sin diseño actualizado", "var(--bad)") +
+    tecKpi(conObs, "Con observaciones", "var(--warn)") +
+    tecKpi(vinculados, "Vinculados al Mapa", "var(--ok)") +
+    "</div>"
+  );
+}
+function renderTecnico() {
+  return (
+    '<div class="tec-top"><div class="filt">🔎<input id="tecSearch" placeholder="Buscar curso o categoría..." value="' +
+    esc(state.tecFiltro || "") +
+    '"></div></div>' +
+    tecKpisHTML() +
+    '<div id="tecList">' +
+    tecListHTML() +
+    "</div>"
+  );
+}
+function tecPickerHTML(filaId) {
+  const cursos = state.cards.filter(isCurso);
+  return (
+    '<h2>🔗 Vincular con el Mapa</h2><div class="sub-t">Elegí el curso publicado o en desarrollo que corresponde a esta fila.</div>' +
+    '<div class="filt" style="margin-top:10px"><input id="tecPickSearch" placeholder="Buscar curso..." autofocus></div>' +
+    '<div id="tecPickList" class="tec-pick-results" data-fila="' +
+    filaId +
+    '">' +
+    tecPickListHTML(cursos, "") +
+    '</div><div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button></div>'
+  );
+}
+function tecPickListHTML(cursos, filtro) {
+  filtro = (filtro || "").trim().toLowerCase();
+  const lista = (filtro ? cursos.filter((c) => c.titulo.toLowerCase().includes(filtro)) : cursos).slice(0, 40);
+  if (!lista.length) return '<div style="padding:14px;color:var(--ink-soft);font-size:13px">Sin resultados.</div>';
+  return lista
+    .map(
+      (c) =>
+        '<div class="tec-pick-row" data-action="tec:linkpick" data-id="' +
+        c.id +
+        '"><span style="flex:1">' +
+        esc(c.titulo) +
+        "</span>" +
+        (inInventory(c) ? '<span class="badge" style="margin-left:8px">Mapa</span>' : "") +
+        "</div>",
+    )
+    .join("");
 }
 function sectionContenido() {
   const lista = mapaFilter(
@@ -11896,6 +12441,46 @@ function touch() {
 function patch(val, obj) {
   (Object.assign(val, obj), touch());
 }
+// Seguimiento técnico se guarda y sincroniza aparte, con su propio debounce
+// y su propia fila (TEC_FILA) — deliberadamente NO comparte el camino de
+// touch()/persist() de las tarjetas del Planner. Ese camino es el que hace
+// el guardado urgente al cerrar la pestaña bajo el tope de 64 KB del POST
+// keepalive, y encadenarle acá un ida y vuelta extra por cada guardado de
+// tarjeta terminaba retrasando justo esa ruta.
+let tecSaveTimer = null;
+function touchTecnico() {
+  (stampEditedTecnico(), clearTimeout(tecSaveTimer), (tecSaveTimer = setTimeout(guardarTecnicoAhora, 250)));
+}
+async function guardarTecnicoAhora() {
+  if (useSupabase()) {
+    try {
+      const remote = await Store.remote(TEC_FILA);
+      if (remote && Array.isArray(remote.tecnico)) {
+        const merged = mergeCards(state.tecnico, remote.tecnico, state.deletedTecnico, remote.deletedTecnico || {});
+        ((state.tecnico = merged.cards), (state.deletedTecnico = merged.deleted));
+      }
+    } catch (e) {}
+  }
+  try {
+    (await Store.save(docSnapshotTecnico(), false, TEC_FILA), rememberFingerprintsTec(state.tecnico));
+  } catch (err) {
+    console.error("No se pudo guardar Seguimiento técnico:", err);
+  }
+}
+// Al entrar a la vista, trae lo que haya cambiado del lado del servidor
+// (por si alguien más editó mientras no estabas ahí) — sin tocar el poll de
+// las tarjetas.
+async function refreshTecnicoFromRemote() {
+  if (!useSupabase()) return;
+  try {
+    const remote = await Store.remote(TEC_FILA);
+    if (remote && Array.isArray(remote.tecnico)) {
+      const merged = mergeCards(state.tecnico, remote.tecnico, state.deletedTecnico, remote.deletedTecnico || {});
+      ((state.tecnico = merged.cards), (state.deletedTecnico = merged.deleted));
+      if (state.view === "tecnico") renderTecList();
+    }
+  } catch (e) {}
+}
 function applyField(tarjeta, val, el) {
   const value = el.type === "checkbox" ? el.checked : el.value;
   if (val.startsWith("cat:")) tarjeta.catalogo[val.slice(4)] = value;
@@ -11940,8 +12525,10 @@ const STRUCTURAL = ["tipo", "estado", "responsable", "inicio", "fin", "prioridad
 document.addEventListener("click", (ev) => {
   const el3 = ev.target.closest(".tab[data-view]");
   if (el3) {
-    state.view !== el3.dataset.view &&
+    if (state.view !== el3.dataset.view) {
       ((state.view = el3.dataset.view), pushNav(), render());
+      if (state.view === "tecnico") refreshTecnicoFromRemote();
+    }
     return;
   }
   const el = ev.target.closest("[data-action]");
@@ -12100,6 +12687,48 @@ document.addEventListener("click", (ev) => {
     case "carga:go":
       ((state.filters.persona = el.dataset.id), (state.view = "kanban"), closePanel(), pushNav(), render());
       break;
+    case "tec:del":
+      confirmar("¿Borrar esta fila del seguimiento técnico?", () => {
+        (dropTecnico(val10), touchTecnico(), renderTecList());
+      });
+      break;
+    case "tec:add": {
+      const catTec = el.dataset.cat || "",
+        nombreTec = (prompt("Nombre del curso") || "").trim();
+      if (!nombreTec) break;
+      (state.tecnico.push({
+        id: uid(),
+        categoria: catTec,
+        curso: nombreTec,
+        publicacion: "",
+        portada: false,
+        mosaico: false,
+        evaluacion: false,
+        textos: false,
+        diseno: "",
+        estado: "",
+        cardId: null,
+        updatedAt: Date.now(),
+      }),
+        touchTecnico(),
+        renderTecList());
+      break;
+    }
+    case "tec:link":
+      openModal(tecPickerHTML(val10));
+      break;
+    case "tec:unlink": {
+      const filaTec = state.tecnico.find((f) => f.id === val10);
+      if (filaTec) ((filaTec.cardId = null), touchTecnico(), renderTecList());
+      break;
+    }
+    case "tec:linkpick": {
+      const elPickList = $("#tecPickList"),
+        filaId = elPickList && elPickList.dataset.fila,
+        filaTec2 = filaId && state.tecnico.find((f) => f.id === filaId);
+      if (filaTec2) ((filaTec2.cardId = val10), touchTecnico(), closeModal(), renderTecList());
+      break;
+    }
     case "set:pass": {
       const txt2 = ($("#setPass").value || "").trim();
       if (!txt2) {
@@ -12637,6 +13266,11 @@ function toggleArr(arg, txt, sector) {
   else arg[txt].push(sector);
   touch();
 }
+function applyTecField(id, campo, value) {
+  const fila = state.tecnico.find((f) => f.id === id);
+  if (!fila) return;
+  ((fila[campo] = value), touchTecnico());
+}
 (document.addEventListener("input", (ev) => {
   if (ev.target.id === "cmdkInput") {
     renderPalette(ev.target.value);
@@ -12648,6 +13282,19 @@ function toggleArr(arg, txt, sector) {
   }
   if (ev.target.id === "eduSearch") {
     ((state.eduQ = ev.target.value), renderEduList());
+    return;
+  }
+  if (ev.target.id === "tecSearch") {
+    ((state.tecFiltro = ev.target.value), renderTecList());
+    return;
+  }
+  if (ev.target.id === "tecPickSearch") {
+    const el = $("#tecPickList");
+    if (el) el.innerHTML = tecPickListHTML(state.cards.filter(isCurso), ev.target.value);
+    return;
+  }
+  if (ev.target.dataset && ev.target.dataset.tecId && ev.target.tagName === "INPUT" && ev.target.type === "text") {
+    applyTecField(ev.target.dataset.tecId, ev.target.dataset.tecField, ev.target.value);
     return;
   }
   const val = ev.target.dataset.filter;
@@ -12680,6 +13327,11 @@ function toggleArr(arg, txt, sector) {
     true,
   ),
   document.addEventListener("change", (ev) => {
+    if (ev.target.dataset && ev.target.dataset.tecId) {
+      const value = ev.target.type === "checkbox" ? ev.target.checked : ev.target.value;
+      applyTecField(ev.target.dataset.tecId, ev.target.dataset.tecField, value);
+      return;
+    }
     if (ev.target.id === "vincAdd") {
       const tarjeta10 = current(),
         val0 = ev.target.value;
@@ -13708,6 +14360,7 @@ function openHelp() {
     ["🎲 ¿Qué curso me toca?", "Botoncito flotante a la derecha del Planner (🎡): tocalo para desplegar el sorteo entre los cursos que todavía no arrancaron."],
     ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
     ["Mapa del área", "Todo lo publicado (cursos, Edu Points) y lo que está en desarrollo, organizado por sector y filtrable con un clic."],
+    ["🔧 Seguimiento técnico", "Reemplaza al Excel de Categorías y Cursos: publicación, portada, mosaico, evaluación, textos y diseño de cada curso, editable ahí mismo. \"🔗 Vincular\" une una fila con su tarjeta del Mapa."],
   ];
   openModal(
     '<h2>❓ Ayuda</h2><div class="sub-t">Funciones que ya existen pero a veces cuestan de encontrar.</div>\n    <div style="margin-top:4px">' +
@@ -13851,6 +14504,7 @@ function restoreBackup(ts) {
     if (doc.sectores) Object.assign(SECTORES, doc.sectores);
     if (doc.agenda && typeof doc.agenda === "object") state.agenda = doc.agenda;
     if (doc.cotofrase && typeof doc.cotofrase === "object") state.cotofrase = doc.cotofrase;
+    if (Array.isArray(doc.tecnico)) state.tecnico = doc.tecnico;
     ensureFraseDay();
     (Array.isArray(doc.team) && doc.team.length && ((TEAM.length = 0), doc.team.forEach((m) => TEAM.push(m))),
       injectSectorStyles(),
@@ -14191,6 +14845,17 @@ async function boot() {
     }
     ((state.cards = seedCards()), ingestCatalogo(CURSOS, {}), flash("Usando datos semilla", true));
   }
+  // Seguimiento técnico vive en su propia fila (TEC_FILA) — no se pisa con
+  // el try/catch de arriba: si esto falla, el tablero igual arranca bien y
+  // más abajo se completa con la semilla del Excel.
+  try {
+    const tecDoc = await Store.load(TEC_FILA);
+    if (tecDoc && Array.isArray(tecDoc.tecnico)) state.tecnico = tecDoc.tecnico;
+    if (tecDoc && tecDoc.deletedTecnico && typeof tecDoc.deletedTecnico === "object")
+      state.deletedTecnico = pruneTombstones(tecDoc.deletedTecnico);
+  } catch (errTec) {
+    console.error(errTec);
+  }
   (state.cards.forEach((tarjeta2) => {
     ((tarjeta2.ficha = tarjeta2.ficha || {
       url: "",
@@ -14212,7 +14877,12 @@ async function boot() {
       };
     tarjeta2.sectores = (tarjeta2.sectores || []).map((arg) => (SECTORES[arg] ? arg : SLUG_MAP[arg] || arg));
   }),
+    // Semilla del Excel de Categorías y Cursos: se carga una sola vez, la
+    // primera vez que el documento compartido no trae nada en "tecnico" —
+    // igual que el catálogo de cursos, no pisa nada si ya hay filas.
+    (!Array.isArray(state.tecnico) || !state.tecnico.length) && ((state.tecnico = seedTecnico()), touchTecnico()),
     rememberFingerprints(state.cards),
+    rememberFingerprintsTec(state.tecnico),
     (state.ready = true),
     updateGatePass(),
     showBanner(),

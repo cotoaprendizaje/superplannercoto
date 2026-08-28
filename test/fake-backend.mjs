@@ -17,7 +17,10 @@ const TYPES = {
 };
 
 export function startFakeBackend(port = 8099) {
-  let row = null;
+  // Filas por id, como en Supabase de verdad: la app ahora guarda Seguimiento
+  // técnico en su propia fila ("coto-tecnico") separada de la del tablero
+  // ("coto"), así que este mock ya no puede asumir una sola fila global.
+  const rows = new Map();
   let writes = 0;
 
   const server = createServer(async (req, res) => {
@@ -26,18 +29,25 @@ export function startFakeBackend(port = 8099) {
     if (url.pathname.startsWith("/rest/v1/")) {
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("Content-Type", "application/json");
-      if (req.method === "GET") return res.end(JSON.stringify(row ? [{ data: row }] : []));
+      if (req.method === "GET") {
+        const id = url.searchParams.get("id")?.replace(/^eq\./, "");
+        const row = id ? rows.get(id) : null;
+        return res.end(JSON.stringify(row ? [{ data: row }] : []));
+      }
       if (req.method === "POST") {
         let body = "";
         req.on("data", (c) => (body += c));
         return req.on("end", () => {
-          ((row = JSON.parse(body).data), writes++, (res.statusCode = 201), res.end("{}"));
+          const parsed = JSON.parse(body);
+          (rows.set(parsed.id, parsed.data), writes++, (res.statusCode = 201), res.end("{}"));
         });
       }
     }
 
     if (url.pathname === "/__state") {
       res.setHeader("Content-Type", "application/json");
+      const id = url.searchParams.get("id") || "coto";
+      const row = rows.get(id);
       return res.end(
         JSON.stringify({
           writes,
@@ -48,7 +58,7 @@ export function startFakeBackend(port = 8099) {
     }
 
     if (url.pathname === "/__reset") {
-      ((row = null), (writes = 0));
+      (rows.clear(), (writes = 0));
       return res.end("ok");
     }
 
