@@ -6117,50 +6117,50 @@ function renderInicio() {
     lista = [
       {
         go: "kanban",
-        cat: "coto-digital",
+        hub: "planner",
         ic: ICONOS.kanban,
         t: "Planner",
         d: "Lo que estamos haciendo, por estado.",
       },
       {
         go: "calendario",
-        cat: "salon",
+        hub: "calendario",
         ic: ICONOS.calendario,
         t: "Calendario",
         d: "Qué pasa y cuándo, mes a mes.",
       },
       {
         go: "timeline",
-        cat: "mantenimiento",
+        hub: "timeline",
         ic: ICONOS.timeline,
         t: "Timeline",
         d: "El panorama macro del área.",
       },
       {
         go: "mapa",
-        cat: "servicio-medico",
+        hub: "mapa",
         ic: ICONOS.mapa,
         t: "Mapa del área",
         d: "Cursos, Edu Points, apps y bases.",
       },
       {
         action: "misemana:open",
-        cat: "sistemas",
+        hub: "misemana",
         ic: ICONOS.misemana,
         t: "Mi semana",
         d: "Tu foco de los próximos días.",
       },
       {
         action: "carga:open",
-        cat: "recursos-humanos",
+        hub: "carga",
         ic: ICONOS.carga,
         t: "Carga del equipo",
         d: "Quién tiene qué, para repartir mejor.",
       },
     ],
     fn = (arg, arg2) =>
-      '<button class="hub-card" data-cat="' +
-      arg.cat +
+      '<button class="hub-card" data-hub="' +
+      arg.hub +
       '" data-action="' +
       (arg.action || "hub:go") +
       '" data-go="' +
