@@ -50,6 +50,44 @@
   --cat-strong: color-mix(in srgb, var(--cat) 70%, #ffffff);
   --cat-soft: color-mix(in srgb, var(--cat) 26%, #11192b);
 }
+/* Paleta propia de las hub-cards de Inicio.
+   Antes tomaban prestada la paleta de SECTORES solo para tener variedad de
+   color, y con ella se traían su --on-cat: cada sector decide si su ícono va
+   blanco o navy según cuán claro sea, así que en Inicio convivían íconos
+   blancos y oscuros sin ninguna lógica visible. Además siete de los sectores
+   ni siquiera llegan al mínimo de 3:1 con blanco (el amarillo de Salón está
+   en 1,74:1), pero oscurecerlos a todos para arreglar tres tarjetas habría
+   arruinado los colores donde sí significan algo.
+   Estos seis tonos son decorativos, no son sectores: giran alrededor del azul
+   COTO y están elegidos a una profundidad en la que el blanco pasa 4:1 en los
+   DOS extremos del degradé. Así el ícono es siempre blanco, sin excepciones. */
+.hub-card[data-hub] {
+  --on-cat: #fff;
+}
+.hub-card[data-hub="planner"] {
+  --cat: #0a5688;
+  --cat-grad: linear-gradient(135deg, #0a5688, #1478b0);
+}
+.hub-card[data-hub="calendario"] {
+  --cat: #915115;
+  --cat-grad: linear-gradient(135deg, #915115, #b36a1e);
+}
+.hub-card[data-hub="timeline"] {
+  --cat: #146b4e;
+  --cat-grad: linear-gradient(135deg, #146b4e, #1e8f68);
+}
+.hub-card[data-hub="mapa"] {
+  --cat: #92132f;
+  --cat-grad: linear-gradient(135deg, #92132f, #be2447);
+}
+.hub-card[data-hub="misemana"] {
+  --cat: #0d5f73;
+  --cat-grad: linear-gradient(135deg, #0d5f73, #157f98);
+}
+.hub-card[data-hub="carga"] {
+  --cat: #5c3585;
+  --cat-grad: linear-gradient(135deg, #5c3585, #7c4cae);
+}
 [data-cat="cajas"] {
   --cat-1: #aa0028;
   --cat-2: #dc0032;
