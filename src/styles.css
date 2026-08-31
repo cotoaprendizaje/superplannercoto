@@ -514,6 +514,13 @@ button {
 .hidden {
   display: none !important;
 }
+/* El atributo hidden tiene que ganarle a cualquier clase: el display:none que
+   trae el navegador por defecto lo pisa cualquier regla con clase (.btn ya
+   ponía inline-flex), así que un elemento marcado como oculto se seguía
+   viendo. Se venía parcheando caso por caso; esto lo resuelve para todos. */
+[hidden] {
+  display: none !important;
+}
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1510,57 +1517,6 @@ button {
   margin-left: auto;
   font-weight: 700;
 }
-.mapa-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-  margin: 4px 0 18px;
-}
-.mapa-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 14px 16px;
-  border-radius: var(--r-l);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
-  transition:
-    transform 0.12s ease,
-    border-color 0.12s ease;
-}
-.mapa-stat:hover {
-  transform: translateY(-2px);
-}
-.mapa-stat.active {
-  border-color: var(--coto-blue);
-  box-shadow:
-    0 0 0 1px var(--coto-blue),
-    var(--shadow);
-}
-.mapa-stat-ic {
-  font-size: 18px;
-  margin-bottom: 2px;
-}
-.mapa-stat-n {
-  font-family: var(--titulo);
-  font-size: 24px;
-  font-weight: 900;
-  color: var(--coto-navy);
-  line-height: 1;
-}
-[data-theme="dark"] .mapa-stat-n {
-  color: var(--ink);
-}
-.mapa-stat-l {
-  font-size: 11.5px;
-  color: var(--ink-soft);
-  font-weight: 600;
-}
 /* Mapa de sectores: barra de composición (mismo lenguaje que un desglose de
    almacenamiento o de lenguajes de un repo) + chips con nombre y número
    debajo. Both filtran el resto del Mapa por sector al tocarlos. */
@@ -1577,7 +1533,51 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--ink-soft);
+  cursor: pointer;
+  list-style: none;
+}
+.mapa-sectormap-t::-webkit-details-marker {
+  display: none;
+}
+.mapa-sectormap-t::after {
+  content: "▸";
+  margin-left: auto;
+  font-size: 13px;
+  transition: transform 0.15s ease;
+}
+.mapa-sectormap[open] .mapa-sectormap-t::after {
+  transform: rotate(90deg);
+}
+.mapa-sectormap[open] .mapa-sectormap-t {
   margin-bottom: 10px;
+}
+/* Bloques dentro de una sección del Mapa (colocados vs. todavía en el Planner):
+   son dos cosas distintas y mezclarlas era lo que hacía que el número de
+   arriba no coincidiera con nada. */
+.mapa-bloque + .mapa-bloque {
+  margin-top: 22px;
+}
+.mapa-bloque-t {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.mapa-bloque-n {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  padding: 1px 8px;
+}
+.mapa-bloque-d {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin: 3px 0 11px;
 }
 .mapa-distbar {
   display: flex;
@@ -4667,6 +4667,60 @@ html {
 .tec-pick-row:hover {
   background: var(--surface-2);
 }
+.tec-kpi {
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.tec-kpi:hover {
+  transform: translateY(-2px);
+}
+.tec-kpi.on {
+  outline: 2.5px solid var(--ink);
+  outline-offset: 2px;
+}
+.tec-top-n {
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tec-th-sort {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.tec-th-sort:hover {
+  color: var(--coto-blue);
+}
+.tec-th-sort.on {
+  color: var(--coto-blue);
+}
+.tec-th-ar {
+  margin-left: 4px;
+  opacity: 0.45;
+  font-size: 9px;
+}
+.tec-th-sort.on .tec-th-ar {
+  opacity: 1;
+}
+.tec-fecha-mala {
+  color: var(--bad) !important;
+  font-weight: 700;
+  text-decoration: underline wavy var(--bad) 1px;
+  text-underline-offset: 3px;
+}
+.tec-cat {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .tec-flash {
   animation: tecFlash 1.6s ease-out;
 }
@@ -4940,9 +4994,6 @@ html {
 /* Historial de CotoFrases del día: vive en la barra lateral de Inicio,
    debajo de la máquina — la propia frase destacada arriba y el resto del
    equipo debajo a modo de mini ranking. */
-.frase-widget[hidden] {
-  display: none;
-}
 .frase-card {
   width: 100%;
   padding: 12px 14px 10px;
