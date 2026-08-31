@@ -4667,6 +4667,18 @@ html {
 .tec-pick-row:hover {
   background: var(--surface-2);
 }
+.tec-flash {
+  animation: tecFlash 1.6s ease-out;
+}
+@keyframes tecFlash {
+  0%,
+  35% {
+    background: color-mix(in srgb, var(--coto-blue) 22%, transparent);
+  }
+  100% {
+    background: transparent;
+  }
+}
 @media (max-width: 760px) {
   .tec-top .filt input {
     min-width: 0;

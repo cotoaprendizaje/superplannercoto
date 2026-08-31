@@ -5399,21 +5399,39 @@ function renderTecnico() {
   );
 }
 function tecPickerHTML(filaId) {
-  const cursos = state.cards.filter(isCurso);
+  const cursos = state.cards.filter(isCurso),
+    filaTecPick = state.tecnico.find((f) => f.id === filaId),
+    prefill = (filaTecPick && filaTecPick.curso) || "";
   return (
     '<h2>🔗 Vincular con el Mapa</h2><div class="sub-t">Elegí el curso publicado o en desarrollo que corresponde a esta fila.</div>' +
-    '<div class="filt" style="margin-top:10px"><input id="tecPickSearch" placeholder="Buscar curso..." autofocus></div>' +
+    '<div class="filt" style="margin-top:10px"><input id="tecPickSearch" placeholder="Buscar curso..." value="' +
+    esc(prefill) +
+    '" autofocus></div>' +
     '<div id="tecPickList" class="tec-pick-results" data-fila="' +
     filaId +
     '">' +
-    tecPickListHTML(cursos, "") +
+    tecPickListHTML(cursos, prefill) +
     '</div><div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button></div>'
   );
 }
+function tecPickScore(titulo, palabras) {
+  const t = titulo.toLowerCase();
+  return palabras.reduce((n, p) => n + (t.includes(p) ? 1 : 0), 0);
+}
 function tecPickListHTML(cursos, filtro) {
   filtro = (filtro || "").trim().toLowerCase();
-  const lista = (filtro ? cursos.filter((c) => c.titulo.toLowerCase().includes(filtro)) : cursos).slice(0, 40);
-  if (!lista.length) return '<div style="padding:14px;color:var(--ink-soft);font-size:13px">Sin resultados.</div>';
+  const palabras = filtro.split(/\s+/).filter((p) => p.length >= 3);
+  let lista = cursos;
+  if (palabras.length) {
+    const puntuados = cursos
+      .map((c) => ({ c, score: tecPickScore(c.titulo, palabras) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score);
+    if (puntuados.length) lista = puntuados.map((x) => x.c);
+    else if (filtro) lista = cursos.filter((c) => c.titulo.toLowerCase().includes(filtro));
+  }
+  lista = lista.slice(0, 40);
+  if (!lista.length) return '<div style="padding:14px;color:var(--ink-soft);font-size:13px">Sin resultados. Probá con otra búsqueda.</div>';
   return lista
     .map(
       (c) =>
@@ -6457,6 +6475,23 @@ function vinculosHTML(tarjeta) {
     "\n  </div></details>"
   );
 }
+// Vínculo en sentido inverso: si una fila de Seguimiento técnico apunta a
+// esta tarjeta (tec:link), mostrarlo acá también — mismo patrón visual que
+// vinculosHTML(), para no sumar un estilo nuevo por una relación que ya es
+// conceptualmente la misma idea (una tarjeta conectada con otra cosa).
+function tecVinculoHTML(tarjeta) {
+  const fila = state.tecnico.find((f) => f.cardId === tarjeta.id);
+  if (!fila) return "";
+  return (
+    '<details class="acc sec-acc" open><summary class="sub">🔧 Seguimiento técnico<span class="ring"></span></summary>\n        <div class="acc-body">\n    <div class="lnk"><span class="lnk-a" data-action="tec:goto" data-id="' +
+    fila.id +
+    '" style="cursor:pointer">' +
+    esc(fila.categoria) +
+    " · " +
+    esc(fila.curso) +
+    "</span></div>\n  </div></details>"
+  );
+}
 // Aproximación honesta a "quién está mirando esto": esta app sincroniza
 // por polling cada pocos segundos (no hay websockets), así que un
 // indicador de presencia en vivo sería poco confiable y, peor, escribir
@@ -6847,6 +6882,8 @@ function renderPanel() {
     html4 +
     "\n      " +
     vinculosHTML(tarjeta) +
+    "\n      " +
+    tecVinculoHTML(tarjeta) +
     "\n      " +
     html5 +
     "\n      " +
@@ -7353,6 +7390,20 @@ document.addEventListener("click", (ev) => {
         filaId = elPickList && elPickList.dataset.fila,
         filaTec2 = filaId && state.tecnico.find((f) => f.id === filaId);
       if (filaTec2) ((filaTec2.cardId = val10), touchTecnico(), closeModal(), renderTecList());
+      break;
+    }
+    case "tec:goto": {
+      const filaTec3 = state.tecnico.find((f) => f.id === val10);
+      if (filaTec3) {
+        ((state.tecFiltro = filaTec3.curso), (state.view = "tecnico"), closePanel(), pushNav(), render());
+        setTimeout(() => {
+          const rowEl = document.querySelector('tr[data-tec-row="' + filaTec3.id + '"]');
+          if (rowEl) {
+            (rowEl.scrollIntoView({ block: "center", behavior: "smooth" }), rowEl.classList.add("tec-flash"));
+            setTimeout(() => rowEl.classList.remove("tec-flash"), 1600);
+          }
+        }, 60);
+      }
       break;
     }
     case "set:pass": {
