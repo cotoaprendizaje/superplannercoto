@@ -561,6 +561,13 @@ button {
 .hidden {
   display: none !important;
 }
+/* El atributo hidden tiene que ganarle a cualquier clase: el display:none que
+   trae el navegador por defecto lo pisa cualquier regla con clase (.btn ya
+   ponía inline-flex), así que un elemento marcado como oculto se seguía
+   viendo. Se venía parcheando caso por caso; esto lo resuelve para todos. */
+[hidden] {
+  display: none !important;
+}
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1557,57 +1564,6 @@ button {
   margin-left: auto;
   font-weight: 700;
 }
-.mapa-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-  margin: 4px 0 18px;
-}
-.mapa-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 14px 16px;
-  border-radius: var(--r-l);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow);
-  cursor: pointer;
-  font-family: inherit;
-  text-align: left;
-  transition:
-    transform 0.12s ease,
-    border-color 0.12s ease;
-}
-.mapa-stat:hover {
-  transform: translateY(-2px);
-}
-.mapa-stat.active {
-  border-color: var(--coto-blue);
-  box-shadow:
-    0 0 0 1px var(--coto-blue),
-    var(--shadow);
-}
-.mapa-stat-ic {
-  font-size: 18px;
-  margin-bottom: 2px;
-}
-.mapa-stat-n {
-  font-family: var(--titulo);
-  font-size: 24px;
-  font-weight: 900;
-  color: var(--coto-navy);
-  line-height: 1;
-}
-[data-theme="dark"] .mapa-stat-n {
-  color: var(--ink);
-}
-.mapa-stat-l {
-  font-size: 11.5px;
-  color: var(--ink-soft);
-  font-weight: 600;
-}
 /* Mapa de sectores: barra de composición (mismo lenguaje que un desglose de
    almacenamiento o de lenguajes de un repo) + chips con nombre y número
    debajo. Both filtran el resto del Mapa por sector al tocarlos. */
@@ -1624,7 +1580,51 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--ink-soft);
+  cursor: pointer;
+  list-style: none;
+}
+.mapa-sectormap-t::-webkit-details-marker {
+  display: none;
+}
+.mapa-sectormap-t::after {
+  content: "▸";
+  margin-left: auto;
+  font-size: 13px;
+  transition: transform 0.15s ease;
+}
+.mapa-sectormap[open] .mapa-sectormap-t::after {
+  transform: rotate(90deg);
+}
+.mapa-sectormap[open] .mapa-sectormap-t {
   margin-bottom: 10px;
+}
+/* Bloques dentro de una sección del Mapa (colocados vs. todavía en el Planner):
+   son dos cosas distintas y mezclarlas era lo que hacía que el número de
+   arriba no coincidiera con nada. */
+.mapa-bloque + .mapa-bloque {
+  margin-top: 22px;
+}
+.mapa-bloque-t {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.mapa-bloque-n {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  padding: 1px 8px;
+}
+.mapa-bloque-d {
+  font-size: 12px;
+  color: var(--ink-soft);
+  margin: 3px 0 11px;
 }
 .mapa-distbar {
   display: flex;
@@ -4714,6 +4714,60 @@ html {
 .tec-pick-row:hover {
   background: var(--surface-2);
 }
+.tec-kpi {
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.tec-kpi:hover {
+  transform: translateY(-2px);
+}
+.tec-kpi.on {
+  outline: 2.5px solid var(--ink);
+  outline-offset: 2px;
+}
+.tec-top-n {
+  font-size: 12px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tec-th-sort {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.tec-th-sort:hover {
+  color: var(--coto-blue);
+}
+.tec-th-sort.on {
+  color: var(--coto-blue);
+}
+.tec-th-ar {
+  margin-left: 4px;
+  opacity: 0.45;
+  font-size: 9px;
+}
+.tec-th-sort.on .tec-th-ar {
+  opacity: 1;
+}
+.tec-fecha-mala {
+  color: var(--bad) !important;
+  font-weight: 700;
+  text-decoration: underline wavy var(--bad) 1px;
+  text-underline-offset: 3px;
+}
+.tec-cat {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .tec-flash {
   animation: tecFlash 1.6s ease-out;
 }
@@ -4987,9 +5041,6 @@ html {
 /* Historial de CotoFrases del día: vive en la barra lateral de Inicio,
    debajo de la máquina — la propia frase destacada arriba y el resto del
    equipo debajo a modo de mini ranking. */
-.frase-widget[hidden] {
-  display: none;
-}
 .frase-card {
   width: 100%;
   padding: 12px 14px 10px;
@@ -5322,11 +5373,11 @@ html {
     <nav class="tabs">
       <button class="tab" data-view="inicio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg> Inicio</button>
       <span class="sep"></span>
-      <button class="tab" data-view="kanban"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4v16M12 4v11M19 4v13"/></svg> Planner</button>
-      <button class="tab" data-view="calendario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg> Calendario</button>
-      <button class="tab" data-view="timeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M8 12h11M4 17h7"/></svg> Timeline</button>
+      <button class="tab" data-view="kanban"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M9 4.5v15M15 4.5v15"/></svg> Planner</button>
+      <button class="tab" data-view="calendario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg> Calendario</button>
+      <button class="tab" data-view="timeline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h8.5M9.5 12h10.5M4 17h6"/></svg> Timeline</button>
       <span class="sep"></span>
-      <button class="tab" data-view="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></svg> Mapa</button>
+      <button class="tab" data-view="mapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 2.8 8 12 12.8 21.2 8 12 3.2Z"/><path d="m3.2 12.4 8.8 4.6 8.8-4.6"/><path d="m3.2 16.7 8.8 4.6 8.8-4.6"/></svg> Mapa</button>
       <button class="tab" data-view="tecnico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4l-2.7 2.7-2-2 2.7-2.7z"/></svg> Técnico</button>
     </nav>
     <button class="search-promo" data-action="search:open" title="Buscar (tecla / o Ctrl+K)" aria-label="Buscar">
@@ -8596,9 +8647,6 @@ const INV_KIND = {
 // Tipos que eventualmente pueden terminar publicados en el Mapa — sirve para
 // mostrar, dentro del Mapa, lo que todavía está en el Planner camino a serlo.
 const INV_TIPOS = new Set(Object.keys(INV_KIND));
-function invCountKind(kind) {
-  return state.cards.filter((tarjeta) => INV_KIND[tarjeta.tipo] === kind && inInventory(tarjeta)).length;
-}
 function inventoryKind(tarjeta) {
   return INV_KIND[tarjeta.tipo] || null;
 }
@@ -9135,6 +9183,12 @@ const state = {
   tecnico: [],
   deletedTecnico: {},
   tecFiltro: "",
+  // Filtros y orden de Seguimiento técnico. Son de pantalla, no de datos: no
+  // viajan al backend ni se guardan, cada uno ordena la grilla como le sirve.
+  tecPendiente: "",
+  tecDiseno: "",
+  tecOrden: "",
+  tecOrdenDir: 1,
 };
 // Si cambió el día desde la última visita, la ronda de frases arranca de
 // cero: nadie "ya tiró hoy" con una frase de ayer.
@@ -10180,9 +10234,9 @@ function renderTimeline() {
     (state.tlRange === "anio" ? "selected" : "") +
     '>Este año</option></select></div>\n    <div class="filt">🔍<select data-control="tlScale">\n      <option value="mes" ' +
     (state.tlScale === "mes" ? "selected" : "") +
-    '>Compacto</option>\n      <option value="semana" ' +
+    '>Compacto · solo proyectos</option>\n      <option value="semana" ' +
     (state.tlScale === "semana" ? "selected" : "") +
-    '>Detalle</option></select></div>\n    <div class="filt">▣<select data-control="tlGroup">\n      <option value="" ' +
+    '>Detalle · con fases y tareas</option></select></div>\n    <div class="filt">▣<select data-control="tlGroup">\n      <option value="" ' +
     (state.tlGroup === "" ? "selected" : "") +
     '>Sin agrupar</option>\n      <option value="persona" ' +
     (state.tlGroup === "persona" ? "selected" : "") +
@@ -10225,7 +10279,11 @@ function renderTimeline() {
   const iso = isoOf(addDays(parseISO(val4), -3)),
     iso2 = isoOf(addDays(parseISO(val5), 4)),
     txt = daysBetween(iso, iso2) + 1,
-    n = state.tlScale === "semana" ? 26 : 11,
+    // Compacto vs Detalle cambia la densidad, no solo el zoom: antes solo movía
+    // los px por día dentro de un max(100%, …), así que con pocos proyectos los
+    // dos modos quedaban clampeados al ancho de la pantalla y se veían idénticos.
+    compacto = state.tlScale !== "semana",
+    n = compacto ? 11 : 26,
     txt2 = "max(100%, " + txt * n + "px)",
     n2 = 100 / txt,
     fn2 = (inicio) => daysBetween(iso, inicio) * n2,
@@ -10260,7 +10318,7 @@ function renderTimeline() {
       txt4 += '<div class="tl-weekend" style="left:' + i * n2 + "%;width:" + n2 + '%"></div>';
   }
   const val6 = fn2(todayISO()),
-    fn4 = (tarjeta) => 38 + (tarjeta.fases && tarjeta.fases.length ? 16 : 0);
+    fn4 = (tarjeta) => (compacto ? 30 : 38 + (tarjeta.fases && tarjeta.fases.length ? 16 : 0));
   let txt5 = "",
     txt6 = "";
   return (
@@ -10288,12 +10346,16 @@ function renderTimeline() {
               : '<span class="avatar sm" style="background:var(--line)">·</span>') +
             '\n        <div style="overflow:hidden"><div class="tl-rl-title">' +
             esc(tarjeta.titulo) +
-            '</div>\n        <div class="tl-rl-sub">' +
-            ((allTipos()[tarjeta.tipo] || {}).nombre || tarjeta.tipo) +
-            "</div></div></div>";
+            "</div>" +
+            (compacto
+              ? ""
+              : '\n        <div class="tl-rl-sub">' +
+                ((allTipos()[tarjeta.tipo] || {}).nombre || tarjeta.tipo) +
+                "</div>") +
+            "</div></div>";
           const val = fn3(tarjeta.inicio, tarjeta.fin),
             vencida = isOverdue(tarjeta),
-            txt7 = (tarjeta.fases || [])
+            txt7 = (compacto ? [] : tarjeta.fases || [])
               .filter((arg) => arg.inicio || arg.fin)
               .map((fase) => {
                 const val2 = fn3(fase.inicio, fase.fin),
@@ -10380,44 +10442,20 @@ function mapaFilter(lista) {
     return true;
   });
 }
-function invCount(txt) {
-  return state.cards.filter((tarjeta) => tarjeta.tipo === txt && inInventory(tarjeta)).length;
-}
 function invCard(arg) {
   return arg.tipo === "curso" ? cursoCard(arg) : arg.tipo === "edu-point" ? eduCard(arg) : recursoCard(arg);
 }
+// "En desarrollo" es lo que va camino al Mapa, no todo el Planner: antes traía
+// también los finalizados, así que el número no coincidía con ninguna columna
+// del tablero y no se podía usar para nada.
+const DESARROLLO_ESTADOS = new Set(["en-desarrollo", "pendiente"]);
 function sectionDesarrolloAll() {
-  return boardCards().filter((tarjeta) => INV_TIPOS.has(tarjeta.tipo));
+  return boardCards().filter((tarjeta) => INV_TIPOS.has(tarjeta.tipo) && DESARROLLO_ESTADOS.has(tarjeta.estado));
 }
-function mapaStats() {
-  const publicados = state.cards.filter(inInventory).length,
-    enDesarrollo = sectionDesarrolloAll().length;
-  return (
-    '<div class="mapa-stats">' +
-    [
-      ["✦", publicados, "Publicado", "todos"],
-      ["🚧", enDesarrollo, "En desarrollo", "desarrollo"],
-      ["🎓", invCount("curso"), "Cursos", "cursos"],
-      ["📍", invCount("edu-point"), "Edu Points", "edu-points"],
-      ["🎬", invCountKind("contenido"), "Contenido suelto", "contenido"],
-    ]
-      .map(
-        (arg) =>
-          '<button class="mapa-stat' +
-          (state.mapaSec === arg[3] ? " active" : "") +
-          '" data-action="mapa:sec" data-sec="' +
-          arg[3] +
-          '"><span class="mapa-stat-ic">' +
-          arg[0] +
-          '</span><span class="mapa-stat-n">' +
-          arg[1] +
-          '</span><span class="mapa-stat-l">' +
-          esc(arg[2]) +
-          "</span></button>",
-      )
-      .join("") +
-    "</div>"
-  );
+// Los Edu Points del Planner: la sección miraba solo los colocados y quedaba
+// vacía aunque hubiera varios en curso, que es lo que se quería mirar.
+function eduPointsEnPlanner() {
+  return boardCards().filter((tarjeta) => tarjeta.tipo === "edu-point");
 }
 // Barra de composición por sector (mismo lenguaje que el desglose de
 // almacenamiento o de lenguajes de un repo): un vistazo rápido de dónde
@@ -10427,8 +10465,11 @@ function mapaStats() {
 function mapaSectorMap() {
   const conteo = {};
   let sinSector = 0;
+  // Cuenta lo publicado, el mismo universo que "Todo lo publicado": antes
+  // sumaba también lo que seguía en el Planner, así que el chip decía "Cajas 11"
+  // y al tocarlo aparecían 7. El número tiene que ser el que después se ve.
   state.cards
-    .filter((tarjeta) => INV_TIPOS.has(tarjeta.tipo))
+    .filter(inInventory)
     .forEach((tarjeta) => {
       if (!(tarjeta.sectores || []).length) {
         sinSector++;
@@ -10470,14 +10511,19 @@ function mapaSectorMap() {
         '%)"',
     };
   };
+  // Colapsable, y abierta sola cuando hay un sector filtrado: es una métrica
+  // ("dónde está concentrado el contenido"), no un filtro de todos los días, y
+  // desplegada permanentemente era la mitad de lo que cargaba la vista.
   return (
-    '<div class="mapa-sectormap">\n      <div class="mapa-sectormap-t" style="display:flex;align-items:center;gap:8px">Distribución por sector' +
+    '<details class="mapa-sectormap acc" ' +
+    (filtroActivo ? "open" : "") +
+    '>\n      <summary class="mapa-sectormap-t" style="display:flex;align-items:center;gap:8px">Distribución por sector' +
     (filtroActivo
       ? ' <span style="text-transform:none;letter-spacing:0;font-weight:600;color:var(--ink-soft)">· filtrando ' +
         esc(nombreFiltro) +
         '</span><button class="btn btn-ghost btn-sm" data-action="mapa:sector-clear" style="margin-left:auto;padding:2px 9px;font-size:11px">✕ Quitar filtro</button>'
       : "") +
-    '</div>\n      <div class="mapa-distbar">' +
+    '</summary>\n      <div class="mapa-distbar">' +
     entradas
       .map((arg) => {
         const s = segmento(arg);
@@ -10514,31 +10560,38 @@ function mapaSectorMap() {
         );
       })
       .join("") +
-    "</div>\n    </div>"
+    "</div>\n    </details>"
   );
 }
 function renderMapa() {
-  const cantidad = state.cards.filter(inInventory).length,
+  // Una sola fila de secciones, no dos: la de stats de arriba repetía casi lo
+  // mismo que estos chips y encima mostraba "Publicado 164" al lado de
+  // "Todos (164)", como si fueran dos números distintos.
+  //
+  // Y todos los números pasan por mapaFilter, así que cuando hay un sector
+  // activo cuentan lo que realmente se ve abajo y no el total del área.
+  const cuenta = (lista) => mapaFilter(lista).length,
+    porTipo = (tipo) => cuenta(state.cards.filter((t) => t.tipo === tipo && inInventory(t))),
     lista = [
       {
         id: "todos",
-        label: "✦ Todos",
-        n: cantidad,
+        label: "✦ Todo lo publicado",
+        n: cuenta(state.cards.filter(inInventory)),
       },
       {
         id: "desarrollo",
         label: "🚧 En desarrollo",
-        n: sectionDesarrolloAll().length,
+        n: cuenta(sectionDesarrolloAll()),
       },
       {
         id: "cursos",
         label: "◎ Cursos e-learning",
-        n: invCount("curso"),
+        n: porTipo("curso"),
       },
       {
         id: "edu-points",
         label: "📍 QR / Edu Point",
-        n: invCount("edu-point"),
+        n: porTipo("edu-point") + cuenta(eduPointsEnPlanner()),
       },
       {
         id: "edu-archivos",
@@ -10548,21 +10601,20 @@ function renderMapa() {
       {
         id: "contenido",
         label: "🎬 Contenido suelto",
-        n: invCountKind("contenido"),
+        n: cuenta(state.cards.filter((t) => INV_KIND[t.tipo] === "contenido" && inInventory(t))),
       },
       {
         id: "apps",
         label: "🖥️ Aplicativos web",
-        n: invCount("app-web"),
+        n: porTipo("app-web"),
       },
       {
         id: "bases",
         label: "🗄️ Bases del sistema",
-        n: invCount("base-sistema"),
+        n: porTipo("base-sistema"),
       },
     ],
     html =
-      mapaStats() +
       mapaSectorMap() +
       '<div class="mapa-secciones">' +
       lista
@@ -10623,17 +10675,81 @@ function renderMapa() {
 // Planner, ver mergeCards/stampEditedTecnico). Los checkboxes/selects
 // escriben directo sobre el estado y no vuelven a dibujar la fila entera —
 // así nadie pierde el foco a mitad de una edición.
+// Las fechas se guardan en ISO (AAAA-MM-DD) porque así ordenan solas y no
+// dependen de la zona horaria, pero se muestran y se escriben en DD/MM/AAAA,
+// que es como las lee el equipo. La conversión pasa acá y en applyTecField.
+function tecFechaVer(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((iso || "").trim());
+  return m ? m[3] + "/" + m[2] + "/" + m[1] : iso || "";
+}
+// Una fecha que no es una fecha (el Excel traía alguna mal tipeada, tipo
+// "01/012026") se marca en la grilla en vez de disimularse: es un dato que
+// solo el equipo puede corregir, y ahora tiene dónde hacerlo.
+function tecFechaMala(iso) {
+  const v = (iso || "").trim();
+  return !!v && !/^\d{4}-\d{2}-\d{2}$/.test(v);
+}
+function tecFechaISO(txt) {
+  txt = (txt || "").trim();
+  if (!txt) return "";
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(txt);
+  if (m) return m[3] + "-" + String(m[2]).padStart(2, "0") + "-" + String(m[1]).padStart(2, "0");
+  // Se acepta ISO tal cual para no romper lo que ya estaba cargado ni pelearle
+  // a quien prefiera tipearlo así; cualquier otra cosa queda como la escribió.
+  return txt;
+}
+// Los KPI de arriba no son adorno: cada uno es este filtro. "Sin portada" y
+// "sin mosaico" salen de las mismas columnas de la tabla, así que el número
+// siempre se puede comprobar mirando las filas que quedan.
+function tecPendientePasa(fila, cual) {
+  if (cual === "sin-portada") return !fila.portada;
+  if (cual === "sin-mosaico") return !fila.mosaico;
+  if (cual === "vinculados") return !!fila.cardId;
+  return true;
+}
 function tecRows() {
   const filtro = (state.tecFiltro || "").trim().toLowerCase();
-  if (!filtro) return state.tecnico;
-  return state.tecnico.filter(
-    (fila) => fila.curso.toLowerCase().includes(filtro) || (fila.categoria || "").toLowerCase().includes(filtro),
-  );
+  let lista = state.tecnico.filter((fila) => {
+    if (filtro && !(fila.curso || "").toLowerCase().includes(filtro) && !(fila.categoria || "").toLowerCase().includes(filtro))
+      return false;
+    if (state.tecDiseno && (fila.diseno || "") !== state.tecDiseno) return false;
+    if (state.tecPendiente && !tecPendientePasa(fila, state.tecPendiente)) return false;
+    return true;
+  });
+  if (state.tecOrden) {
+    const campo = state.tecOrden,
+      dir = state.tecOrdenDir;
+    // slice() antes de ordenar: state.tecnico es el dato real y ordenarlo en
+    // el lugar cambiaría el orden con el que se guarda y se sincroniza.
+    // Una fecha mal escrita ordena como si estuviera vacía (al final) en vez de
+    // colarse arriba de todo: un typo no puede descolocar la tabla entera.
+    const clave = (fila) =>
+      campo === "publicacion" && tecFechaMala(fila[campo]) ? "" : (fila[campo] || "").toString().toLowerCase();
+    lista = lista.slice().sort((a, b) => {
+      const va = clave(a),
+        vb = clave(b);
+      // Lo vacío siempre al final, ordene como ordene: si no, "sin fecha"
+      // se apropia de la primera pantalla y tapa lo que se está buscando.
+      if (!va && vb) return 1;
+      if (va && !vb) return -1;
+      if (va === vb) return 0;
+      return va < vb ? -dir : dir;
+    });
+  }
+  return lista;
+}
+// Con un orden activo la tabla se aplana y la categoría pasa a ser una columna:
+// agrupar y ordenar a la vez daría un orden que solo vale dentro de cada
+// bloque, que es justo lo que no sirve para preguntar "cuál es el más viejo".
+function tecPlano() {
+  return !!state.tecOrden;
 }
 function tecGroups() {
+  const filas = tecRows();
+  if (tecPlano()) return filas.length ? [{ categoria: null, filas }] : [];
   const orden = [],
     grupos = {};
-  tecRows().forEach((fila) => {
+  filas.forEach((fila) => {
     const key = fila.categoria || "Sin categoría";
     if (!grupos[key]) {
       grupos[key] = [];
@@ -10693,15 +10809,21 @@ function tecRowHTML(fila) {
   return (
     '<tr data-tec-row="' +
     fila.id +
-    '"><td class="tec-curso"><input type="text" data-tec-id="' +
+    '">' +
+    (tecPlano() ? '<td class="tec-cat">' + esc(fila.categoria || "Sin categoría") + "</td>" : "") +
+    '<td class="tec-curso"><input type="text" data-tec-id="' +
     fila.id +
     '" data-tec-field="curso" value="' +
     esc(fila.curso) +
-    '"></td><td class="tec-pub"><input type="text" data-tec-id="' +
+    '"></td><td class="tec-pub"><input type="text" class="' +
+    (tecFechaMala(fila.publicacion) ? "tec-fecha-mala" : "") +
+    '" data-tec-id="' +
     fila.id +
     '" data-tec-field="publicacion" value="' +
-    esc(fila.publicacion) +
-    '" placeholder="AAAA-MM-DD"></td><td class="tec-chk">' +
+    esc(tecFechaVer(fila.publicacion)) +
+    '" placeholder="DD/MM/AAAA"' +
+    (tecFechaMala(fila.publicacion) ? ' title="Esta fecha no se entiende. Escribila como DD/MM/AAAA."' : "") +
+    "></td><td class=\"tec-chk\">" +
     tecCheckbox(fila, "portada") +
     '</td><td class="tec-chk">' +
     tecCheckbox(fila, "mosaico") +
@@ -10723,61 +10845,158 @@ function tecRowHTML(fila) {
   );
 }
 function tecGroupHTML(grupo) {
+  const cols = tecPlano() ? 11 : 10;
+  // En modo plano no hay encabezado de categoría ni fila de "agregar acá":
+  // la categoría ya es una columna y agregar se hace desde el botón de arriba.
+  if (grupo.categoria === null) return '<tbody class="tec-group">' + grupo.filas.map(tecRowHTML).join("") + "</tbody>";
   return (
-    '<tbody class="tec-group"><tr class="tec-cat-row"><td colspan="10">' +
+    '<tbody class="tec-group"><tr class="tec-cat-row"><td colspan="' +
+    cols +
+    '">' +
     esc(grupo.categoria) +
     ' <span class="tec-cat-n">' +
     grupo.filas.length +
     "</span></td></tr>" +
     grupo.filas.map(tecRowHTML).join("") +
-    '<tr class="tec-add-row"><td colspan="10"><button class="btn btn-ghost btn-sm" data-action="tec:add" data-cat="' +
+    '<tr class="tec-add-row"><td colspan="' +
+    cols +
+    '"><button class="btn btn-ghost btn-sm" data-action="tec:add" data-cat="' +
     esc(grupo.categoria) +
     '">+ Agregar curso a ' +
     esc(grupo.categoria) +
     "</button></td></tr></tbody>"
   );
 }
-const TEC_HEAD =
-  '<thead><tr><th>Curso</th><th>Publicación</th><th>Portada</th><th>Mosaico</th><th>Evaluación</th><th>Textos</th><th>Diseño</th><th>Estado / Comentario</th><th>Mapa</th><th></th></tr></thead>';
+function tecTh(campo, label) {
+  const activo = state.tecOrden === campo;
+  return (
+    '<th class="tec-th-sort' +
+    (activo ? " on" : "") +
+    '" data-action="tec:sort" data-campo="' +
+    campo +
+    '" title="Ordenar por ' +
+    esc(label) +
+    '">' +
+    esc(label) +
+    '<span class="tec-th-ar">' +
+    (activo ? (state.tecOrdenDir === 1 ? "▲" : "▼") : "↕") +
+    "</span></th>"
+  );
+}
+function tecHeadHTML() {
+  return (
+    "<thead><tr>" +
+    (tecPlano() ? tecTh("categoria", "Categoría") : "") +
+    tecTh("curso", "Curso") +
+    tecTh("publicacion", "Publicación") +
+    "<th>Portada</th><th>Mosaico</th><th>Evaluación</th><th>Textos</th>" +
+    tecTh("diseno", "Diseño") +
+    tecTh("estado", "Estado / Comentario") +
+    "<th>Mapa</th><th></th></tr></thead>"
+  );
+}
 function tecListHTML() {
   const grupos = tecGroups();
   if (!grupos.length)
-    return '<div class="empty"><div class="big">🔍</div><div style="font-weight:700;color:var(--ink)">Sin resultados</div><div style="margin-top:4px">Probá con otra búsqueda.</div></div>';
+    return '<div class="empty"><div class="big">🔍</div><div style="font-weight:700;color:var(--ink)">Sin resultados</div><div style="margin-top:4px">Probá con otra búsqueda o quitá los filtros de arriba.</div></div>';
   return (
-    '<div class="tec-table-wrap"><table class="tec-table">' + TEC_HEAD + grupos.map(tecGroupHTML).join("") + "</table></div>"
+    '<div class="tec-table-wrap"><table class="tec-table">' +
+    tecHeadHTML() +
+    grupos.map(tecGroupHTML).join("") +
+    "</table></div>"
   );
 }
 function renderTecList() {
   const el = $("#tecList");
-  if (el) el.innerHTML = tecListHTML();
+  if (el) ((el.innerHTML = tecListHTML()), tecTopSync());
 }
-function tecKpi(n, label, color) {
+function tecKpi(n, label, color, cual) {
   return (
-    '<div class="kpi" style="--kpi:' + color + '"><div class="kpi-num">' + n + '</div><div class="kpi-lbl">' +
+    '<button class="kpi tec-kpi' +
+    (state.tecPendiente === cual ? " on" : "") +
+    '" style="--kpi:' +
+    color +
+    '" data-action="tec:kpi" data-cual="' +
+    cual +
+    '" title="' +
+    (cual ? "Ver solo estos" : "Ver todos") +
+    '"><div class="kpi-num">' +
+    n +
+    '</div><div class="kpi-lbl">' +
     esc(label) +
-    "</div></div>"
+    "</div></button>"
   );
 }
 function tecKpisHTML() {
-  const lista = state.tecnico,
-    total = lista.length,
-    pendientes = lista.filter((f) => f.diseno === "X" || f.diseno === "Rediseñando").length,
-    conObs = lista.filter((f) => f.estado && f.estado.trim() && f.estado.trim().toLowerCase() !== "ok").length,
-    vinculados = lista.filter((f) => f.cardId).length;
+  const lista = state.tecnico;
   return (
     '<div class="res-grid">' +
-    tecKpi(total, "Cursos en seguimiento", "var(--coto-blue)") +
-    tecKpi(pendientes, "Sin diseño actualizado", "var(--bad)") +
-    tecKpi(conObs, "Con observaciones", "var(--warn)") +
-    tecKpi(vinculados, "Vinculados al Mapa", "var(--ok)") +
+    tecKpi(lista.length, "Cursos en la lista", "var(--coto-blue)", "") +
+    tecKpi(lista.filter((f) => !f.portada).length, "Sin portada", "var(--bad)", "sin-portada") +
+    tecKpi(lista.filter((f) => !f.mosaico).length, "Sin mosaico", "var(--warn)", "sin-mosaico") +
+    tecKpi(lista.filter((f) => f.cardId).length, "Vinculados al Mapa", "var(--ok)", "vinculados") +
     "</div>"
   );
+}
+// El desglose por diseño en un select, con el número al lado de cada opción:
+// era la pregunta concreta que quedaba sin responder ("¿cuántos son HTML?")
+// y así se contesta sin tener que contar filas a ojo.
+function tecDisenoFiltroHTML() {
+  const conteo = {};
+  state.tecnico.forEach((f) => {
+    const k = f.diseno || "";
+    conteo[k] = (conteo[k] || 0) + 1;
+  });
+  const claves = Object.keys(conteo)
+    .filter(Boolean)
+    .sort((a, b) => conteo[b] - conteo[a]);
+  return (
+    '<div class="filt">🎨<select id="tecDiseno"><option value="">Diseño: todos (' +
+    state.tecnico.length +
+    ")</option>" +
+    claves
+      .map(
+        (k) =>
+          '<option value="' +
+          esc(k) +
+          '"' +
+          (state.tecDiseno === k ? " selected" : "") +
+          ">" +
+          esc(k) +
+          " (" +
+          conteo[k] +
+          ")</option>",
+      )
+      .join("") +
+    "</select></div>"
+  );
+}
+function tecFiltrando() {
+  return !!(state.tecFiltro || state.tecDiseno || state.tecPendiente || state.tecOrden);
+}
+// El contador y el "limpiar" se dibujan siempre y se actualizan aparte: si
+// aparecieran y desaparecieran con cada tecla habría que redibujar la barra
+// entera y el cursor se saldría del buscador a mitad de palabra.
+function tecTopSync() {
+  const elN = $("#tecTopN"),
+    elL = $("#tecLimpiar");
+  if (elN) elN.textContent = tecRows().length + " de " + state.tecnico.length;
+  if (elL) elL.hidden = !tecFiltrando();
 }
 function renderTecnico() {
   return (
     '<div class="tec-top"><div class="filt">🔎<input id="tecSearch" placeholder="Buscar curso o categoría..." value="' +
     esc(state.tecFiltro || "") +
-    '"></div></div>' +
+    '"></div>' +
+    tecDisenoFiltroHTML() +
+    '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' +
+    '<span class="tec-top-n" id="tecTopN">' +
+    tecRows().length +
+    " de " +
+    state.tecnico.length +
+    '</span><button class="btn btn-ghost btn-sm" id="tecLimpiar" data-action="tec:limpiar"' +
+    (tecFiltrando() ? "" : " hidden") +
+    ">✕ Limpiar filtros</button></div>" +
     tecKpisHTML() +
     '<div id="tecList">' +
     tecListHTML() +
@@ -11198,16 +11417,35 @@ function cursoCard(tarjeta) {
   );
 }
 function sectionEduPoints() {
-  const lista = mapaFilter(
-    state.cards.filter((tarjeta) => tarjeta.tipo === "edu-point" && inInventory(tarjeta)),
-  );
-  if (!lista.length)
+  const colocados = mapaFilter(
+      state.cards.filter((tarjeta) => tarjeta.tipo === "edu-point" && inInventory(tarjeta)),
+    ),
+    enPlanner = mapaFilter(eduPointsEnPlanner());
+  if (!colocados.length && !enPlanner.length)
     return emptyState(
       "📍",
-      "Sin Edu Points colocados",
-      "Marcá un Edu Point del tablero como colocado (botón en su ficha) para verlo en el inventario.",
+      "Todavía no hay Edu Points",
+      "Creá un Edu Point en el Planner y va a aparecer acá mientras se arma; cuando lo marques como colocado pasa al inventario.",
     );
-  return '<div class="cursos-grid">' + lista.map(eduCard).join("") + "</div>";
+  // Los que están en el tablero van en su propio bloque y no mezclados con los
+  // colocados: son dos cosas distintas y confundirlas es lo que hacía que el
+  // número de arriba no significara nada.
+  const bloque = (titulo, sub, filas, tarjeta) =>
+    filas.length
+      ? '<div class="mapa-bloque"><div class="mapa-bloque-t">' +
+        titulo +
+        ' <span class="mapa-bloque-n">' +
+        filas.length +
+        '</span></div><div class="mapa-bloque-d">' +
+        sub +
+        '</div><div class="cursos-grid">' +
+        filas.map(tarjeta).join("") +
+        "</div></div>"
+      : "";
+  return (
+    bloque("📍 Colocados", "Con el QR puesto en sala, visibles en el inventario.", colocados, eduCard) +
+    bloque("🚧 En el Planner", "Todavía en producción: aparecen acá hasta que los marques como colocados.", enPlanner, desarrolloCard)
+  );
 }
 function eduCard(tarjeta) {
   const val = primaryCat(tarjeta),
@@ -11239,6 +11477,37 @@ function eduCard(tarjeta) {
     "</div>\n    </div>\n  </article>"
   );
 }
+// Íconos de navegación (pestañas de arriba + hub-cards de Inicio). Van juntos
+// en un solo lugar porque el problema que tenían era de conjunto y no de cada
+// uno por separado: a 22px, dentro del círculo de color, "Planner" (tres barras
+// verticales) y "Mapa" (mapa plegado) terminaban con la misma silueta, y el de
+// "Carga del equipo" se empastaba porque el hombro de la primera persona
+// arrancaba justo donde empezaba la cabeza de la segunda. Ahora cada uno tiene
+// una silueta distinta —rectángulo, líneas, rombo, círculos— que se distingue
+// aunque el dibujo interno no se llegue a leer.
+const SVG_ABRE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="',
+  ICONOS = {
+    inicio: SVG_ABRE + '2.5"><path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V20h13V9.5"/></svg>',
+    // Tablero: el marco con dos divisiones se lee como "columnas" sin depender
+    // de que se distingan las barras sueltas.
+    kanban: SVG_ABRE + '2.3"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M9 4.5v15M15 4.5v15"/></svg>',
+    calendario:
+      SVG_ABRE + '2.3"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
+    // Barras horizontales escalonadas: gantt. Contrasta con el rectángulo del
+    // Planner justamente por ser líneas sueltas y no un marco.
+    timeline: SVG_ABRE + '2.5"><path d="M4 7h8.5M9.5 12h10.5M4 17h6"/></svg>',
+    // Pila de capas en vez del mapa plegado: el rombo de arriba da una silueta
+    // que no se parece a nada más de la barra, y "todo lo que tenemos apilado"
+    // describe bastante bien al inventario.
+    mapa: SVG_ABRE + '2.2"><path d="M12 3.2 2.8 8 12 12.8 21.2 8 12 3.2Z"/><path d="m3.2 12.4 8.8 4.6 8.8-4.6"/><path d="m3.2 16.7 8.8 4.6 8.8-4.6"/></svg>',
+    tecnico: SVG_ABRE + '2.5"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4l-2.7 2.7-2-2 2.7-2.7z"/></svg>',
+    misemana: SVG_ABRE + '2.5"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.2"/></svg>',
+    // Barras sobre una base, no personitas: dos cabezas con sus hombros a este
+    // tamaño se funden en una sola mancha con forma de cara. Además es lo que
+    // la pantalla muestra de verdad —cuánto tiene cargado cada uno— así que el
+    // dibujo y el contenido dicen lo mismo.
+    carga: SVG_ABRE + '2.5"><path d="M6 20V14M12 20V7.5M18 20v-5"/><path d="M3.2 20.4h17.6"/></svg>',
+  };
 function renderInicio() {
   const lista2 = boardCards(),
     cantidad = lista2.filter(isOverdue).length,
@@ -11248,42 +11517,42 @@ function renderInicio() {
       {
         go: "kanban",
         cat: "coto-digital",
-        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4v16M12 4v11M19 4v13"/></svg>',
+        ic: ICONOS.kanban,
         t: "Planner",
         d: "Lo que estamos haciendo, por estado.",
       },
       {
         go: "calendario",
         cat: "salon",
-        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg>',
+        ic: ICONOS.calendario,
         t: "Calendario",
         d: "Qué pasa y cuándo, mes a mes.",
       },
       {
         go: "timeline",
         cat: "mantenimiento",
-        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h10M8 12h11M4 17h7"/></svg>',
+        ic: ICONOS.timeline,
         t: "Timeline",
         d: "El panorama macro del área.",
       },
       {
         go: "mapa",
         cat: "servicio-medico",
-        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4z"/><path d="M9 4v14M15 6v14"/></svg>',
+        ic: ICONOS.mapa,
         t: "Mapa del área",
         d: "Cursos, Edu Points, apps y bases.",
       },
       {
         action: "misemana:open",
         cat: "sistemas",
-        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/></svg>',
+        ic: ICONOS.misemana,
         t: "Mi semana",
         d: "Tu foco de los próximos días.",
       },
       {
         action: "carga:open",
         cat: "recursos-humanos",
-        ic: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 20c0-3.5 2.5-6 5.5-6s5.5 2.5 5.5 6"/><circle cx="17" cy="9" r="2.5"/><path d="M14.5 20c.3-2.7 1.8-4.6 4-5.3"/></svg>',
+        ic: ICONOS.carga,
         t: "Carga del equipo",
         d: "Quién tiene qué, para repartir mejor.",
       },
@@ -12742,8 +13011,13 @@ document.addEventListener("click", (ev) => {
       });
       break;
     case "tec:add": {
-      const catTec = el.dataset.cat || "",
-        nombreTec = (prompt("Nombre del curso") || "").trim();
+      // Desde la fila de un grupo ya viene la categoría; desde el botón de
+      // arriba hay que preguntarla, porque en modo ordenado no hay grupos.
+      let catTec = el.dataset.cat;
+      if (catTec === undefined) {
+        catTec = (prompt("¿En qué categoría? (podés dejarlo vacío)") || "").trim();
+      }
+      const nombreTec = (prompt("Nombre del curso") || "").trim();
       if (!nombreTec) break;
       (state.tecnico.push({
         id: uid(),
@@ -12760,9 +13034,32 @@ document.addEventListener("click", (ev) => {
         updatedAt: Date.now(),
       }),
         touchTecnico(),
-        renderTecList());
+        render());
       break;
     }
+    case "tec:kpi":
+      // Tocar el KPI activo lo apaga: es el camino de vuelta más corto y evita
+      // quedar filtrado sin darse cuenta de por qué faltan filas.
+      ((state.tecPendiente = state.tecPendiente === el.dataset.cual ? "" : el.dataset.cual || ""), render());
+      break;
+    case "tec:sort": {
+      // Mismo encabezado: ascendente → descendente → sin orden (vuelve a los
+      // grupos por categoría). Siempre hay forma de volver al estado original.
+      const campoTec = el.dataset.campo;
+      if (state.tecOrden !== campoTec) ((state.tecOrden = campoTec), (state.tecOrdenDir = 1));
+      else if (state.tecOrdenDir === 1) state.tecOrdenDir = -1;
+      else ((state.tecOrden = ""), (state.tecOrdenDir = 1));
+      render();
+      break;
+    }
+    case "tec:limpiar":
+      ((state.tecFiltro = ""),
+        (state.tecDiseno = ""),
+        (state.tecPendiente = ""),
+        (state.tecOrden = ""),
+        (state.tecOrdenDir = 1),
+        render());
+      break;
     case "tec:link":
       openModal(tecPickerHTML(val10));
       break;
@@ -13332,7 +13629,9 @@ function toggleArr(arg, txt, sector) {
 function applyTecField(id, campo, value) {
   const fila = state.tecnico.find((f) => f.id === id);
   if (!fila) return;
-  ((fila[campo] = value), touchTecnico());
+  // Se guarda ISO, pero solo cuando la fecha ya está completa: mientras se
+  // tipea "12/05/20…" no matchea y queda el texto crudo, sin pelearle al cursor.
+  ((fila[campo] = campo === "publicacion" ? tecFechaISO(value) : value), touchTecnico());
 }
 (document.addEventListener("input", (ev) => {
   if (ev.target.id === "cmdkInput") {
@@ -13349,6 +13648,10 @@ function applyTecField(id, campo, value) {
   }
   if (ev.target.id === "tecSearch") {
     ((state.tecFiltro = ev.target.value), renderTecList());
+    return;
+  }
+  if (ev.target.id === "tecDiseno") {
+    ((state.tecDiseno = ev.target.value), render());
     return;
   }
   if (ev.target.id === "tecPickSearch") {
