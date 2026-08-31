@@ -3314,6 +3314,14 @@ button {
   font-size: 23px;
   box-shadow: var(--shadow);
 }
+/* El ícono ocupaba los 52px del círculo, de borde a borde: sin aire alrededor
+   se veía apretado y, al escalar el trazo, empastado. La mitad del badge es
+   la proporción que usan las pastillas de color del resto de la interfaz. */
+.hub-ic svg {
+  width: 28px;
+  height: 28px;
+  stroke-width: 1.9;
+}
 .hub-tx {
   position: relative;
   z-index: 1;
@@ -3841,8 +3849,11 @@ html {
   color: var(--chrome-ink);
 }
 .search-promo svg {
+  width: 17px;
+  height: 17px;
   flex: none;
   opacity: 0.85;
+  stroke-width: 2.3;
 }
 .search-promo-t {
   flex: 1;
@@ -3887,12 +3898,23 @@ html {
 }
 .ticon svg {
   display: block;
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.3;
 }
+/* Grosor de trazo por contexto, no por ícono.
+   El mismo dibujo de 24×24 se usa a 16px en las pestañas y a 26px en Inicio;
+   con un stroke-width fijo en el svg, el trazo aparente iba de 1,7px a 5px y
+   los íconos parecían de dos familias distintas. Acá se compensa: cuanto más
+   grande se dibuja, más fino va el trazo, para que el peso óptico sea el
+   mismo en toda la app. Si algún día cambia el tamaño de un contenedor, se
+   ajusta su stroke-width acá y no se toca ningún ícono. */
 .tab svg {
   width: 16px;
   height: 16px;
   flex: none;
   opacity: 0.9;
+  stroke-width: 2.4;
 }
 .tab.active svg {
   opacity: 1;
