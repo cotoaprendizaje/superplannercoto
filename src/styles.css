@@ -2064,14 +2064,62 @@ button {
 .chk {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   padding: 7px 8px;
   border-bottom: none;
   border-radius: var(--r-sm);
+  position: relative;
   transition: background 0.15s ease;
 }
 .chk:hover {
   background: var(--surface-2);
+}
+/* Manija de arrastre para reordenar el checklist a mano. Oculta hasta el
+   hover para no meter ruido visual en una lista que ya tiene checkbox, texto
+   y borrar — aparece solo cuando hace falta, como el resto de las acciones
+   secundarias de la app. */
+.chk-grip {
+  flex: none;
+  width: 16px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--ink-soft);
+  opacity: 0;
+  cursor: grab;
+  transition: opacity 0.15s ease;
+}
+.chk:hover .chk-grip {
+  opacity: 0.55;
+}
+.chk-grip:hover {
+  opacity: 1 !important;
+}
+.chk-grip:active {
+  cursor: grabbing;
+}
+.chk.drag {
+  opacity: 0.4;
+}
+/* Línea que marca dónde va a caer el ítem, arriba o abajo de la fila sobre la
+   que está el mouse — mismo lenguaje que el resto del drag-and-drop de la
+   app (kcol-body.drop, cwd-drop), pero puntual a una fila en vez de a todo
+   un contenedor. */
+.chk-antes::before,
+.chk-despues::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--coto-blue);
+}
+.chk-antes::before {
+  top: -1px;
+}
+.chk-despues::after {
+  bottom: -1px;
 }
 .chk input[type="checkbox"] {
   appearance: none;
@@ -4465,6 +4513,23 @@ html {
 }
 .lnk-add input:focus {
   border-color: var(--coto-blue);
+}
+/* Bloques dentro de "Conexiones": Enlaces, Vínculos con el Mapa y
+   Seguimiento técnico van juntos en un solo acordeón separados por un
+   subtítulo en vez de tener cada uno su propio <details> — misma idea que
+   los bloques del Mapa (mapa-bloque), pero a la escala de un panel. */
+.conx-block + .conx-block {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+.conx-h {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
 }
 .mention {
   color: var(--coto-blue);

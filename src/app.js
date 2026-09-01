@@ -3732,6 +3732,7 @@ const state = {
   recent: [],
   dragCal: null,
   dragTl: null,
+  dragChk: null,
   savedViews: [],
   connOk: true,
   saveError: false,
@@ -6692,7 +6693,35 @@ function datePresetsHTML(campo) {
     '" data-preset="semana">+1 semana</button></div>'
   );
 }
-function vinculosHTML(tarjeta) {
+// ===== Conexiones (Enlaces + Vínculos con el Mapa + Seguimiento técnico) =====
+// Antes eran tres acordeones seguidos, cada uno con su propia flecha para
+// abrir — tres clics para ver todo lo que conecta a esta tarjeta con el
+// resto de la app, aunque las tres cosas responden a la misma pregunta
+// ("¿con qué más se relaciona esto?"). Van fusionadas en un solo acordeón
+// con tres bloques adentro: un encabezado interno alcanza, no hace falta que
+// cada bloque sea su propio <details>.
+function enlacesBlockHTML(tarjeta) {
+  return (
+    '<div class="conx-h">Enlaces · ' +
+    (tarjeta.links || []).length +
+    "</div>" +
+    ((tarjeta.links || [])
+      .map(
+        (arg, arg2) =>
+          '<div class="lnk"><a href="' +
+          esc(arg.url) +
+          '" target="_blank" rel="noopener" class="lnk-a">🔗 ' +
+          esc(arg.label || arg.url) +
+          '</a><span class="chk-del" data-action="link:del" data-i="' +
+          arg2 +
+          '" title="Quitar">✕</span></div>',
+      )
+      .join("") ||
+      '<div style="font-size:12px;color:var(--ink-soft)">Sin enlaces. Sumá Drive, Moodle, docs…</div>') +
+    '\n    <div class="lnk-add"><input id="linkLabel" placeholder="Etiqueta (ej: Carpeta Drive)"><input id="linkUrl" placeholder="https://…"><button class="btn btn-sm" data-action="link:add">+ Agregar</button></div>'
+  );
+}
+function vinculosBlockHTML(tarjeta) {
   const lista = (tarjeta.vinculos || [])
       .map((id) => state.cards.find((c) => c.id === id))
       .filter(Boolean),
@@ -6700,11 +6729,9 @@ function vinculosHTML(tarjeta) {
       (c) => c.id !== tarjeta.id && inInventory(c) && !(tarjeta.vinculos || []).includes(c.id),
     );
   return (
-    '<details class="acc sec-acc" ' +
-    (lista.length ? "open" : "") +
-    '><summary class="sub">Vínculos con el Mapa · ' +
+    '<div class="conx-h">Vínculos con el Mapa · ' +
     lista.length +
-    '<span class="ring"></span></summary>\n        <div class="acc-body">\n    ' +
+    "</div>" +
     (lista
       .map(
         (c) =>
@@ -6727,25 +6754,42 @@ function vinculosHTML(tarjeta) {
           .map((c) => '<option value="' + c.id + '">' + esc(c.titulo) + "</option>")
           .join("") +
         "</select>"
-      : "") +
-    "\n  </div></details>"
+      : "")
   );
 }
 // Vínculo en sentido inverso: si una fila de Seguimiento técnico apunta a
-// esta tarjeta (tec:link), mostrarlo acá también — mismo patrón visual que
-// vinculosHTML(), para no sumar un estilo nuevo por una relación que ya es
-// conceptualmente la misma idea (una tarjeta conectada con otra cosa).
-function tecVinculoHTML(tarjeta) {
+// esta tarjeta (tec:link), mostrarlo acá también. Solo aparece si existe —
+// a diferencia de Enlaces y Vínculos, no tiene forma de cargarse desde acá.
+function tecVinculoBlockHTML(tarjeta) {
   const fila = state.tecnico.find((f) => f.cardId === tarjeta.id);
   if (!fila) return "";
   return (
-    '<details class="acc sec-acc" open><summary class="sub">🔧 Seguimiento técnico<span class="ring"></span></summary>\n        <div class="acc-body">\n    <div class="lnk"><span class="lnk-a" data-action="tec:goto" data-id="' +
+    '<div class="conx-h">🔧 Seguimiento técnico</div><div class="lnk"><span class="lnk-a" data-action="tec:goto" data-id="' +
     fila.id +
     '" style="cursor:pointer">' +
     esc(fila.categoria) +
     " · " +
     esc(fila.curso) +
-    "</span></div>\n  </div></details>"
+    "</span></div>"
+  );
+}
+function conexionesHTML(tarjeta) {
+  const nEnlaces = (tarjeta.links || []).length,
+    nVinculos = (tarjeta.vinculos || []).length,
+    tieneTec = state.tecnico.some((f) => f.cardId === tarjeta.id),
+    total = nEnlaces + nVinculos + (tieneTec ? 1 : 0);
+  return (
+    '<details class="acc sec-acc" ' +
+    (total ? "open" : "") +
+    '><summary class="sub">Conexiones · ' +
+    total +
+    '<span class="ring"></span></summary>\n        <div class="acc-body">\n    <div class="conx-block">' +
+    enlacesBlockHTML(tarjeta) +
+    '</div>\n    <div class="conx-block">' +
+    vinculosBlockHTML(tarjeta) +
+    "</div>" +
+    (tieneTec ? '\n    <div class="conx-block">' + tecVinculoBlockHTML(tarjeta) + "</div>" : "") +
+    "\n  </div></details>"
   );
 }
 // Aproximación honesta a "quién está mirando esto": esta app sincroniza
@@ -6815,10 +6859,14 @@ function renderPanel() {
         miembro.nombre +
         "</span>",
     ).join(""),
+    // La manija es lo único arrastrable de la fila: si el draggable fuera del
+    // <div> entero, no se podría seleccionar texto dentro del input.
     txt4 = (tarjeta.checklist || [])
       .map(
         (item) =>
-          '<div class="chk"><input type="checkbox" ' +
+          '<div class="chk" data-chk="' +
+          item.id +
+          '"><span class="chk-grip" draggable="true" title="Arrastrá para reordenar (o Alt+↑/↓ desde el texto)">⠿</span><input type="checkbox" ' +
           (item.done ? "checked" : "") +
           ' data-action="cl:toggle" data-cl="' +
           item.id +
@@ -6979,26 +7027,6 @@ function renderPanel() {
             .join("") +
           "</select></div></div></div></details>"
         : "",
-    html4 =
-      '<details class="acc sec-acc" ' +
-      (tarjeta.links && tarjeta.links.length ? "open" : "") +
-      '><summary class="sub">Enlaces · ' +
-      (tarjeta.links || []).length +
-      '<span class="ring"></span></summary><div class="acc-body">\n    ' +
-      ((tarjeta.links || [])
-        .map(
-          (arg, arg2) =>
-            '<div class="lnk"><a href="' +
-            esc(arg.url) +
-            '" target="_blank" rel="noopener" class="lnk-a">🔗 ' +
-            esc(arg.label || arg.url) +
-            '</a><span class="chk-del" data-action="link:del" data-i="' +
-            arg2 +
-            '" title="Quitar">✕</span></div>',
-        )
-        .join("") ||
-        '<div style="font-size:12px;color:var(--ink-soft)">Sin enlaces. Sumá Drive, Moodle, docs…</div>') +
-      '\n    <div class="lnk-add"><input id="linkLabel" placeholder="Etiqueta (ej: Carpeta Drive)"><input id="linkUrl" placeholder="https://…"><button class="btn btn-sm" data-action="link:add">+ Agregar</button></div></div></details>',
     html5 =
       '<details class="acc" ' +
       ((tarjeta.comentarios || []).length ? "open" : "") +
@@ -7065,20 +7093,28 @@ function renderPanel() {
     '</select></div>\n        <div class="fld"><label>Estado</label><select data-field="estado">' +
     txt2 +
     '</select></div>\n      </div>\n\n      ' +
-    // "Más detalles" arranca colapsado en una tarjeta nueva: fechas, prioridad,
-    // recurrencia, asignados y sectores no hacen falta para crear algo rápido.
-    // Si la tarjeta ya trae alguno cargado, arranca abierto — lo que ya está
-    // puesto no se esconde.
+    // El checklist va primero, antes que "Más detalles": es el corazón del
+    // trabajo del día a día, y antes quedaba tercero, debajo de un formulario
+    // de fechas/prioridad/asignados que ya venía abierto la mayoría de las
+    // veces. Arranca colapsado solo si está vacío — con el primer ítem se
+    // abre solo, igual que Notas y Conexiones.
     '<details class="acc sec-acc" ' +
-    (tarjeta.inicio ||
-    tarjeta.fin ||
-    tarjeta.revisionDesde ||
-    tarjeta.prioridad === "alta" ||
-    (tarjeta.asignados || []).length ||
-    (tarjeta.sectores || []).length
-      ? "open"
-      : "") +
-    '><summary class="sub">Más detalles<span class="ring"></span></summary>\n        <div class="acc-body">\n      <div class="fld-row">\n        <div class="fld"><label>Inicio</label><input type="date" value="' +
+    (avance.total ? "open" : "") +
+    '><summary class="sub">Checklist · ' +
+    avance.done +
+    "/" +
+    avance.total +
+    '<span class="ring"></span></summary>\n        <div class="acc-body">\n          <div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
+    avance.pct +
+    '%"></div></div><span class="prog-num">' +
+    avance.pct +
+    "%</span></div>\n          " +
+    txt4 +
+    '\n          <button class="btn btn-ghost btn-sm" data-action="cl:add" style="align-self:flex-start">+ Ítem</button>\n        </div></details>\n\n      ' +
+    // "Más detalles" arranca colapsado siempre, tenga o no tenga fechas
+    // cargadas: es la sección de formulario más larga del panel y lo primero
+    // que se ve al abrir una tarjeta no debería ser eso.
+    '<details class="acc sec-acc"><summary class="sub">Más detalles<span class="ring"></span></summary>\n        <div class="acc-body">\n      <div class="fld-row">\n        <div class="fld"><label>Inicio</label><input type="date" value="' +
     (tarjeta.inicio || "") +
     '" data-field="inicio">' +
     datePresetsHTML("inicio") +
@@ -7109,22 +7145,7 @@ function renderPanel() {
     txt3 +
     '</div><span class="fld-hint">Todos los que trabajan en ella (los que quieras).</span></div>\n      ' +
     sectorPicker(tarjeta) +
-    "\n        </div></details>\n\n      " +
-    // El checklist arranca colapsado si está vacío, igual que Enlaces y
-    // Comentarios: en cuanto tiene el primer ítem, se abre solo.
-    '<details class="acc sec-acc" ' +
-    (avance.total ? "open" : "") +
-    '><summary class="sub">Checklist · ' +
-    avance.done +
-    "/" +
-    avance.total +
-    '<span class="ring"></span></summary>\n        <div class="acc-body">\n          <div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
-    avance.pct +
-    '%"></div></div><span class="prog-num">' +
-    avance.pct +
-    "%</span></div>\n          " +
-    txt4 +
-    '\n          <button class="btn btn-ghost btn-sm" data-action="cl:add" style="align-self:flex-start">+ Ítem</button>\n        </div></details>\n\n      <details class="acc sec-acc"><summary class="sub">Fases (opcional · multi-etapa)<span class="ring"></span></summary>\n        <div class="acc-body">\n          ' +
+    '\n        </div></details>\n\n      <details class="acc sec-acc"><summary class="sub">Fases (opcional · multi-etapa)<span class="ring"></span></summary>\n        <div class="acc-body">\n          ' +
     txt5 +
     '\n          <button class="btn btn-ghost btn-sm" data-action="fase:add" style="align-self:flex-start">+ Fase</button>\n        </div></details>\n\n      ' +
     html +
@@ -7135,11 +7156,7 @@ function renderPanel() {
     '><summary class="sub">Notas<span class="ring"></span></summary>\n        <div class="acc-body"><textarea data-field="notas" placeholder="Notas del equipo...">' +
     esc(tarjeta.notas) +
     "</textarea></div></details>\n      " +
-    html4 +
-    "\n      " +
-    vinculosHTML(tarjeta) +
-    "\n      " +
-    tecVinculoHTML(tarjeta) +
+    conexionesHTML(tarjeta) +
     "\n      " +
     html5 +
     "\n      " +
@@ -8341,6 +8358,20 @@ function applyTecField(id, campo, value) {
     }
   }),
   document.addEventListener("dragstart", (ev) => {
+    // El checklist va primero: la manija vive dentro del panel y no se pisa
+    // con las tarjetas del tablero.
+    const elChk = ev.target.closest(".chk-grip");
+    if (elChk) {
+      const fila = elChk.closest(".chk");
+      ((state.dragChk = fila.dataset.chk), fila.classList.add("drag"));
+      try {
+        // Se arrastra la fila entera, no la manija sola: de lo contrario el
+        // fantasma es un puntito y no se entiende qué se está moviendo.
+        (ev.dataTransfer.setDragImage(fila, 20, fila.offsetHeight / 2),
+          (ev.dataTransfer.effectAllowed = "move"));
+      } catch (err3) {}
+      return;
+    }
     const el = ev.target.closest(".kcard");
     if (el) {
       ((state.dragId = el.dataset.id), el.classList.add("drag"));
@@ -8363,6 +8394,9 @@ function applyTecField(id, campo, value) {
     }
   }),
   document.addEventListener("dragend", (ev) => {
+    (document.querySelectorAll(".chk.drag").forEach((f) => f.classList.remove("drag")),
+      limpiarMarcasChk(),
+      (state.dragChk = null));
     const el = ev.target.closest(".kcard");
     if (el) el.classList.remove("drag");
     const el2 = ev.target.closest(".cal-bar");
@@ -8376,6 +8410,19 @@ function applyTecField(id, campo, value) {
       (state.dragTl = null));
   }),
   document.addEventListener("dragover", (ev) => {
+    if (state.dragChk) {
+      const fila = ev.target.closest(".chk");
+      if (fila && fila.dataset.chk !== state.dragChk) {
+        ev.preventDefault();
+        // Mitad de arriba: cae antes; mitad de abajo: cae después. Es la
+        // convención de cualquier lista reordenable y evita tener que apuntar
+        // a una línea de 2px.
+        const caja = fila.getBoundingClientRect(),
+          antes = ev.clientY < caja.top + caja.height / 2;
+        (limpiarMarcasChk(), fila.classList.add(antes ? "chk-antes" : "chk-despues"));
+      }
+      return;
+    }
     const el = ev.target.closest(".kcol-body");
     if (el) {
       (ev.preventDefault(), el.classList.add("drop"));
@@ -8402,6 +8449,16 @@ function applyTecField(id, campo, value) {
     if (el3) el3.classList.remove("drop");
   }),
   document.addEventListener("drop", (ev) => {
+    if (state.dragChk) {
+      const fila = ev.target.closest(".chk");
+      if (fila && fila.dataset.chk !== state.dragChk) {
+        ev.preventDefault();
+        const caja = fila.getBoundingClientRect();
+        moverChecklist(state.dragChk, fila.dataset.chk, ev.clientY < caja.top + caja.height / 2);
+      }
+      ((state.dragChk = null), limpiarMarcasChk());
+      return;
+    }
     const el2 = ev.target.closest(".kcol-body");
     if (el2 && state.dragId) {
       ev.preventDefault();
@@ -8434,6 +8491,45 @@ function applyTecField(id, campo, value) {
       (rescheduleCard(state.dragTl, iso), (state.dragTl = null));
     }
   }));
+// ===== Reordenar el checklist =====
+// El orden del checklist es información: son los pasos de un trabajo, y hasta
+// ahora quedaba fijo al orden de carga. Se mueve arrastrando la manija o con
+// Alt+↑/↓ desde el texto — lo segundo es más rápido para correr un ítem un
+// lugar y además deja hacerlo sin mouse.
+function limpiarMarcasChk() {
+  document
+    .querySelectorAll(".chk-antes,.chk-despues")
+    .forEach((f) => f.classList.remove("chk-antes", "chk-despues"));
+}
+function moverChecklist(idOrigen, idDestino, antes) {
+  const tarjeta = current();
+  if (!tarjeta || !tarjeta.checklist) return;
+  const desde = tarjeta.checklist.findIndex((i) => i.id === idOrigen);
+  if (desde < 0) return;
+  const [item] = tarjeta.checklist.splice(desde, 1);
+  // El índice del destino se busca DESPUÉS de sacar el ítem: si se calculara
+  // antes, mover hacia abajo lo dejaría siempre un lugar corrido.
+  let hasta = tarjeta.checklist.findIndex((i) => i.id === idDestino);
+  if (hasta < 0) hasta = tarjeta.checklist.length;
+  else if (!antes) hasta++;
+  (tarjeta.checklist.splice(hasta, 0, item), touch(), renderPanel());
+}
+// Corrimiento de a un lugar, para el teclado. Devuelve si se pudo mover, para
+// no consumir la tecla cuando el ítem ya está en la punta.
+function correrChecklist(id, paso) {
+  const tarjeta = current();
+  if (!tarjeta || !tarjeta.checklist) return false;
+  const desde = tarjeta.checklist.findIndex((i) => i.id === id),
+    hasta = desde + paso;
+  if (desde < 0 || hasta < 0 || hasta >= tarjeta.checklist.length) return false;
+  const [item] = tarjeta.checklist.splice(desde, 1);
+  (tarjeta.checklist.splice(hasta, 0, item), touch(), renderPanel());
+  // Se devuelve el foco al mismo ítem, que ahora está en otra fila: sin esto
+  // no se pueden encadenar varios Alt+flecha seguidos.
+  const campo = $('.chk-text[data-field="cl:' + id + '"]');
+  if (campo) (campo.focus(), campo.setSelectionRange(campo.value.length, campo.value.length));
+  return true;
+}
 function rescheduleCard(arg, iso) {
   const tarjeta = state.cards.find((tarjeta2) => tarjeta2.id === arg);
   if (!tarjeta || !iso) return;
@@ -8552,6 +8648,19 @@ function pushRecent(id2) {
         const el3 = document.querySelector('[data-quickadd="' + val + '"]');
         if (el3) el3.focus();
       }
+    }
+    // Alt+↑/↓ desde el texto de un ítem lo corre un lugar, sin soltar el
+    // teclado ni tener que apuntar con el mouse a la manija de arrastre.
+    if (
+      ev.altKey &&
+      (ev.key === "ArrowUp" || ev.key === "ArrowDown") &&
+      ev.target.dataset &&
+      ev.target.dataset.field &&
+      ev.target.dataset.field.indexOf("cl:") === 0
+    ) {
+      const idActual0 = ev.target.dataset.field.slice(3);
+      if (correrChecklist(idActual0, ev.key === "ArrowUp" ? -1 : 1)) ev.preventDefault();
+      return;
     }
     // Enter en un ítem del checklist confirma el texto tipeado y abre uno
     // nuevo con el foco puesto, para cargar varios sin soltar el teclado.
