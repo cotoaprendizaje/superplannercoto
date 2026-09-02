@@ -5238,10 +5238,13 @@ html {
 }
 .frase-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 7px;
   padding: 5px 5px;
   border-radius: var(--r-s);
+}
+.frase-avatar {
+  margin-top: 1px;
 }
 .frase-row.mine {
   background: linear-gradient(145deg, #ffd76a, #e8a815);
@@ -5268,17 +5271,22 @@ html {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-top: 1px;
 }
 .frase-row.mine .frase-row-n {
   color: #3a2600;
 }
+/* La frase entera, no un pedazo con "...": son la razón de ser del historial
+   (quién sacó qué), así que truncarlas era esconder justo lo único que
+   alguien viene a leer acá. Envuelve en varias líneas en vez de cortar. */
 .frase-row-f {
   flex: 1;
+  min-width: 0;
   font-size: 10.5px;
   color: var(--ink-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.35;
+  padding-top: 1px;
+  overflow-wrap: break-word;
 }
 .frase-row.mine .frase-row-f {
   color: #3a2600;
