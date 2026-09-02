@@ -9475,6 +9475,7 @@ const state = {
   tecDiseno: "",
   tecOrden: "",
   tecOrdenDir: 1,
+  tecSubView: "grilla",
 };
 // Si cambió el día desde la última visita, la ronda de frases arranca de
 // cero: nadie "ya tiró hoy" con una frase de ayer.
@@ -11290,23 +11291,33 @@ function tecTopSync() {
   if (elL) elL.hidden = !tecFiltrando();
 }
 function renderTecnico() {
+  const nVal = tecValidacionTotal();
   return (
-    '<div class="tec-top"><div class="filt">🔎<input id="tecSearch" placeholder="Buscar curso o categoría..." value="' +
-    esc(state.tecFiltro || "") +
-    '"></div>' +
-    tecDisenoFiltroHTML() +
-    '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' +
-    '<span class="tec-top-n" id="tecTopN">' +
-    tecRows().length +
-    " de " +
-    state.tecnico.length +
-    '</span><button class="btn btn-ghost btn-sm" id="tecLimpiar" data-action="tec:limpiar"' +
-    (tecFiltrando() ? "" : " hidden") +
-    ">✕ Limpiar filtros</button></div>" +
-    tecKpisHTML() +
-    '<div id="tecList">' +
-    tecListHTML() +
-    "</div>"
+    '<div class="mapa-secciones"><div class="mapa-sec ' +
+    (state.tecSubView === "validacion" ? "" : "active") +
+    '" data-action="tec:subview" data-v="grilla">📋 Grilla</div><div class="mapa-sec ' +
+    (state.tecSubView === "validacion" ? "active" : "") +
+    '" data-action="tec:subview" data-v="validacion">🔎 Validación <b>(' +
+    nVal +
+    ")</b></div></div>" +
+    (state.tecSubView === "validacion"
+      ? tecValidacionHTML()
+      : '<div class="tec-top"><div class="filt">🔎<input id="tecSearch" placeholder="Buscar curso o categoría..." value="' +
+        esc(state.tecFiltro || "") +
+        '"></div>' +
+        tecDisenoFiltroHTML() +
+        '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' +
+        '<span class="tec-top-n" id="tecTopN">' +
+        tecRows().length +
+        " de " +
+        state.tecnico.length +
+        '</span><button class="btn btn-ghost btn-sm" id="tecLimpiar" data-action="tec:limpiar"' +
+        (tecFiltrando() ? "" : " hidden") +
+        ">✕ Limpiar filtros</button></div>" +
+        tecKpisHTML() +
+        '<div id="tecList">' +
+        tecListHTML() +
+        "</div>")
   );
 }
 function tecPickerHTML(filaId) {
@@ -11355,6 +11366,233 @@ function tecPickListHTML(cursos, filtro) {
         "</div>",
     )
     .join("");
+}
+// ===== Validación Mapa ↔ Técnico =====
+// Un vínculo hecho a mano (cardId) no se puede desalinear solo, pero el
+// título libre de cada lado sí (alguien lo retipea distinto), y las fechas
+// tipeadas a mano también. Esta vista junta en un solo lugar los casos
+// donde el Mapa y Seguimiento técnico no cuentan la misma historia, cada
+// uno con el atajo concreto para resolverlo — nada se corrige solo.
+const TEC_BAJA_KEYWORDS = ["baja", "discontinuado", "descontinuado", "no vigente", "eliminado", "anulado"];
+function tecEstadoSugiereBaja(estado) {
+  const t = (estado || "").trim().toLowerCase();
+  return !!t && TEC_BAJA_KEYWORDS.some((k) => t.includes(k));
+}
+// La contraparte de tecFilaParaCard(): dada una fila, la tarjeta que le
+// corresponde (por vínculo o, si no hay, por título igual).
+function tecCardDeFila(fila) {
+  return fila.cardId
+    ? state.cards.find((c) => c.id === fila.cardId)
+    : state.cards.find((c) => (c.titulo || "").trim().toLowerCase() === (fila.curso || "").trim().toLowerCase());
+}
+// Cursos activos del Mapa sin ninguna fila de Técnico (ni por id ni por
+// título). Si hay una fila SIN vincular con un título parecido se sugiere
+// un vínculo de un clic; si no, se ofrece crear la fila directamente.
+function valCursosSinTec() {
+  const filasLibres = state.tecnico.filter((f) => !f.cardId);
+  return repCursosActivos()
+    .filter((c) => !tecFilaParaCard(c))
+    .map((c) => {
+      const palabras = (c.titulo || "").toLowerCase().split(/\s+/).filter((p) => p.length >= 3),
+        candidatos = filasLibres
+          .map((f) => ({ f, score: tecPickScore(f.curso || "", palabras) }))
+          .filter((x) => x.score > 0)
+          .sort((a, b) => b.score - a.score);
+      return { card: c, sugerida: candidatos[0] ? candidatos[0].f : null };
+    });
+}
+// Filas de Técnico sin vincular y sin ningún curso del Planner con el mismo
+// título — la otra mitad del mismo hueco que valCursosSinTec().
+function valFilasSinCurso() {
+  return state.tecnico.filter((f) => {
+    if (f.cardId) return false;
+    const titulo = (f.curso || "").trim().toLowerCase();
+    return !titulo || !state.cards.some((c) => (c.titulo || "").trim().toLowerCase() === titulo);
+  });
+}
+// Fecha inválida (tecFechaMala) en cualquier fila, o fecha vacía en una fila
+// que sí representa un curso activo — una fila de un curso que ni siquiera
+// se publicó todavía no necesita fecha.
+function valFechas() {
+  return state.tecnico.filter((f) => {
+    if (tecFechaMala(f.publicacion)) return true;
+    if (f.publicacion) return false;
+    const card = tecCardDeFila(f);
+    return !!card && inInventory(card);
+  });
+}
+// Filas vinculadas a mano donde el nombre ya no coincide con el título
+// actual de la tarjeta — puede pasar cuando cualquiera de los dos lados se
+// edita después de vincular.
+function valTitulosDifieren() {
+  return state.tecnico
+    .filter((f) => f.cardId)
+    .map((f) => ({ fila: f, card: state.cards.find((c) => c.id === f.cardId) }))
+    .filter((x) => x.card && (x.fila.curso || "").trim().toLowerCase() !== (x.card.titulo || "").trim().toLowerCase());
+}
+// El Mapa lo sigue contando como activo, pero el campo de estado libre de
+// Técnico ya dice "baja"/"discontinuado" — probablemente alguien avisó la
+// baja en Técnico y se olvidó de reflejarla en el Mapa.
+function valEstadoContradictorio() {
+  return state.tecnico
+    .map((f) => ({ fila: f, card: tecCardDeFila(f) }))
+    .filter((x) => x.card && tecEstadoSugiereBaja(x.fila.estado) && inInventory(x.card));
+}
+function tecValidacionTotal() {
+  return (
+    valCursosSinTec().length +
+    valFilasSinCurso().length +
+    valFechas().length +
+    valTitulosDifieren().length +
+    valEstadoContradictorio().length
+  );
+}
+function valSeccion(titulo, n, itemsHTML, vacioMsg) {
+  return (
+    '<div class="rep-sec"><div class="rep-sec-h"><h3>' +
+    esc(titulo) +
+    '</h3><span class="rep-sec-sub">' +
+    n +
+    " en total</span></div>" +
+    (itemsHTML || '<div class="rep-empty">' + esc(vacioMsg) + "</div>") +
+    "</div>"
+  );
+}
+function tecValidacionHTML() {
+  const sinTec = valCursosSinTec(),
+    filasSueltas = valFilasSinCurso(),
+    fechas = valFechas(),
+    titulos = valTitulosDifieren(),
+    contradiccion = valEstadoContradictorio(),
+    total = sinTec.length + filasSueltas.length + fechas.length + titulos.length + contradiccion.length;
+  return (
+    '<div class="rep-nota" style="margin:0 0 16px;border-top:none;padding-top:0">' +
+    (total
+      ? "⚠️ " + total + " cosa" + (total === 1 ? "" : "s") + " para revisar entre el Mapa y Seguimiento técnico."
+      : "✅ Sin discrepancias detectadas entre el Mapa y Seguimiento técnico.") +
+    "</div>" +
+    valSeccion(
+      "Cursos activos sin fila en Técnico",
+      sinTec.length,
+      sinTec.length
+        ? '<div class="carga-list">' +
+          sinTec
+            .map(
+              (x) =>
+                '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span class="lnk-a" data-action="card:open" data-id="' +
+                x.card.id +
+                '" style="cursor:pointer;min-width:160px">' +
+                esc(x.card.titulo) +
+                "</span>" +
+                (x.sugerida
+                  ? '<span style="font-size:12px;color:var(--ink-soft);margin-right:8px">¿es "' +
+                    esc(x.sugerida.curso) +
+                    '"?</span><button class="btn btn-ghost btn-sm" data-action="tec:linksuggest" data-fila="' +
+                    x.sugerida.id +
+                    '" data-card="' +
+                    x.card.id +
+                    '">Vincular</button>'
+                  : '<button class="btn btn-ghost btn-sm" data-action="tec:crearfila" data-id="' +
+                    x.card.id +
+                    '">+ Crear fila</button>') +
+                "</div>",
+            )
+            .join("") +
+          "</div>"
+        : "",
+      "Todos los cursos activos tienen su fila en Técnico.",
+    ) +
+    valSeccion(
+      "Filas de Técnico sin curso en el Mapa",
+      filasSueltas.length,
+      filasSueltas.length
+        ? '<div class="carga-list">' +
+          filasSueltas
+            .map(
+              (f) =>
+                '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span style="flex:1;min-width:160px;font-size:13px">' +
+                esc(f.curso || "(sin nombre)") +
+                '</span><button class="btn btn-ghost btn-sm" data-action="tec:link" data-id="' +
+                f.id +
+                '">🔗 Vincular</button></div>',
+            )
+            .join("") +
+          "</div>"
+        : "",
+      "Todas las filas de Técnico están vinculadas o coinciden con un curso del Mapa.",
+    ) +
+    valSeccion(
+      "Fechas dudosas o faltantes",
+      fechas.length,
+      fechas.length
+        ? '<div class="carga-list">' +
+          fechas
+            .map(
+              (f) =>
+                '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span style="flex:1;min-width:160px;font-size:13px">' +
+                esc(f.curso || "(sin nombre)") +
+                '</span><span style="font-size:12px;color:var(--bad);margin-right:8px">' +
+                (tecFechaMala(f.publicacion) ? 'fecha inválida: "' + esc(f.publicacion) + '"' : "sin fecha") +
+                '</span><button class="btn btn-ghost btn-sm" data-action="tec:goto" data-id="' +
+                f.id +
+                '">Corregir</button></div>',
+            )
+            .join("") +
+          "</div>"
+        : "",
+      "Ninguna fecha pendiente de corregir.",
+    ) +
+    valSeccion(
+      "Títulos que no coinciden",
+      titulos.length,
+      titulos.length
+        ? '<div class="carga-list">' +
+          titulos
+            .map(
+              (x) =>
+                '<div class="lnk" style="flex-wrap:wrap;gap:6px 10px"><div style="flex:1;min-width:220px;font-size:12.5px"><b>Mapa:</b> ' +
+                esc(x.card.titulo) +
+                "<br><b>Técnico:</b> " +
+                esc(x.fila.curso) +
+                '</div><button class="btn btn-ghost btn-sm" data-action="tec:usarnombremapa" data-fila="' +
+                x.fila.id +
+                '" data-card="' +
+                x.card.id +
+                '">Usar el del Mapa</button><button class="btn btn-ghost btn-sm" data-action="tec:usarnombretecnico" data-fila="' +
+                x.fila.id +
+                '" data-card="' +
+                x.card.id +
+                '">Usar el de Técnico</button></div>',
+            )
+            .join("") +
+          "</div>"
+        : "",
+      "Los nombres coinciden en todas las filas vinculadas.",
+    ) +
+    valSeccion(
+      "Activo en el Mapa pero marcado de baja en Técnico",
+      contradiccion.length,
+      contradiccion.length
+        ? '<div class="carga-list">' +
+          contradiccion
+            .map(
+              (x) =>
+                '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span class="lnk-a" data-action="card:open" data-id="' +
+                x.card.id +
+                '" style="cursor:pointer;flex:1;min-width:160px">' +
+                esc(x.card.titulo) +
+                '</span><span style="font-size:12px;color:var(--ink-soft);margin-right:8px">Técnico: "' +
+                esc(x.fila.estado) +
+                '"</span><button class="btn btn-ghost btn-sm" data-action="curso:bajaid" data-id="' +
+                x.card.id +
+                '" style="color:var(--bad)">Dar de baja</button></div>',
+            )
+            .join("") +
+          "</div>"
+        : "",
+      "Sin contradicciones de estado.",
+    )
+  );
 }
 // ===== Reportería =====
 // Todo lo que se cuenta acá sale de UN solo universo: los cursos activos del
@@ -13935,7 +14173,7 @@ document.addEventListener("click", (ev) => {
     case "tec:goto": {
       const filaTec3 = state.tecnico.find((f) => f.id === val10);
       if (filaTec3) {
-        ((state.tecFiltro = filaTec3.curso), (state.view = "tecnico"), closePanel(), pushNav(), render());
+        ((state.tecFiltro = filaTec3.curso), (state.tecSubView = "grilla"), (state.view = "tecnico"), closePanel(), pushNav(), render());
         setTimeout(() => {
           const rowEl = document.querySelector('tr[data-tec-row="' + filaTec3.id + '"]');
           if (rowEl) {
@@ -13944,6 +14182,58 @@ document.addEventListener("click", (ev) => {
           }
         }, 60);
       }
+      break;
+    }
+    case "tec:subview":
+      ((state.tecSubView = el.dataset.v), render());
+      break;
+    case "tec:linksuggest": {
+      const filaSug = state.tecnico.find((f) => f.id === el.dataset.fila);
+      if (filaSug) ((filaSug.cardId = el.dataset.card), touchTecnico(), render());
+      break;
+    }
+    case "tec:crearfila": {
+      const cardCrear = state.cards.find((c) => c.id === el.dataset.id);
+      if (cardCrear)
+        (state.tecnico.push({
+          id: uid(),
+          categoria: (cardCrear.sectores || [])[0] ? sectorName(cardCrear.sectores[0]) || "" : "",
+          curso: cardCrear.titulo,
+          publicacion: cardCrear.publicadoEl || "",
+          portada: false,
+          mosaico: false,
+          evaluacion: false,
+          textos: false,
+          diseno: "",
+          estado: "",
+          cardId: cardCrear.id,
+          updatedAt: Date.now(),
+        }),
+          touchTecnico(),
+          render());
+      break;
+    }
+    case "tec:usarnombremapa": {
+      const filaNm = state.tecnico.find((f) => f.id === el.dataset.fila);
+      if (filaNm) {
+        const cardNm = state.cards.find((c) => c.id === el.dataset.card);
+        cardNm && ((filaNm.curso = cardNm.titulo), touchTecnico(), render());
+      }
+      break;
+    }
+    case "tec:usarnombretecnico": {
+      const filaNt = state.tecnico.find((f) => f.id === el.dataset.fila),
+        cardNt = state.cards.find((c) => c.id === el.dataset.card);
+      if (filaNt && cardNt) (patch(cardNt, { titulo: filaNt.curso }), render());
+      break;
+    }
+    case "curso:bajaid": {
+      const cardBaja = state.cards.find((c) => c.id === el.dataset.id);
+      if (cardBaja)
+        (logAct(cardBaja, "dio de baja"),
+          patch(cardBaja, { activo: false, bajaEl: todayISO() }),
+          render(),
+          flash("🚫 Dado de baja: ya no cuenta como activo"));
       break;
     }
     case "set:pass": {
