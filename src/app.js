@@ -5731,6 +5731,46 @@ function valDuplicadosMapa() {
   });
   return Object.values(grupos).filter((g) => g.length > 1);
 }
+// Un duplicado no es un curso que se dio de baja — nunca estuvo destinado a
+// existir dos veces, así que la limpieza correcta es borrarlo de verdad
+// (con el mismo camino con deshacer que usa el resto de la app), no marcarlo
+// inactivo. De cada grupo se elige uno para mantener: el que ya tenga fila
+// vinculada en Técnico (para no perder el trabajo de producción cargado
+// ahí), o si ninguno o varios la tienen, el más nuevo.
+function elegirParaMantener(grupo) {
+  const conTec = grupo.filter((c) => tecFilaParaCard(c));
+  if (conTec.length === 1) return conTec[0];
+  // creadoEl es solo fecha (AAAA-MM-DD): dos duplicados cargados el mismo
+  // día empatarían ahí. updatedAt tiene milisegundos, así que desempata de
+  // verdad incluso entre cursos creados en la misma sesión.
+  return grupo.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+}
+// Si alguno de los duplicados que se borran tenía la fila de Técnico
+// vinculada y el que se mantiene no, el vínculo se transfiere en vez de
+// perderse — así ninguna carga de portada/mosaico/evaluación queda huérfana.
+function valLimpiarDuplicados() {
+  const grupos = valDuplicadosMapa();
+  if (!grupos.length) return 0;
+  const aEliminar = [];
+  let tecTocado = false;
+  grupos.forEach((grupo) => {
+    const keeper = elegirParaMantener(grupo);
+    let filaKeeperId = (state.tecnico.find((f) => f.cardId === keeper.id) || {}).id || null;
+    grupo.forEach((c) => {
+      if (c.id === keeper.id) return;
+      aEliminar.push(c.id);
+      const fila = state.tecnico.find((f) => f.cardId === c.id);
+      if (fila) {
+        if (!filaKeeperId) ((fila.cardId = keeper.id), (filaKeeperId = fila.id));
+        else fila.cardId = null;
+        tecTocado = true;
+      }
+    });
+  });
+  if (tecTocado) touchTecnico();
+  if (aEliminar.length) dropCardsWithUndo(aEliminar);
+  return aEliminar.length;
+}
 // Cursos activos del Mapa sin ninguna fila de Técnico (ni por id ni por
 // título). Si hay una fila SIN vincular con un título parecido se sugiere
 // un vínculo de un clic; si no, se ofrece crear la fila directamente.
@@ -5824,14 +5864,20 @@ function tecValidacionHTML() {
       "Cursos duplicados en el Mapa",
       nDup,
       duplicados.length
-        ? duplicados
-            .map(
-              (g) =>
+        ? (nDup > 1
+            ? '<button class="btn btn-sm" data-action="val:limpiarduplicados" style="margin-bottom:6px">🧹 Limpiar los ' +
+              nDup +
+              " duplicados (deja uno de cada grupo)</button>"
+            : "") +
+          duplicados
+            .map((g) => {
+              const keeper = elegirParaMantener(g);
+              return (
                 '<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin:10px 0 2px">"' +
                 esc(g[0].titulo) +
                 '" · ' +
                 g.length +
-                " veces</div><div class=\"carga-list\">" +
+                ' veces</div><div class="carga-list">' +
                 g
                   .map(
                     (c) =>
@@ -5839,15 +5885,17 @@ function tecValidacionHTML() {
                       c.id +
                       '" style="cursor:pointer;flex:1">' +
                       esc(c.titulo) +
+                      (c.id === keeper.id ? ' <span class="badge" style="margin-left:6px">se mantiene</span>' : "") +
                       '</span><span style="font-size:11px;color:var(--ink-soft);margin-right:8px">creado ' +
                       tecFechaVer(c.creadoEl || "") +
-                      '</span><button class="btn btn-ghost btn-sm" data-action="curso:bajaid" data-id="' +
+                      '</span><button class="btn btn-ghost btn-sm" data-action="kcard:del" data-id="' +
                       c.id +
-                      '" style="color:var(--bad)">Dar de baja</button></div>',
+                      '" style="color:var(--bad)">🗑 Eliminar</button></div>',
                   )
                   .join("") +
-                "</div>",
-            )
+                "</div>"
+              );
+            })
             .join("")
         : "",
       "No hay cursos activos con el mismo título repetido.",
@@ -6007,6 +6055,36 @@ function tecFilaParaCard(tarjeta) {
   const titulo = (tarjeta.titulo || "").trim().toLowerCase();
   if (!titulo) return null;
   return state.tecnico.find((f) => (f.curso || "").trim().toLowerCase() === titulo) || null;
+}
+function tecNuevaFilaPara(tarjeta) {
+  return {
+    id: uid(),
+    categoria: (tarjeta.sectores || [])[0] ? sectorName(tarjeta.sectores[0]) || "" : "",
+    curso: tarjeta.titulo,
+    publicacion: tarjeta.publicadoEl || "",
+    portada: false,
+    mosaico: false,
+    evaluacion: false,
+    textos: false,
+    diseno: "",
+    estado: "",
+    cardId: tarjeta.id,
+    updatedAt: Date.now(),
+  };
+}
+// Se llama al publicar un curso: lo conecta con Técnico en el momento en
+// vez de dejarlo para que Validación lo señale después. Si ya hay una fila
+// con el mismo título (típico de los cursos del catálogo original) la
+// vincula en vez de crear una segunda — evita fabricar el mismo tipo de
+// duplicado que Validación existe para limpiar.
+function tecAutoVincular(tarjeta) {
+  if (tarjeta.tipo !== "curso") return;
+  const existente = tecFilaParaCard(tarjeta);
+  if (existente) {
+    if (!existente.cardId) ((existente.cardId = tarjeta.id), touchTecnico());
+    return;
+  }
+  (state.tecnico.push(tecNuevaFilaPara(tarjeta)), touchTecnico());
 }
 function fechaPublicacionCard(tarjeta) {
   const fila = tecFilaParaCard(tarjeta);
@@ -7820,7 +7898,9 @@ function renderPanel() {
             '</div>\n        <div class="bridge-d">Publicado y visible para el equipo. ¿Necesita cambios? Generá una <b>actualización</b>: vuelve al tablero sin perder la ficha.</div>\n        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" data-action="curso:actualizar">Generar actualización</button><button class="btn btn-ghost btn-sm" data-action="curso:baja" style="color:var(--bad)" title="Ya no está vigente: sacarlo del Mapa y de Reportería sin borrar la ficha">Dar de baja</button></div></div>');
   }
   const html = isCurso(tarjeta)
-      ? '<details class="acc sec-acc"><summary class="sub">Ficha de catálogo<span class="ring"></span></summary><div class="acc-body">\n    <div class="fld"><label>Link Moodle</label><input value="' +
+      ? '<details class="acc sec-acc"><summary class="sub">Ficha de catálogo<span class="ring"></span></summary><div class="acc-body">\n    <div class="fld"><label>Imagen de portada (URL)</label><input value="' +
+        esc(tarjeta.catalogo.imagen) +
+        '" data-field="cat:imagen" placeholder="https://..."></div>\n    <div class="fld"><label>Link Moodle</label><input value="' +
         esc(tarjeta.linkMoodle) +
         '" data-field="linkMoodle" placeholder="https://..."></div>\n    <div class="fld"><label>Bajada</label><input value="' +
         esc(tarjeta.catalogo.bajada) +
@@ -8591,23 +8671,7 @@ document.addEventListener("click", (ev) => {
     }
     case "tec:crearfila": {
       const cardCrear = state.cards.find((c) => c.id === el.dataset.id);
-      if (cardCrear)
-        (state.tecnico.push({
-          id: uid(),
-          categoria: (cardCrear.sectores || [])[0] ? sectorName(cardCrear.sectores[0]) || "" : "",
-          curso: cardCrear.titulo,
-          publicacion: cardCrear.publicadoEl || "",
-          portada: false,
-          mosaico: false,
-          evaluacion: false,
-          textos: false,
-          diseno: "",
-          estado: "",
-          cardId: cardCrear.id,
-          updatedAt: Date.now(),
-        }),
-          touchTecnico(),
-          render());
+      if (cardCrear) (state.tecnico.push(tecNuevaFilaPara(cardCrear)), touchTecnico(), render());
       break;
     }
     case "tec:usarnombremapa": {
@@ -8631,6 +8695,23 @@ document.addEventListener("click", (ev) => {
           patch(cardBaja, { activo: false, bajaEl: todayISO() }),
           render(),
           flash("🚫 Dado de baja: ya no cuenta como activo"));
+      break;
+    }
+    case "val:limpiarduplicados": {
+      const nAEliminar = valDuplicadosMapa().reduce((n, g) => n + (g.length - 1), 0);
+      if (!nAEliminar) break;
+      confirmar(
+        "¿Limpiar " +
+          nAEliminar +
+          " curso" +
+          (nAEliminar === 1 ? "" : "s") +
+          " duplicado" +
+          (nAEliminar === 1 ? "" : "s") +
+          "? Se mantiene uno de cada grupo (el vinculado a Técnico, o el más nuevo) y el resto se borra — con 6 segundos para deshacer.",
+        () => {
+          (valLimpiarDuplicados(), render(), flash("🧹 Duplicados limpiados"));
+        },
+      );
       break;
     }
     case "set:pass": {
@@ -9046,6 +9127,10 @@ document.addEventListener("click", (ev) => {
           // publicación, que es la que le importa a Reportería.
           publicadoEl: val22.publicadoEl || todayISO(),
         }),
+        // Conecta con Técnico en el momento en vez de dejarlo para que
+        // Validación lo señale después — así un curso nuevo nunca queda
+        // "suelto" solo porque nadie fue a crearle la fila a mano.
+        tecAutoVincular(val22),
         renderPanel(),
         render(),
         flash("◎ Publicado al inventario del Mapa"));
