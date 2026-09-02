@@ -14091,6 +14091,13 @@ function applyField(tarjeta, val, el) {
               if (value === "en-revision") tarjeta.revisionDesde = isoOf(new Date());
             }
             tarjeta[val] = value;
+            // El título viaja hacia la fila de Técnico vinculada (si hay) para
+            // que Mapa y Técnico no se desalineen de nuevo — sin bloquear la
+            // edición de ninguno de los dos lados.
+            if (val === "titulo") {
+              const filaVinc = state.tecnico.find((f) => f.cardId === tarjeta.id);
+              if (filaVinc && filaVinc.curso !== value) ((filaVinc.curso = value), touchTecnico());
+            }
           }
         }
       }
@@ -14995,6 +15002,12 @@ function applyTecField(id, campo, value) {
   // Se guarda ISO, pero solo cuando la fecha ya está completa: mientras se
   // tipea "12/05/20…" no matchea y queda el texto crudo, sin pelearle al cursor.
   ((fila[campo] = campo === "publicacion" ? tecFechaISO(value) : value), touchTecnico());
+  // Espejo hacia la tarjeta del Mapa vinculada: Técnico sigue siendo
+  // editable de punta a punta, el nombre solo viaja para el lado del curso.
+  if (campo === "curso" && fila.cardId) {
+    const cardVinc = state.cards.find((c) => c.id === fila.cardId);
+    if (cardVinc && cardVinc.titulo !== value) ((cardVinc.titulo = value), touch());
+  }
 }
 (document.addEventListener("input", (ev) => {
   if (ev.target.id === "cmdkInput") {
