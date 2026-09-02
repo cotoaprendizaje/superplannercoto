@@ -3211,9 +3211,6 @@ const INV_KIND = {
   poes: "contenido",
   guia: "contenido",
 };
-// Tipos que eventualmente pueden terminar publicados en el Mapa — sirve para
-// mostrar, dentro del Mapa, lo que todavía está en el Planner camino a serlo.
-const INV_TIPOS = new Set(Object.keys(INV_KIND));
 function inventoryKind(tarjeta) {
   return INV_KIND[tarjeta.tipo] || null;
 }
@@ -4289,7 +4286,7 @@ const VIEW_TITLES = {
   kanban: ["Planner", "Tareas y proyectos por estado"],
   calendario: ["Calendario del planner", "Qué pasa y cuándo"],
   timeline: ["Timeline", "El panorama macro del área"],
-  mapa: ["Mapa del área", "Todo lo publicado y lo que viene: cursos, Edu Points, contenido audiovisual y lo que está en desarrollo"],
+  mapa: ["Mapa del área", "Todo lo publicado: cursos, Edu Points y contenido audiovisual, organizado por sector"],
   tecnico: ["Seguimiento técnico", "Publicación, portada, mosaico, evaluación, textos y diseño de cada curso — para no volver al Excel."],
   reportes: ["Reportes", "Métricas del área para gestionar al equipo y llevar a fin de año: publicaciones, catálogo, carga y tiempos."],
 };
@@ -5038,20 +5035,6 @@ function mapaFilter(lista) {
 function invCard(arg) {
   return arg.tipo === "curso" ? cursoCard(arg) : arg.tipo === "edu-point" ? eduCard(arg) : recursoCard(arg);
 }
-// "En desarrollo" es lo que va camino al Mapa, no todo el Planner: antes traía
-// también los finalizados, así que el número no coincidía con ninguna columna
-// del tablero y no se podía usar para nada.
-//
-// Los Edu Point en curso quedan afuera a propósito: ya tienen su propio
-// bloque "🚧 En el Planner" dentro de la sección Edu Point (ver
-// eduPointsEnPlanner/sectionEduPoints) — contarlos acá también los mostraba
-// duplicados, una vez en "En desarrollo" y otra en Edu Point.
-const DESARROLLO_ESTADOS = new Set(["en-desarrollo", "pendiente"]);
-function sectionDesarrolloAll() {
-  return boardCards().filter(
-    (tarjeta) => INV_TIPOS.has(tarjeta.tipo) && tarjeta.tipo !== "edu-point" && DESARROLLO_ESTADOS.has(tarjeta.estado),
-  );
-}
 // Los Edu Points del Planner: la sección miraba solo los colocados y quedaba
 // vacía aunque hubiera varios en curso, que es lo que se quería mirar.
 function eduPointsEnPlanner() {
@@ -5179,11 +5162,6 @@ function renderMapa() {
         n: cuenta(state.cards.filter(inInventory)),
       },
       {
-        id: "desarrollo",
-        label: "🚧 En desarrollo",
-        n: cuenta(sectionDesarrolloAll()),
-      },
-      {
         id: "edu-points",
         label: "📍 QR / Edu Point",
         n: porTipo("edu-point") + cuenta(eduPointsEnPlanner()),
@@ -5225,18 +5203,15 @@ function renderMapa() {
   let txt = "";
   if (state.mapaSec === "todos") txt = sectionTodos();
   else {
-    if (state.mapaSec === "desarrollo") txt = sectionDesarrollo();
+    if (state.mapaSec === "cursos") txt = sectionCursos();
     else {
-      if (state.mapaSec === "cursos") txt = sectionCursos();
+      if (state.mapaSec === "edu-points") txt = sectionEduPoints();
       else {
-        if (state.mapaSec === "edu-points") txt = sectionEduPoints();
+        if (state.mapaSec === "edu-archivos") txt = renderEduArchivos();
         else {
-          if (state.mapaSec === "edu-archivos") txt = renderEduArchivos();
+          if (state.mapaSec === "contenido") txt = sectionContenido();
           else {
-            if (state.mapaSec === "contenido") txt = sectionContenido();
-            else {
-              if (state.mapaSec === "bajas") txt = sectionBajas();
-            }
+            if (state.mapaSec === "bajas") txt = sectionBajas();
           }
         }
       }
@@ -6525,16 +6500,6 @@ function sectionContenido() {
       "Publicá un video, guía, capacitación presencial o POES del tablero (botón en su ficha) para verlo acá.",
     );
   return '<div class="cursos-grid">' + lista.map(recursoCard).join("") + "</div>";
-}
-function sectionDesarrollo() {
-  const lista = mapaFilter(sectionDesarrolloAll());
-  if (!lista.length)
-    return emptyState(
-      "🚧",
-      "Nada en desarrollo ahora mismo",
-      "Todo lo que crees en el Planner con un tipo publicable (curso, Edu Point, video, guía, app, base…) va a aparecer acá hasta que lo publiques.",
-    );
-  return '<div class="cursos-grid">' + lista.map(desarrolloCard).join("") + "</div>";
 }
 function desarrolloCard(tarjeta) {
   const val = primaryCat(tarjeta),
@@ -10482,7 +10447,7 @@ function openHelp() {
     ["Menú de usuario (▾)", "Mi semana (tu foco de los próximos días), Carga del equipo, e Imprimir/PDF están ahí."],
     ["🎲 ¿Qué curso me toca?", "Botoncito flotante a la derecha del Planner (🎡): tocalo para desplegar el sorteo entre los cursos que todavía no arrancaron."],
     ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
-    ["Mapa del área", "Todo lo publicado (cursos, Edu Points) y lo que está en desarrollo, organizado por sector y filtrable con un clic."],
+    ["Mapa del área", "Todo lo publicado (cursos, Edu Points, contenido audiovisual), organizado por sector y filtrable con un clic."],
     ["🔧 Seguimiento técnico", "Reemplaza al Excel de Categorías y Cursos: publicación, portada, mosaico, evaluación, textos y diseño de cada curso, editable ahí mismo. \"🔗 Vincular\" une una fila con su tarjeta del Mapa."],
     ["📈 Reportes", "Métricas para gestionar el área: publicaciones por mes, catálogo por sector, carga del equipo y tiempo en revisión. \"⬇ CSV\" y \"🖨 PDF\" exportan lo mismo que se ve en pantalla."],
   ];
