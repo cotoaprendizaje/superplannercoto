@@ -3213,8 +3213,12 @@ const INV_TIPOS = new Set(Object.keys(INV_KIND));
 function inventoryKind(tarjeta) {
   return INV_KIND[tarjeta.tipo] || null;
 }
+// activo !== false: un elemento publicado sigue contando como activo salvo
+// que alguien lo haya dado de baja a mano (curso:baja). Los que nunca se
+// tocaron no tienen el campo, así que el default (undefined !== false) es
+// "activo" — dar de baja es un gesto explícito, no algo que se infiera.
 function inInventory(tarjeta) {
-  return !!tarjeta.publicado && !!inventoryKind(tarjeta);
+  return !!tarjeta.publicado && !!inventoryKind(tarjeta) && tarjeta.activo !== false;
 }
 function isInventory(tarjeta) {
   return inInventory(tarjeta) && !tarjeta.enActualizacion;
@@ -3821,6 +3825,8 @@ function newCard(txt, txt2, obj) {
       // ninguna fecha real de la que tirar para las tarjetas del Planner.
       creadoEl: todayISO(),
       publicadoEl: null,
+      activo: true,
+      bajaEl: null,
       enActualizacion: false,
       linkMoodle: "",
       catalogo: {
@@ -4383,7 +4389,11 @@ function cardKanban(tarjeta) {
     '" title="Duplicar">⧉</button><button class="kq-btn kq-del" data-action="kcard:del" data-id="' +
     tarjeta.id +
     '" title="Eliminar">🗑</button></div>\n    ' +
-    (inInventory(tarjeta) ? '<span class="tag-flag">◎ activo</span>' : "") +
+    (tarjeta.activo === false
+      ? '<span class="tag-flag" style="background:var(--bad-soft);color:var(--bad)">✕ de baja</span>'
+      : inInventory(tarjeta)
+        ? '<span class="tag-flag">◎ activo</span>'
+        : "") +
     '\n    <div class="kcard-top">\n      <span class="tipo-pill">' +
     tipo.icon +
     " " +
@@ -5668,11 +5678,25 @@ function repPublicaciones() {
     .map((c) => ({ card: c, fecha: fechaPublicacionCard(c) }))
     .filter((p) => p.fecha);
 }
-function repKpi(n, label, color, sub) {
+// El cuarto argumento acepta un data-action (+ dataset opcional) para que el
+// KPI quede realmente clickeable, no solo algo que SE VE así: .kpi ya traía
+// el hover con levante desde que se usa en Inicio, así que dejar el número
+// quieto abajo era prometer una interacción que no estaba.
+function repKpi(n, label, color, sub, accion, dataset) {
+  const attrs = accion
+    ? ' data-action="' +
+      accion +
+      '"' +
+      Object.keys(dataset || {})
+        .map((k) => ' data-' + k + '="' + esc(String(dataset[k])) + '"')
+        .join("")
+    : "";
   return (
     '<div class="kpi" style="--kpi:' +
     color +
-    '"><div class="kpi-num">' +
+    '"' +
+    attrs +
+    '><div class="kpi-num">' +
     n +
     '</div><div class="kpi-lbl">' +
     esc(label) +
@@ -5697,14 +5721,22 @@ function repResumenHTML() {
   }
   return (
     '<div class="res-grid">' +
-    repKpi(activos.length, "Cursos activos", "var(--coto-blue)", sinFecha ? sinFecha + " sin fecha registrada" : "") +
-    repKpi(esteAnio, "Publicados en " + anio, "var(--ok)", variacion) +
-    repKpi(anioPasado, "Publicados en " + (anio - 1), "var(--coto-navy)", "") +
+    repKpi(
+      activos.length,
+      "Cursos activos",
+      "var(--coto-blue)",
+      sinFecha ? sinFecha + " sin fecha registrada" : "",
+      "rep:activos",
+    ) +
+    repKpi(esteAnio, "Publicados en " + anio, "var(--ok)", variacion, "rep:anio", { anio }) +
+    repKpi(anioPasado, "Publicados en " + (anio - 1), "var(--coto-navy)", "", "rep:anio", { anio: anio - 1 }) +
     repKpi(
       state.tecnico.filter((f) => !f.portada || !f.mosaico).length,
       "Con portada o mosaico pendiente",
       "var(--warn)",
       "En Seguimiento técnico",
+      "hub:go",
+      { go: "tecnico" },
     ) +
     "</div>"
   );
@@ -5718,15 +5750,30 @@ function repBarsHTML(bars, vacioMsg) {
   return (
     '<div class="rep-chart">' +
     bars
-      .map(
-        (b) =>
+      .map((b) => {
+        // Solo se puede clickear una barra con algo adentro: una en 0 no
+        // tiene a dónde entrar, mostrarla clickeable sería una promesa
+        // vacía.
+        const clickeable = b.accion && b.n > 0,
+          attrs = clickeable
+            ? ' data-action="' +
+              b.accion +
+              '"' +
+              Object.keys(b.dataset || {})
+                .map((k) => ' data-' + k + '="' + esc(String(b.dataset[k])) + '"')
+                .join("") +
+              ' style="cursor:pointer"'
+            : "";
+        return (
           '<div class="rep-bar-col" title="' +
           esc(b.titulo) +
           ": " +
           b.n +
           " curso" +
           (b.n === 1 ? "" : "s") +
-          '"><div class="rep-bar-n">' +
+          '"' +
+          attrs +
+          '><div class="rep-bar-n">' +
           (b.n || "") +
           '</div><div class="rep-bar-track"><div class="rep-bar' +
           (b.otro ? " rep-bar-otro" : "") +
@@ -5734,8 +5781,9 @@ function repBarsHTML(bars, vacioMsg) {
           Math.max(3, Math.round((b.n / max) * 100)) +
           '%"></div></div><div class="rep-bar-lbl">' +
           esc(b.lbl) +
-          "</div></div>",
-      )
+          "</div></div>"
+        );
+      })
       .join("") +
     "</div>" +
     (total ? "" : '<div class="rep-empty">' + vacioMsg + "</div>")
@@ -5752,7 +5800,13 @@ function repPublicacionesPorMes() {
   return porMes;
 }
 function repChartHTML() {
-  const bars = repPublicacionesPorMes().map((n, i) => ({ n, lbl: MESES[i].slice(0, 3), titulo: MESES[i] }));
+  const bars = repPublicacionesPorMes().map((n, i) => ({
+    n,
+    lbl: MESES[i].slice(0, 3),
+    titulo: MESES[i],
+    accion: "rep:mes",
+    dataset: { mes: i },
+  }));
   return repBarsHTML(bars, "Todavía no hay publicaciones con fecha registrada este año.");
 }
 // El histórico completo: TODOS los cursos activos cuentan acá, tengan o no
@@ -5770,22 +5824,106 @@ function repPublicacionesPorAnio() {
   const anios = Object.keys(conteo)
     .map(Number)
     .sort((a, b) => a - b);
-  const bars = anios.map((a) => ({ n: conteo[a], lbl: String(a), titulo: String(a) }));
-  if (sinFecha) bars.push({ n: sinFecha, lbl: "S/F", titulo: "Sin fecha registrada", otro: true });
+  const bars = anios.map((a) => ({
+    n: conteo[a],
+    lbl: String(a),
+    titulo: String(a),
+    accion: "rep:anio",
+    dataset: { anio: a },
+  }));
+  if (sinFecha)
+    bars.push({
+      n: sinFecha,
+      lbl: "S/F",
+      titulo: "Sin fecha registrada",
+      otro: true,
+      accion: "rep:anio",
+      dataset: { anio: "sf" },
+    });
   return bars;
 }
 function repChartAnualHTML() {
   return repBarsHTML(repPublicacionesPorAnio(), "Sin cursos activos todavía.");
 }
+// Modal de detalle: cada KPI, barra o fila de Reportería abre acá la lista
+// real de cursos detrás del número, para que la sección sirva para explorar
+// y no solo para mostrar totales.
+function repListaModalHTML(titulo, lista) {
+  return (
+    "<h2>" +
+    esc(titulo) +
+    " · " +
+    lista.length +
+    "</h2>" +
+    (lista.length
+      ? '<div class="rep-modal-list">' +
+        lista
+          .map(
+            (c) =>
+              '<div class="lnk"><span class="lnk-a" data-action="card:open" data-id="' +
+              c.id +
+              '" style="cursor:pointer">' +
+              esc(c.titulo) +
+              '</span><span style="font-size:12px;color:var(--ink-soft);white-space:nowrap">' +
+              esc((c.sectores || []).map((s) => sectorName(s) || s).join(", ")) +
+              "</span></div>",
+          )
+          .join("") +
+        "</div>"
+      : '<div class="rep-empty">Sin cursos en este grupo.</div>') +
+    '<div class="modal-foot"><button class="btn" data-action="modal:close">Cerrar</button></div>'
+  );
+}
+function repAbrirActivos() {
+  openModal(repListaModalHTML("Cursos activos", repCursosActivos()));
+}
+function repAbrirMes(mes) {
+  const anio = new Date().getFullYear(),
+    lista = repPublicaciones()
+      .filter((p) => +p.fecha.slice(0, 4) === anio && +p.fecha.slice(5, 7) - 1 === mes)
+      .map((p) => p.card);
+  openModal(repListaModalHTML("Publicados en " + MESES[mes] + " " + anio, lista));
+}
+function repAbrirAnio(anioTxt) {
+  let lista, titulo;
+  if (anioTxt === "sf") {
+    ((lista = repCursosActivos().filter((c) => !fechaPublicacionCard(c))), (titulo = "Sin fecha registrada"));
+  } else {
+    const anio = +anioTxt;
+    ((lista = repPublicaciones()
+      .filter((p) => +p.fecha.slice(0, 4) === anio)
+      .map((p) => p.card)),
+      (titulo = "Publicados en " + anio));
+  }
+  openModal(repListaModalHTML(titulo, lista));
+}
+// Las filas de sector no abren un modal: van directo al Mapa filtrado por
+// ese sector, igual que ya hace mapa:bubble — a diferencia de las barras de
+// los gráficos, acá el destino natural ya existe como vista propia.
+function repAbrirSector(sector) {
+  ((state.filters.sector = sector || ""), (state.mapaSec = "todos"), (state.view = "mapa"), closePanel(), pushNav(), render());
+}
 // Mismo lenguaje visual que "Carga del equipo" (fila con barra proporcional):
 // una vez que alguien reconoce el patrón en una pantalla, lo lee gratis en
 // las demás.
-function repBarraRow(nombre, n, max, color, avatar) {
+function repBarraRow(nombreHTML, n, max, color, avatar, accion, dataset) {
+  const clickeable = accion && n > 0,
+    attrs = clickeable
+      ? ' data-action="' +
+        accion +
+        '"' +
+        Object.keys(dataset || {})
+          .map((k) => ' data-' + k + '="' + esc(String(dataset[k])) + '"')
+          .join("") +
+        ' style="cursor:pointer"'
+      : ' style="cursor:default"';
   return (
-    '<div class="carga-row" style="cursor:default">' +
+    '<div class="carga-row"' +
+    attrs +
+    ">" +
     (avatar || "") +
     '<div class="carga-info"><div class="carga-name">' +
-    esc(nombre) +
+    nombreHTML +
     '</div><div class="carga-bar"><div class="carga-fill" style="width:' +
     Math.round((n / max) * 100) +
     "%;background:" +
@@ -5809,7 +5947,17 @@ function repSectoresHTML() {
   return (
     '<div class="carga-list">' +
     entradas
-      .map((e) => repBarraRow(e[0] ? sectorName(e[0]) || e[0] : "Sin sector", e[1], max, e[0] ? "var(--coto-blue)" : "var(--ink-soft)"))
+      .map((e) =>
+        repBarraRow(
+          esc(e[0] ? sectorName(e[0]) || e[0] : "Sin sector"),
+          e[1],
+          max,
+          e[0] ? "var(--coto-blue)" : "var(--ink-soft)",
+          null,
+          "rep:sector",
+          { sector: e[0] },
+        ),
+      )
       .join("") +
     "</div>"
   );
@@ -5836,19 +5984,14 @@ function repEquipoHTML() {
         sub = [v.alta ? v.alta + " alta" : "", v.venc ? v.venc + " vencida" + (v.venc === 1 ? "" : "s") : ""]
           .filter(Boolean)
           .join(" · ");
-      return (
-        '<div class="carga-row" style="cursor:default">' +
-        avatarHTML(m.id) +
-        '<div class="carga-info"><div class="carga-name">' +
-        esc(m.nombre) +
-        (sub ? ' <span class="carga-rol">· ' + sub + "</span>" : "") +
-        '</div><div class="carga-bar"><div class="carga-fill" style="width:' +
-        Math.round((v.n / max) * 100) +
-        "%;background:" +
-        m.color +
-        '"></div></div></div><div class="carga-num">' +
-        v.n +
-        "</div></div>"
+      return repBarraRow(
+        esc(m.nombre) + (sub ? ' <span class="carga-rol">· ' + sub + "</span>" : ""),
+        v.n,
+        max,
+        m.color,
+        avatarHTML(m.id),
+        "carga:go",
+        { id: m.id },
       );
     }).join("") +
     "</div>"
@@ -7308,7 +7451,14 @@ function renderPanel() {
           poes: "Este POES",
           guia: "Esta guía",
         }[tarjeta.tipo] || "Este elemento";
-    if (!tarjeta.publicado)
+    if (tarjeta.activo === false)
+      txt7 =
+        '<div class="bridge bridge-baja"><div class="bridge-t">🚫 Dado de baja</div>\n        <div class="bridge-d">' +
+        txt8 +
+        " ya no cuenta como activo en el Mapa ni en Reportería" +
+        (tarjeta.bajaEl ? " (desde " + tecFechaVer(tarjeta.bajaEl) + ")" : "") +
+        '.</div>\n        <button class="btn btn-sm" data-action="curso:reactivar">Reactivar</button></div>';
+    else if (!tarjeta.publicado)
       txt7 =
         '<div class="bridge"><div class="bridge-t">📝 En producción (tablero)</div>\n        <div class="bridge-d">' +
         txt8 +
@@ -7324,7 +7474,7 @@ function renderPanel() {
         : (txt7 =
             '<div class="bridge"><div class="bridge-t">✅ ' +
             (esEdu ? "Colocado en el Mapa" : "Activo en el Mapa") +
-            '</div>\n        <div class="bridge-d">Publicado y visible para el equipo. ¿Necesita cambios? Generá una <b>actualización</b>: vuelve al tablero sin perder la ficha.</div>\n        <button class="btn btn-sm" data-action="curso:actualizar">Generar actualización</button></div>');
+            '</div>\n        <div class="bridge-d">Publicado y visible para el equipo. ¿Necesita cambios? Generá una <b>actualización</b>: vuelve al tablero sin perder la ficha.</div>\n        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" data-action="curso:actualizar">Generar actualización</button><button class="btn btn-ghost btn-sm" data-action="curso:baja" style="color:var(--bad)" title="Ya no está vigente: sacarlo del Mapa y de Reportería sin borrar la ficha">Dar de baja</button></div></div>');
   }
   const html = isCurso(tarjeta)
       ? '<details class="acc sec-acc"><summary class="sub">Ficha de catálogo<span class="ring"></span></summary><div class="acc-body">\n    <div class="fld"><label>Link Moodle</label><input value="' +
@@ -7433,7 +7583,7 @@ function renderPanel() {
     ((allTipos()[tarjeta.tipo] || {}).icon || "•") +
     " " +
     ((allTipos()[tarjeta.tipo] || {}).nombre || tarjeta.tipo) +
-    (inInventory(tarjeta) ? " · ◎ activo" : "") +
+    (tarjeta.activo === false ? " · ✕ de baja" : inInventory(tarjeta) ? " · ◎ activo" : "") +
     ultimoTocadoHTML(tarjeta) +
     '</div>\n        <input class="chk-text" style="font-size:18px;font-weight:700;font-family:var(--titulo);width:100%;margin-top:4px" placeholder="Ej: Cajas – Apertura del sector" value="' +
     esc(tarjeta.titulo) +
@@ -7960,6 +8110,18 @@ document.addEventListener("click", (ev) => {
       break;
     case "reportes:csv":
       exportReportesCSV();
+      break;
+    case "rep:activos":
+      repAbrirActivos();
+      break;
+    case "rep:mes":
+      repAbrirMes(+el.dataset.mes);
+      break;
+    case "rep:anio":
+      repAbrirAnio(el.dataset.anio);
+      break;
+    case "rep:sector":
+      repAbrirSector(el.dataset.sector);
       break;
     case "data:import":
       doImport();
@@ -8507,6 +8669,24 @@ document.addEventListener("click", (ev) => {
         renderPanel(),
         render(),
         flash("✓ Republicado al Mapa"));
+      break;
+    }
+    case "curso:baja": {
+      const val25 = current();
+      (logAct(val25, "dio de baja"),
+        patch(val25, { activo: false, bajaEl: todayISO() }),
+        renderPanel(),
+        render(),
+        flash("🚫 Dado de baja: ya no cuenta como activo"));
+      break;
+    }
+    case "curso:reactivar": {
+      const val26 = current();
+      (logAct(val26, "reactivó"),
+        patch(val26, { activo: true, bajaEl: null }),
+        renderPanel(),
+        render(),
+        flash("✓ Reactivado"));
       break;
     }
     case "card:dup":
