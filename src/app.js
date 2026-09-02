@@ -5718,6 +5718,19 @@ function tecCardDeFila(fila) {
     ? state.cards.find((c) => c.id === fila.cardId)
     : state.cards.find((c) => (c.titulo || "").trim().toLowerCase() === (fila.curso || "").trim().toLowerCase());
 }
+// Dos o más cursos activos con el mismo título (normalizado: espacios y
+// mayúsculas no cuentan) son, para el equipo, el mismo curso publicado dos
+// veces — el caso típico es una reingesta del catálogo o una publicación
+// duplicada a mano. Se agrupan para poder dar de baja los sobrantes sin
+// perder el historial de ninguno.
+function valDuplicadosMapa() {
+  const grupos = {};
+  repCursosActivos().forEach((c) => {
+    const key = (c.titulo || "").trim().toLowerCase().replace(/\s+/g, " ");
+    (grupos[key] = grupos[key] || []).push(c);
+  });
+  return Object.values(grupos).filter((g) => g.length > 1);
+}
 // Cursos activos del Mapa sin ninguna fila de Técnico (ni por id ni por
 // título). Si hay una fila SIN vincular con un título parecido se sugiere
 // un vínculo de un clic; si no, se ofrece crear la fila directamente.
@@ -5773,6 +5786,7 @@ function valEstadoContradictorio() {
 }
 function tecValidacionTotal() {
   return (
+    valDuplicadosMapa().reduce((n, g) => n + (g.length - 1), 0) +
     valCursosSinTec().length +
     valFilasSinCurso().length +
     valFechas().length +
@@ -5792,18 +5806,52 @@ function valSeccion(titulo, n, itemsHTML, vacioMsg) {
   );
 }
 function tecValidacionHTML() {
-  const sinTec = valCursosSinTec(),
+  const duplicados = valDuplicadosMapa(),
+    sinTec = valCursosSinTec(),
     filasSueltas = valFilasSinCurso(),
     fechas = valFechas(),
     titulos = valTitulosDifieren(),
     contradiccion = valEstadoContradictorio(),
-    total = sinTec.length + filasSueltas.length + fechas.length + titulos.length + contradiccion.length;
+    nDup = duplicados.reduce((n, g) => n + (g.length - 1), 0),
+    total = nDup + sinTec.length + filasSueltas.length + fechas.length + titulos.length + contradiccion.length;
   return (
     '<div class="rep-nota" style="margin:0 0 16px;border-top:none;padding-top:0">' +
     (total
       ? "⚠️ " + total + " cosa" + (total === 1 ? "" : "s") + " para revisar entre el Mapa y Seguimiento técnico."
       : "✅ Sin discrepancias detectadas entre el Mapa y Seguimiento técnico.") +
     "</div>" +
+    valSeccion(
+      "Cursos duplicados en el Mapa",
+      nDup,
+      duplicados.length
+        ? duplicados
+            .map(
+              (g) =>
+                '<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin:10px 0 2px">"' +
+                esc(g[0].titulo) +
+                '" · ' +
+                g.length +
+                " veces</div><div class=\"carga-list\">" +
+                g
+                  .map(
+                    (c) =>
+                      '<div class="lnk"><span class="lnk-a" data-action="card:open" data-id="' +
+                      c.id +
+                      '" style="cursor:pointer;flex:1">' +
+                      esc(c.titulo) +
+                      '</span><span style="font-size:11px;color:var(--ink-soft);margin-right:8px">creado ' +
+                      tecFechaVer(c.creadoEl || "") +
+                      '</span><button class="btn btn-ghost btn-sm" data-action="curso:bajaid" data-id="' +
+                      c.id +
+                      '" style="color:var(--bad)">Dar de baja</button></div>',
+                  )
+                  .join("") +
+                "</div>",
+            )
+            .join("")
+        : "",
+      "No hay cursos activos con el mismo título repetido.",
+    ) +
     valSeccion(
       "Cursos activos sin fila en Técnico",
       sinTec.length,
