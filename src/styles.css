@@ -4864,6 +4864,101 @@ html {
     width: 100%;
   }
 }
+/* ===== Reportería ===== */
+.rep-top {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.rep-sec {
+  margin: 26px 0;
+}
+.rep-sec-h {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.rep-sec-h h3 {
+  font-family: var(--titulo);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0;
+}
+.rep-sec-sub {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.rep-empty {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  padding: 10px 0;
+}
+.rep-nota {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin-top: 30px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--line);
+}
+/* Doce columnas, cada una con el número arriba, la barra en el medio (alto
+   proporcional al mes con más publicaciones) y el mes abajo — el mismo
+   lenguaje de "barra proporcional" que .carga-fill, en vertical. */
+.rep-chart {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+  align-items: end;
+  height: 160px;
+  padding-top: 8px;
+}
+.rep-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  gap: 4px;
+}
+.rep-bar-n {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  height: 14px;
+}
+.rep-bar-track {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+.rep-bar {
+  width: 100%;
+  min-height: 3px;
+  border-radius: 4px 4px 0 0;
+  background: var(--coto-blue);
+  transition: height 0.4s;
+}
+.rep-bar-lbl {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  letter-spacing: 0.3px;
+}
+@media (max-width: 760px) {
+  .rep-chart {
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-flow: row;
+    height: auto;
+  }
+  .rep-bar-col {
+    height: 90px;
+  }
+}
 .print-meta {
   display: none;
 }
