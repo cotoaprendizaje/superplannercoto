@@ -3197,11 +3197,15 @@ const MESES = [
 function isCurso(tarjeta) {
   return tarjeta.tipo === "curso";
 }
+// Aplicativos web y Bases del sistema quedaron fuera del Mapa a propósito:
+// el Mapa es el catálogo de e-learning que ve el resto de la empresa
+// (cursos, Edu Points, contenido audiovisual suelto), no el lugar para
+// infraestructura interna. Siguen existiendo como tipo de tarjeta y
+// pueden trackearse en el Planner con su propia Ficha técnica — solo que
+// ya no tienen un "publicar al Mapa" ni cuentan como inventario.
 const INV_KIND = {
   curso: "cursos",
   "edu-point": "edu-points",
-  "app-web": "apps",
-  "base-sistema": "bases",
   video: "contenido",
   presencial: "contenido",
   poes: "contenido",
@@ -5193,14 +5197,9 @@ function renderMapa() {
         n: cuenta(state.cards.filter((t) => INV_KIND[t.tipo] === "contenido" && inInventory(t))),
       },
       {
-        id: "apps",
-        label: "🖥️ Aplicativos web",
-        n: porTipo("app-web"),
-      },
-      {
-        id: "bases",
-        label: "🗄️ Bases del sistema",
-        n: porTipo("base-sistema"),
+        id: "bajas",
+        label: "🚫 Dados de baja",
+        n: cuenta(state.cards.filter((t) => t.publicado && t.activo === false && inventoryKind(t))),
       },
     ],
     html =
@@ -5234,22 +5233,7 @@ function renderMapa() {
           else {
             if (state.mapaSec === "contenido") txt = sectionContenido();
             else {
-              if (state.mapaSec === "apps")
-                txt = sectionInv(
-                  "app-web",
-                  "🖥️",
-                  "Sin aplicativos activos",
-                  "Publicá un aplicativo web del tablero (botón en su ficha) para verlo acá.",
-                );
-              else {
-                if (state.mapaSec === "bases")
-                  txt = sectionInv(
-                    "base-sistema",
-                    "🗄️",
-                    "Sin bases activas",
-                    "Publicá una base del sistema del tablero para verla acá.",
-                  );
-              }
+              if (state.mapaSec === "bajas") txt = sectionBajas();
             }
           }
         }
@@ -6801,10 +6785,18 @@ function renderEduArchivos() {
     "</div>"
   );
 }
-function sectionInv(txt, txt2, txt3, txt4) {
-  const lista = mapaFilter(state.cards.filter((tarjeta) => tarjeta.tipo === txt && inInventory(tarjeta)));
-  if (!lista.length) return emptyState(txt2, txt3, txt4);
-  return '<div class="cursos-grid">' + lista.map(recursoCard).join("") + "</div>";
+// Cursos, Edu Points y contenido suelto ya en su propia sección: acá va lo
+// que alguna vez estuvo publicado y se dio de baja — sigue siendo
+// consultable, solo que aparte de lo activo para no inflar ningún conteo.
+function sectionBajas() {
+  const lista = mapaFilter(state.cards.filter((c) => c.publicado && c.activo === false && inventoryKind(c)));
+  if (!lista.length)
+    return emptyState(
+      "🚫",
+      "Nada dado de baja",
+      "Los cursos, Edu Points o contenidos que se den de baja van a aparecer acá, sin perderse.",
+    );
+  return '<div class="cursos-grid">' + lista.map(invCard).join("") + "</div>";
 }
 function recursoCard(tarjeta) {
   const val = primaryCat(tarjeta),
@@ -6823,11 +6815,9 @@ function recursoCard(tarjeta) {
     '" data-id="' +
     tarjeta.id +
     '" data-action="card:open">\n    <div class="curso-img" style="height:78px"><span class="curso-estado ' +
-    (obj.estadoOp === "mantenimiento" ? "upd" : "") +
+    (tarjeta.activo === false ? "baja" : obj.estadoOp === "mantenimiento" ? "upd" : "") +
     '">' +
-    ((TIPOS[tarjeta.tipo] || {}).icon || "") +
-    " " +
-    txt +
+    (tarjeta.activo === false ? "🚫 Dado de baja" : ((TIPOS[tarjeta.tipo] || {}).icon || "") + " " + txt) +
     '</span></div>\n    <div class="curso-body">\n      <h4>' +
     esc(tarjeta.titulo) +
     '</h4>\n      <div class="badges">' +
@@ -6866,9 +6856,9 @@ function cursoCard(tarjeta) {
     '" data-action="card:open">\n    <div class="curso-img">' +
     (obj.imagen ? '<img src="' + esc(obj.imagen) + '" alt="" onerror="this.remove()">' : "") +
     '\n      <span class="curso-estado ' +
-    (tarjeta.enActualizacion ? "upd" : "") +
+    (tarjeta.activo === false ? "baja" : tarjeta.enActualizacion ? "upd" : "") +
     '">' +
-    (tarjeta.enActualizacion ? "🔄 En actualización" : "● Activo") +
+    (tarjeta.activo === false ? "🚫 Dado de baja" : tarjeta.enActualizacion ? "🔄 En actualización" : "● Activo") +
     '</span></div>\n    <div class="curso-body">\n      <h4>' +
     esc(tarjeta.titulo) +
     '</h4>\n      <div class="badges">' +
@@ -6935,9 +6925,9 @@ function eduCard(tarjeta) {
     '" data-id="' +
     tarjeta.id +
     '" data-action="card:open">\n    <div class="curso-img" style="height:92px"><span class="curso-estado ' +
-    (tarjeta.enActualizacion ? "upd" : "") +
+    (tarjeta.activo === false ? "baja" : tarjeta.enActualizacion ? "upd" : "") +
     '">' +
-    (tarjeta.enActualizacion ? "🔄 Actualizando" : "📍 Colocado") +
+    (tarjeta.activo === false ? "🚫 Dado de baja" : tarjeta.enActualizacion ? "🔄 Actualizando" : "📍 Colocado") +
     '</span>\n      <div style="position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:var(--shadow)">▦</div></div>\n    <div class="curso-body">\n      <h4>' +
     esc(tarjeta.titulo) +
     '</h4>\n      <div class="badges">' +
