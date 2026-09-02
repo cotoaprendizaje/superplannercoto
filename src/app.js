@@ -3791,7 +3791,7 @@ function tplFor(txt) {
 const current = () => state.cards.find((tarjeta) => tarjeta.id === state.selectedId);
 function newCard(txt, txt2, obj) {
   const tarjeta = tplFor(txt);
-  return Object.assign(
+  const nueva = Object.assign(
     {
       id: uid(),
       titulo: txt2 || "Sin título",
@@ -3815,6 +3815,12 @@ function newCard(txt, txt2, obj) {
         fin: null,
       })),
       publicado: false,
+      // Sellos para Reportería: se graban solos y nunca se vuelven a tocar
+      // (salvo curso:publicar, que rellena publicadoEl si todavía está
+      // vacío). Sin esto, "cuántos cursos se publicaron este año" no tenía
+      // ninguna fecha real de la que tirar para las tarjetas del Planner.
+      creadoEl: todayISO(),
+      publicadoEl: null,
       enActualizacion: false,
       linkMoodle: "",
       catalogo: {
@@ -3839,6 +3845,10 @@ function newCard(txt, txt2, obj) {
     },
     obj || {},
   );
+  // Si nace ya publicada (ingesta de catálogo), no hay otra fecha real de
+  // publicación disponible más que "hoy, que es cuando entró al sistema".
+  if (nueva.publicado && !nueva.publicadoEl) nueva.publicadoEl = nueva.creadoEl;
+  return nueva;
 }
 function withChecklist(lista) {
   return lista.map((arg) =>
@@ -4138,7 +4148,7 @@ function renderFilters() {
   const popAbierto = $("#filtrosPop") && !$("#filtrosPop").classList.contains("hidden");
   const misFlag = $("#misFlag");
   if (misFlag) misFlag.textContent = state.mis ? "ON" : "";
-  if (state.view === "inicio" || state.view === "tecnico") {
+  if (state.view === "inicio" || state.view === "tecnico" || state.view === "reportes") {
     $("#filters").innerHTML = "";
     return;
   }
@@ -4270,6 +4280,7 @@ const VIEW_TITLES = {
   timeline: ["Timeline", "El panorama macro del área"],
   mapa: ["Mapa del área", "Todo lo publicado y lo que viene: cursos, Edu Points, contenido suelto y lo que está en desarrollo"],
   tecnico: ["Seguimiento técnico", "Publicación, portada, mosaico, evaluación, textos y diseño de cada curso — para no volver al Excel."],
+  reportes: ["Reportes", "Métricas del área para gestionar al equipo y llevar a fin de año: publicaciones, catálogo, carga y tiempos."],
 };
 function viewHeader() {
   const val = VIEW_TITLES[state.view];
@@ -4304,6 +4315,9 @@ function renderView() {
           if (state.view === "mapa") txt = renderMapa();
           else {
             if (state.view === "tecnico") txt = renderTecnico();
+            else {
+              if (state.view === "reportes") txt = renderReportes();
+            }
           }
         }
       }
@@ -5614,6 +5628,296 @@ function tecPickListHTML(cursos, filtro) {
     )
     .join("");
 }
+// ===== Reportería =====
+// Todo lo que se cuenta acá sale de UN solo universo: los cursos activos del
+// Mapa (mismo inInventory() que usa el resto de la app). Seguimiento técnico
+// se usa solo como fuente de FECHA más precisa cuando una fila está
+// vinculada a la tarjeta — nunca como una población aparte — así el total de
+// "cursos activos" siempre cierra con lo que se ve en el Mapa, y nadie tiene
+// que explicarle a la directora por qué dos números que deberían coincidir
+// no coinciden.
+//
+// La fecha de publicación de una tarjeta puede venir de dos lados: la fila
+// de Seguimiento técnico vinculada (si tiene una fecha real, del Excel) o el
+// sello `publicadoEl` que la propia tarjeta graba sola la primera vez que se
+// publica (agregado esta sesión — antes no existía ningún registro de
+// cuándo se publicó algo desde el Planner). Una tarjeta activa sin ninguna
+// de las dos cuenta para el total pero no aparece en el gráfico por mes: no
+// hay fecha real de la que tirar, e inventar una sería peor que no mostrarla.
+function fechaPublicacionCard(tarjeta) {
+  const fila = state.tecnico.find((f) => f.cardId === tarjeta.id);
+  if (fila && fila.publicacion && !tecFechaMala(fila.publicacion)) return fila.publicacion;
+  return tarjeta.publicadoEl || null;
+}
+function repCursosActivos() {
+  return state.cards.filter((c) => c.tipo === "curso" && inInventory(c));
+}
+function repPublicaciones() {
+  return repCursosActivos()
+    .map((c) => ({ card: c, fecha: fechaPublicacionCard(c) }))
+    .filter((p) => p.fecha);
+}
+function repKpi(n, label, color, sub) {
+  return (
+    '<div class="kpi" style="--kpi:' +
+    color +
+    '"><div class="kpi-num">' +
+    n +
+    '</div><div class="kpi-lbl">' +
+    esc(label) +
+    "</div>" +
+    (sub ? '<div class="kpi-sub">' + sub + "</div>" : "") +
+    "</div>"
+  );
+}
+function repResumenHTML() {
+  const activos = repCursosActivos(),
+    puntos = repPublicaciones(),
+    anio = new Date().getFullYear(),
+    esteAnio = puntos.filter((p) => +p.fecha.slice(0, 4) === anio).length,
+    anioPasado = puntos.filter((p) => +p.fecha.slice(0, 4) === anio - 1).length,
+    sinFecha = activos.length - puntos.length;
+  let variacion;
+  if (!anioPasado && !esteAnio) variacion = "Sin datos de " + (anio - 1) + " para comparar";
+  else if (!anioPasado) variacion = "No había publicados en " + (anio - 1);
+  else {
+    const v = Math.round(((esteAnio - anioPasado) / anioPasado) * 100);
+    variacion = (v >= 0 ? "▲ " : "▼ ") + Math.abs(v) + "% vs. " + (anio - 1);
+  }
+  return (
+    '<div class="res-grid">' +
+    repKpi(activos.length, "Cursos activos", "var(--coto-blue)", sinFecha ? sinFecha + " sin fecha registrada" : "") +
+    repKpi(esteAnio, "Publicados en " + anio, "var(--ok)", variacion) +
+    repKpi(anioPasado, "Publicados en " + (anio - 1), "var(--coto-navy)", "") +
+    repKpi(
+      state.tecnico.filter((f) => !f.portada || !f.mosaico).length,
+      "Con portada o mosaico pendiente",
+      "var(--warn)",
+      "En Seguimiento técnico",
+    ) +
+    "</div>"
+  );
+}
+// Doce meses del año actual: enero primero, como cualquier reporte anual
+// que se vaya a mostrar tal cual en una presentación de fin de año.
+function repPublicacionesPorMes() {
+  const anio = new Date().getFullYear(),
+    porMes = Array(12).fill(0);
+  repPublicaciones().forEach((p) => {
+    if (+p.fecha.slice(0, 4) === anio) porMes[+p.fecha.slice(5, 7) - 1]++;
+  });
+  return porMes;
+}
+function repChartHTML() {
+  const porMes = repPublicacionesPorMes(),
+    max = Math.max(1, ...porMes),
+    total = porMes.reduce((a, b) => a + b, 0);
+  return (
+    '<div class="rep-chart">' +
+    porMes
+      .map(
+        (n, i) =>
+          '<div class="rep-bar-col" title="' +
+          MESES[i] +
+          ": " +
+          n +
+          ' curso' + (n === 1 ? "" : "s") + '"><div class="rep-bar-n">' +
+          (n || "") +
+          '</div><div class="rep-bar-track"><div class="rep-bar" style="height:' +
+          Math.max(3, Math.round((n / max) * 100)) +
+          '%"></div></div><div class="rep-bar-lbl">' +
+          MESES[i].slice(0, 3) +
+          "</div></div>",
+      )
+      .join("") +
+    "</div>" +
+    (total
+      ? ""
+      : '<div class="rep-empty">Todavía no hay publicaciones con fecha registrada este año.</div>')
+  );
+}
+// Mismo lenguaje visual que "Carga del equipo" (fila con barra proporcional):
+// una vez que alguien reconoce el patrón en una pantalla, lo lee gratis en
+// las demás.
+function repBarraRow(nombre, n, max, color, avatar) {
+  return (
+    '<div class="carga-row" style="cursor:default">' +
+    (avatar || "") +
+    '<div class="carga-info"><div class="carga-name">' +
+    esc(nombre) +
+    '</div><div class="carga-bar"><div class="carga-fill" style="width:' +
+    Math.round((n / max) * 100) +
+    "%;background:" +
+    color +
+    '"></div></div></div><div class="carga-num">' +
+    n +
+    "</div></div>"
+  );
+}
+function repSectoresHTML() {
+  const conteo = {};
+  repCursosActivos().forEach((c) => {
+    (c.sectores || []).forEach((s) => (conteo[s] = (conteo[s] || 0) + 1));
+    if (!(c.sectores || []).length) conteo[""] = (conteo[""] || 0) + 1;
+  });
+  const entradas = Object.keys(conteo)
+    .map((s) => [s, conteo[s]])
+    .sort((a, b) => b[1] - a[1]);
+  if (!entradas.length) return '<div class="rep-empty">Sin cursos activos todavía.</div>';
+  const max = Math.max(...entradas.map((e) => e[1]));
+  return (
+    '<div class="carga-list">' +
+    entradas
+      .map((e) => repBarraRow(e[0] ? sectorName(e[0]) || e[0] : "Sin sector", e[1], max, e[0] ? "var(--coto-blue)" : "var(--ink-soft)"))
+      .join("") +
+    "</div>"
+  );
+}
+function repEquipoHTML() {
+  const obj = {};
+  TEAM.forEach((m) => (obj[m.id] = { n: 0, alta: 0, venc: 0 }));
+  boardCards().forEach((tarjeta) => {
+    const lista = [tarjeta.responsable, ...(tarjeta.asignados || [])].filter(
+      (v, i, arr) => v && arr.indexOf(v) === i,
+    );
+    lista.forEach((id) => {
+      if (!obj[id]) return;
+      obj[id].n++;
+      if (tarjeta.prioridad === "alta") obj[id].alta++;
+      if (isOverdue(tarjeta)) obj[id].venc++;
+    });
+  });
+  const max = Math.max(1, ...TEAM.map((m) => obj[m.id].n));
+  return (
+    '<div class="carga-list">' +
+    TEAM.map((m) => {
+      const v = obj[m.id],
+        sub = [v.alta ? v.alta + " alta" : "", v.venc ? v.venc + " vencida" + (v.venc === 1 ? "" : "s") : ""]
+          .filter(Boolean)
+          .join(" · ");
+      return (
+        '<div class="carga-row" style="cursor:default">' +
+        avatarHTML(m.id) +
+        '<div class="carga-info"><div class="carga-name">' +
+        esc(m.nombre) +
+        (sub ? ' <span class="carga-rol">· ' + sub + "</span>" : "") +
+        '</div><div class="carga-bar"><div class="carga-fill" style="width:' +
+        Math.round((v.n / max) * 100) +
+        "%;background:" +
+        m.color +
+        '"></div></div></div><div class="carga-num">' +
+        v.n +
+        "</div></div>"
+      );
+    }).join("") +
+    "</div>"
+  );
+}
+function repRevisionHTML() {
+  const enRevision = boardCards().filter((c) => c.estado === "en-revision" && c.revisionDesde),
+    dias = enRevision.map((c) => Math.max(0, daysBetween(c.revisionDesde, todayISO()))),
+    prom = dias.length ? Math.round(dias.reduce((a, b) => a + b, 0) / dias.length) : 0,
+    peores = enRevision
+      .map((c, i) => ({ c, d: dias[i] }))
+      .sort((a, b) => b.d - a.d)
+      .slice(0, 5);
+  return (
+    '<div class="res-grid" style="margin-bottom:14px">' +
+    repKpi(enRevision.length, "En revisión ahora", "var(--warn)", "") +
+    repKpi(prom, "Días en promedio", "var(--coto-navy)", enRevision.length ? "" : "Nada esperando revisión") +
+    "</div>" +
+    (peores.length
+      ? peores
+          .map(
+            (p) =>
+              '<div class="lnk"><span class="lnk-a" data-action="card:open" data-id="' +
+              p.c.id +
+              '" style="cursor:pointer">' +
+              esc(p.c.titulo) +
+              '</span><span style="font-size:12px;color:var(--ink-soft);white-space:nowrap">' +
+              p.d +
+              " día" +
+              (p.d === 1 ? "" : "s") +
+              "</span></div>",
+          )
+          .join("")
+      : '<div class="rep-empty">Nada esperando revisión en este momento.</div>')
+  );
+}
+function repFuenteHTML() {
+  const sinFecha = repCursosActivos().length - repPublicaciones().length;
+  return (
+    '<div class="rep-nota">Publicaciones: se cuentan con la fecha de Seguimiento técnico cuando la fila está vinculada, o con la fecha de publicación que graba el Planner desde el 2 de septiembre de 2026.' +
+    (sinFecha
+      ? " " + sinFecha + " curso" + (sinFecha === 1 ? "" : "s") + " activo" + (sinFecha === 1 ? "" : "s") + " no tiene" + (sinFecha === 1 ? "" : "n") + " fecha registrada: cuenta" + (sinFecha === 1 ? "" : "n") + " en el total pero no en el gráfico por mes."
+      : "") +
+    "</div>"
+  );
+}
+function repSeccion(titulo, sub, contenido) {
+  return (
+    '<div class="rep-sec"><div class="rep-sec-h"><h3>' +
+    titulo +
+    "</h3>" +
+    (sub ? '<span class="rep-sec-sub">' + sub + "</span>" : "") +
+    "</div>" +
+    contenido +
+    "</div>"
+  );
+}
+function renderReportes() {
+  const anio = new Date().getFullYear();
+  return (
+    '<div class="rep-top"><button class="btn btn-ghost btn-sm" data-action="reportes:csv" title="Descargar estos números en CSV">⬇ CSV</button><button class="btn btn-ghost btn-sm" data-action="app:print" title="Imprimir o guardar como PDF">🖨 PDF</button></div>' +
+    repResumenHTML() +
+    repSeccion("Publicaciones por mes · " + anio, "", repChartHTML()) +
+    repSeccion("Cursos activos por sector", repCursosActivos().length + " en total", repSectoresHTML()) +
+    repSeccion("Carga y foco del equipo", "Tareas activas del Planner ahora mismo", repEquipoHTML()) +
+    repSeccion("Tiempo en revisión", "Cuánto tarda en salir de revisión", repRevisionHTML()) +
+    repFuenteHTML()
+  );
+}
+function exportReportesCSV() {
+  const anio = new Date().getFullYear(),
+    porMes = repPublicacionesPorMes(),
+    filas = [["Reportería · Cotonetes Forever"], ["Exportado", new Date().toLocaleString("es-AR")], []];
+  (filas.push(["Publicaciones por mes", anio]),
+    filas.push(["Mes", "Cursos publicados"]),
+    porMes.forEach((n, i) => filas.push([MESES[i], n])),
+    filas.push([]),
+    filas.push(["Cursos activos por sector"]),
+    filas.push(["Sector", "Cursos"]));
+  const conteo = {};
+  (repCursosActivos().forEach((c) => {
+    (c.sectores || []).forEach((s) => (conteo[s] = (conteo[s] || 0) + 1));
+    if (!(c.sectores || []).length) conteo[""] = (conteo[""] || 0) + 1;
+  }),
+    Object.keys(conteo)
+      .sort((a, b) => conteo[b] - conteo[a])
+      .forEach((s) => filas.push([s ? sectorName(s) || s : "Sin sector", conteo[s]])),
+    filas.push([]),
+    filas.push(["Carga del equipo"]),
+    filas.push(["Persona", "Tareas activas", "Alta prioridad", "Vencidas"]));
+  const obj = {};
+  (TEAM.forEach((m) => (obj[m.id] = { n: 0, alta: 0, venc: 0 })),
+    boardCards().forEach((tarjeta) => {
+      [tarjeta.responsable, ...(tarjeta.asignados || [])]
+        .filter((v, i, arr) => v && arr.indexOf(v) === i)
+        .forEach((id) => {
+          if (!obj[id]) return;
+          obj[id].n++;
+          if (tarjeta.prioridad === "alta") obj[id].alta++;
+          if (isOverdue(tarjeta)) obj[id].venc++;
+        });
+    }),
+    TEAM.forEach((m) => filas.push([m.nombre, obj[m.id].n, obj[m.id].alta, obj[m.id].venc])),
+    download(
+      "reportes-coto.csv",
+      "﻿" + filas.map((fila) => fila.map((arg) => '"' + String(arg).replace(/"/g, '""') + '"').join(",")).join("\n"),
+      "text/csv",
+    ),
+    flash("📄 CSV de Reportes exportado"));
+}
 function sectionContenido() {
   const lista = mapaFilter(
     state.cards.filter((tarjeta) => INV_KIND[tarjeta.tipo] === "contenido" && inInventory(tarjeta)),
@@ -6108,6 +6412,12 @@ const ICONOS = {
   ),
   ayuda: svgIcono(
     '<circle cx="12" cy="12" r="9"/><path d="M9.4 9.4a2.7 2.7 0 1 1 3.9 2.4c-1 .5-1.3 1.1-1.3 2.1v.3"/><circle cx="12" cy="17.3" r="1.1" fill="currentColor" stroke="none"/>',
+  ),
+  // Línea de tendencia ascendente con flecha, no barras estáticas: "carga"
+  // ya usa tres barras, y una línea que sube cuenta una historia distinta
+  // —evolución en el tiempo— que es justo lo que separa a Reportes del resto.
+  reportes: svgIcono(
+    '<path d="M3.4 20.6h17.2"/><path d="M4 15.6 9 10.4l4 3.4 6.6-7.4"/><path d="M16 5.7h3.6v3.6"/>',
   ),
 };
 function renderInicio() {
@@ -7602,6 +7912,9 @@ document.addEventListener("click", (ev) => {
     case "data:csv":
       exportCSV();
       break;
+    case "reportes:csv":
+      exportReportesCSV();
+      break;
     case "data:import":
       doImport();
       break;
@@ -8115,6 +8428,10 @@ document.addEventListener("click", (ev) => {
         patch(val22, {
           publicado: true,
           enActualizacion: false,
+          // Se rellena solo la primera vez: una actualización posterior
+          // (curso:republicar) no debe correr la fecha de la primera
+          // publicación, que es la que le importa a Reportería.
+          publicadoEl: val22.publicadoEl || todayISO(),
         }),
         renderPanel(),
         render(),
@@ -8750,6 +9067,10 @@ function doDup(id) {
   ((tarjeta.id = uid()),
     (tarjeta.titulo = tarjeta2.titulo + " (copia)"),
     (tarjeta.publicado = false),
+    // Es una tarjeta nueva para Reportería aunque venga de una copia: nace
+    // hoy y todavía no se publicó, sin heredar las fechas del original.
+    (tarjeta.creadoEl = todayISO()),
+    (tarjeta.publicadoEl = null),
     tarjeta.checklist.forEach((item) => (item.id = uid())),
     (tarjeta.fases || []).forEach((arg) => (arg.id = uid())),
     state.cards.push(tarjeta),
@@ -9058,6 +9379,8 @@ function recurrar(val) {
     (tarjeta.id = uid()),
     (tarjeta.estado = "pendiente"),
     (tarjeta.publicado = false),
+    (tarjeta.creadoEl = todayISO()),
+    (tarjeta.publicadoEl = null),
     (tarjeta.enActualizacion = false),
     (tarjeta.comentarios = []),
     (tarjeta.actividad = []),
@@ -9435,6 +9758,7 @@ function openHelp() {
     ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
     ["Mapa del área", "Todo lo publicado (cursos, Edu Points) y lo que está en desarrollo, organizado por sector y filtrable con un clic."],
     ["🔧 Seguimiento técnico", "Reemplaza al Excel de Categorías y Cursos: publicación, portada, mosaico, evaluación, textos y diseño de cada curso, editable ahí mismo. \"🔗 Vincular\" une una fila con su tarjeta del Mapa."],
+    ["📈 Reportes", "Métricas para gestionar el área: publicaciones por mes, catálogo por sector, carga del equipo y tiempo en revisión. \"⬇ CSV\" y \"🖨 PDF\" exportan lo mismo que se ve en pantalla."],
   ];
   openModal(
     '<h2>❓ Ayuda</h2><div class="sub-t">Funciones que ya existen pero a veces cuestan de encontrar.</div>\n    <div style="margin-top:4px">' +
