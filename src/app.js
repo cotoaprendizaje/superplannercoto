@@ -4289,7 +4289,7 @@ const VIEW_TITLES = {
   kanban: ["Planner", "Tareas y proyectos por estado"],
   calendario: ["Calendario del planner", "Qué pasa y cuándo"],
   timeline: ["Timeline", "El panorama macro del área"],
-  mapa: ["Mapa del área", "Todo lo publicado y lo que viene: cursos, Edu Points, contenido suelto y lo que está en desarrollo"],
+  mapa: ["Mapa del área", "Todo lo publicado y lo que viene: cursos, Edu Points, contenido audiovisual y lo que está en desarrollo"],
   tecnico: ["Seguimiento técnico", "Publicación, portada, mosaico, evaluación, textos y diseño de cada curso — para no volver al Excel."],
   reportes: ["Reportes", "Métricas del área para gestionar al equipo y llevar a fin de año: publicaciones, catálogo, carga y tiempos."],
 };
@@ -5041,9 +5041,16 @@ function invCard(arg) {
 // "En desarrollo" es lo que va camino al Mapa, no todo el Planner: antes traía
 // también los finalizados, así que el número no coincidía con ninguna columna
 // del tablero y no se podía usar para nada.
+//
+// Los Edu Point en curso quedan afuera a propósito: ya tienen su propio
+// bloque "🚧 En el Planner" dentro de la sección Edu Point (ver
+// eduPointsEnPlanner/sectionEduPoints) — contarlos acá también los mostraba
+// duplicados, una vez en "En desarrollo" y otra en Edu Point.
 const DESARROLLO_ESTADOS = new Set(["en-desarrollo", "pendiente"]);
 function sectionDesarrolloAll() {
-  return boardCards().filter((tarjeta) => INV_TIPOS.has(tarjeta.tipo) && DESARROLLO_ESTADOS.has(tarjeta.estado));
+  return boardCards().filter(
+    (tarjeta) => INV_TIPOS.has(tarjeta.tipo) && tarjeta.tipo !== "edu-point" && DESARROLLO_ESTADOS.has(tarjeta.estado),
+  );
 }
 // Los Edu Points del Planner: la sección miraba solo los colocados y quedaba
 // vacía aunque hubiera varios en curso, que es lo que se quería mirar.
@@ -5168,18 +5175,13 @@ function renderMapa() {
     lista = [
       {
         id: "todos",
-        label: "✦ Todo lo publicado",
+        label: "◎ Cursos e-learning",
         n: cuenta(state.cards.filter(inInventory)),
       },
       {
         id: "desarrollo",
         label: "🚧 En desarrollo",
         n: cuenta(sectionDesarrolloAll()),
-      },
-      {
-        id: "cursos",
-        label: "◎ Cursos e-learning",
-        n: porTipo("curso"),
       },
       {
         id: "edu-points",
@@ -5193,12 +5195,12 @@ function renderMapa() {
       },
       {
         id: "contenido",
-        label: "🎬 Contenido suelto",
+        label: "🎬 Contenido audiovisual",
         n: cuenta(state.cards.filter((t) => INV_KIND[t.tipo] === "contenido" && inInventory(t))),
       },
       {
         id: "bajas",
-        label: "🚫 Dados de baja",
+        label: "🚫 E-learning (dados de baja)",
         n: cuenta(state.cards.filter((t) => t.publicado && t.activo === false && inventoryKind(t))),
       },
     ],
@@ -6519,7 +6521,7 @@ function sectionContenido() {
   if (!lista.length)
     return emptyState(
       "🎬",
-      "Sin contenido suelto activo",
+      "Sin contenido audiovisual activo",
       "Publicá un video, guía, capacitación presencial o POES del tablero (botón en su ficha) para verlo acá.",
     );
   return '<div class="cursos-grid">' + lista.map(recursoCard).join("") + "</div>";
@@ -6785,8 +6787,8 @@ function renderEduArchivos() {
     "</div>"
   );
 }
-// Cursos, Edu Points y contenido suelto ya en su propia sección: acá va lo
-// que alguna vez estuvo publicado y se dio de baja — sigue siendo
+// Cursos, Edu Points y contenido audiovisual ya en su propia sección: acá va
+// lo que alguna vez estuvo publicado y se dio de baja — sigue siendo
 // consultable, solo que aparte de lo activo para no inflar ningún conteo.
 function sectionBajas() {
   const lista = mapaFilter(state.cards.filter((c) => c.publicado && c.activo === false && inventoryKind(c)));
