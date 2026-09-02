@@ -2230,6 +2230,15 @@ button {
   flex-direction: column;
   gap: 9px;
 }
+/* Estado "dado de baja": mismo bloque, tinte rojo en vez de azul — que se
+   note de un vistazo que no es el estado activo normal. */
+.bridge.bridge-baja {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--bad) 10%, var(--surface)), var(--surface));
+  border-color: color-mix(in srgb, var(--bad) 30%, var(--line));
+}
+.bridge.bridge-baja .bridge-t {
+  color: var(--bad);
+}
 .bridge .bridge-t {
   font-size: 12px;
   font-weight: 700;
@@ -2252,6 +2261,18 @@ button {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+/* Filas clickeables (ver repBarraRow con data-action): mismo look que las
+   demás, solo un resalte sutil al pasar el mouse — el cursor ya lo pone el
+   style inline que trae la fila. */
+.carga-row[data-action] {
+  padding: 4px 6px;
+  margin: 0 -6px;
+  border-radius: var(--r-s);
+  transition: background 0.15s;
+}
+.carga-row[data-action]:hover {
+  background: var(--surface-2);
 }
 .carga-info {
   flex: 1;
@@ -4968,11 +4989,26 @@ html {
   color: var(--ink-soft);
   letter-spacing: 0.3px;
 }
+.rep-bar-col[data-action] {
+  border-radius: var(--r-s);
+  transition: background 0.15s;
+}
+.rep-bar-col[data-action]:hover {
+  background: var(--surface-2);
+}
+.rep-bar-col[data-action]:hover .rep-bar-lbl {
+  color: var(--ink);
+}
 @media (max-width: 760px) {
   .rep-bar-col {
     flex-basis: 28px;
     min-width: 28px;
   }
+}
+.rep-modal-list {
+  max-height: 55vh;
+  overflow-y: auto;
+  margin-top: 4px;
 }
 .print-meta {
   display: none;
