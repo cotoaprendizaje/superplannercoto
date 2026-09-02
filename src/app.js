@@ -5649,6 +5649,57 @@ function tecPickListHTML(cursos, filtro) {
     )
     .join("");
 }
+// La contraparte de tecPickerHTML(): acá se busca del lado de Técnico, para
+// un curso del Mapa que no tiene fila. La sugerencia automática de
+// Validación acierta la mayoría de las veces, pero cuando no es la fila
+// correcta hace falta poder buscar cualquier otra — sin esto, la única
+// salida era "crear una fila nueva" aunque la fila correcta ya existiera.
+function tecFilaPickerHTML(cardId) {
+  const card = state.cards.find((c) => c.id === cardId),
+    filasLibres = state.tecnico.filter((f) => !f.cardId),
+    prefill = (card && card.titulo) || "";
+  return (
+    '<h2>🔗 Vincular con Seguimiento técnico</h2><div class="sub-t">Elegí la fila que corresponde a "' +
+    esc(prefill) +
+    '".</div>' +
+    '<div class="filt" style="margin-top:10px"><input id="tecFilaPickSearch" placeholder="Buscar fila de Técnico..." value="' +
+    esc(prefill) +
+    '" autofocus></div>' +
+    '<div id="tecFilaPickList" class="tec-pick-results" data-card="' +
+    cardId +
+    '">' +
+    tecFilaPickListHTML(filasLibres, prefill) +
+    '</div><div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button></div>'
+  );
+}
+function tecFilaPickListHTML(filas, filtro) {
+  filtro = (filtro || "").trim().toLowerCase();
+  const palabras = filtro.split(/\s+/).filter((p) => p.length >= 3);
+  let lista = filas;
+  if (palabras.length) {
+    const puntuadas = filas
+      .map((f) => ({ f, score: tecPickScore(f.curso || "", palabras) }))
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score);
+    if (puntuadas.length) lista = puntuadas.map((x) => x.f);
+    else if (filtro) lista = filas.filter((f) => (f.curso || "").toLowerCase().includes(filtro));
+  }
+  lista = lista.slice(0, 40);
+  if (!lista.length)
+    return '<div style="padding:14px;color:var(--ink-soft);font-size:13px">Sin filas libres que coincidan. Probá con otra búsqueda, o cerrá y creá una fila nueva.</div>';
+  return lista
+    .map(
+      (f) =>
+        '<div class="tec-pick-row" data-action="tec:linkfilapick" data-fila="' +
+        f.id +
+        '"><span style="flex:1">' +
+        esc(f.curso || "(sin nombre)") +
+        "</span>" +
+        (f.categoria ? '<span class="badge" style="margin-left:8px">' + esc(f.categoria) + "</span>" : "") +
+        "</div>",
+    )
+    .join("");
+}
 // ===== Validación Mapa ↔ Técnico =====
 // Un vínculo hecho a mano (cardId) no se puede desalinear solo, pero el
 // título libre de cada lado sí (alguien lo retipea distinto), y las fechas
@@ -5774,9 +5825,15 @@ function tecValidacionHTML() {
                     '" data-card="' +
                     x.card.id +
                     '">Vincular</button>'
-                  : '<button class="btn btn-ghost btn-sm" data-action="tec:crearfila" data-id="' +
-                    x.card.id +
-                    '">+ Crear fila</button>') +
+                  : "") +
+                // Sea o no la sugerencia correcta, siempre hay una forma de buscar
+                // OTRA fila (no solo la única sugerida) o crear una nueva — antes
+                // esto era una vía muerta si la sugerencia no era la indicada.
+                '<button class="btn btn-ghost btn-sm" data-action="tec:linkfila" data-id="' +
+                x.card.id +
+                '">🔎 Buscar otra</button><button class="btn btn-ghost btn-sm" data-action="tec:crearfila" data-id="' +
+                x.card.id +
+                '">+ Crear fila</button>' +
                 "</div>",
             )
             .join("") +
@@ -8474,6 +8531,16 @@ document.addEventListener("click", (ev) => {
       if (filaSug) ((filaSug.cardId = el.dataset.card), touchTecnico(), render());
       break;
     }
+    case "tec:linkfila":
+      openModal(tecFilaPickerHTML(el.dataset.id));
+      break;
+    case "tec:linkfilapick": {
+      const elFilaPickList = $("#tecFilaPickList"),
+        cardId = elFilaPickList && elFilaPickList.dataset.card,
+        filaElegida = state.tecnico.find((f) => f.id === el.dataset.fila);
+      if (cardId && filaElegida) ((filaElegida.cardId = cardId), touchTecnico(), closeModal(), render());
+      break;
+    }
     case "tec:crearfila": {
       const cardCrear = state.cards.find((c) => c.id === el.dataset.id);
       if (cardCrear)
@@ -9108,6 +9175,11 @@ function applyTecField(id, campo, value) {
   if (ev.target.id === "tecPickSearch") {
     const el = $("#tecPickList");
     if (el) el.innerHTML = tecPickListHTML(state.cards.filter(isCurso), ev.target.value);
+    return;
+  }
+  if (ev.target.id === "tecFilaPickSearch") {
+    const el = $("#tecFilaPickList");
+    if (el) el.innerHTML = tecFilaPickListHTML(state.tecnico.filter((f) => !f.cardId), ev.target.value);
     return;
   }
   if (ev.target.dataset && ev.target.dataset.tecId && ev.target.tagName === "INPUT" && ev.target.type === "text") {
