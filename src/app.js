@@ -5637,15 +5637,26 @@ function tecPickListHTML(cursos, filtro) {
 // que explicarle a la directora por qué dos números que deberían coincidir
 // no coinciden.
 //
-// La fecha de publicación de una tarjeta puede venir de dos lados: la fila
-// de Seguimiento técnico vinculada (si tiene una fecha real, del Excel) o el
-// sello `publicadoEl` que la propia tarjeta graba sola la primera vez que se
-// publica (agregado esta sesión — antes no existía ningún registro de
-// cuándo se publicó algo desde el Planner). Una tarjeta activa sin ninguna
-// de las dos cuenta para el total pero no aparece en el gráfico por mes: no
-// hay fecha real de la que tirar, e inventar una sería peor que no mostrarla.
+// La fecha de publicación de una tarjeta puede venir de tres lados, en este
+// orden: la fila de Seguimiento técnico vinculada a mano (tec:link), una
+// fila de Seguimiento técnico con el MISMO título (sin vínculo explícito —
+// es el mismo catálogo real, del mismo Excel, así que la mayoría de los 83+
+// cursos ya activos tienen ahí su fila gemela aunque nadie los haya
+// vinculado todavía), o el sello `publicadoEl` que la propia tarjeta graba
+// sola la primera vez que se publica desde acá (agregado esta sesión). Una
+// tarjeta activa sin ninguna de las tres sigue contando en todos lados que
+// no dependen de una fecha (el total, el desglose por sector, la barra de
+// "Sin fecha" del gráfico histórico) — lo único que no hace es aparecer en
+// un mes o año puntual, porque inventar uno sería peor que no mostrarlo.
+function tecFilaParaCard(tarjeta) {
+  const vinculada = state.tecnico.find((f) => f.cardId === tarjeta.id);
+  if (vinculada) return vinculada;
+  const titulo = (tarjeta.titulo || "").trim().toLowerCase();
+  if (!titulo) return null;
+  return state.tecnico.find((f) => (f.curso || "").trim().toLowerCase() === titulo) || null;
+}
 function fechaPublicacionCard(tarjeta) {
-  const fila = state.tecnico.find((f) => f.cardId === tarjeta.id);
+  const fila = tecFilaParaCard(tarjeta);
   if (fila && fila.publicacion && !tecFechaMala(fila.publicacion)) return fila.publicacion;
   return tarjeta.publicadoEl || null;
 }
@@ -5698,6 +5709,38 @@ function repResumenHTML() {
     "</div>"
   );
 }
+// Barras genéricas: se reusa para el gráfico del año actual (por mes) y para
+// el histórico completo (por año + "Sin fecha"), en vez de duplicar el
+// mismo armado de HTML dos veces.
+function repBarsHTML(bars, vacioMsg) {
+  const max = Math.max(1, ...bars.map((b) => b.n)),
+    total = bars.reduce((a, b) => a + b.n, 0);
+  return (
+    '<div class="rep-chart">' +
+    bars
+      .map(
+        (b) =>
+          '<div class="rep-bar-col" title="' +
+          esc(b.titulo) +
+          ": " +
+          b.n +
+          " curso" +
+          (b.n === 1 ? "" : "s") +
+          '"><div class="rep-bar-n">' +
+          (b.n || "") +
+          '</div><div class="rep-bar-track"><div class="rep-bar' +
+          (b.otro ? " rep-bar-otro" : "") +
+          '" style="height:' +
+          Math.max(3, Math.round((b.n / max) * 100)) +
+          '%"></div></div><div class="rep-bar-lbl">' +
+          esc(b.lbl) +
+          "</div></div>",
+      )
+      .join("") +
+    "</div>" +
+    (total ? "" : '<div class="rep-empty">' + vacioMsg + "</div>")
+  );
+}
 // Doce meses del año actual: enero primero, como cualquier reporte anual
 // que se vaya a mostrar tal cual en una presentación de fin de año.
 function repPublicacionesPorMes() {
@@ -5709,32 +5752,30 @@ function repPublicacionesPorMes() {
   return porMes;
 }
 function repChartHTML() {
-  const porMes = repPublicacionesPorMes(),
-    max = Math.max(1, ...porMes),
-    total = porMes.reduce((a, b) => a + b, 0);
-  return (
-    '<div class="rep-chart">' +
-    porMes
-      .map(
-        (n, i) =>
-          '<div class="rep-bar-col" title="' +
-          MESES[i] +
-          ": " +
-          n +
-          ' curso' + (n === 1 ? "" : "s") + '"><div class="rep-bar-n">' +
-          (n || "") +
-          '</div><div class="rep-bar-track"><div class="rep-bar" style="height:' +
-          Math.max(3, Math.round((n / max) * 100)) +
-          '%"></div></div><div class="rep-bar-lbl">' +
-          MESES[i].slice(0, 3) +
-          "</div></div>",
-      )
-      .join("") +
-    "</div>" +
-    (total
-      ? ""
-      : '<div class="rep-empty">Todavía no hay publicaciones con fecha registrada este año.</div>')
-  );
+  const bars = repPublicacionesPorMes().map((n, i) => ({ n, lbl: MESES[i].slice(0, 3), titulo: MESES[i] }));
+  return repBarsHTML(bars, "Todavía no hay publicaciones con fecha registrada este año.");
+}
+// El histórico completo: TODOS los cursos activos cuentan acá, tengan o no
+// fecha conocida — los que no la tienen van a su propia barra "S/F" en vez
+// de quedar afuera del gráfico, que es justo lo que se pidió: que nadie
+// desaparezca de Reportería solo porque le falta un dato.
+function repPublicacionesPorAnio() {
+  const conteo = {};
+  let sinFecha = 0;
+  repCursosActivos().forEach((c) => {
+    const fecha = fechaPublicacionCard(c);
+    if (fecha) conteo[fecha.slice(0, 4)] = (conteo[fecha.slice(0, 4)] || 0) + 1;
+    else sinFecha++;
+  });
+  const anios = Object.keys(conteo)
+    .map(Number)
+    .sort((a, b) => a - b);
+  const bars = anios.map((a) => ({ n: conteo[a], lbl: String(a), titulo: String(a) }));
+  if (sinFecha) bars.push({ n: sinFecha, lbl: "S/F", titulo: "Sin fecha registrada", otro: true });
+  return bars;
+}
+function repChartAnualHTML() {
+  return repBarsHTML(repPublicacionesPorAnio(), "Sin cursos activos todavía.");
 }
 // Mismo lenguaje visual que "Carga del equipo" (fila con barra proporcional):
 // una vez que alguien reconoce el patrón en una pantalla, lo lee gratis en
@@ -5847,9 +5888,9 @@ function repRevisionHTML() {
 function repFuenteHTML() {
   const sinFecha = repCursosActivos().length - repPublicaciones().length;
   return (
-    '<div class="rep-nota">Publicaciones: se cuentan con la fecha de Seguimiento técnico cuando la fila está vinculada, o con la fecha de publicación que graba el Planner desde el 2 de septiembre de 2026.' +
+    '<div class="rep-nota">Todos los cursos activos cuentan en Reportería, tengan o no fecha de publicación registrada. La fecha sale de Seguimiento técnico (vinculado a mano, o por título si el curso tiene el mismo nombre en las dos partes) o, si no, del sello que graba el Planner desde el 2 de septiembre de 2026.' +
     (sinFecha
-      ? " " + sinFecha + " curso" + (sinFecha === 1 ? "" : "s") + " activo" + (sinFecha === 1 ? "" : "s") + " no tiene" + (sinFecha === 1 ? "" : "n") + " fecha registrada: cuenta" + (sinFecha === 1 ? "" : "n") + " en el total pero no en el gráfico por mes."
+      ? " " + sinFecha + " curso" + (sinFecha === 1 ? "" : "s") + " activo" + (sinFecha === 1 ? "" : "s") + " no tiene" + (sinFecha === 1 ? "" : "n") + " fecha registrada todavía: cuenta" + (sinFecha === 1 ? "" : "n") + " en el total y en la barra \"S/F\" del histórico, pero no en el gráfico por mes de este año."
       : "") +
     "</div>"
   );
@@ -5871,6 +5912,7 @@ function renderReportes() {
     '<div class="rep-top"><button class="btn btn-ghost btn-sm" data-action="reportes:csv" title="Descargar estos números en CSV">⬇ CSV</button><button class="btn btn-ghost btn-sm" data-action="app:print" title="Imprimir o guardar como PDF">🖨 PDF</button></div>' +
     repResumenHTML() +
     repSeccion("Publicaciones por mes · " + anio, "", repChartHTML()) +
+    repSeccion("Cursos por año de publicación", "Todo el historial, incluidos los sin fecha registrada", repChartAnualHTML()) +
     repSeccion("Cursos activos por sector", repCursosActivos().length + " en total", repSectoresHTML()) +
     repSeccion("Carga y foco del equipo", "Tareas activas del Planner ahora mismo", repEquipoHTML()) +
     repSeccion("Tiempo en revisión", "Cuánto tarda en salir de revisión", repRevisionHTML()) +
@@ -5884,6 +5926,10 @@ function exportReportesCSV() {
   (filas.push(["Publicaciones por mes", anio]),
     filas.push(["Mes", "Cursos publicados"]),
     porMes.forEach((n, i) => filas.push([MESES[i], n])),
+    filas.push([]),
+    filas.push(["Cursos por año de publicación (histórico completo)"]),
+    filas.push(["Año", "Cursos"]),
+    repPublicacionesPorAnio().forEach((b) => filas.push([b.lbl === "S/F" ? "Sin fecha registrada" : b.lbl, b.n])),
     filas.push([]),
     filas.push(["Cursos activos por sector"]),
     filas.push(["Sector", "Cursos"]));

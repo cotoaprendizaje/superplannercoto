@@ -4905,16 +4905,19 @@ html {
   padding-top: 14px;
   border-top: 1px dashed var(--line);
 }
-/* Doce columnas, cada una con el número arriba, la barra en el medio (alto
-   proporcional al mes con más publicaciones) y el mes abajo — el mismo
-   lenguaje de "barra proporcional" que .carga-fill, en vertical. */
+/* Cada columna tiene el número arriba, la barra en el medio (alto
+   proporcional a la de más publicaciones) y la etiqueta abajo — el mismo
+   lenguaje de "barra proporcional" que .carga-fill, en vertical. Flex en vez
+   de una grilla de 12: este mismo bloque se reusa para el histórico por año,
+   que puede traer muchas más columnas que un mes tiene — con flex + scroll
+   horizontal no hace falta una variante aparte para cada cantidad. */
 .rep-chart {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  display: flex;
   gap: 6px;
   align-items: end;
   height: 160px;
-  padding-top: 8px;
+  padding: 8px 2px 4px;
+  overflow-x: auto;
 }
 .rep-bar-col {
   display: flex;
@@ -4922,6 +4925,8 @@ html {
   align-items: center;
   height: 100%;
   gap: 4px;
+  flex: 1 0 34px;
+  min-width: 34px;
 }
 .rep-bar-n {
   font-size: 10.5px;
@@ -4942,6 +4947,20 @@ html {
   background: var(--coto-blue);
   transition: height 0.4s;
 }
+/* La barra "Sin fecha" del histórico: mismo alto que las demás, pero en un
+   color aparte — es una categoría distinta (no un año), y confundirla con
+   los datos reales sería justo el problema que esta barra existe para
+   evitar. */
+.rep-bar-otro {
+  background: var(--ink-soft);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 3px,
+    rgba(255, 255, 255, 0.25) 3px,
+    rgba(255, 255, 255, 0.25) 6px
+  );
+}
 .rep-bar-lbl {
   font-size: 9.5px;
   font-weight: 700;
@@ -4950,13 +4969,9 @@ html {
   letter-spacing: 0.3px;
 }
 @media (max-width: 760px) {
-  .rep-chart {
-    grid-template-columns: repeat(6, 1fr);
-    grid-auto-flow: row;
-    height: auto;
-  }
   .rep-bar-col {
-    height: 90px;
+    flex-basis: 28px;
+    min-width: 28px;
   }
 }
 .print-meta {
