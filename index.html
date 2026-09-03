@@ -4773,7 +4773,8 @@ html {
 }
 .tec-curso input,
 .tec-pub input,
-.tec-estado input {
+.tec-estado input,
+.tec-cat input {
   width: 100%;
   border: none;
   background: 0 0;
@@ -4787,19 +4788,36 @@ html {
   font-weight: 600;
 }
 .tec-pub input {
-  min-width: 96px;
+  min-width: 130px;
   font-variant-numeric: tabular-nums;
 }
 .tec-estado input {
   min-width: 200px;
   color: var(--ink-soft);
 }
+.tec-cat input {
+  min-width: 110px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
 .tec-curso input:focus,
 .tec-pub input:focus,
-.tec-estado input:focus {
+.tec-estado input:focus,
+.tec-cat input:focus {
   background: var(--surface-2);
   color: var(--ink);
   outline: 0;
+}
+.tec-fecha-mala-txt {
+  color: var(--bad);
+  font-weight: 700;
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 130px;
+  cursor: help;
 }
 .tec-chk {
   text-align: center;
@@ -4903,20 +4921,8 @@ html {
 .tec-th-sort.on .tec-th-ar {
   opacity: 1;
 }
-.tec-fecha-mala {
-  color: var(--bad) !important;
-  font-weight: 700;
-  text-decoration: underline wavy var(--bad) 1px;
-  text-underline-offset: 3px;
-}
 .tec-cat {
-  font-size: 11.5px;
-  color: var(--ink-soft);
-  font-weight: 600;
-  white-space: nowrap;
-  max-width: 150px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 160px;
 }
 .tec-flash {
   animation: tecFlash 1.6s ease-out;
@@ -8973,7 +8979,16 @@ function contrasteSobre(hex) {
 }
 function avatarHTML(id2, flag) {
   const miembro = member(id2);
-  if (!miembro) return "";
+  // Si el ID no matchea a nadie del equipo actual (por ejemplo alguien que ya
+  // no está), no lo escondemos: se veía como si nadie estuviera asignado.
+  if (!miembro)
+    return (
+      '<span class="avatar ' +
+      (flag ? "sm" : "") +
+      '" style="background:var(--line);color:var(--ink-soft)" title="Responsable no encontrado en el equipo actual (' +
+      esc(id2) +
+      ')">?</span>'
+    );
   const txt = miembro.nombre.slice(0, 1).toUpperCase();
   return (
     '<span class="avatar ' +
@@ -9478,6 +9493,7 @@ const state = {
   // viajan al backend ni se guardan, cada uno ordena la grilla como le sirve.
   tecPendiente: "",
   tecDiseno: "",
+  tecCategoria: "",
   tecOrden: "",
   tecOrdenDir: 1,
   tecSubView: "grilla",
@@ -10911,7 +10927,12 @@ function renderMapa() {
         .map(
           (arg) =>
             '<div class="mapa-sec ' +
-            (state.mapaSec === arg.id ? "active" : "") +
+            // "cursos" (solo tipo=curso) ya no tiene chip propio — lo usan 2
+            // accesos internos (KPI "Cursos activos" y el reset de datos de
+            // prueba) que quieren un subconjunto exacto de "todos", no la
+            // unión completa. Si aterrizás ahí, se resalta "todos" en vez de
+            // dejar la fila sin ninguna pestaña marcada.
+            (state.mapaSec === arg.id || (arg.id === "todos" && state.mapaSec === "cursos") ? "active" : "") +
             '" data-action="mapa:sec" data-sec="' +
             arg.id +
             '">' +
@@ -10985,6 +11006,7 @@ function tecRows() {
     if (filtro && !(fila.curso || "").toLowerCase().includes(filtro) && !(fila.categoria || "").toLowerCase().includes(filtro))
       return false;
     if (state.tecDiseno && (fila.diseno || "") !== state.tecDiseno) return false;
+    if (state.tecCategoria && (fila.categoria || "") !== state.tecCategoria) return false;
     if (state.tecPendiente && !tecPendientePasa(fila, state.tecPendiente)) return false;
     return true;
   });
@@ -11082,20 +11104,28 @@ function tecRowHTML(fila) {
     '<tr data-tec-row="' +
     fila.id +
     '">' +
-    (tecPlano() ? '<td class="tec-cat">' + esc(fila.categoria || "Sin categoría") + "</td>" : "") +
+    (tecPlano()
+      ? '<td class="tec-cat"><input type="text" list="tecCategoriasList" data-tec-id="' +
+        fila.id +
+        '" data-tec-field="categoria" value="' +
+        esc(fila.categoria) +
+        '" placeholder="Sin categoría"></td>'
+      : "") +
     '<td class="tec-curso"><input type="text" data-tec-id="' +
     fila.id +
     '" data-tec-field="curso" value="' +
     esc(fila.curso) +
-    '"></td><td class="tec-pub"><input type="text" class="' +
-    (tecFechaMala(fila.publicacion) ? "tec-fecha-mala" : "") +
-    '" data-tec-id="' +
+    '"></td><td class="tec-pub">' +
+    (tecFechaMala(fila.publicacion)
+      ? '<div class="tec-fecha-mala-txt" title="Este valor no se entiende como fecha — elegí la correcta en el calendario">⚠ ' +
+        esc(fila.publicacion) +
+        "</div>"
+      : "") +
+    '<input type="date" data-tec-id="' +
     fila.id +
     '" data-tec-field="publicacion" value="' +
-    esc(tecFechaVer(fila.publicacion)) +
-    '" placeholder="DD/MM/AAAA"' +
-    (tecFechaMala(fila.publicacion) ? ' title="Esta fecha no se entiende. Escribila como DD/MM/AAAA."' : "") +
-    "></td><td class=\"tec-chk\">" +
+    (tecFechaMala(fila.publicacion) ? "" : esc(fila.publicacion)) +
+    '"></td><td class="tec-chk">' +
     tecCheckbox(fila, "portada") +
     '</td><td class="tec-chk">' +
     tecCheckbox(fila, "mosaico") +
@@ -11167,11 +11197,39 @@ function tecHeadHTML() {
     "<th>Mapa</th><th></th></tr></thead>"
   );
 }
+// Categorías ya usadas en alguna fila — alimenta tanto el datalist de
+// autocompletado del campo (modo ordenado) como el filtro de categoría de
+// arriba, así las dos cosas siempre muestran las mismas opciones reales.
+function tecCategoriasUsadas() {
+  const set = new Set();
+  state.tecnico.forEach((f) => f.categoria && set.add(f.categoria));
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+function tecCategoriasDatalistHTML() {
+  return '<datalist id="tecCategoriasList">' + tecCategoriasUsadas().map((c) => '<option value="' + esc(c) + '">').join("") + "</datalist>";
+}
+// Reemplaza los dos prompt() nativos que se usaban para crear una fila: acá
+// mismo se puede corregir la categoría (o dejarla vacía) antes de crear.
+function tecNuevaFilaModalHTML(catPrefill) {
+  return (
+    '<h2>+ Agregar curso a Técnico</h2><div class="sub-t">Crea una fila nueva en Seguimiento técnico.</div>' +
+    '<div class="fld"><label>Categoría</label><input id="tecNuevaCat" list="tecCategoriasList" value="' +
+    esc(catPrefill || "") +
+    '" placeholder="Podés dejarlo vacío"></div>' +
+    tecCategoriasDatalistHTML() +
+    '<div class="fld"><label>Nombre del curso</label><input id="tecNuevoNombre" placeholder="Ej: Cajas - Apertura del sector"></div>' +
+    '<div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="tec:add-confirmar">Crear</button></div>'
+  );
+}
 function tecListHTML() {
   const grupos = tecGroups();
   if (!grupos.length)
-    return '<div class="empty"><div class="big">🔍</div><div style="font-weight:700;color:var(--ink)">Sin resultados</div><div style="margin-top:4px">Probá con otra búsqueda o quitá los filtros de arriba.</div></div>';
+    return (
+      tecCategoriasDatalistHTML() +
+      '<div class="empty"><div class="big">🔍</div><div style="font-weight:700;color:var(--ink)">Sin resultados</div><div style="margin-top:4px">Probá con otra búsqueda o quitá los filtros de arriba.</div></div>'
+    );
   return (
+    tecCategoriasDatalistHTML() +
     '<div class="tec-table-wrap"><table class="tec-table">' +
     tecHeadHTML() +
     grupos.map(tecGroupHTML).join("") +
@@ -11243,8 +11301,43 @@ function tecDisenoFiltroHTML() {
     "</select></div>"
   );
 }
+// Filtro por categoría real (las que ya existen en alguna fila), mismo
+// patrón que el de diseño — el Mapa filtra por sector, esto es su
+// equivalente en Técnico ya que "categoría" es lo más parecido a un sector
+// que tiene la grilla.
+function tecCategoriaFiltroHTML() {
+  const conteo = {};
+  state.tecnico.forEach((f) => {
+    const k = f.categoria || "";
+    conteo[k] = (conteo[k] || 0) + 1;
+  });
+  const claves = Object.keys(conteo)
+    .filter(Boolean)
+    .sort((a, b) => conteo[b] - conteo[a]);
+  if (!claves.length) return "";
+  return (
+    '<div class="filt">🏷<select id="tecCategoria"><option value="">Categoría: todas (' +
+    state.tecnico.length +
+    ")</option>" +
+    claves
+      .map(
+        (k) =>
+          '<option value="' +
+          esc(k) +
+          '"' +
+          (state.tecCategoria === k ? " selected" : "") +
+          ">" +
+          esc(k) +
+          " (" +
+          conteo[k] +
+          ")</option>",
+      )
+      .join("") +
+    "</select></div>"
+  );
+}
 function tecFiltrando() {
-  return !!(state.tecFiltro || state.tecDiseno || state.tecPendiente || state.tecOrden);
+  return !!(state.tecFiltro || state.tecDiseno || state.tecCategoria || state.tecPendiente || state.tecOrden);
 }
 // El contador y el "limpiar" se dibujan siempre y se actualizan aparte: si
 // aparecieran y desaparecieran con cada tecla habría que redibujar la barra
@@ -11271,6 +11364,7 @@ function renderTecnico() {
         esc(state.tecFiltro || "") +
         '"></div>' +
         tecDisenoFiltroHTML() +
+        tecCategoriaFiltroHTML() +
         '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' +
         '<span class="tec-top-n" id="tecTopN">' +
         tecRows().length +
@@ -12741,7 +12835,7 @@ function renderInicio() {
         hub: "mapa",
         ic: ICONOS.mapa,
         t: "Mapa del área",
-        d: "Cursos, Edu Points, apps y bases.",
+        d: "Cursos, Edu Points y contenido audiovisual.",
       },
       {
         action: "misemana:open",
@@ -13161,6 +13255,7 @@ function renderResumen() {
       null,
       "venc",
     ) +
+    '\n      <div style="grid-column:1/-1;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px">🗺️ Del Mapa</div>' +
     "\n      " +
     fn(cantidad, "Cursos activos", "cursos e-learning ya publicados en el Mapa", "var(--ok)", "mapa", "cursos") +
     "\n      " +
@@ -14258,15 +14353,19 @@ document.addEventListener("click", (ev) => {
         (dropTecnico(val10), touchTecnico(), renderTecList());
       });
       break;
-    case "tec:add": {
-      // Desde la fila de un grupo ya viene la categoría; desde el botón de
-      // arriba hay que preguntarla, porque en modo ordenado no hay grupos.
-      let catTec = el.dataset.cat;
-      if (catTec === undefined) {
-        catTec = (prompt("¿En qué categoría? (podés dejarlo vacío)") || "").trim();
+    case "tec:add":
+      // Desde la fila de un grupo ya viene la categoría precargada (pero
+      // editable); desde el botón de arriba arranca vacía.
+      openModal(tecNuevaFilaModalHTML(el.dataset.cat || ""));
+      setTimeout(() => $("#tecNuevoNombre") && $("#tecNuevoNombre").focus(), 50);
+      break;
+    case "tec:add-confirmar": {
+      const nombreTec = ($("#tecNuevoNombre").value || "").trim();
+      if (!nombreTec) {
+        flash("Poné un nombre de curso", true);
+        break;
       }
-      const nombreTec = (prompt("Nombre del curso") || "").trim();
-      if (!nombreTec) break;
+      const catTec = ($("#tecNuevaCat").value || "").trim();
       (state.tecnico.push({
         id: uid(),
         categoria: catTec,
@@ -14282,6 +14381,7 @@ document.addEventListener("click", (ev) => {
         updatedAt: Date.now(),
       }),
         touchTecnico(),
+        closeModal(),
         render());
       break;
     }
@@ -14303,6 +14403,7 @@ document.addEventListener("click", (ev) => {
     case "tec:limpiar":
       ((state.tecFiltro = ""),
         (state.tecDiseno = ""),
+        (state.tecCategoria = ""),
         (state.tecPendiente = ""),
         (state.tecOrden = ""),
         (state.tecOrdenDir = 1),
@@ -14997,6 +15098,10 @@ function applyTecField(id, campo, value) {
     ((state.tecDiseno = ev.target.value), render());
     return;
   }
+  if (ev.target.id === "tecCategoria") {
+    ((state.tecCategoria = ev.target.value), render());
+    return;
+  }
   if (ev.target.id === "tecPickSearch") {
     const el = $("#tecPickList");
     if (el) el.innerHTML = tecPickListHTML(state.cards.filter(isCurso), ev.target.value);
@@ -15007,7 +15112,12 @@ function applyTecField(id, campo, value) {
     if (el) el.innerHTML = tecFilaPickListHTML(state.tecnico.filter((f) => !f.cardId), ev.target.value);
     return;
   }
-  if (ev.target.dataset && ev.target.dataset.tecId && ev.target.tagName === "INPUT" && ev.target.type === "text") {
+  if (
+    ev.target.dataset &&
+    ev.target.dataset.tecId &&
+    ev.target.tagName === "INPUT" &&
+    (ev.target.type === "text" || ev.target.type === "date")
+  ) {
     applyTecField(ev.target.dataset.tecId, ev.target.dataset.tecField, ev.target.value);
     return;
   }
