@@ -4143,8 +4143,13 @@ function backfillCatalogoImages() {
   });
   return n;
 }
+// activo === false explícito: un curso dado de baja desde el Mapa dejaba de
+// ser inventario y, por esa sola razón, volvía a aparecer en el Planner
+// (en la columna que tuviera su estado, típicamente "En revisión") — como
+// si hubiera que seguir trabajándolo. Dado de baja es un archivo, no una
+// vuelta al tablero: solo se consulta desde el Mapa, en su propia sección.
 function boardCards() {
-  return state.cards.filter((tarjeta) => !isInventory(tarjeta));
+  return state.cards.filter((tarjeta) => !isInventory(tarjeta) && tarjeta.activo !== false);
 }
 function mine(tarjeta) {
   return (
@@ -6519,10 +6524,17 @@ function repSectoresHTML() {
     "</div>"
   );
 }
+// "Carga del equipo" mide lo que cada uno tiene ENCIMA ahora, no todo lo que
+// alguna vez le tocó — un finalizado ya no es carga de nadie. boardCards()
+// sigue trayéndolo (la columna "Finalizados" del Planner lo necesita), así
+// que el filtro va acá, en el único lugar que mide carga activa.
+function cargaActivaCards() {
+  return boardCards().filter((tarjeta) => tarjeta.estado !== "finalizado");
+}
 function repEquipoHTML() {
   const obj = {};
   TEAM.forEach((m) => (obj[m.id] = { n: 0, alta: 0, venc: 0 }));
-  boardCards().forEach((tarjeta) => {
+  cargaActivaCards().forEach((tarjeta) => {
     const lista = [tarjeta.responsable, ...(tarjeta.asignados || [])].filter(
       (v, i, arr) => v && arr.indexOf(v) === i,
     );
@@ -6646,7 +6658,7 @@ function exportReportesCSV() {
     filas.push(["Persona", "Tareas activas", "Alta prioridad", "Vencidas"]));
   const obj = {};
   (TEAM.forEach((m) => (obj[m.id] = { n: 0, alta: 0, venc: 0 })),
-    boardCards().forEach((tarjeta) => {
+    cargaActivaCards().forEach((tarjeta) => {
       [tarjeta.responsable, ...(tarjeta.asignados || [])]
         .filter((v, i, arr) => v && arr.indexOf(v) === i)
         .forEach((id) => {
@@ -8289,7 +8301,7 @@ function openCarga() {
         alta: 0,
       }),
   ),
-    boardCards().forEach((tarjeta) => {
+    cargaActivaCards().forEach((tarjeta) => {
       const lista = [tarjeta.responsable, ...(tarjeta.asignados || [])].filter(
         (arg2, arg3, arg) => arg2 && arg.indexOf(arg2) === arg3,
       );
