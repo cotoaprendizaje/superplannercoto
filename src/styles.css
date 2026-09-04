@@ -3007,6 +3007,43 @@ button {
 .tpl-row .chk-del {
   margin-left: auto;
 }
+.tpl-chk-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.tpl-chk-row {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  background: var(--surface);
+}
+.tpl-chk-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+}
+.tpl-chk-row textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--surface-2);
+  resize: vertical;
+}
+.tpl-chk-row textarea:focus {
+  outline: 0;
+  border-color: var(--coto-blue);
+}
 .cal-layout {
   display: flex;
   gap: 18px;
@@ -3685,44 +3722,71 @@ html {
 .edu-file.elim .edu-f-nom {
   text-decoration: line-through;
 }
+/* Estos 5 controles antes eran texto fijo (spans); ahora son campos
+   editables — mismo look, pero necesitan resetear el chrome nativo del
+   navegador para no desentonar con el resto de la fila. */
 .edu-ic {
-  font-size: 16px;
+  font-size: 13px;
   flex: none;
+  border: none;
+  background: 0 0;
+  font-family: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  max-width: 40px;
+}
+.edu-f-sub {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  flex: none;
+  width: 110px;
+  border: none;
+  background: 0 0;
+  font-family: inherit;
+  padding: 2px 4px;
+  border-radius: 6px;
 }
 .edu-f-nom {
   font-size: 13px;
   font-weight: 600;
   flex: none;
+  width: 260px;
   max-width: 330px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.edu-f-tipo {
-  font-size: 9.5px;
-  font-weight: 700;
-  color: var(--ink-soft);
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  padding: 1px 4px;
+  border: none;
+  background: 0 0;
+  font-family: inherit;
+  color: var(--ink);
+  padding: 2px 4px;
+  border-radius: 6px;
 }
 .edu-est {
   font-size: 10.5px;
   font-weight: 700;
   color: var(--c);
   background: color-mix(in srgb, var(--c) 13%, transparent);
+  border: none;
   border-radius: var(--pill);
   padding: 3px 9px;
   flex: none;
+  cursor: pointer;
 }
 .edu-f-nota {
   font-size: 12px;
   color: var(--ink-soft);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  border: none;
+  background: 0 0;
+  font-family: inherit;
   flex: 1;
   min-width: 0;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+.edu-f-sub:focus,
+.edu-f-nom:focus,
+.edu-f-nota:focus {
+  background: var(--surface-2);
+  color: var(--ink);
+  outline: 0;
 }
 .edu-none {
   padding: 30px;
@@ -4709,6 +4773,21 @@ html {
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
 }
+/* La grilla tiene 10-11 columnas y en mobile/tablet hay que scrollear
+   horizontal sí o sí — pero "Curso" (con qué fila estás) se queda fijo a la
+   izquierda para no perder el contexto a mitad de scroll. */
+.tec-table td.tec-curso,
+.tec-table th[data-campo="curso"] {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: 1px 0 0 var(--line);
+}
+.tec-table th[data-campo="curso"] {
+  z-index: 3;
+  background: var(--surface-2);
+}
 .tec-cat-row td {
   background: var(--surface-2);
   font-weight: 800;
@@ -4761,6 +4840,26 @@ html {
   background: var(--surface-2);
   color: var(--ink);
   outline: 0;
+}
+.tec-pub-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.tec-date-preset {
+  flex: none;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+.tec-date-preset:hover {
+  background: var(--surface-2);
+  color: var(--ink);
 }
 .tec-fecha-mala-txt {
   color: var(--bad);
