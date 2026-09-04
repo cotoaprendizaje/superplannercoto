@@ -3815,9 +3815,6 @@ const state = {
   connOk: true,
   saveError: false,
   lastSyncTs: null,
-  eduSector: null,
-  eduEst: "",
-  eduQ: "",
   appPassHash: "1waoja",
   agenda: {},
   cotofrase: { day: "", porUsuario: {} },
@@ -4268,10 +4265,6 @@ function renderFilters() {
     $("#filters").innerHTML = "";
     return;
   }
-  if (state.view === "mapa" && state.mapaSec === "edu-archivos") {
-    $("#filters").innerHTML = "";
-    return;
-  }
   const tarjeta = state.filters,
     flag = state.view === "mapa",
     fn = (id2, nombre, sector) =>
@@ -4409,7 +4402,7 @@ const VIEW_TITLES = {
   calendario: ["Calendario del planner", "Qué pasa y cuándo"],
   timeline: ["Timeline", "El panorama macro del área"],
   mapa: ["Mapa del área", "Todo lo publicado: cursos, Edu Points y contenido audiovisual, organizado por sector"],
-  tecnico: ["Seguimiento técnico", "Publicación, portada, mosaico, evaluación, textos y diseño de cada curso — para no volver al Excel."],
+  tecnico: ["Seguimiento técnico", "Cada categoría con sus cursos e-learning y sus archivos de Edu Point — para no volver al Excel."],
   reportes: ["Reportes", "Métricas del área para gestionar al equipo y llevar a fin de año: publicaciones, catálogo, carga y tiempos."],
 };
 function viewHeader() {
@@ -5246,7 +5239,6 @@ const MAPA_SECCION_LABELS = {
   todos: "◎ Cursos e-learning",
   cursos: "◎ Cursos e-learning",
   "edu-points": "📍 Tareas Edu Point",
-  "edu-archivos": "📂 Archivos Edu Point",
   contenido: "🎬 Contenido audiovisual",
   bajas: "🚫 E-learning (dados de baja)",
 };
@@ -5269,11 +5261,6 @@ function renderMapa() {
         id: "edu-points",
         label: MAPA_SECCION_LABELS["edu-points"],
         n: porTipo("edu-point") + cuenta(eduPointsEnPlanner()),
-      },
-      {
-        id: "edu-archivos",
-        label: MAPA_SECCION_LABELS["edu-archivos"],
-        n: eduArchivosVisibles().length,
       },
       {
         id: "contenido",
@@ -5316,12 +5303,9 @@ function renderMapa() {
     else {
       if (state.mapaSec === "edu-points") txt = sectionEduPoints();
       else {
-        if (state.mapaSec === "edu-archivos") txt = renderEduArchivos();
+        if (state.mapaSec === "contenido") txt = sectionContenido();
         else {
-          if (state.mapaSec === "contenido") txt = sectionContenido();
-          else {
-            if (state.mapaSec === "bajas") txt = sectionBajas();
-          }
+          if (state.mapaSec === "bajas") txt = sectionBajas();
         }
       }
     }
@@ -5419,6 +5403,18 @@ function tecGroups() {
     }
     grupos[key].push(fila);
   });
+  // Una categoría puede tener archivos de Edu Point y todavía ningún curso
+  // cargado (pasa con las que vinieron del Excel de Edu Point). Si no se
+  // agregaran acá, esos archivos no tendrían por dónde aparecer.
+  if (!state.tecDiseno && !state.tecPendiente) {
+    const archivos = eduPorCategoria();
+    Object.keys(archivos).forEach((k) => {
+      const nombre = eduCatDe(archivos[k][0]);
+      if (state.tecCategoria && catClave(state.tecCategoria) !== k) return;
+      if (orden.some((o) => catClave(o) === k)) return;
+      ((grupos[nombre] = []), orden.push(nombre));
+    });
+  }
   return orden.map((key) => ({ categoria: key, filas: grupos[key] }));
 }
 function tecCheckbox(fila, campo) {
@@ -5541,6 +5537,8 @@ function tecGroupHTML(grupo) {
     esc(grupo.categoria) +
     ' <span class="tec-cat-n">' +
     grupo.filas.length +
+    " curso" +
+    (grupo.filas.length === 1 ? "" : "s") +
     "</span></td></tr>" +
     grupo.filas.map(tecRowHTML).join("") +
     '<tr class="tec-add-row"><td colspan="' +
@@ -5549,7 +5547,9 @@ function tecGroupHTML(grupo) {
     esc(grupo.categoria) +
     '">+ Agregar curso a ' +
     esc(grupo.categoria) +
-    "</button></td></tr></tbody>"
+    "</button></td></tr>" +
+    tecEduBloqueHTML(grupo.categoria, cols) +
+    "</tbody>"
   );
 }
 function tecTh(campo, label) {
@@ -6752,40 +6752,6 @@ function sectionTodos() {
     "</div>"
   );
 }
-// El filtro de sector del Mapa (las burbujas de arriba) valía para cursos, Edu
-// Points y bajas, pero Archivos Edu Point lo ignoraba: con "Cajas" activo
-// seguía mostrando los 187 archivos de todos los sectores. Ahora manda igual
-// que en el resto del Mapa, y por eso también entra derecho a ese sector en
-// vez de mostrar la grilla de todos.
-function eduSectorFiltro() {
-  const val = state.filters.sector;
-  return val && val !== "__sin_sector__" && SECTORES[val] ? val : null;
-}
-function eduArchivosVisibles() {
-  const filtro = eduSectorFiltro();
-  return filtro ? state.eduArchivo.filter((r) => r.sec === filtro) : state.eduArchivo;
-}
-function eduSectorActual() {
-  return eduSectorFiltro() || state.eduSector;
-}
-function eduRowsFor() {
-  let lista = state.eduArchivo.filter((recurso) => recurso.sec === eduSectorActual());
-  if (state.eduEst) lista = lista.filter((recurso) => recurso.est === state.eduEst);
-  if (state.eduQ) {
-    const txt = state.eduQ.toLowerCase();
-    lista = lista.filter(
-      (recurso) =>
-        recurso.nom.toLowerCase().includes(txt) ||
-        (recurso.nota || "").toLowerCase().includes(txt) ||
-        (recurso.sub || "").toLowerCase().includes(txt) ||
-        (recurso.secNom || "").toLowerCase().includes(txt),
-    );
-  }
-  return lista;
-}
-// Antes cada archivo era texto fijo leído de EDU_DB; ahora la fila entera es
-// editable (mismo criterio que la grilla de Técnico: sin modo edición
-// aparte, se toca y se guarda solo) y tiene un id real para poder borrarla.
 function eduFileRow(recurso) {
   const val = EST_META[recurso.est] || EST_META.pendiente;
   return (
@@ -6824,185 +6790,123 @@ function eduFileRow(recurso) {
     '" title="Borrar archivo">✕</span></div>'
   );
 }
-function eduSubsUsadas() {
-  const set = new Set();
-  state.eduArchivo.forEach((r) => r.sec === eduSectorActual() && r.sub && set.add(r.sub));
+// ===== Archivos de Edu Point, dentro de Seguimiento técnico =====
+// Antes vivían en su propia sección del Mapa, con su navegación aparte (grilla
+// de sectores → sector → archivos). Ahora cuelgan de la categoría a la que
+// pertenecen, dentro de la misma grilla de Técnico: la jerarquía es
+// CATEGORÍA > cursos e-learning > archivos de Edu Point, que es como el equipo
+// piensa el trabajo — primero el sector, después qué hay de cada cosa.
+//
+// El puente entre los dos mundos es el NOMBRE de la categoría: Técnico guarda
+// texto libre ("Cajas") y los archivos guardan el slug del sector ("cajas"),
+// así que se cruzan por el nombre visible, normalizado.
+function eduCatDe(recurso) {
+  return (SECTORES[recurso.sec] && SECTORES[recurso.sec].nombre) || recurso.secNom || recurso.sec || "Sin categoría";
+}
+function catClave(nombre) {
+  return (nombre || "").trim().toLowerCase();
+}
+// El sector (slug) que le corresponde a una categoría escrita a mano. Si no hay
+// ninguno con ese nombre se devuelve null y el archivo se guarda con el nombre
+// crudo, que es lo que ya venía pasando con las categorías del Excel.
+function eduSecDeCat(nombre) {
+  const k = catClave(nombre);
+  return Object.keys(SECTORES).find((sec) => catClave(SECTORES[sec].nombre) === k) || null;
+}
+// Los archivos que pasan el buscador de arriba, agrupados por categoría. El
+// mismo cuadro de búsqueda filtra cursos y archivos: son la misma pregunta.
+function eduPorCategoria() {
+  const filtro = (state.tecFiltro || "").trim().toLowerCase(),
+    obj = {};
+  state.eduArchivo.forEach((r) => {
+    const cat = eduCatDe(r);
+    if (
+      filtro &&
+      !(r.nom || "").toLowerCase().includes(filtro) &&
+      !(r.sub || "").toLowerCase().includes(filtro) &&
+      !(r.nota || "").toLowerCase().includes(filtro) &&
+      !cat.toLowerCase().includes(filtro)
+    )
+      return;
+    (obj[catClave(cat)] = obj[catClave(cat)] || []).push(r);
+  });
+  return obj;
+}
+function eduSubsUsadas(cat) {
+  const k = catClave(cat),
+    set = new Set();
+  state.eduArchivo.forEach((r) => catClave(eduCatDe(r)) === k && r.sub && set.add(r.sub));
   return [...set].sort((a, b) => a.localeCompare(b));
 }
-function eduSubDatalistHTML() {
-  return '<datalist id="eduSubList">' + eduSubsUsadas().map((s) => '<option value="' + esc(s) + '">').join("") + "</datalist>";
-}
-function eduNuevoModalHTML() {
-  const sec = eduSectorActual(),
-    nombre = (SECTORES[sec] && SECTORES[sec].nombre) || sec;
+function eduSubDatalistHTML(cat) {
   return (
-    "<h2>+ Agregar archivo</h2><div class=\"sub-t\">Nuevo archivo de Edu Point para <b>" +
-    esc(nombre) +
+    '<datalist id="eduSubList">' +
+    eduSubsUsadas(cat)
+      .map((sub) => '<option value="' + esc(sub) + '">')
+      .join("") +
+    "</datalist>"
+  );
+}
+function eduNuevoModalHTML(cat) {
+  return (
+    '<h2>+ Agregar archivo</h2><div class="sub-t">Nuevo archivo de Edu Point para <b>' +
+    esc(cat) +
     '</b>.</div>\n    <div class="fld"><label>Subcategoría</label><input id="eduNuevoSub" list="eduSubList" placeholder="Podés dejarlo vacío"></div>' +
-    eduSubDatalistHTML() +
-    '\n    <div class="fld"><label>Nombre del archivo</label><input id="eduNuevoNombre" placeholder="Ej: Reconocimiento de Pesos"></div>\n    <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="edu:add-confirmar">Crear</button></div>'
+    eduSubDatalistHTML(cat) +
+    '\n    <div class="fld"><label>Nombre del archivo</label><input id="eduNuevoNombre" placeholder="Ej: Reconocimiento de Pesos"></div>\n    <input type="hidden" id="eduNuevaCat" value="' +
+    esc(cat) +
+    '">\n    <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="edu:add-confirmar">Crear</button></div>'
   );
 }
-function eduListHTML() {
-  const lista = eduRowsFor();
-  if (!lista.length)
-    return (
-      eduSubDatalistHTML() +
-      '<div class="edu-none">' +
-      (state.eduEst || state.eduQ
-        ? "Sin archivos con ese filtro."
-        : "Todavía no cargamos archivos de este sector.") +
-      "</div>"
-    );
-  const obj = {};
-  lista.forEach((recurso) => {
-    (obj[recurso.secNom] = obj[recurso.secNom] || []).push(recurso);
+// Resumen que va en el encabezado plegable: es el mismo dato que daban las
+// tarjetas de sector del Mapa ("cuántos hay y qué falta"), pero al lado de los
+// cursos de esa misma categoría.
+function eduResumenTxt(lista) {
+  const listos = lista.filter((r) => r.est === "listo").length;
+  return (
+    "<b>" + lista.length + "</b> archivo" + (lista.length === 1 ? "" : "s") +
+    " · " + listos + " listo" + (listos === 1 ? "" : "s") +
+    " · " + (lista.length - listos) + " por hacer"
+  );
+}
+function eduFilesHTML(lista) {
+  const porSub = {};
+  lista.forEach((r) => {
+    (porSub[r.sub || ""] = porSub[r.sub || ""] || []).push(r);
   });
-  const flag = Object.keys(obj).length > 1;
-  return (
-    eduSubDatalistHTML() +
-    Object.keys(obj)
-    .map((arg) => {
-      const obj2 = {};
-      obj[arg].forEach((recurso) => {
-        (obj2[recurso.sub] = obj2[recurso.sub] || []).push(recurso);
-      });
-      const txt = Object.keys(obj2)
-        .map(
-          (arg2) =>
-            (arg2 ? '<div class="edu-sub">' + esc(arg2) + "</div>" : "") +
-            '<div class="edu-files">' +
-            obj2[arg2].map(eduFileRow).join("") +
-            "</div>",
-        )
-        .join("");
-      return "" + (flag ? '<div class="edu-secgroup">' + esc(arg) + "</div>" : "") + txt;
-    })
-    .join("")
-  );
+  return Object.keys(porSub)
+    .sort((a, b) => (a ? 1 : -1) - (b ? 1 : -1) || a.localeCompare(b))
+    .map(
+      (sub) =>
+        (sub ? '<div class="edu-sub">' + esc(sub) + "</div>" : "") +
+        '<div class="edu-files">' +
+        porSub[sub].map(eduFileRow).join("") +
+        "</div>",
+    )
+    .join("");
 }
-function renderEduList() {
-  const el = $("#eduList");
-  if (el) el.innerHTML = eduListHTML();
-}
-function eduKpi(cantidad, txt, txt2) {
+// El bloque que se cuelga de cada categoría en la grilla de Técnico.
+function tecEduBloqueHTML(cat, cols) {
+  const lista = (eduPorCategoria()[catClave(cat)] || []).slice();
   return (
-    '<div class="edu-kpi"><div class="edu-kpi-n" style="color:' +
-    txt2 +
+    '<tr class="tec-edu-row"><td colspan="' +
+    cols +
+    '"><details class="tec-edu" data-edu-cat="' +
+    esc(cat) +
+    '"' +
+    // Con una búsqueda activa se abre solo: si no, habría que ir abriendo
+    // categoría por categoría para ver dónde cayó el resultado.
+    (state.tecFiltro && lista.length ? " open" : "") +
+    '><summary><span class="tec-edu-t">📂 Archivos Edu Point</span><span class="tec-edu-n" data-edu-resumen="' +
+    esc(cat) +
     '">' +
-    cantidad +
-    '</div><div class="edu-kpi-l">' +
-    txt +
-    "</div></div>"
-  );
-}
-function renderEduArchivos() {
-  const secFiltro = eduSectorFiltro();
-  if (!secFiltro && !state.eduSector) {
-    const obj = {};
-    state.eduArchivo.forEach((recurso) => {
-      (obj[recurso.sec] = obj[recurso.sec] || []).push(recurso);
-    });
-    const cantidad = state.eduArchivo.length,
-      cantidad2 = state.eduArchivo.filter((recurso) => recurso.est === "listo").length,
-      cantidad3 = Object.keys(obj).filter((arg) => SECTORES[arg]).length,
-      lista3 = Object.keys(SECTORES)
-        .slice()
-        .sort(
-          (arg, arg2) =>
-            (obj[arg2] || []).length - (obj[arg] || []).length ||
-            SECTORES[arg].nombre.localeCompare(SECTORES[arg2].nombre),
-        ),
-      txt = lista3
-        .map((arg) => {
-          const lista2 = obj[arg] || [],
-            cantidad4 = lista2.length,
-            cantidad5 = lista2.filter((recurso) => recurso.est === "listo").length,
-            n = cantidad4 ? Math.round((cantidad5 / cantidad4) * 100) : 0;
-          return (
-            '<button class="edu-sec ' +
-            (cantidad4 ? "" : "empty") +
-            '" data-cat="' +
-            arg +
-            '" data-action="edu:sec" data-sec="' +
-            arg +
-            '">\n        <div class="edu-sec-top"><span class="edu-sec-nom">' +
-            esc(SECTORES[arg].nombre) +
-            "</span>" +
-            (cantidad4 ? '<span class="edu-sec-pct">' + n + "%</span>" : "") +
-            '</div>\n        <div class="edu-bar"><div class="edu-bar-fill" style="width:' +
-            n +
-            '%"></div></div>\n        <div class="edu-sec-foot">' +
-            (cantidad4
-              ? "<b>" +
-                cantidad4 +
-                "</b> archivos · " +
-                cantidad5 +
-                " listos · " +
-                (cantidad4 - cantidad5) +
-                " por hacer"
-              : "Sin material aún") +
-            "</div></button>"
-          );
-        })
-        .join("");
-    return (
-      '<div class="edu-overview-head">\n        <div class="edu-kpis">' +
-      eduKpi(cantidad, "archivos", "var(--coto-blue)") +
-      eduKpi(cantidad2, "listos", "var(--ok)") +
-      eduKpi(cantidad - cantidad2, "por hacer", "var(--warn)") +
-      eduKpi(cantidad3 + "/" + Object.keys(SECTORES).length, "sectores", "#5A1ED2") +
-      '</div>\n        <div style="font-size:12.5px;color:var(--ink-soft);margin-top:8px">Base de archivos de Edu Point por sector — en qué instancia está cada uno. Tocá un sector para ver sus archivos y qué falta terminar, corregir o mejorar.</div>\n      </div>\n      <div class="edu-sec-grid">' +
-      txt +
-      "</div>"
-    );
-  }
-  const val = secFiltro || state.eduSector,
-    nombre = SECTORES[val] ? SECTORES[val].nombre : val,
-    lista = state.eduArchivo.filter((recurso) => recurso.sec === val),
-    txt2 = ["", "listo", "revisar", "rehacer", "pendiente", "nuevo", "eliminado"]
-      .filter((arg) => !arg || lista.some((recurso) => recurso.est === arg))
-      .map(
-        (arg) =>
-          '<button class="edu-fchip ' +
-          (state.eduEst === arg ? "on" : "") +
-          '" data-action="edu:est" data-est="' +
-          arg +
-          '" style="' +
-          (arg ? "--c:" + EST_META[arg].c : "") +
-          '">' +
-          (arg ? EST_META[arg].l : "Todos") +
-          (arg ? " <b>" + lista.filter((recurso) => recurso.est === arg).length + "</b>" : "") +
-          "</button>",
-      )
-      .join("");
-  return (
-    '<nav class="crumbs"><button class="crumb" data-action="mapa:sec" data-sec="todos">Mapa</button><span>›</span><button class="crumb" data-action="edu:back">Archivos Edu Point</button><span>›</span><span class="crumb cur" data-cat="' +
-    val +
-    '">' +
-    esc(nombre) +
-    '</span></nav>\n    <div class="edu-detail-head" data-cat="' +
-    val +
-    '">\n      <span class="badge badge-cat" data-cat="' +
-    val +
-    '">' +
-    esc(nombre) +
-    '</span>\n      <span class="pill">' +
-    lista.length +
-    " archivo" +
-    (lista.length !== 1 ? "s" : "") +
-    "</span>\n      " +
-    (lista.length
-      ? '<input class="edu-search" id="eduSearch" placeholder="Buscar archivo…" value="' +
-        esc(state.eduQ) +
-        '" autocomplete="off">'
-      : "") +
-    '<button class="btn btn-ghost btn-sm" data-action="edu:add">+ Agregar archivo</button>' +
-    "\n    </div>\n    " +
-    (lista.length ? '<div class="edu-fchips">' + txt2 + "</div>" : "") +
-    '\n    <div id="eduList">' +
-    eduListHTML() +
-    "</div>"
+    (lista.length ? eduResumenTxt(lista) : "Sin archivos todavía") +
+    '</span></summary>\n      <div class="tec-edu-body">' +
+    eduSubDatalistHTML(cat) +
+    (lista.length ? eduFilesHTML(lista) : '<div class="edu-none">Todavía no cargamos archivos de esta categoría.</div>') +
+    '\n      <button class="btn btn-ghost btn-sm" data-action="edu:add" data-cat="' +
+    esc(cat) +
+    '" style="align-self:flex-start">+ Agregar archivo</button></div></details></td></tr>'
   );
 }
 // Cursos, Edu Points y contenido audiovisual ya en su propia sección: acá va
@@ -8521,7 +8425,7 @@ async function refreshEduArchivoFromRemote() {
     if (remote && Array.isArray(remote.eduArchivo)) {
       const merged = mergeCards(state.eduArchivo, remote.eduArchivo, state.deletedEduArchivo, remote.deletedEduArchivo || {});
       ((state.eduArchivo = merged.cards), (state.deletedEduArchivo = merged.deleted));
-      if (state.view === "mapa" && state.mapaSec === "edu-archivos") render();
+      if (state.view === "tecnico") render();
     }
   } catch (e) {}
 }
@@ -8583,7 +8487,7 @@ document.addEventListener("click", (ev) => {
   if (el3) {
     if (state.view !== el3.dataset.view) {
       ((state.view = el3.dataset.view), pushNav(), render());
-      if (state.view === "tecnico") refreshTecnicoFromRemote();
+      if (state.view === "tecnico") (refreshTecnicoFromRemote(), refreshEduArchivoFromRemote());
     }
     return;
   }
@@ -8644,13 +8548,7 @@ document.addEventListener("click", (ev) => {
       ((state.mis = !state.mis), render());
       break;
     case "mapa:sec":
-      ((state.mapaSec = el.dataset.sec),
-        (state.eduSector = null),
-        (state.eduEst = ""),
-        (state.eduQ = ""),
-        pushNav(),
-        render());
-      if (el.dataset.sec === "edu-archivos") refreshEduArchivoFromRemote();
+      ((state.mapaSec = el.dataset.sec), pushNav(), render());
       break;
     case "mapa:bubble": {
       const sec2 = el.dataset.sector;
@@ -8660,30 +8558,20 @@ document.addEventListener("click", (ev) => {
     case "mapa:sector-clear":
       ((state.filters.sector = ""), render());
       break;
-    case "edu:sec":
-      ((state.eduSector = el.dataset.sec), (state.eduEst = ""), (state.eduQ = ""), pushNav(), render());
-      break;
-    case "edu:back":
-      // Volver a "todos los archivos" también suelta el filtro de sector del
-      // Mapa: si no, el filtro volvía a meter en el mismo sector y el botón
-      // parecía no hacer nada.
-      ((state.eduSector = null),
-        (state.filters.sector = ""),
-        (state.eduEst = ""),
-        (state.eduQ = ""),
-        pushNav(),
-        render());
-      break;
-    case "edu:est":
-      ((state.eduEst = state.eduEst === el.dataset.est ? "" : el.dataset.est), renderView());
-      break;
-    case "edu:del":
+    case "edu:del": {
+      // La fila se saca del DOM a mano en vez de redibujar la grilla entera:
+      // redibujar cerraría el bloque de la categoría y perdería el lugar.
+      const filaEdu = el.closest("[data-edu-row]"),
+        catEdu = eduCatDe(state.eduArchivo.find((r) => r.id === el.dataset.id) || {});
       confirmar("¿Borrar este archivo de Edu Point?", () => {
-        (dropEduArchivo(el.dataset.id), touchEduArchivo(), renderEduList());
+        (dropEduArchivo(el.dataset.id), touchEduArchivo());
+        if (filaEdu) filaEdu.remove();
+        refrescarResumenEdu(catEdu);
       });
       break;
+    }
     case "edu:add":
-      openModal(eduNuevoModalHTML());
+      openModal(eduNuevoModalHTML(el.dataset.cat || ""));
       setTimeout(() => $("#eduNuevoNombre") && $("#eduNuevoNombre").focus(), 50);
       break;
     case "edu:add-confirmar": {
@@ -8692,8 +8580,13 @@ document.addEventListener("click", (ev) => {
         flash("Poné un nombre de archivo", true);
         break;
       }
-      const sec = eduSectorActual(),
-        secNom = (SECTORES[sec] && SECTORES[sec].nombre) || sec;
+      // La categoría viene del bloque desde donde se tocó "+ Agregar archivo".
+      // Si existe un sector con ese nombre se guarda su slug (así el archivo
+      // hereda el color y se cruza con el resto); si no, queda el nombre crudo,
+      // que es lo que ya venía pasando con las categorías del Excel.
+      const catNueva = ($("#eduNuevaCat") && $("#eduNuevaCat").value) || "",
+        sec = eduSecDeCat(catNueva) || catNueva,
+        secNom = catNueva;
       (state.eduArchivo.push({
         id: uid(),
         sec,
@@ -8707,7 +8600,7 @@ document.addEventListener("click", (ev) => {
       }),
         touchEduArchivo(),
         closeModal(),
-        renderView());
+        renderTecList());
       break;
     }
     case "kpi:go":
@@ -9415,7 +9308,6 @@ function navState() {
   return {
     v: state.view,
     ms: state.mapaSec,
-    es: state.eduSector,
   };
 }
 function pushNav() {
@@ -9442,9 +9334,6 @@ window.addEventListener("popstate", (arg) => {
   val &&
     ((state.view = val.v),
     (state.mapaSec = val.ms || state.mapaSec),
-    (state.eduSector = val.es || null),
-    (state.eduEst = ""),
-    (state.eduQ = ""),
     render());
 });
 function toggleArr(arg, txt, sector) {
@@ -9470,13 +9359,32 @@ function applyTecField(id, campo, value) {
     if (cardVinc && cardVinc.titulo !== value) ((cardVinc.titulo = value), touch());
   }
 }
+// Contadores del encabezado plegable de una categoría ("50 archivos · 18
+// listos · 32 por hacer"), actualizados en el lugar.
+function refrescarResumenEdu(cat) {
+  const el = document.querySelector('[data-edu-resumen="' + (cat || "").replace(/"/g, "&quot;") + '"]');
+  if (!el) return;
+  const lista = state.eduArchivo.filter((r) => catClave(eduCatDe(r)) === catClave(cat));
+  el.innerHTML = lista.length ? eduResumenTxt(lista) : "Sin archivos todavía";
+}
 function applyEduField(id, campo, value) {
   const recurso = state.eduArchivo.find((r) => r.id === id);
   if (!recurso) return;
   ((recurso[campo] = value), touchEduArchivo());
-  // tipo/estado cambian el color y el ícono de la fila — sí conviene
-  // refrescar. nombre/nota se tipean letra a letra, ahí NO (perdería el foco).
-  if (campo === "est" || campo === "tipo") renderEduList();
+  // Nada de redibujar: la grilla de Técnico es larga y volver a armarla
+  // cerraría el bloque de la categoría en el que se está trabajando (y con
+  // nombre/nota, que se tipean letra a letra, se perdería el foco). Lo único
+  // que cambia de verdad al mover el estado es el color del select, la fila
+  // tachada y los contadores de arriba: eso se toca a mano.
+  if (campo === "est") {
+    const fila = document.querySelector('[data-edu-row="' + id + '"]');
+    if (fila) {
+      fila.classList.toggle("elim", value === "eliminado");
+      const sel = fila.querySelector('[data-edu-field="est"]');
+      if (sel) sel.style.setProperty("--c", (EST_META[value] || EST_META.pendiente).c);
+    }
+    refrescarResumenEdu(eduCatDe(recurso));
+  }
 }
 // En el panel de la tarjeta, las secciones se abren y se cierran SOLO con la
 // flechita: el encabezado es una barra ancha y cualquier clic cerca de él
@@ -9493,10 +9401,6 @@ document.addEventListener("click", (ev) => {
   }
   if (ev.target.id === "sectorSearch") {
     renderSectorResults(ev.target.value);
-    return;
-  }
-  if (ev.target.id === "eduSearch") {
-    ((state.eduQ = ev.target.value), renderEduList());
     return;
   }
   if (ev.target.id === "tecSearch") {
@@ -10713,7 +10617,7 @@ function openHelp() {
     ["🎲 ¿Qué curso me toca?", "Botoncito flotante a la derecha del Planner (🎡): tocalo para desplegar el sorteo entre los cursos que todavía no arrancaron."],
     ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
     ["Mapa del área", "Todo lo publicado (cursos, Edu Points, contenido audiovisual), organizado por sector y filtrable con un clic."],
-    ["🔧 Seguimiento técnico", "Reemplaza al Excel de Categorías y Cursos: publicación, portada, mosaico, evaluación, textos y diseño de cada curso, editable ahí mismo. \"🔗 Vincular\" une una fila con su tarjeta del Mapa."],
+    ["🔧 Seguimiento técnico", "Reemplaza al Excel de Categorías y Cursos: publicación, actualización, portada, mosaico, evaluación, textos y diseño de cada curso, editable ahí mismo. \"🔗 Vincular\" une una fila con su tarjeta del Mapa. Debajo de los cursos de cada categoría cuelgan sus <b>Archivos Edu Point</b>, con el mismo tratamiento."],
     ["📈 Reportes", "Métricas para gestionar el área: publicaciones por mes, catálogo por sector, carga del equipo y tiempo en revisión. \"⬇ CSV\" y \"🖨 PDF\" exportan lo mismo que se ve en pantalla."],
   ];
   openModal(
