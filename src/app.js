@@ -3148,6 +3148,13 @@ function seedTecnico() {
     updatedAt: Date.now(),
   }));
 }
+// EDU_DB queda como semilla de una sola vez (igual que TECNICO_SEED con
+// state.tecnico): la primera vez que la fila remota no trae nada, se
+// convierte en filas reales con id — después de eso EDU_DB no se vuelve a
+// leer, todo pasa por state.eduArchivo.
+function seedEduArchivo() {
+  return EDU_DB.map((r) => Object.assign({ id: uid(), updatedAt: Date.now() }, r));
+}
 function mentionize(texto) {
   let txt = esc(texto || "");
   const lista = TEAM.map((miembro) => miembro.nombre).filter(Boolean);
@@ -3458,7 +3465,11 @@ const BACKEND = {
       },
     };
   })(),
-  TEC_FILA = BACKEND.fila + "-tecnico";
+  TEC_FILA = BACKEND.fila + "-tecnico",
+  // Los Archivos Edu Point también viven en su propia fila, mismo motivo que
+  // Técnico: no engordar el documento del tablero con 187 filas que casi
+  // nunca cambian.
+  EDU_FILA = BACKEND.fila + "-eduarchivo";
 const TOMBSTONE_TTL = 30 * 24 * 60 * 60 * 1000;
 function cardFingerprint(card) {
   const { updatedAt, ...rest } = card;
@@ -3507,6 +3518,27 @@ function dropTecnico(id) {
     (state.deletedTecnico[id] = now),
     savedFingerprintsTec.delete(id));
 }
+// Mismo esquema otra vez, esta vez para Archivos Edu Point: dejaron de ser
+// la lista fija EDU_DB para pasar a ser filas editables y sincronizadas.
+let savedFingerprintsEdu = new Map();
+function stampEditedEduArchivo() {
+  const now = Date.now();
+  for (const recurso of state.eduArchivo) {
+    const fp = cardFingerprint(recurso);
+    if (savedFingerprintsEdu.get(recurso.id) !== fp) {
+      ((recurso.updatedAt = now), savedFingerprintsEdu.set(recurso.id, fp));
+    }
+  }
+}
+function rememberFingerprintsEdu(lista) {
+  savedFingerprintsEdu = new Map(lista.map((r) => [r.id, cardFingerprint(r)]));
+}
+function dropEduArchivo(id) {
+  const now = Date.now();
+  ((state.eduArchivo = state.eduArchivo.filter((r) => r.id !== id)),
+    (state.deletedEduArchivo[id] = now),
+    savedFingerprintsEdu.delete(id));
+}
 function pruneTombstones(deleted) {
   const cutoff = Date.now() - TOMBSTONE_TTL,
     out = {};
@@ -3550,6 +3582,12 @@ function docSnapshotTecnico() {
   return {
     tecnico: state.tecnico,
     deletedTecnico: state.deletedTecnico,
+  };
+}
+function docSnapshotEduArchivo() {
+  return {
+    eduArchivo: state.eduArchivo,
+    deletedEduArchivo: state.deletedEduArchivo,
   };
 }
 const BACKUP_KEY = "coto.superplanner.backups",
@@ -3760,6 +3798,8 @@ const state = {
   deleted: {},
   tecnico: [],
   deletedTecnico: {},
+  eduArchivo: [],
+  deletedEduArchivo: {},
   tecFiltro: "",
   // Filtros y orden de Seguimiento técnico. Son de pantalla, no de datos: no
   // viajan al backend ni se guardan, cada uno ordena la grilla como le sirve.
@@ -3785,24 +3825,41 @@ function hashStr(lista) {
   return n.toString(36);
 }
 const allTipos = () => Object.assign({}, TIPOS, mapCustom());
+// "__checklistOverrides" vive DENTRO de customTpl (con ese prefijo para no
+// poder chocar con el id de un tipo real) en vez de sumar un campo de
+// estado nuevo — así el checklist editable de los tipos de base viaja
+// gratis por los mismos 8 lugares que ya guardan/cargan/exportan/importan
+// "templates" sin tener que tocar cada uno de nuevo.
 function mapCustom() {
   const obj = {};
-  for (const val in state.customTpl)
+  for (const val in state.customTpl) {
+    if (val.startsWith("__")) continue;
     obj[val] = {
       nombre: state.customTpl[val].nombre,
       icon: "🧩",
       custom: true,
     };
+  }
   return obj;
 }
 function tplFor(txt) {
   if (state.customTpl[txt]) return state.customTpl[txt];
-  return (
-    TEMPLATES[txt] || {
-      fases: [],
-      checklist: [],
-    }
-  );
+  const base = TEMPLATES[txt] || {
+    fases: [],
+    checklist: [],
+  };
+  const overrides = state.customTpl.__checklistOverrides;
+  if (overrides && overrides[txt]) return Object.assign({}, base, { checklist: overrides[txt] });
+  return base;
+}
+function checklistTplActual(tipo) {
+  const overrides = state.customTpl.__checklistOverrides;
+  return (overrides && overrides[tipo]) || (TEMPLATES[tipo] || {}).checklist || [];
+}
+function setChecklistOverride(tipo, items) {
+  ((state.customTpl.__checklistOverrides = state.customTpl.__checklistOverrides || {}),
+    (state.customTpl.__checklistOverrides[tipo] = items),
+    touch());
 }
 const current = () => state.cards.find((tarjeta) => tarjeta.id === state.selectedId);
 function newCard(txt, txt2, obj) {
@@ -4132,20 +4189,6 @@ function filteredBoard() {
 // Calendario o Timeline impreso queda sin decir cuándo se sacó ni qué
 // filtros estaban puestos.
 function printMetaHTML() {
-  const tarjeta = state.filters,
-    partes = [];
-  if (tarjeta.persona) {
-    const miembro = member(tarjeta.persona);
-    if (miembro) partes.push("Persona: " + miembro.nombre);
-  }
-  if (tarjeta.sector) partes.push("Sector: " + (sectorName(tarjeta.sector) || tarjeta.sector));
-  if (tarjeta.tipo) partes.push("Tipo: " + ((allTipos()[tarjeta.tipo] || {}).nombre || tarjeta.tipo));
-  if (tarjeta.estado) {
-    const estado = ESTADOS.find((arg) => arg.id === tarjeta.estado);
-    partes.push("Estado: " + (estado ? estado.nombre : tarjeta.estado));
-  }
-  if (tarjeta.texto) partes.push('Buscando: "' + tarjeta.texto + '"');
-  if (state.quick) partes.push("Filtro rápido: " + state.quick);
   const fecha = new Date().toLocaleString("es-AR", {
     day: "numeric",
     month: "short",
@@ -4153,11 +4196,39 @@ function printMetaHTML() {
     hour: "2-digit",
     minute: "2-digit",
   });
-  return (
-    "<b>Cotonetes Forever</b> · Impreso " +
-    esc(fecha) +
-    (partes.length ? " · Filtros: " + esc(partes.join(" · ")) : " · Sin filtros activos")
-  );
+  // El sello mostraba siempre los filtros del Planner, aunque imprimieras
+  // desde el Mapa — con otra sección y otro sector activo en pantalla. Cada
+  // vista arma su propia lectura de "qué estoy viendo" en vez de asumir
+  // que siempre es el Planner.
+  let resumen;
+  if (state.view === "mapa") {
+    const partes = [
+      "Sección: " + (MAPA_SECCION_LABELS[state.mapaSec] || state.mapaSec),
+    ];
+    if (state.filters.sector)
+      partes.push(
+        "Sector: " +
+          (state.filters.sector === "__sin_sector__" ? "Sin sector" : sectorName(state.filters.sector) || state.filters.sector),
+      );
+    resumen = " · " + partes.join(" · ");
+  } else {
+    const tarjeta = state.filters,
+      partes = [];
+    if (tarjeta.persona) {
+      const miembro = member(tarjeta.persona);
+      if (miembro) partes.push("Persona: " + miembro.nombre);
+    }
+    if (tarjeta.sector) partes.push("Sector: " + (sectorName(tarjeta.sector) || tarjeta.sector));
+    if (tarjeta.tipo) partes.push("Tipo: " + ((allTipos()[tarjeta.tipo] || {}).nombre || tarjeta.tipo));
+    if (tarjeta.estado) {
+      const estado = ESTADOS.find((arg) => arg.id === tarjeta.estado);
+      partes.push("Estado: " + (estado ? estado.nombre : tarjeta.estado));
+    }
+    if (tarjeta.texto) partes.push('Buscando: "' + tarjeta.texto + '"');
+    if (state.quick) partes.push("Filtro rápido: " + state.quick);
+    resumen = partes.length ? " · Filtros: " + partes.join(" · ") : " · Sin filtros activos";
+  }
+  return "<b>Cotonetes Forever</b> · Impreso " + esc(fecha) + esc(resumen);
 }
 function renderFilters() {
   // Elegir un filtro reconstruye toda la barra (así se actualiza el contador
@@ -5156,6 +5227,18 @@ function mapaSectorMap() {
     "</div>\n    </details>"
   );
 }
+// Único lugar con los nombres de las secciones del Mapa: renderMapa() arma
+// los chips desde acá y printMetaHTML() los reusa para el sello del PDF, así
+// no hay dos copias del texto que puedan quedar desincronizadas cuando se
+// renombra una sección (como pasó esta semana).
+const MAPA_SECCION_LABELS = {
+  todos: "◎ Cursos e-learning",
+  cursos: "◎ Cursos e-learning",
+  "edu-points": "📍 QR / Edu Point",
+  "edu-archivos": "📂 Archivos Edu Point",
+  contenido: "🎬 Contenido audiovisual",
+  bajas: "🚫 E-learning (dados de baja)",
+};
 function renderMapa() {
   // Una sola fila de secciones, no dos: la de stats de arriba repetía casi lo
   // mismo que estos chips y encima mostraba "Publicado 164" al lado de
@@ -5168,27 +5251,27 @@ function renderMapa() {
     lista = [
       {
         id: "todos",
-        label: "◎ Cursos e-learning",
+        label: MAPA_SECCION_LABELS.todos,
         n: cuenta(state.cards.filter(inInventory)),
       },
       {
         id: "edu-points",
-        label: "📍 QR / Edu Point",
+        label: MAPA_SECCION_LABELS["edu-points"],
         n: porTipo("edu-point") + cuenta(eduPointsEnPlanner()),
       },
       {
         id: "edu-archivos",
-        label: "📂 Archivos Edu Point",
-        n: EDU_DB.length,
+        label: MAPA_SECCION_LABELS["edu-archivos"],
+        n: state.eduArchivo.length,
       },
       {
         id: "contenido",
-        label: "🎬 Contenido audiovisual",
+        label: MAPA_SECCION_LABELS.contenido,
         n: cuenta(state.cards.filter((t) => INV_KIND[t.tipo] === "contenido" && inInventory(t))),
       },
       {
         id: "bajas",
-        label: "🚫 E-learning (dados de baja)",
+        label: MAPA_SECCION_LABELS.bajas,
         n: cuenta(state.cards.filter((t) => t.publicado && t.activo === false && inventoryKind(t))),
       },
     ],
@@ -5393,11 +5476,15 @@ function tecRowHTML(fila) {
         esc(fila.publicacion) +
         "</div>"
       : "") +
-    '<input type="date" data-tec-id="' +
+    '<div class="tec-pub-row"><input type="date" data-tec-id="' +
     fila.id +
     '" data-tec-field="publicacion" value="' +
     (tecFechaMala(fila.publicacion) ? "" : esc(fila.publicacion)) +
-    '"></td><td class="tec-chk">' +
+    '"><button type="button" class="tec-date-preset" data-action="tec:datepreset" data-tec-id="' +
+    fila.id +
+    '" data-preset="hoy" title="Hoy">H</button><button type="button" class="tec-date-preset" data-action="tec:datepreset" data-tec-id="' +
+    fila.id +
+    '" data-preset="semana" title="+1 semana">+7</button></div></td><td class="tec-chk">' +
     tecCheckbox(fila, "portada") +
     '</td><td class="tec-chk">' +
     tecCheckbox(fila, "mosaico") +
@@ -6648,7 +6735,7 @@ function sectionTodos() {
   );
 }
 function eduRowsFor() {
-  let lista = EDU_DB.filter((recurso) => recurso.sec === state.eduSector);
+  let lista = state.eduArchivo.filter((recurso) => recurso.sec === state.eduSector);
   if (state.eduEst) lista = lista.filter((recurso) => recurso.est === state.eduEst);
   if (state.eduQ) {
     const txt = state.eduQ.toLowerCase();
@@ -6662,32 +6749,70 @@ function eduRowsFor() {
   }
   return lista;
 }
+// Antes cada archivo era texto fijo leído de EDU_DB; ahora la fila entera es
+// editable (mismo criterio que la grilla de Técnico: sin modo edición
+// aparte, se toca y se guarda solo) y tiene un id real para poder borrarla.
 function eduFileRow(recurso) {
-  const val = EST_META[recurso.est] || EST_META.pendiente,
-    txt = EDU_TIPO_IC[recurso.tipo] || "📎";
+  const val = EST_META[recurso.est] || EST_META.pendiente;
   return (
     '<div class="edu-file ' +
     (recurso.est === "eliminado" ? "elim" : "") +
-    '"><span class="edu-ic">' +
-    txt +
-    '</span>\n    <span class="edu-f-nom">' +
+    '" data-edu-row="' +
+    recurso.id +
+    '"><select class="edu-ic" data-edu-id="' +
+    recurso.id +
+    '" data-edu-field="tipo" title="Tipo de archivo"><option value="">📎</option>' +
+    Object.keys(EDU_TIPO_IC)
+      .map((k) => '<option value="' + k + '"' + (recurso.tipo === k ? " selected" : "") + ">" + EDU_TIPO_IC[k] + " " + k + "</option>")
+      .join("") +
+    '</select>\n    <input type="text" class="edu-f-sub" list="eduSubList" data-edu-id="' +
+    recurso.id +
+    '" data-edu-field="sub" value="' +
+    esc(recurso.sub || "") +
+    '" placeholder="Subcategoría">\n    <input type="text" class="edu-f-nom" data-edu-id="' +
+    recurso.id +
+    '" data-edu-field="nom" value="' +
     esc(recurso.nom) +
-    (recurso.tipo ? ' <span class="edu-f-tipo">' + recurso.tipo + "</span>" : "") +
-    '</span>\n    <span class="edu-est" style="--c:' +
+    '" placeholder="Nombre del archivo">\n    <select class="edu-est" data-edu-id="' +
+    recurso.id +
+    '" data-edu-field="est" style="--c:' +
     val.c +
     '">' +
-    val.l +
-    "</span>\n    " +
-    (recurso.nota
-      ? '<span class="edu-f-nota" title="' + esc(recurso.nota) + '">' + esc(recurso.nota) + "</span>"
-      : "") +
-    "</div>"
+    Object.keys(EST_META)
+      .map((k) => '<option value="' + k + '"' + (recurso.est === k ? " selected" : "") + ">" + EST_META[k].l + "</option>")
+      .join("") +
+    '</select>\n    <input type="text" class="edu-f-nota" data-edu-id="' +
+    recurso.id +
+    '" data-edu-field="nota" value="' +
+    esc(recurso.nota || "") +
+    '" placeholder="Nota…">\n    <span class="chk-del" data-action="edu:del" data-id="' +
+    recurso.id +
+    '" title="Borrar archivo">✕</span></div>'
+  );
+}
+function eduSubsUsadas() {
+  const set = new Set();
+  state.eduArchivo.forEach((r) => r.sec === state.eduSector && r.sub && set.add(r.sub));
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+function eduSubDatalistHTML() {
+  return '<datalist id="eduSubList">' + eduSubsUsadas().map((s) => '<option value="' + esc(s) + '">').join("") + "</datalist>";
+}
+function eduNuevoModalHTML() {
+  const nombre = (SECTORES[state.eduSector] && SECTORES[state.eduSector].nombre) || state.eduSector;
+  return (
+    "<h2>+ Agregar archivo</h2><div class=\"sub-t\">Nuevo archivo de Edu Point para <b>" +
+    esc(nombre) +
+    '</b>.</div>\n    <div class="fld"><label>Subcategoría</label><input id="eduNuevoSub" list="eduSubList" placeholder="Podés dejarlo vacío"></div>' +
+    eduSubDatalistHTML() +
+    '\n    <div class="fld"><label>Nombre del archivo</label><input id="eduNuevoNombre" placeholder="Ej: Reconocimiento de Pesos"></div>\n    <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="edu:add-confirmar">Crear</button></div>'
   );
 }
 function eduListHTML() {
   const lista = eduRowsFor();
   if (!lista.length)
     return (
+      eduSubDatalistHTML() +
       '<div class="edu-none">' +
       (state.eduEst || state.eduQ
         ? "Sin archivos con ese filtro."
@@ -6699,7 +6824,9 @@ function eduListHTML() {
     (obj[recurso.secNom] = obj[recurso.secNom] || []).push(recurso);
   });
   const flag = Object.keys(obj).length > 1;
-  return Object.keys(obj)
+  return (
+    eduSubDatalistHTML() +
+    Object.keys(obj)
     .map((arg) => {
       const obj2 = {};
       obj[arg].forEach((recurso) => {
@@ -6716,7 +6843,8 @@ function eduListHTML() {
         .join("");
       return "" + (flag ? '<div class="edu-secgroup">' + esc(arg) + "</div>" : "") + txt;
     })
-    .join("");
+    .join("")
+  );
 }
 function renderEduList() {
   const el = $("#eduList");
@@ -6736,11 +6864,11 @@ function eduKpi(cantidad, txt, txt2) {
 function renderEduArchivos() {
   if (!state.eduSector) {
     const obj = {};
-    EDU_DB.forEach((recurso) => {
+    state.eduArchivo.forEach((recurso) => {
       (obj[recurso.sec] = obj[recurso.sec] || []).push(recurso);
     });
-    const cantidad = EDU_DB.length,
-      cantidad2 = EDU_DB.filter((recurso) => recurso.est === "listo").length,
+    const cantidad = state.eduArchivo.length,
+      cantidad2 = state.eduArchivo.filter((recurso) => recurso.est === "listo").length,
       cantidad3 = Object.keys(obj).filter((arg) => SECTORES[arg]).length,
       lista3 = Object.keys(SECTORES)
         .slice()
@@ -6795,7 +6923,7 @@ function renderEduArchivos() {
   }
   const val = state.eduSector,
     nombre = SECTORES[val] ? SECTORES[val].nombre : val,
-    lista = EDU_DB.filter((recurso) => recurso.sec === val),
+    lista = state.eduArchivo.filter((recurso) => recurso.sec === val),
     txt2 = ["", "listo", "revisar", "rehacer", "pendiente", "nuevo", "eliminado"]
       .filter((arg) => !arg || lista.some((recurso) => recurso.est === arg))
       .map(
@@ -6833,6 +6961,7 @@ function renderEduArchivos() {
         esc(state.eduQ) +
         '" autocomplete="off">'
       : "") +
+    '<button class="btn btn-ghost btn-sm" data-action="edu:add">+ Agregar archivo</button>' +
     "\n    </div>\n    " +
     (lista.length ? '<div class="edu-fchips">' + txt2 + "</div>" : "") +
     '\n    <div id="eduList">' +
@@ -7312,7 +7441,12 @@ function cotofraseLauncherHTML() {
 // "No iniciado" = una tarjeta de curso que ya está en el Planner pero
 // sigue en Pendiente: nadie la movió todavía a En desarrollo.
 function cursosPendientes() {
-  return boardCards().filter((tarjeta) => tarjeta.tipo === "curso" && tarjeta.estado === "pendiente");
+  // activo !== false explícito: boardCards() ya deja pasar los dados de baja
+  // (no cuentan como inventario), y un "pendiente" dado de baja no debería
+  // poder salir sorteado.
+  return boardCards().filter(
+    (tarjeta) => tarjeta.tipo === "curso" && tarjeta.estado === "pendiente" && tarjeta.activo !== false,
+  );
 }
 // Vive fija en la barra lateral del Planner, igual que la máquina de
 // CotoFrase en Inicio, pero colapsada: un botón chico con ícono que al
@@ -7743,10 +7877,13 @@ function conexionesHTML(tarjeta) {
   const nEnlaces = (tarjeta.links || []).length,
     nVinculos = (tarjeta.vinculos || []).length,
     tieneTec = state.tecnico.some((f) => f.cardId === tarjeta.id),
+    // Antes esto solo se veía yendo a Validación — un curso publicado sin
+    // fila de Técnico no dejaba ningún rastro acá, en su propio panel.
+    sinTec = tarjeta.tipo === "curso" && tarjeta.publicado && !tieneTec,
     total = nEnlaces + nVinculos + (tieneTec ? 1 : 0);
   return (
     '<details class="acc sec-acc" ' +
-    (total ? "open" : "") +
+    (total || sinTec ? "open" : "") +
     '><summary class="sub">Conexiones · ' +
     total +
     '<span class="ring"></span></summary>\n        <div class="acc-body">\n    <div class="conx-block">' +
@@ -7755,6 +7892,11 @@ function conexionesHTML(tarjeta) {
     vinculosBlockHTML(tarjeta) +
     "</div>" +
     (tieneTec ? '\n    <div class="conx-block">' + tecVinculoBlockHTML(tarjeta) + "</div>" : "") +
+    (sinTec
+      ? '\n    <div class="conx-block"><div class="conx-h">⚠ Sin Seguimiento técnico</div><div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span style="font-size:12px;color:var(--ink-soft);min-width:160px">Este curso está publicado pero no tiene fila en Técnico.</span><button class="btn btn-ghost btn-sm" data-action="tec:crearfila" data-id="' +
+        tarjeta.id +
+        '">+ Crear fila</button></div></div>'
+      : "") +
     "\n  </div></details>"
   );
 }
@@ -8065,7 +8207,7 @@ function renderPanel() {
     txt7 +
     '\n      <div class="fld-row">\n        <div class="fld"><label>Tipo</label><select data-field="tipo">' +
     txt +
-    '</select></div>\n        <div class="fld"><label>Estado</label><select data-field="estado">' +
+    '</select></div>\n        <div class="fld"><label title="Estado del proyecto en el Planner — no confundir con el estado libre de Seguimiento técnico ni con el estado operativo de la Ficha técnica">Estado ⓘ</label><select data-field="estado">' +
     txt2 +
     '</select></div>\n      </div>\n\n      ' +
     // El checklist va primero, antes que "Más detalles": es el corazón del
@@ -8392,6 +8534,37 @@ async function refreshTecnicoFromRemote() {
     }
   } catch (e) {}
 }
+let eduSaveTimer = null;
+function touchEduArchivo() {
+  (stampEditedEduArchivo(), clearTimeout(eduSaveTimer), (eduSaveTimer = setTimeout(guardarEduArchivoAhora, 250)));
+}
+async function guardarEduArchivoAhora() {
+  if (useSupabase()) {
+    try {
+      const remote = await Store.remote(EDU_FILA);
+      if (remote && Array.isArray(remote.eduArchivo)) {
+        const merged = mergeCards(state.eduArchivo, remote.eduArchivo, state.deletedEduArchivo, remote.deletedEduArchivo || {});
+        ((state.eduArchivo = merged.cards), (state.deletedEduArchivo = merged.deleted));
+      }
+    } catch (e) {}
+  }
+  try {
+    (await Store.save(docSnapshotEduArchivo(), false, EDU_FILA), rememberFingerprintsEdu(state.eduArchivo));
+  } catch (err) {
+    console.error("No se pudo guardar Archivos Edu Point:", err);
+  }
+}
+async function refreshEduArchivoFromRemote() {
+  if (!useSupabase()) return;
+  try {
+    const remote = await Store.remote(EDU_FILA);
+    if (remote && Array.isArray(remote.eduArchivo)) {
+      const merged = mergeCards(state.eduArchivo, remote.eduArchivo, state.deletedEduArchivo, remote.deletedEduArchivo || {});
+      ((state.eduArchivo = merged.cards), (state.deletedEduArchivo = merged.deleted));
+      if (state.view === "mapa" && state.mapaSec === "edu-archivos") render();
+    }
+  } catch (e) {}
+}
 function applyField(tarjeta, val, el) {
   const value = el.type === "checkbox" ? el.checked : el.value;
   if (val.startsWith("cat:")) tarjeta.catalogo[val.slice(4)] = value;
@@ -8423,6 +8596,21 @@ function applyField(tarjeta, val, el) {
             if (val === "estado" && tarjeta.estado !== value) {
               logAct(tarjeta, "pasó a " + ((ESTADOS.find((estado) => estado.id === value) || {}).nombre || value));
               if (value === "en-revision") tarjeta.revisionDesde = isoOf(new Date());
+            }
+            // Cambiar el tipo de una tarjeta ya publicada puede sacarla o
+            // meterla en el inventario del Mapa sin que nadie lo haya pedido
+            // a propósito (ej: pasarla de "curso" a "app-web") — un aviso acá
+            // es más barato que descubrirlo después en el Mapa.
+            if (val === "tipo" && tarjeta.publicado && tarjeta.tipo !== value) {
+              const antes = !!INV_KIND[tarjeta.tipo],
+                despues = !!INV_KIND[value];
+              if (antes !== despues)
+                flash(
+                  despues
+                    ? "Este tipo sí cuenta para el Mapa — puede volver a aparecer en el inventario."
+                    : "Este tipo ya no cuenta para el Mapa — puede desaparecer del inventario.",
+                  true,
+                );
             }
             tarjeta[val] = value;
             // El título viaja hacia la fila de Técnico vinculada (si hay) para
@@ -8512,6 +8700,7 @@ document.addEventListener("click", (ev) => {
         (state.eduQ = ""),
         pushNav(),
         render());
+      if (el.dataset.sec === "edu-archivos") refreshEduArchivoFromRemote();
       break;
     case "mapa:bubble": {
       const sec2 = el.dataset.sector;
@@ -8530,6 +8719,39 @@ document.addEventListener("click", (ev) => {
     case "edu:est":
       ((state.eduEst = state.eduEst === el.dataset.est ? "" : el.dataset.est), renderView());
       break;
+    case "edu:del":
+      confirmar("¿Borrar este archivo de Edu Point?", () => {
+        (dropEduArchivo(el.dataset.id), touchEduArchivo(), renderEduList());
+      });
+      break;
+    case "edu:add":
+      openModal(eduNuevoModalHTML());
+      setTimeout(() => $("#eduNuevoNombre") && $("#eduNuevoNombre").focus(), 50);
+      break;
+    case "edu:add-confirmar": {
+      const nom = ($("#eduNuevoNombre").value || "").trim();
+      if (!nom) {
+        flash("Poné un nombre de archivo", true);
+        break;
+      }
+      const sec = state.eduSector,
+        secNom = (SECTORES[sec] && SECTORES[sec].nombre) || sec;
+      (state.eduArchivo.push({
+        id: uid(),
+        sec,
+        secNom,
+        sub: ($("#eduNuevoSub").value || "").trim(),
+        nom,
+        tipo: "",
+        nota: "",
+        est: "nuevo",
+        updatedAt: Date.now(),
+      }),
+        touchEduArchivo(),
+        closeModal(),
+        renderView());
+      break;
+    }
     case "kpi:go":
       state.view = el.dataset.go;
       if (el.dataset.sec) state.mapaSec = el.dataset.sec;
@@ -8608,6 +8830,9 @@ document.addEventListener("click", (ev) => {
     case "data:reset":
       resetSeed();
       break;
+    case "data:reset-confirmar":
+      resetSeedConfirmar();
+      break;
     case "set:add-sector":
       addSector();
       break;
@@ -8662,6 +8887,11 @@ document.addEventListener("click", (ev) => {
       // quedar filtrado sin darse cuenta de por qué faltan filas.
       ((state.tecPendiente = state.tecPendiente === el.dataset.cual ? "" : el.dataset.cual || ""), render());
       break;
+    case "tec:datepreset": {
+      const iso4 = el.dataset.preset === "hoy" ? todayISO() : isoOf(addDays(new Date(), 7));
+      (applyTecField(el.dataset.tecId, "publicacion", iso4), renderTecList());
+      break;
+    }
     case "tec:sort": {
       // Mismo encabezado: ascendente → descendente → sin orden (vuelve a los
       // grupos por categoría). Siempre hay forma de volver al estado original.
@@ -8798,6 +9028,10 @@ document.addEventListener("click", (ev) => {
       break;
     case "tpl:del":
       delTpl(el.dataset.tpl);
+      break;
+    case "tpl:checklist-reset":
+      if (state.customTpl.__checklistOverrides) delete state.customTpl.__checklistOverrides[el.dataset.tipo];
+      (touch(), openSettings());
       break;
     case "view":
       break;
@@ -9349,6 +9583,14 @@ function applyTecField(id, campo, value) {
     if (cardVinc && cardVinc.titulo !== value) ((cardVinc.titulo = value), touch());
   }
 }
+function applyEduField(id, campo, value) {
+  const recurso = state.eduArchivo.find((r) => r.id === id);
+  if (!recurso) return;
+  ((recurso[campo] = value), touchEduArchivo());
+  // tipo/estado cambian el color y el ícono de la fila — sí conviene
+  // refrescar. nombre/nota se tipean letra a letra, ahí NO (perdería el foco).
+  if (campo === "est" || campo === "tipo") renderEduList();
+}
 (document.addEventListener("input", (ev) => {
   if (ev.target.id === "cmdkInput") {
     renderPalette(ev.target.value);
@@ -9393,6 +9635,10 @@ function applyTecField(id, campo, value) {
     applyTecField(ev.target.dataset.tecId, ev.target.dataset.tecField, ev.target.value);
     return;
   }
+  if (ev.target.dataset && ev.target.dataset.eduId && ev.target.tagName === "INPUT" && ev.target.type === "text") {
+    applyEduField(ev.target.dataset.eduId, ev.target.dataset.eduField, ev.target.value);
+    return;
+  }
   const val = ev.target.dataset.filter;
   if (val) {
     state.filters[val] = ev.target.value;
@@ -9419,6 +9665,26 @@ function applyTecField(id, campo, value) {
           flash("El título no puede quedar vacío", true);
         }
       }
+      // Al salir del campo (no mientras se tipea, para no pelearle al
+      // datalist): si lo escrito matchea una categoría ya existente salvo
+      // mayúsculas/espacios, se pisa por la versión canónica — evita terminar
+      // con "Cajas" y "cajas " como si fueran dos categorías distintas.
+      if (ev.target && ev.target.dataset && ev.target.dataset.tecField === "categoria") {
+        const escrito = ev.target.value.trim(),
+          clave = escrito.toLowerCase(),
+          canonica = clave && tecCategoriasUsadas().find((c) => c.toLowerCase() === clave && c !== escrito);
+        if (canonica) {
+          const fila = state.tecnico.find((f) => f.id === ev.target.dataset.tecId);
+          if (fila) ((ev.target.value = canonica), (fila.categoria = canonica), touchTecnico());
+        }
+      }
+      if (ev.target && ev.target.dataset && ev.target.dataset.chktpl) {
+        const items = ev.target.value
+          .split("\n")
+          .map((t) => t.trim())
+          .filter(Boolean);
+        setChecklistOverride(ev.target.dataset.chktpl, items);
+      }
     },
     true,
   ),
@@ -9426,6 +9692,10 @@ function applyTecField(id, campo, value) {
     if (ev.target.dataset && ev.target.dataset.tecId) {
       const value = ev.target.type === "checkbox" ? ev.target.checked : ev.target.value;
       applyTecField(ev.target.dataset.tecId, ev.target.dataset.tecField, value);
+      return;
+    }
+    if (ev.target.dataset && ev.target.dataset.eduId) {
+      applyEduField(ev.target.dataset.eduId, ev.target.dataset.eduField, ev.target.value);
       return;
     }
     if (ev.target.id === "vincAdd") {
@@ -10643,7 +10913,39 @@ function openSettings() {
       backupListHTML() +
       '</div>\n    <div class="set-sec"><h3>🧩 Plantillas propias</h3>' +
       txt3 +
+      '</div>\n    <div class="set-sec"><h3>✅ Checklists por tipo</h3><div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px">El checklist que trae cada tipo al crear una tarjeta nueva — un ítem por línea. Lo que ya está cargado en tarjetas existentes no cambia.</div>' +
+      checklistTplHTML() +
       '</div>\n    <div class="set-sec"><h3>💾 Datos</h3><div class="set-data">\n      <button class="btn" data-action="ingest:open">⤓ Ingestar catálogo</button>\n      <button class="btn" data-action="data:export">⬇ Exportar JSON</button>\n      <button class="btn" data-action="data:import">⬆ Importar JSON</button>\n      <button class="btn" data-action="data:csv">📄 Exportar CSV</button>\n      <button class="btn" data-action="data:reset" style="color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))">🧹 Reiniciar (Planner vacío + catálogo)</button>\n    </div></div>\n    <div class="modal-foot"><button class="btn btn-primary" data-action="modal:close">Listo</button></div>',
+  );
+}
+function checklistTplHTML() {
+  const overrides = state.customTpl.__checklistOverrides || {};
+  return (
+    '<div class="tpl-chk-grid">' +
+    Object.keys(TIPOS)
+      .map((tipo) => {
+        const items = checklistTplActual(tipo),
+          tocado = !!overrides[tipo];
+        return (
+          '<div class="tpl-chk-row"><div class="tpl-chk-head"><b>' +
+          TIPOS[tipo].icon +
+          " " +
+          esc(TIPOS[tipo].nombre) +
+          "</b>" +
+          (tocado
+            ? '<button class="btn btn-ghost btn-sm" data-action="tpl:checklist-reset" data-tipo="' +
+              tipo +
+              '">↺ Restablecer</button>'
+            : "") +
+          '</div><textarea data-chktpl="' +
+          tipo +
+          '" rows="3" placeholder="Un ítem por línea…">' +
+          esc(items.join("\n")) +
+          "</textarea></div>"
+        );
+      })
+      .join("") +
+    "</div>"
   );
 }
 function backupListHTML() {
@@ -10910,11 +11212,25 @@ function runImport() {
       flash("⬆ Datos importados"));
   });
 }
+// La acción más destructiva de la app (vacía el Planner de TODO el equipo,
+// en el backend compartido) tenía la misma fricción que cualquier otro
+// confirmar() genérico. Ahora hay que escribir la palabra para que el botón
+// haga algo — un solo clic de más no alcanza para algo que no tiene vuelta
+// atrás sin un backup.
 function resetSeed() {
-  confirmar(
-    "Esto VACÍA el Planner (tablero/calendario/timeline) y (re)carga el catálogo de cursos en el Mapa — también en el backend compartido. La agenda y los Edu Points se conservan. Conviene exportar un backup antes. ¿Seguir?",
-    () => resetSeedRun(),
-  );
+  (openModal(
+    '<h2>⚠ Reiniciar todo</h2><div class="sub-t">Esto VACÍA el Planner (tablero/calendario/timeline) y (re)carga el catálogo de cursos en el Mapa — también en el backend compartido, para todo el equipo. La agenda y los Edu Points se conservan. Conviene exportar un backup antes.</div>\n    <div class="fld"><label>Escribí <b>REINICIAR</b> para confirmar</label><input id="resetConfirmText" placeholder="REINICIAR" autofocus></div>\n    <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" style="background:var(--bad);border-color:var(--bad)" data-action="data:reset-confirmar">Reiniciar</button></div>',
+  ),
+    setTimeout(() => $("#resetConfirmText") && $("#resetConfirmText").focus(), 50));
+}
+function resetSeedConfirmar() {
+  const el = $("#resetConfirmText"),
+    txt = ((el && el.value) || "").trim().toUpperCase();
+  if (txt !== "REINICIAR") {
+    flash('Escribí "REINICIAR" tal cual para confirmar', true);
+    return;
+  }
+  resetSeedRun();
 }
 function resetSeedRun() {
   ((state.cards = seedCards()),
@@ -11049,6 +11365,17 @@ async function boot() {
   } catch (errTec) {
     console.error(errTec);
   }
+  // Archivos Edu Point: misma fila-propia, mismo motivo — antes era la
+  // constante fija EDU_DB, ahora son datos vivos sincronizados igual que
+  // Técnico.
+  try {
+    const eduDoc = await Store.load(EDU_FILA);
+    if (eduDoc && Array.isArray(eduDoc.eduArchivo)) state.eduArchivo = eduDoc.eduArchivo;
+    if (eduDoc && eduDoc.deletedEduArchivo && typeof eduDoc.deletedEduArchivo === "object")
+      state.deletedEduArchivo = pruneTombstones(eduDoc.deletedEduArchivo);
+  } catch (errEdu) {
+    console.error(errEdu);
+  }
   (state.cards.forEach((tarjeta2) => {
     ((tarjeta2.ficha = tarjeta2.ficha || {
       url: "",
@@ -11074,8 +11401,11 @@ async function boot() {
     // primera vez que el documento compartido no trae nada en "tecnico" —
     // igual que el catálogo de cursos, no pisa nada si ya hay filas.
     (!Array.isArray(state.tecnico) || !state.tecnico.length) && ((state.tecnico = seedTecnico()), touchTecnico()),
+    (!Array.isArray(state.eduArchivo) || !state.eduArchivo.length) &&
+      ((state.eduArchivo = seedEduArchivo()), touchEduArchivo()),
     rememberFingerprints(state.cards),
     rememberFingerprintsTec(state.tecnico),
+    rememberFingerprintsEdu(state.eduArchivo),
     (state.ready = true),
     updateGatePass(),
     showBanner(),
