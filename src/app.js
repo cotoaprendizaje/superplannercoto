@@ -3786,7 +3786,6 @@ const state = {
   view: "inicio",
   calMode: "mes",
   calCursor: new Date(),
-  tlScale: "mes",
   tlGroup: "",
   tlRange: "todo",
   sort: "prioridad",
@@ -4941,11 +4940,10 @@ function renderTimeline() {
     (state.tlRange === "tri" ? "selected" : "") +
     '>Este trimestre</option>\n      <option value="anio" ' +
     (state.tlRange === "anio" ? "selected" : "") +
-    '>Este año</option></select></div>\n    <div class="filt">🔍<select data-control="tlScale">\n      <option value="mes" ' +
-    (state.tlScale === "mes" ? "selected" : "") +
-    '>Compacto · solo proyectos</option>\n      <option value="semana" ' +
-    (state.tlScale === "semana" ? "selected" : "") +
-    '>Detalle · con fases y tareas</option></select></div>\n    <div class="filt">▣<select data-control="tlGroup">\n      <option value="" ' +
+    // El selector "Compacto / Detalle" se sacó: existía para mostrar las fases
+    // de cada proyecto, y las fases ya no están. Queda una sola vista, la que
+    // dice de qué tipo es cada cosa y quién la tiene.
+    '>Este año</option></select></div>\n    <div class="filt">▣<select data-control="tlGroup">\n      <option value="" ' +
     (state.tlGroup === "" ? "selected" : "") +
     '>Sin agrupar</option>\n      <option value="persona" ' +
     (state.tlGroup === "persona" ? "selected" : "") +
@@ -4988,12 +4986,7 @@ function renderTimeline() {
   const iso = isoOf(addDays(parseISO(val4), -3)),
     iso2 = isoOf(addDays(parseISO(val5), 4)),
     txt = daysBetween(iso, iso2) + 1,
-    // Compacto vs Detalle cambia la densidad, no solo el zoom: antes solo movía
-    // los px por día dentro de un max(100%, …), así que con pocos proyectos los
-    // dos modos quedaban clampeados al ancho de la pantalla y se veían idénticos.
-    compacto = state.tlScale !== "semana",
-    n = compacto ? 11 : 26,
-    txt2 = "max(100%, " + txt * n + "px)",
+    txt2 = "max(100%, " + txt * 26 + "px)",
     n2 = 100 / txt,
     fn2 = (inicio) => daysBetween(iso, inicio) * n2,
     fn3 = (inicio, fin) => {
@@ -5016,7 +5009,7 @@ function renderTimeline() {
       '%">' +
       MESES[fecha.getMonth()].slice(0, 3) +
       " " +
-      String(fecha.getFullYear()).slice(2) +
+      fecha.getFullYear() +
       "</div>"),
       (fecha = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 1)));
   }
@@ -5025,9 +5018,13 @@ function renderTimeline() {
     const n3 = addDays(parseISO(iso), i).getDay();
     if (n3 === 0 || n3 === 6)
       txt4 += '<div class="tl-weekend" style="left:' + i * n2 + "%;width:" + n2 + '%"></div>';
+    // Además del sombreado del fin de semana, una línea al arrancar cada lunes:
+    // sin eso no se veía dónde termina una semana y empieza la otra, y las
+    // barras parecían flotar sobre un fondo continuo.
+    if (n3 === 1) txt4 += '<div class="tl-weekline" style="left:' + i * n2 + '%"></div>';
   }
   const val6 = fn2(todayISO()),
-    fn4 = (tarjeta) => (compacto ? 30 : 38 + (tarjeta.fases && tarjeta.fases.length ? 16 : 0));
+    fn4 = () => 40;
   let txt5 = "",
     txt6 = "";
   return (
@@ -5043,63 +5040,37 @@ function renderTimeline() {
           "</span></div>"),
         (txt6 += '<div class="tl-group-r" style="height:33px"></div>')),
         doc2.cards.forEach((tarjeta) => {
-          const miembro = member(tarjeta.responsable);
+          // Antes acá iba el avatar del RESPONSABLE, un campo que quedó sin uso
+          // cuando el equipo pasó a trabajar con "asignados": la mayoría de las
+          // filas mostraba un punto gris y unas pocas una inicial, sin que se
+          // entendiera la diferencia. Ahora el punto es del color del sector
+          // (que es lo que la barra ya usa) y debajo va el tipo y quién la tiene.
+          const gente = [tarjeta.responsable, ...(tarjeta.asignados || [])]
+            .filter((v, i, arr) => v && arr.indexOf(v) === i)
+            .map((id) => (member(id) || {}).nombre)
+            .filter(Boolean);
           txt5 +=
             '<div class="tl-rl" style="height:' +
-            fn4(tarjeta) +
+            fn4() +
             'px" data-id="' +
             tarjeta.id +
-            '" data-action="card:open">\n        ' +
-            (miembro
-              ? avatarHTML(miembro.id, true)
-              : '<span class="avatar sm" style="background:var(--line)">·</span>') +
-            '\n        <div style="overflow:hidden"><div class="tl-rl-title">' +
+            '" data-action="card:open">\n        <span class="tl-dot" data-cat="' +
+            primaryCat(tarjeta) +
+            '" title="' +
+            esc(primaryCat(tarjeta) ? sectorName(primaryCat(tarjeta)) || "Sin sector" : "Sin sector") +
+            '"></span>\n        <div style="overflow:hidden"><div class="tl-rl-title">' +
             esc(tarjeta.titulo) +
-            "</div>" +
-            (compacto
-              ? ""
-              : '\n        <div class="tl-rl-sub">' +
-                ((allTipos()[tarjeta.tipo] || {}).nombre || tarjeta.tipo) +
-                "</div>") +
-            "</div></div>";
+            '</div>\n        <div class="tl-rl-sub">' +
+            ((allTipos()[tarjeta.tipo] || {}).icon || "•") +
+            " " +
+            esc((allTipos()[tarjeta.tipo] || {}).nombre || tarjeta.tipo) +
+            (gente.length ? " · " + esc(gente.join(", ")) : ' · <i>sin asignar</i>') +
+            "</div></div></div>";
           const val = fn3(tarjeta.inicio, tarjeta.fin),
-            vencida = isOverdue(tarjeta),
-            txt7 = (compacto ? [] : tarjeta.fases || [])
-              .filter((arg) => arg.inicio || arg.fin)
-              .map((fase) => {
-                const val2 = fn3(fase.inicio, fase.fin),
-                  txt8 = (fase.tareas || [])
-                    .filter((arg) => arg.fecha)
-                    .map(
-                      (arg) =>
-                        '<div class="tl-tick" data-cat="' +
-                        primaryCat(tarjeta) +
-                        '" style="left:' +
-                        fn2(arg.fecha) +
-                        '%;margin-left:-4px" title="' +
-                        esc(arg.text) +
-                        " · " +
-                        fmtShort(arg.fecha) +
-                        '"></div>',
-                    )
-                    .join("");
-                return (
-                  '<div class="tl-fase" data-cat="' +
-                  primaryCat(tarjeta) +
-                  '" style="left:' +
-                  val2.left +
-                  "%;width:" +
-                  val2.w +
-                  '%;top:30px" title="' +
-                  esc(fase.nombre) +
-                  '"></div>' +
-                  txt8
-                );
-              })
-              .join("");
+            vencida = isOverdue(tarjeta);
           txt6 +=
             '<div class="tl-track" style="height:' +
-            fn4(tarjeta) +
+            fn4() +
             'px">\n        <div class="tl-bar ' +
             (vencida ? "overdue" : "") +
             '" draggable="true" data-drag="tl" data-cat="' +
@@ -5112,11 +5083,9 @@ function renderTimeline() {
             val.left +
             "%;width:" +
             val.w +
-            '%;top:6px"><span>' +
+            '%;top:9px"><span>' +
             esc(tarjeta.titulo) +
-            "</span></div>\n        " +
-            txt7 +
-            "</div>";
+            "</span></div>\n      </div>";
         }));
     }),
     '<div class="tl-full">' +
@@ -5272,7 +5241,7 @@ function mapaSectorMap() {
 const MAPA_SECCION_LABELS = {
   todos: "◎ Cursos e-learning",
   cursos: "◎ Cursos e-learning",
-  "edu-points": "📍 QR / Edu Point",
+  "edu-points": "📍 Tareas Edu Point",
   "edu-archivos": "📂 Archivos Edu Point",
   contenido: "🎬 Contenido audiovisual",
   bajas: "🚫 E-learning (dados de baja)",
@@ -5300,7 +5269,7 @@ function renderMapa() {
       {
         id: "edu-archivos",
         label: MAPA_SECCION_LABELS["edu-archivos"],
-        n: state.eduArchivo.length,
+        n: eduArchivosVisibles().length,
       },
       {
         id: "contenido",
@@ -6779,8 +6748,24 @@ function sectionTodos() {
     "</div>"
   );
 }
+// El filtro de sector del Mapa (las burbujas de arriba) valía para cursos, Edu
+// Points y bajas, pero Archivos Edu Point lo ignoraba: con "Cajas" activo
+// seguía mostrando los 187 archivos de todos los sectores. Ahora manda igual
+// que en el resto del Mapa, y por eso también entra derecho a ese sector en
+// vez de mostrar la grilla de todos.
+function eduSectorFiltro() {
+  const val = state.filters.sector;
+  return val && val !== "__sin_sector__" && SECTORES[val] ? val : null;
+}
+function eduArchivosVisibles() {
+  const filtro = eduSectorFiltro();
+  return filtro ? state.eduArchivo.filter((r) => r.sec === filtro) : state.eduArchivo;
+}
+function eduSectorActual() {
+  return eduSectorFiltro() || state.eduSector;
+}
 function eduRowsFor() {
-  let lista = state.eduArchivo.filter((recurso) => recurso.sec === state.eduSector);
+  let lista = state.eduArchivo.filter((recurso) => recurso.sec === eduSectorActual());
   if (state.eduEst) lista = lista.filter((recurso) => recurso.est === state.eduEst);
   if (state.eduQ) {
     const txt = state.eduQ.toLowerCase();
@@ -6837,14 +6822,15 @@ function eduFileRow(recurso) {
 }
 function eduSubsUsadas() {
   const set = new Set();
-  state.eduArchivo.forEach((r) => r.sec === state.eduSector && r.sub && set.add(r.sub));
+  state.eduArchivo.forEach((r) => r.sec === eduSectorActual() && r.sub && set.add(r.sub));
   return [...set].sort((a, b) => a.localeCompare(b));
 }
 function eduSubDatalistHTML() {
   return '<datalist id="eduSubList">' + eduSubsUsadas().map((s) => '<option value="' + esc(s) + '">').join("") + "</datalist>";
 }
 function eduNuevoModalHTML() {
-  const nombre = (SECTORES[state.eduSector] && SECTORES[state.eduSector].nombre) || state.eduSector;
+  const sec = eduSectorActual(),
+    nombre = (SECTORES[sec] && SECTORES[sec].nombre) || sec;
   return (
     "<h2>+ Agregar archivo</h2><div class=\"sub-t\">Nuevo archivo de Edu Point para <b>" +
     esc(nombre) +
@@ -6907,7 +6893,8 @@ function eduKpi(cantidad, txt, txt2) {
   );
 }
 function renderEduArchivos() {
-  if (!state.eduSector) {
+  const secFiltro = eduSectorFiltro();
+  if (!secFiltro && !state.eduSector) {
     const obj = {};
     state.eduArchivo.forEach((recurso) => {
       (obj[recurso.sec] = obj[recurso.sec] || []).push(recurso);
@@ -6966,7 +6953,7 @@ function renderEduArchivos() {
       "</div>"
     );
   }
-  const val = state.eduSector,
+  const val = secFiltro || state.eduSector,
     nombre = SECTORES[val] ? SECTORES[val].nombre : val,
     lista = state.eduArchivo.filter((recurso) => recurso.sec === val),
     txt2 = ["", "listo", "revisar", "rehacer", "pendiente", "nuevo", "eliminado"]
@@ -7141,7 +7128,16 @@ function sectionEduPoints() {
       : "";
   return (
     bloque("📍 Colocados", "Con el QR puesto en sala, visibles en el inventario.", colocados, eduCard) +
-    bloque("🚧 En el Planner", "Todavía en producción: aparecen acá hasta que los marques como colocados.", enPlanner, desarrolloCard)
+    // El texto decía "todavía en producción", pero acá caen también las tareas
+    // ya finalizadas en el Planner que nunca se marcaron como colocadas — y
+    // leer "en producción" arriba de una tarjeta que dice "Finalizado"
+    // confundía. Ahora dice lo que realmente separa a los dos bloques.
+    bloque(
+      "🚧 Sin colocar todavía",
+      "Tareas del Planner de tipo Edu Point que aún no marcaste como colocadas — incluso si la tarea ya está finalizada. Abrilas y tocá “Marcar como colocado” para que pasen arriba.",
+      enPlanner,
+      desarrolloCard,
+    )
   );
 }
 function eduCard(tarjeta) {
@@ -8664,7 +8660,15 @@ document.addEventListener("click", (ev) => {
       ((state.eduSector = el.dataset.sec), (state.eduEst = ""), (state.eduQ = ""), pushNav(), render());
       break;
     case "edu:back":
-      ((state.eduSector = null), (state.eduEst = ""), (state.eduQ = ""), pushNav(), render());
+      // Volver a "todos los archivos" también suelta el filtro de sector del
+      // Mapa: si no, el filtro volvía a meter en el mismo sector y el botón
+      // parecía no hacer nada.
+      ((state.eduSector = null),
+        (state.filters.sector = ""),
+        (state.eduEst = ""),
+        (state.eduQ = ""),
+        pushNav(),
+        render());
       break;
     case "edu:est":
       ((state.eduEst = state.eduEst === el.dataset.est ? "" : el.dataset.est), renderView());
@@ -8684,7 +8688,7 @@ document.addEventListener("click", (ev) => {
         flash("Poné un nombre de archivo", true);
         break;
       }
-      const sec = state.eduSector,
+      const sec = eduSectorActual(),
         secNom = (SECTORES[sec] && SECTORES[sec].nombre) || sec;
       (state.eduArchivo.push({
         id: uid(),

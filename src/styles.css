@@ -1407,6 +1407,13 @@ button {
 .tl-rl-sub {
   font-size: 11px;
   color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tl-rl-sub i {
+  font-style: normal;
+  opacity: 0.75;
 }
 .tl-track {
   position: relative;
@@ -1433,13 +1440,6 @@ button {
 }
 .tl-bar.overdue {
   box-shadow: 0 0 0 2px var(--bad);
-}
-.tl-fase {
-  position: absolute;
-  height: 11px;
-  border-radius: var(--pill);
-  background: color-mix(in srgb, var(--cat) 55%, #fff);
-  border: 1px solid var(--cat);
 }
 .tl-today {
   position: absolute;
@@ -2743,6 +2743,29 @@ button {
   background: color-mix(in srgb, var(--coto-navy) 5%, transparent);
   z-index: 0;
 }
+/* El sombreado del fin de semana solo no alcanzaba para ver dónde corta una
+   semana: esta línea marca cada lunes. */
+.tl-weekline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: color-mix(in srgb, var(--coto-navy) 14%, transparent);
+  z-index: 0;
+}
+[data-theme="dark"] .tl-weekline {
+  background: rgba(255, 255, 255, 0.09);
+}
+/* Reemplaza al avatar del responsable: un punto del color del sector, que es
+   el mismo código de color que usa la barra a la derecha. */
+.tl-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cat, var(--line));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--cat, var(--line)) 22%, transparent);
+}
 [data-theme="dark"] .tl-weekend {
   background: rgba(255, 255, 255, 0.03);
 }
@@ -2762,17 +2785,6 @@ button {
 .tl-group-r {
   background: var(--surface-2);
   border-bottom: 1px solid var(--line);
-}
-.tl-tick {
-  position: absolute;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--cat-strong, var(--coto-blue));
-  border: 2px solid var(--surface);
-  top: 31px;
-  z-index: 2;
-  cursor: pointer;
 }
 #misBtn.on {
   background: var(--coto-blue);
