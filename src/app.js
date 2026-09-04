@@ -1800,6 +1800,9 @@ const ESTADOS = [
       dot: "#2E9E8F",
     },
   ],
+  // "retirado: true" saca el tipo del selector de Nueva tarjeta sin borrarlo:
+  // las tarjetas viejas que lo usan siguen viéndose con su nombre y su ícono,
+  // y el tipo sigue eligible desde el panel de esa tarjeta.
   TIPOS = {
     curso: {
       nombre: "Curso",
@@ -1823,6 +1826,7 @@ const ESTADOS = [
     },
     poes: {
       nombre: "POES / Validación",
+      retirado: true,
       icon: "🧪",
     },
     guia: {
@@ -1831,6 +1835,7 @@ const ESTADOS = [
     },
     "pedido-insumos": {
       nombre: "Pedido de insumos",
+      retirado: true,
       icon: "📦",
     },
     "app-web": {
@@ -1839,6 +1844,7 @@ const ESTADOS = [
     },
     "base-sistema": {
       nombre: "Base del sistema",
+      retirado: true,
       icon: "🗄️",
     },
     libre: {
@@ -1923,8 +1929,11 @@ const ESTADOS = [
       nombre: "Pañol y Base 12",
       cat: "#6EBE50",
     },
+    // La clave sigue siendo "seguridad-higiene" a propósito: la usan las
+    // tarjetas ya cargadas, el Excel de Técnico y los archivos de Edu Point.
+    // Lo que cambia es cómo se llama el sector para el equipo.
     "seguridad-higiene": {
-      nombre: "Seguridad e Higiene",
+      nombre: "PRL",
       cat: "#F0A032",
     },
     "zona-e": {
@@ -3201,6 +3210,16 @@ const MESES = [
   DOW = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"],
   member = (responsable) => TEAM.find((miembro) => miembro.id === responsable),
   sectorName = (arg) => (SECTORES[arg] ? SECTORES[arg].nombre : null);
+// El documento guardado trae SIEMPRE la lista completa de sectores (ver
+// docSnapshot), así que al recibirla hay que REEMPLAZAR, no Object.assign:
+// mezclando, un sector borrado desde Ajustes volvía solo en la carga
+// siguiente, porque las claves de la semilla que ya no estaban en el remoto
+// sobrevivían intactas en el objeto local.
+function aplicarSectores(obj) {
+  if (!obj || typeof obj !== "object" || !Object.keys(obj).length) return;
+  Object.keys(SECTORES).forEach((k) => delete SECTORES[k]);
+  Object.assign(SECTORES, obj);
+}
 function isCurso(tarjeta) {
   return tarjeta.tipo === "curso";
 }
@@ -3634,7 +3653,7 @@ async function mergeRemoteIntoState() {
     merged = mergeCards(state.cards, remote.cards, state.deleted, remote.deleted || {});
   ((state.cards = merged.cards), (state.deleted = merged.deleted));
   if (remote.templates) state.customTpl = Object.assign({}, remote.templates, state.customTpl);
-  if (remote.sectores) Object.assign(SECTORES, remote.sectores);
+  aplicarSectores(remote.sectores);
   Array.isArray(remote.team) &&
     remote.team.length &&
     ((TEAM.length = 0), remote.team.forEach((m) => TEAM.push(m)));
@@ -3717,7 +3736,7 @@ window.addEventListener("beforeunload", (ev) => {
 function avisarSinGuardar() {
   let aviso = $("#saveWarn");
   if (!state.saveError) {
-    (aviso && aviso.remove(), (document.body.style.paddingTop = ""));
+    (aviso && aviso.remove(), document.documentElement.style.removeProperty("--savewarn-h"));
     return;
   }
   if (!aviso) {
@@ -3734,6 +3753,10 @@ function avisarSinGuardar() {
     "Tenés una copia local en Ajustes → Copias de resguardo. " +
     '<button data-action="reintentar:guardar" style="margin-left:8px;padding:3px 10px;border-radius:999px;' +
     'border:1px solid #fff;background:transparent;color:#fff;font:inherit;cursor:pointer">Reintentar</button>';
+  // La altura se mide después de escribir el texto (el aviso envuelve en dos
+  // líneas en pantallas chicas) y viaja por CSS: .app se corre hacia abajo y
+  // la topbar sticky se pega justo debajo del aviso en vez de quedar tapada.
+  document.documentElement.style.setProperty("--savewarn-h", aviso.offsetHeight + "px");
 }
 
 // El panel no tiene botón "Guardar" — todo autoguarda — así que este pill es
@@ -3881,12 +3904,10 @@ function newCard(txt, txt2, obj) {
         text: arg,
         done: false,
       })),
-      fases: (tarjeta.fases || []).map((arg) => ({
-        id: uid(),
-        nombre: arg,
-        inicio: null,
-        fin: null,
-      })),
+      // Las plantillas todavía traen una lista de fases, pero las tarjetas
+      // nuevas ya no la instancian: la sección "Fases" del panel se sacó y
+      // no tenía sentido seguir cargando datos que nadie puede ver ni editar.
+      fases: [],
       publicado: false,
       // Sellos para Reportería: se graban solos y nunca se vuelven a tocar
       // (salvo curso:publicar, que rellena publicadoEl si todavía está
@@ -4240,8 +4261,6 @@ function renderFilters() {
   // del botón), lo que cerraría el popover después de cada click si no se
   // preserva a mano: nadie quiere reabrirlo para poner un segundo filtro.
   const popAbierto = $("#filtrosPop") && !$("#filtrosPop").classList.contains("hidden");
-  const misFlag = $("#misFlag");
-  if (misFlag) misFlag.textContent = state.mis ? "ON" : "";
   if (state.view === "inicio" || state.view === "tecnico" || state.view === "reportes") {
     $("#filters").innerHTML = "";
     return;
@@ -4282,7 +4301,20 @@ function renderFilters() {
     html6 =
       '<div class="filt">🔎<input data-filter="texto" value="' +
       esc(tarjeta.texto) +
-      '" placeholder="Buscar título..." /></div>',
+      '" placeholder="Filtrar el tablero por título…" /></div>',
+    // "Mis tareas" vivía solo en el menú del usuario, con un "ON" chiquito que
+    // había que ir a buscar: se prendía sin querer y después el tablero
+    // aparecía medio vacío sin ninguna pista de por qué. Como chip visible en
+    // la barra, se ve prendido y se apaga con el mismo clic.
+    misHTML = flag
+      ? ""
+      : '<button class="qchip qchip-mis' +
+        (state.mis ? " on" : "") +
+        '" data-action="mis:toggle" title="' +
+        (state.mis ? "Estás viendo solo tus tareas — clic para ver todas" : "Ver solo las tareas asignadas a vos") +
+        '">★ Mis tareas' +
+        (state.mis ? " · ON" : "") +
+        "</button>",
     // Los selects que antes iban sueltos en la barra se agrupan en un solo
     // popover: cuatro (o tres, en el Mapa) selects siempre a la vista era
     // ruido para algo que se usa de vez en cuando. El buscador y los chips de
@@ -4294,6 +4326,7 @@ function renderFilters() {
       tarjeta.estado,
       flag && tarjeta.cursoEstado,
       !flag && state.quick,
+      !flag && state.mis,
     ].filter(Boolean).length,
     popoverFlds = (flag ? [html2, html5] : [html, html3, html2, html4])
       .map((h) => h.replace('<div class="filt">', '<div class="filt filt-pop-item">'))
@@ -4362,7 +4395,7 @@ function renderFilters() {
       quickHTML +
       savedHTML +
       "</div></div>";
-  $("#filters").innerHTML = html6 + htmlFiltrosBtn;
+  $("#filters").innerHTML = html6 + misHTML + htmlFiltrosBtn;
   if (popAbierto) {
     const p = $("#filtrosPop");
     if (p) p.classList.remove("hidden");
@@ -7160,8 +7193,12 @@ function eduCard(tarjeta) {
 //  · Siluetas deliberadamente distintas entre sí (marco, líneas, rombo,
 //    círculo, campana): a 16px se reconoce la forma general mucho antes que
 //    el detalle interno.
+// width/height van como ATRIBUTOS, no como CSS: cualquier regla de hoja de
+// estilos les gana, así que los lugares que ya dimensionan su ícono siguen
+// mandando, y los que no (el buscador Ctrl+K, sin ir más lejos) dejan de
+// estirar el SVG hasta llenar el contenedor.
 const svgIcono = (interior) =>
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+  '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
   interior +
   "</svg>";
 const ICONOS = {
@@ -7220,7 +7257,6 @@ function renderInicio() {
   const lista2 = boardCards(),
     cantidad = lista2.filter(isOverdue).length,
     cantidad2 = alertasSinLeer().length,
-    cantidad3 = lista2.filter((arg) => arg.estado === "en-revision").length,
     lista = [
       {
         go: "kanban",
@@ -7275,9 +7311,9 @@ function renderInicio() {
       '" style="animation-delay:' +
       arg2 * 55 +
       'ms">\n    ' +
-      (arg.go === "kanban" && cantidad3
-        ? '<span class="hub-badge" title="' + cantidad3 + " en revisión, esperando aprobación\">" + cantidad3 + "</span>\n    "
-        : "") +
+      // El globito con el número de "en revisión" se sacó: justo abajo, en el
+      // Resumen, el mismo número está en grande y con su etiqueta. Repetirlo
+      // acá arriba sin decir de qué es solo hacía preguntarse qué contaba.
       '<span class="hub-ic">' +
       arg.ic +
       '</span>\n    <span class="hub-tx"><span class="hub-t">' +
@@ -7580,8 +7616,11 @@ function renderResumen() {
           .join("")
       : '<div style="color:var(--ink-soft);font-size:13px;padding:6px 0">Nada en los próximos 45 días 🎉</div>',
     obj = {};
+  // Carga = lo que cada uno tiene ENCIMA, no todo lo que le tocó alguna vez:
+  // las finalizadas ya no pesan. Mismo criterio que el panel "Carga del
+  // equipo" y que Reportería, que ya usaban cargaActivaCards().
   (TEAM.forEach((miembro) => (obj[miembro.id] = 0)),
-    lista.forEach((tarjeta) => {
+    cargaActivaCards().forEach((tarjeta) => {
       [tarjeta.responsable, ...(tarjeta.asignados || [])]
         .filter((arg2, arg3, arg) => arg2 && arg.indexOf(arg2) === arg3)
         .forEach((arg) => {
@@ -7650,34 +7689,20 @@ function renderResumen() {
     .join("");
   const desc = (txt) => '<div class="res-desc">' + txt + "</div>";
   return (
-    '<div style="margin:40px 0 6px;padding-top:32px;border-top:1px solid var(--line)"><h2 style="font-size:21px">Resumen del área</h2>\n    <div style="color:var(--ink-soft);font-size:13px;margin:2px 0 14px">Este panel mira dos cosas separadas: el <b>Planner</b> (las tareas que el equipo tiene en curso ahora) y el <b>Mapa</b> (el inventario ya publicado: cursos, Edu Points). Los 3 primeros números son del Planner; los últimos 2, del Mapa.</div></div>\n    <div class="res-grid">\n      ' +
-    fn(lista.length, "Proyectos en el tablero", "tareas activas ahora en el Planner", "var(--coto-blue)", "kanban") +
+    // Los cinco números van en una sola fila y sin explicación al costado: la
+    // etiqueta de cada uno ya dice de qué habla, y el párrafo de arriba más
+    // los subtítulos de cada tarjeta hacían leer cuatro renglones de texto
+    // para entender cinco cifras.
+    '<div style="margin:40px 0 14px;padding-top:32px;border-top:1px solid var(--line)"><h2 style="font-size:21px">Resumen del área</h2></div>\n    <div class="res-grid res-grid-5">\n      ' +
+    fn(lista.length, "Proyectos en el tablero", "", "var(--coto-blue)", "kanban") +
     "\n      " +
-    fn(
-      cantidad3,
-      "En revisión",
-      "en el Planner, esperando aprobación para publicarse",
-      "var(--warn)",
-      "kanban",
-      null,
-      "en-revision",
-    ) +
+    fn(cantidad3, "En revisión", "", "var(--warn)", "kanban", null, "en-revision") +
     "\n      " +
-    fn(
-      cantidad4,
-      "Vencidas",
-      "pasaron su fecha límite sin cerrarse",
-      cantidad4 ? "var(--bad)" : "var(--ok)",
-      "kanban",
-      null,
-      null,
-      "venc",
-    ) +
-    '\n      <div style="grid-column:1/-1;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft);margin-top:2px">🗺️ Del Mapa</div>' +
+    fn(cantidad4, "Vencidas", "", cantidad4 ? "var(--bad)" : "var(--ok)", "kanban", null, null, "venc") +
     "\n      " +
-    fn(cantidad, "Cursos activos", "cursos e-learning ya publicados en el Mapa", "var(--ok)", "mapa", "cursos") +
+    fn(cantidad, "Cursos activos", "", "var(--ok)", "mapa", "cursos") +
     "\n      " +
-    fn(cantidad2, "Edu Points", "piezas con QR ya colocadas en sucursal", "#546E7A", "mapa", "edu-points") +
+    fn(cantidad2, "Edu Points", "", "#546E7A", "mapa", "edu-points") +
     '\n    </div>\n    <div class="res-cols">\n      <div>\n        <div class="res-card"><h3>⚑ Próximos vencimientos <span class="mini">' +
     lista2.length +
     "</span></h3>" +
@@ -7695,8 +7720,8 @@ function renderResumen() {
     " total</span></h3>" +
     desc("Tareas activas del Planner agrupadas por su estado actual.") +
     txt6 +
-    '</div>\n        <div class="res-card"><h3>👥 Carga del equipo <span class="mini">tablero</span></h3>' +
-    desc("Cuántas tareas del tablero (Planner) tiene asignadas cada persona.") +
+    '</div>\n        <div class="res-card"><h3>👥 Carga del equipo <span class="mini">activas</span></h3>' +
+    desc("Cuántas tareas activas del Planner tiene asignadas cada persona (no cuenta las finalizadas).") +
     txt8 +
     "</div>\n      </div>\n    </div>"
   );
@@ -7805,34 +7830,10 @@ function datePresetsHTML(campo) {
     '" data-preset="semana">+1 semana</button></div>'
   );
 }
-// ===== Conexiones (Enlaces + Vínculos con el Mapa + Seguimiento técnico) =====
-// Antes eran tres acordeones seguidos, cada uno con su propia flecha para
-// abrir — tres clics para ver todo lo que conecta a esta tarjeta con el
-// resto de la app, aunque las tres cosas responden a la misma pregunta
-// ("¿con qué más se relaciona esto?"). Van fusionadas en un solo acordeón
-// con tres bloques adentro: un encabezado interno alcanza, no hace falta que
-// cada bloque sea su propio <details>.
-function enlacesBlockHTML(tarjeta) {
-  return (
-    '<div class="conx-h">Enlaces · ' +
-    (tarjeta.links || []).length +
-    "</div>" +
-    ((tarjeta.links || [])
-      .map(
-        (arg, arg2) =>
-          '<div class="lnk"><a href="' +
-          esc(arg.url) +
-          '" target="_blank" rel="noopener" class="lnk-a">🔗 ' +
-          esc(arg.label || arg.url) +
-          '</a><span class="chk-del" data-action="link:del" data-i="' +
-          arg2 +
-          '" title="Quitar">✕</span></div>',
-      )
-      .join("") ||
-      '<div style="font-size:12px;color:var(--ink-soft)">Sin enlaces. Sumá Drive, Moodle, docs…</div>') +
-    '\n    <div class="lnk-add"><input id="linkLabel" placeholder="Etiqueta (ej: Carpeta Drive)"><input id="linkUrl" placeholder="https://…"><button class="btn btn-sm" data-action="link:add">+ Agregar</button></div>'
-  );
-}
+// ===== Vínculos (Mapa + Seguimiento técnico) =====
+// Antes esto se llamaba "Conexiones" y arrancaba con un bloque de Enlaces
+// (etiqueta + URL a Drive/Moodle) que el equipo nunca usó. Queda solo lo que
+// dice de verdad con qué se relaciona esta tarjeta dentro de la app.
 function vinculosBlockHTML(tarjeta) {
   const lista = (tarjeta.vinculos || [])
       .map((id) => state.cards.find((c) => c.id === id))
@@ -7885,22 +7886,19 @@ function tecVinculoBlockHTML(tarjeta) {
     "</span></div>"
   );
 }
-function conexionesHTML(tarjeta) {
-  const nEnlaces = (tarjeta.links || []).length,
-    nVinculos = (tarjeta.vinculos || []).length,
+function vinculosHTML(tarjeta) {
+  const nVinculos = (tarjeta.vinculos || []).length,
     tieneTec = state.tecnico.some((f) => f.cardId === tarjeta.id),
     // Antes esto solo se veía yendo a Validación — un curso publicado sin
     // fila de Técnico no dejaba ningún rastro acá, en su propio panel.
     sinTec = tarjeta.tipo === "curso" && tarjeta.publicado && !tieneTec,
-    total = nEnlaces + nVinculos + (tieneTec ? 1 : 0);
+    total = nVinculos + (tieneTec ? 1 : 0);
   return (
-    '<details class="acc sec-acc" ' +
+    '<details class="acc sec-acc" data-acc="vinculos" ' +
     (total || sinTec ? "open" : "") +
-    '><summary class="sub">Conexiones · ' +
+    '><summary class="sub">Vínculos · ' +
     total +
     '<span class="ring"></span></summary>\n        <div class="acc-body">\n    <div class="conx-block">' +
-    enlacesBlockHTML(tarjeta) +
-    '</div>\n    <div class="conx-block">' +
     vinculosBlockHTML(tarjeta) +
     "</div>" +
     (tieneTec ? '\n    <div class="conx-block">' + tecVinculoBlockHTML(tarjeta) + "</div>" : "") +
@@ -7935,15 +7933,30 @@ function ultimoTocadoHTML(tarjeta) {
     "</span>"
   );
 }
+// Qué acordeones del panel dejó abiertos la persona, y en qué tarjeta. El
+// panel se redibuja entero cada vez que se toca un campo estructural (tipo,
+// estado, un asignado…), así que sin esto cualquier dato que se cargaba
+// cerraba de golpe todos los desplegables — justo el reclamo de "cuando le
+// ponés algún dato se cierra el desplegable y es molesto". Al cambiar de
+// tarjeta se descarta y vuelven a mandar los defaults de cada sección.
+let accAbiertos = {},
+  accTarjeta = null;
 function renderPanel() {
   const tarjeta = current();
   if (!tarjeta) {
     $("#panel").innerHTML = "";
     return;
   }
+  if (accTarjeta === tarjeta.id)
+    document.querySelectorAll("#panel details[data-acc]").forEach((d) => (accAbiertos[d.dataset.acc] = d.open));
+  else ((accAbiertos = {}), (accTarjeta = tarjeta.id));
   const avance = progress(tarjeta),
     vencida = isOverdue(tarjeta),
+    // Un tipo retirado solo aparece en la lista si la tarjeta ya lo tiene: así
+    // no se ofrece más, pero tampoco se le cambia el tipo a nadie por la
+    // espalda al abrir el panel.
     txt = Object.keys(allTipos())
+      .filter((arg) => !allTipos()[arg].retirado || tarjeta.tipo === arg)
       .map(
         (arg) =>
           '<option value="' +
@@ -8000,61 +8013,6 @@ function renderPanel() {
           item.id +
           '">✕</span></div>',
       )
-      .join(""),
-    txt5 = (tarjeta.fases || [])
-      .map((fase) => {
-        const txt6 = (fase.tareas || [])
-          .map(
-            (item) =>
-              '<div class="ftask"><input type="checkbox" ' +
-              (item.done ? "checked" : "") +
-              ' data-action="ft:toggle" data-fase="' +
-              fase.id +
-              '" data-task="' +
-              item.id +
-              '"><input class="ft-text ' +
-              (item.done ? "done" : "") +
-              '" value="' +
-              esc(item.text) +
-              '" data-field="ft:' +
-              fase.id +
-              ":" +
-              item.id +
-              ':text"><input type="date" value="' +
-              (item.fecha || "") +
-              '" data-field="ft:' +
-              fase.id +
-              ":" +
-              item.id +
-              ':fecha"><span class="chk-del" data-action="ft:del" data-fase="' +
-              fase.id +
-              '" data-task="' +
-              item.id +
-              '">✕</span></div>',
-          )
-          .join("");
-        return (
-          '<div class="fase-box"><div style="display:flex;gap:8px;align-items:center"><input class="chk-text" style="font-weight:600" value="' +
-          esc(fase.nombre) +
-          '" data-field="fz:' +
-          fase.id +
-          ':nombre"><span class="chk-del" data-action="fase:del" data-fase="' +
-          fase.id +
-          '">✕</span></div>\n    <div class="fld-row"><input type="date" value="' +
-          (fase.inicio || "") +
-          '" data-field="fz:' +
-          fase.id +
-          ':inicio"><input type="date" value="' +
-          (fase.fin || "") +
-          '" data-field="fz:' +
-          fase.id +
-          ':fin"></div>\n    ' +
-          txt6 +
-          '<button class="btn btn-ghost btn-sm" data-action="ft:add" data-fase="' +
-          fase.id +
-          '" style="align-self:flex-start;margin-top:2px">+ Tarea</button></div>'
-        );
-      })
       .join("");
   let txt7 = "";
   const val = inventoryKind(tarjeta);
@@ -8098,7 +8056,7 @@ function renderPanel() {
             '</div>\n        <div class="bridge-d">Publicado y visible para el equipo. ¿Necesita cambios? Generá una <b>actualización</b>: vuelve al tablero sin perder la ficha.</div>\n        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" data-action="curso:actualizar">Generar actualización</button><button class="btn btn-ghost btn-sm" data-action="curso:baja" style="color:var(--bad)" title="Ya no está vigente: sacarlo del Mapa y de Reportería sin borrar la ficha">Dar de baja</button></div></div>');
   }
   const html = isCurso(tarjeta)
-      ? '<details class="acc sec-acc"><summary class="sub">Ficha de catálogo<span class="ring"></span></summary><div class="acc-body">\n    <div class="fld"><label>Imagen de portada (URL)</label><input value="' +
+      ? '<details class="acc sec-acc" data-acc="catalogo"><summary class="sub">Ficha de catálogo<span class="ring"></span></summary><div class="acc-body">\n    <div class="fld"><label>Imagen de portada (URL)</label><input value="' +
         esc(tarjeta.catalogo.imagen) +
         '" data-field="cat:imagen" placeholder="https://..."></div>\n    <div class="fld"><label>Link Moodle</label><input value="' +
         esc(tarjeta.linkMoodle) +
@@ -8143,7 +8101,7 @@ function renderPanel() {
       "</div>",
     html3 =
       tarjeta.tipo === "app-web" || tarjeta.tipo === "base-sistema"
-        ? '<details class="acc sec-acc"><summary class="sub">Ficha técnica<span class="ring"></span></summary><div class="acc-body">\n    <div class="fld"><label>URL / acceso</label><input value="' +
+        ? '<details class="acc sec-acc" data-acc="ficha"><summary class="sub">Ficha técnica<span class="ring"></span></summary><div class="acc-body">\n    <div class="fld"><label>URL / acceso</label><input value="' +
           esc(tarjeta.ficha.url) +
           '" data-field="fi:url" placeholder="https://..."></div>\n    <div class="fld-row"><div class="fld"><label>Responsable técnico</label><input value="' +
           esc(tarjeta.ficha.owner) +
@@ -8156,49 +8114,45 @@ function renderPanel() {
             .join("") +
           "</select></div></div></div></details>"
         : "",
-    html5 =
-      '<details class="acc" ' +
-      ((tarjeta.comentarios || []).length ? "open" : "") +
-      '><summary class="sub" style="margin-top:0">Comentarios · ' +
-      (tarjeta.comentarios || []).length +
-      '</summary><div style="margin-top:8px">\n    ' +
-      ((tarjeta.comentarios || [])
-        .slice()
-        .reverse()
-        .map(
-          (entrada) =>
-            '<div class="cmt"><div class="cmt-h"><b>' +
-            esc(entrada.autor) +
-            "</b><span>" +
-            relTime(entrada.ts) +
-            '</span></div><div class="cmt-b">' +
-            mentionize(entrada.texto) +
-            "</div></div>",
+    // Comentarios y Actividad eran dos acordeones seguidos contando la misma
+    // historia en dos mitades: "qué dijo el equipo" y "qué le pasó a la
+    // tarjeta". Van en una sola línea de tiempo, con el campo para comentar
+    // arriba de todo — que es lo único que se hace acá adentro.
+    comentarios = (tarjeta.comentarios || []).map((e) =>
+      Object.assign({ __tipo: "cmt" }, e),
+    ),
+    eventos = (tarjeta.actividad || []).map((e) => Object.assign({ __tipo: "act" }, e)),
+    linea = comentarios
+      .concat(eventos)
+      .sort((a, b) => (b.ts || 0) - (a.ts || 0))
+      .slice(0, 40),
+    htmlActividad =
+      '<details class="acc sec-acc" data-acc="actividad" ' +
+      (comentarios.length ? "open" : "") +
+      '><summary class="sub">Actividad · ' +
+      linea.length +
+      '<span class="ring"></span></summary>\n        <div class="acc-body">\n    <div class="cmt-add"><textarea id="cmtInput" placeholder="Comentá… usá @nombre para mencionar a alguien"></textarea><button class="btn btn-sm btn-primary" data-action="cmt:add" style="align-self:flex-start">Comentar</button></div>\n    ' +
+      (linea
+        .map((entrada) =>
+          entrada.__tipo === "cmt"
+            ? '<div class="cmt"><div class="cmt-h"><b>' +
+              esc(entrada.autor) +
+              "</b><span>" +
+              relTime(entrada.ts) +
+              '</span></div><div class="cmt-b">' +
+              mentionize(entrada.texto) +
+              "</div></div>"
+            : '<div class="act"><span class="act-d">' +
+              relTime(entrada.ts) +
+              "</span> <b>" +
+              esc(entrada.autor) +
+              "</b> " +
+              esc(entrada.texto) +
+              "</div>",
         )
         .join("") ||
-        '<div style="font-size:12px;color:var(--ink-soft);padding:4px 0">Sin comentarios todavía.</div>') +
-      '\n    <div class="cmt-add"><textarea id="cmtInput" placeholder="Comentá… usá @nombre para mencionar a alguien"></textarea><button class="btn btn-sm btn-primary" data-action="cmt:add" style="align-self:flex-start">Comentar</button></div></div></details>',
-    html6 =
-      tarjeta.actividad && tarjeta.actividad.length
-        ? '<details class="acc"><summary class="sub" style="margin-top:0">Actividad · ' +
-          tarjeta.actividad.length +
-          '</summary><div style="margin-top:8px">' +
-          tarjeta.actividad
-            .slice(-12)
-            .reverse()
-            .map(
-              (entrada) =>
-                '<div class="act"><span class="act-d">' +
-                relTime(entrada.ts) +
-                "</span> <b>" +
-                esc(entrada.autor) +
-                "</b> " +
-                esc(entrada.texto) +
-                "</div>",
-            )
-            .join("") +
-          "</div></details>"
-        : "";
+        '<div style="font-size:12px;color:var(--ink-soft);padding:4px 0">Todavía no pasó nada acá.</div>') +
+      "\n  </div></details>";
   $("#panel").innerHTML =
     '\n    <div class="panel-head" data-cat="' +
     primaryCat(tarjeta) +
@@ -8217,33 +8171,15 @@ function renderPanel() {
       : "") +
     '<button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>\n    </div>\n    <div class="panel-body">\n      ' +
     txt7 +
-    '\n      <div class="fld-row">\n        <div class="fld"><label>Tipo</label><select data-field="tipo">' +
+    // "Datos" junta lo que antes eran Tipo y Estado sueltos arriba MÁS todo el
+    // bloque "Más detalles": son los datos de la tarjeta, se cargan de una y se
+    // leen de arriba a abajo. Va antes del checklist y arranca abierto, porque
+    // es lo primero que se completa al crear algo.
+    '\n      <details class="acc sec-acc" data-acc="datos" open><summary class="sub">Datos<span class="ring"></span></summary>\n        <div class="acc-body">\n      <div class="fld-row">\n        <div class="fld"><label>Tipo</label><select data-field="tipo">' +
     txt +
     '</select></div>\n        <div class="fld"><label title="Estado del proyecto en el Planner — no confundir con el estado libre de Seguimiento técnico ni con el estado operativo de la Ficha técnica">Estado ⓘ</label><select data-field="estado">' +
     txt2 +
-    '</select></div>\n      </div>\n\n      ' +
-    // El checklist va primero, antes que "Más detalles": es el corazón del
-    // trabajo del día a día, y antes quedaba tercero, debajo de un formulario
-    // de fechas/prioridad/asignados que ya venía abierto la mayoría de las
-    // veces. Arranca colapsado solo si está vacío — con el primer ítem se
-    // abre solo, igual que Notas y Conexiones.
-    '<details class="acc sec-acc" ' +
-    (avance.total ? "open" : "") +
-    '><summary class="sub">Checklist · ' +
-    avance.done +
-    "/" +
-    avance.total +
-    '<span class="ring"></span></summary>\n        <div class="acc-body">\n          <div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
-    avance.pct +
-    '%"></div></div><span class="prog-num">' +
-    avance.pct +
-    "%</span></div>\n          " +
-    txt4 +
-    '\n          <button class="btn btn-ghost btn-sm" data-action="cl:add" style="align-self:flex-start">+ Ítem</button>\n        </div></details>\n\n      ' +
-    // "Más detalles" arranca colapsado siempre, tenga o no tenga fechas
-    // cargadas: es la sección de formulario más larga del panel y lo primero
-    // que se ve al abrir una tarjeta no debería ser eso.
-    '<details class="acc sec-acc"><summary class="sub">Más detalles<span class="ring"></span></summary>\n        <div class="acc-body">\n      <div class="fld-row">\n        <div class="fld"><label>Inicio</label><input type="date" value="' +
+    '</select></div>\n      </div>\n      <div class="fld-row">\n        <div class="fld"><label>Inicio</label><input type="date" value="' +
     (tarjeta.inicio || "") +
     '" data-field="inicio">' +
     datePresetsHTML("inicio") +
@@ -8274,23 +8210,34 @@ function renderPanel() {
     txt3 +
     '</div><span class="fld-hint">Todos los que trabajan en ella (los que quieras).</span></div>\n      ' +
     sectorPicker(tarjeta) +
-    '\n        </div></details>\n\n      <details class="acc sec-acc"><summary class="sub">Fases (opcional · multi-etapa)<span class="ring"></span></summary>\n        <div class="acc-body">\n          ' +
-    txt5 +
-    '\n          <button class="btn btn-ghost btn-sm" data-action="fase:add" style="align-self:flex-start">+ Fase</button>\n        </div></details>\n\n      ' +
+    '\n        </div></details>\n\n      ' +
+    // El checklist queda inmediatamente después de Datos: es el corazón del
+    // trabajo del día a día. Arranca abierto salvo que esté vacío.
+    '<details class="acc sec-acc" data-acc="checklist" ' +
+    (avance.total ? "open" : "") +
+    '><summary class="sub">Checklist · ' +
+    avance.done +
+    "/" +
+    avance.total +
+    '<span class="ring"></span></summary>\n        <div class="acc-body">\n          <div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
+    avance.pct +
+    '%"></div></div><span class="prog-num">' +
+    avance.pct +
+    "%</span></div>\n          " +
+    txt4 +
+    '\n          <button class="btn btn-ghost btn-sm" data-action="cl:add" style="align-self:flex-start">+ Ítem</button>\n        </div></details>\n\n      ' +
     html +
     "\n      " +
     html3 +
-    '\n\n      <details class="acc sec-acc" ' +
-    (tarjeta.notas ? "open" : "") +
-    '><summary class="sub">Notas<span class="ring"></span></summary>\n        <div class="acc-body"><textarea data-field="notas" placeholder="Notas del equipo...">' +
-    esc(tarjeta.notas) +
-    "</textarea></div></details>\n      " +
-    conexionesHTML(tarjeta) +
     "\n      " +
-    html5 +
+    vinculosHTML(tarjeta) +
     "\n      " +
-    html6 +
+    htmlActividad +
     '\n\n      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:14px">\n        <button class="btn btn-primary btn-sm" data-action="card:save" title="Guardar ahora">💾 Guardar</button>\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
+  document.querySelectorAll("#panel details[data-acc]").forEach((d) => {
+    const guardado = accAbiertos[d.dataset.acc];
+    if (guardado !== undefined) d.open = guardado;
+  });
 }
 function openCarga() {
   const obj = {};
@@ -8466,6 +8413,7 @@ function confirmar(mensaje, onYes) {
 function openNuevo() {
   state.draftTipo = "curso";
   const txt = Object.keys(allTipos())
+    .filter((arg) => !allTipos()[arg].retirado)
     .map(
       (arg) =>
         '<div class="tipo-opt ' +
@@ -8495,7 +8443,7 @@ function openSaveTpl() {
   const tarjeta = current();
   if (!tarjeta) return;
   openModal(
-    '<h2>Guardar como plantilla</h2><div class="sub-t">Crea un <b>tipo nuevo</b> reutilizable con las fases y el checklist actuales de “' +
+    '<h2>Guardar como plantilla</h2><div class="sub-t">Crea un <b>tipo nuevo</b> reutilizable con el checklist actual de “' +
       esc(tarjeta.titulo) +
       '”.</div>\n    <div class="fld"><label>Nombre del tipo</label><input id="tplName" placeholder="Ej: Microlearning, Onboarding..." autofocus></div>\n    <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="tpl:create">Guardar plantilla</button></div>',
   );
@@ -8579,63 +8527,53 @@ async function refreshEduArchivoFromRemote() {
 }
 function applyField(tarjeta, val, el) {
   const value = el.type === "checkbox" ? el.checked : el.value;
-  if (val.startsWith("cat:")) tarjeta.catalogo[val.slice(4)] = value;
-  else {
-    if (val.startsWith("fi:")) ((tarjeta.ficha = tarjeta.ficha || {}), (tarjeta.ficha[val.slice(3)] = value));
-    else {
-      if (val.startsWith("cl:")) {
-        const hallado = (tarjeta.checklist || []).find((arg) => arg.id === val.slice(3));
-        if (hallado) hallado.text = value;
-      } else {
-        if (val.startsWith("ft:")) {
-          const partes = val.split(":"),
-            hallado2 = (tarjeta.fases || []).find((arg) => arg.id === partes[1]);
-          if (hallado2) {
-            const hallado3 = (hallado2.tareas || []).find((arg) => arg.id === partes[2]);
-            if (hallado3) hallado3[partes[3]] = value;
-          }
-        } else {
-          if (val.startsWith("fz:")) {
-            const [, faseId, campo] = val.split(":"),
-              hallado4 = (tarjeta.fases || []).find((arg) => arg.id === faseId);
-            if (hallado4) hallado4[campo] = value;
-          } else {
-            // El <select> de estado dispara "input" y "change" para el mismo
-            // cambio: applyField() se llama dos veces, así que el chequeo de
-            // "cambió de verdad" tiene que vivir acá adentro (antes de pisar
-            // el valor viejo), no en el handler de "change" — para cuando ese
-            // corre, el de "input" ya dejó tarjeta.estado igual al nuevo valor.
-            if (val === "estado" && tarjeta.estado !== value) {
-              logAct(tarjeta, "pasó a " + ((ESTADOS.find((estado) => estado.id === value) || {}).nombre || value));
-              if (value === "en-revision") tarjeta.revisionDesde = isoOf(new Date());
-            }
-            // Cambiar el tipo de una tarjeta ya publicada puede sacarla o
-            // meterla en el inventario del Mapa sin que nadie lo haya pedido
-            // a propósito (ej: pasarla de "curso" a "app-web") — un aviso acá
-            // es más barato que descubrirlo después en el Mapa.
-            if (val === "tipo" && tarjeta.publicado && tarjeta.tipo !== value) {
-              const antes = !!INV_KIND[tarjeta.tipo],
-                despues = !!INV_KIND[value];
-              if (antes !== despues)
-                flash(
-                  despues
-                    ? "Este tipo sí cuenta para el Mapa — puede volver a aparecer en el inventario."
-                    : "Este tipo ya no cuenta para el Mapa — puede desaparecer del inventario.",
-                  true,
-                );
-            }
-            tarjeta[val] = value;
-            // El título viaja hacia la fila de Técnico vinculada (si hay) para
-            // que Mapa y Técnico no se desalineen de nuevo — sin bloquear la
-            // edición de ninguno de los dos lados.
-            if (val === "titulo") {
-              const filaVinc = state.tecnico.find((f) => f.cardId === tarjeta.id);
-              if (filaVinc && filaVinc.curso !== value) ((filaVinc.curso = value), touchTecnico());
-            }
-          }
-        }
-      }
-    }
+  if (val.startsWith("cat:")) {
+    tarjeta.catalogo[val.slice(4)] = value;
+    touch();
+    return;
+  }
+  if (val.startsWith("fi:")) {
+    ((tarjeta.ficha = tarjeta.ficha || {}), (tarjeta.ficha[val.slice(3)] = value));
+    touch();
+    return;
+  }
+  if (val.startsWith("cl:")) {
+    const hallado = (tarjeta.checklist || []).find((arg) => arg.id === val.slice(3));
+    if (hallado) hallado.text = value;
+    touch();
+    return;
+  }
+  // El <select> de estado dispara "input" y "change" para el mismo cambio:
+  // applyField() se llama dos veces, así que el chequeo de "cambió de verdad"
+  // tiene que vivir acá adentro (antes de pisar el valor viejo), no en el
+  // handler de "change" — para cuando ese corre, el de "input" ya dejó
+  // tarjeta.estado igual al nuevo valor.
+  if (val === "estado" && tarjeta.estado !== value) {
+    logAct(tarjeta, "pasó a " + ((ESTADOS.find((estado) => estado.id === value) || {}).nombre || value));
+    if (value === "en-revision") tarjeta.revisionDesde = isoOf(new Date());
+  }
+  // Cambiar el tipo de una tarjeta ya publicada puede sacarla o meterla en el
+  // inventario del Mapa sin que nadie lo haya pedido a propósito (ej: pasarla
+  // de "curso" a "app-web") — un aviso acá es más barato que descubrirlo
+  // después en el Mapa.
+  if (val === "tipo" && tarjeta.publicado && tarjeta.tipo !== value) {
+    const antes = !!INV_KIND[tarjeta.tipo],
+      despues = !!INV_KIND[value];
+    if (antes !== despues)
+      flash(
+        despues
+          ? "Este tipo sí cuenta para el Mapa — puede volver a aparecer en el inventario."
+          : "Este tipo ya no cuenta para el Mapa — puede desaparecer del inventario.",
+        true,
+      );
+  }
+  tarjeta[val] = value;
+  // El título viaja hacia la fila de Técnico vinculada (si hay) para que Mapa
+  // y Técnico no se desalineen de nuevo — sin bloquear la edición de ninguno
+  // de los dos lados.
+  if (val === "titulo") {
+    const filaVinc = state.tecnico.find((f) => f.cardId === tarjeta.id);
+    if (filaVinc && filaVinc.curso !== value) ((filaVinc.curso = value), touchTecnico());
   }
   touch();
 }
@@ -9179,6 +9117,10 @@ document.addEventListener("click", (ev) => {
         cursoEstado: "",
       }),
         (state.quick = ""),
+        // "Mis tareas" también esconde tarjetas, así que "Limpiar filtros"
+        // tiene que apagarlo: si no, el tablero quedaba recortado después de
+        // limpiar y no había ninguna pista de por qué.
+        (state.mis = false),
         render());
       break;
     case "quick:set":
@@ -9343,82 +9285,6 @@ document.addEventListener("click", (ev) => {
       ((tarjeta3.checklist = tarjeta3.checklist.filter((item) => item.id !== el.dataset.cl)),
         touch(),
         renderPanel());
-      break;
-    }
-    case "link:add": {
-      const val2 = current();
-      if (!val2) break;
-      const campo3 = $("#linkLabel"),
-        campo4 = $("#linkUrl");
-      let txt4 = ((campo4 && campo4.value) || "").trim();
-      if (!txt4) {
-        flash("Poné el link (URL)", true);
-        break;
-      }
-      if (!/^https?:\/\//i.test(txt4)) txt4 = "https://" + txt4;
-      ((val2.links || (val2.links = [])).push({
-        label: ((campo3 && campo3.value) || "").trim() || txt4,
-        url: txt4,
-      }),
-        touch(),
-        renderPanel());
-      break;
-    }
-    case "link:del": {
-      const val3 = current();
-      if (!val3 || !val3.links) break;
-      (val3.links.splice(+el.dataset.i, 1), touch(), renderPanel());
-      break;
-    }
-    case "fase:add": {
-      const val4 = current();
-      (val4.fases.push({
-        id: uid(),
-        nombre: "Nueva fase",
-        inicio: null,
-        fin: null,
-        tareas: [],
-      }),
-        touch(),
-        renderPanel());
-      break;
-    }
-    case "fase:del": {
-      const val5 = current();
-      ((val5.fases = val5.fases.filter((fase) => fase.id !== el.dataset.fase)), touch(), renderPanel());
-      break;
-    }
-    case "ft:add": {
-      const val6 = current(),
-        hallado3 = val6.fases.find((fase) => fase.id === el.dataset.fase);
-      hallado3 &&
-        ((hallado3.tareas = hallado3.tareas || []),
-        hallado3.tareas.push({
-          id: uid(),
-          text: "Nueva tarea",
-          done: false,
-          fecha: null,
-        }),
-        touch(),
-        renderPanel());
-      break;
-    }
-    case "ft:del": {
-      const val7 = current(),
-        hallado4 = val7.fases.find((fase) => fase.id === el.dataset.fase);
-      hallado4 &&
-        ((hallado4.tareas = (hallado4.tareas || []).filter((arg) => arg.id !== el.dataset.task)),
-        touch(),
-        renderPanel());
-      break;
-    }
-    case "ft:toggle": {
-      const val8 = current(),
-        hallado5 = val8.fases.find((fase) => fase.id === el.dataset.fase);
-      if (hallado5) {
-        const hallado6 = (hallado5.tareas || []).find((arg) => arg.id === el.dataset.task);
-        hallado6 && ((hallado6.done = !hallado6.done), touch(), renderPanel());
-      }
       break;
     }
     case "curso:publicar": {
@@ -10130,7 +9996,7 @@ function doSaveTpl() {
   const txt2 = "tpl-" + txt.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   ((state.customTpl[txt2] = {
     nombre: txt,
-    fases: (tarjeta.fases || []).map((def) => def.nombre),
+    fases: [],
     checklist: (tarjeta.checklist || []).map((arg) => arg.text),
   }),
     touch(),
@@ -10935,6 +10801,7 @@ function checklistTplHTML() {
   return (
     '<div class="tpl-chk-grid">' +
     Object.keys(TIPOS)
+      .filter((tipo) => !TIPOS[tipo].retirado)
       .map((tipo) => {
         const items = checklistTplActual(tipo),
           tocado = !!overrides[tipo];
@@ -11008,7 +10875,7 @@ function restoreBackup(ts) {
     (dropCards(state.cards.filter((c) => !ids.has(c.id)).map((c) => c.id)),
       (state.cards = doc.cards),
       (state.customTpl = doc.templates || {}));
-    if (doc.sectores) Object.assign(SECTORES, doc.sectores);
+    aplicarSectores(doc.sectores);
     if (doc.agenda && typeof doc.agenda === "object") state.agenda = doc.agenda;
     if (doc.cotofrase && typeof doc.cotofrase === "object") state.cotofrase = doc.cotofrase;
     if (Array.isArray(doc.tecnico)) state.tecnico = doc.tecnico;
@@ -11213,7 +11080,7 @@ function runImport() {
     (dropCards(state.cards.filter((c) => !restoredIds.has(c.id)).map((c) => c.id)),
       (state.cards = tarjeta.cards),
       (state.customTpl = tarjeta.templates || {}));
-    if (tarjeta.sectores) Object.assign(SECTORES, tarjeta.sectores);
+    aplicarSectores(tarjeta.sectores);
     (Array.isArray(tarjeta.team) &&
       tarjeta.team.length &&
       ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro))),
@@ -11311,7 +11178,7 @@ async function boot() {
       ((state.cards = tarjeta.cards), (state.customTpl = tarjeta.templates || {}));
       if (tarjeta.deleted && typeof tarjeta.deleted === "object")
         state.deleted = pruneTombstones(tarjeta.deleted);
-      if (tarjeta.sectores) Object.assign(SECTORES, tarjeta.sectores);
+      aplicarSectores(tarjeta.sectores);
       Array.isArray(tarjeta.team) &&
         tarjeta.team.length &&
         ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro)));

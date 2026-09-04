@@ -671,10 +671,14 @@ button {
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  /* El aviso de "no se están guardando los cambios" es fixed arriba de todo.
+     Sin este hueco tapaba la topbar entera y no se podía ni navegar. La
+     variable la setea avisarSinGuardar() con la altura real del aviso. */
+  padding-top: var(--savewarn-h, 0px);
 }
 .topbar {
   position: sticky;
-  top: 0;
+  top: var(--savewarn-h, 0px);
   z-index: 30;
   display: flex;
   align-items: center;
@@ -864,13 +868,6 @@ button {
   width: 18px;
   text-align: center;
   opacity: 0.85;
-}
-.menu-flag {
-  margin-left: auto;
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--coto-blue);
-  letter-spacing: 0.5px;
 }
 .menu-sep {
   height: 1px;
@@ -2212,15 +2209,6 @@ button {
   height: 1px;
   background: var(--line);
 }
-.fase-box {
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 10px;
-  background: var(--surface-2);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
 .bridge {
   background: linear-gradient(
     135deg,
@@ -2513,6 +2501,22 @@ button {
   gap: 14px;
   margin-bottom: 18px;
 }
+/* Los cinco KPIs del Resumen se leen de un vistazo solo si están en una fila:
+   con auto-fit se partían 3+2 y el corte hacía pensar que eran dos grupos
+   distintos. Recién abajo de 1080px bajan a dos filas de a poco. */
+.res-grid-5 {
+  grid-template-columns: repeat(5, 1fr);
+}
+@media (max-width: 1080px) {
+  .res-grid-5 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 700px) {
+  .res-grid-5 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 .kpi {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -2770,41 +2774,6 @@ button {
   z-index: 2;
   cursor: pointer;
 }
-.ftask {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 4px 0;
-}
-.ftask input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: var(--coto-blue);
-  flex: none;
-}
-.ftask .ft-text {
-  flex: 1;
-  font-size: 12.5px;
-  background: 0 0;
-  border: none;
-  color: var(--ink);
-  outline: 0;
-}
-.ftask .ft-text.done {
-  text-decoration: line-through;
-  color: var(--ink-soft);
-}
-.ftask input[type="date"] {
-  font-size: 11px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--surface);
-  color: var(--ink-soft);
-  padding: 2px 5px;
-}
-.ftask .chk-del {
-  font-size: 13px;
-}
 #misBtn.on {
   background: var(--coto-blue);
   border-color: var(--coto-blue);
@@ -2880,24 +2849,6 @@ button {
   justify-content: center;
   padding: 0 4px;
   box-shadow: 0 0 0 2px var(--surface);
-}
-.hub-badge {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  background: var(--warn);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
-  min-width: 19px;
-  height: 19px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 5px;
-  box-shadow: 0 0 0 2px var(--surface);
-  z-index: 1;
 }
 .notif-item {
   display: flex;
@@ -3891,7 +3842,6 @@ html {
   backdrop-filter: var(--blur);
   border: 1px solid var(--glass-brd);
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 90%, transparent) inset,
     var(--shadow),
     var(--ambient);
 }
@@ -3903,7 +3853,6 @@ html {
   border: 1px solid var(--glass-brd);
   border-left: 6px solid var(--cat, var(--coto-blue));
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 90%, transparent) inset,
     var(--shadow),
     var(--ambient);
 }
@@ -3920,7 +3869,6 @@ html {
   transform: translateY(-4px);
   border-color: color-mix(in srgb, var(--coto-blue) 36%, var(--glass-brd));
   box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 85%, transparent) inset,
     var(--shadow-lg),
     var(--glow);
 }
@@ -4319,6 +4267,8 @@ html {
 }
 .cmdk-top svg {
   flex: none;
+  width: 20px;
+  height: 20px;
 }
 .cmdk-top input {
   flex: 1;
@@ -4447,6 +4397,26 @@ html {
     animation: none !important;
   }
 }
+/* Antes de que la topbar se parta en dos filas, el buscador se achica a la
+   lupa sola: es lo primero que sobra cuando falta ancho, porque el atajo
+   (Ctrl+K o "/") sigue funcionando igual y las pestañas no son negociables. */
+@media (max-width: 1320px) {
+  .search-promo {
+    min-width: 0;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .search-promo-t,
+  .search-promo-k {
+    display: none;
+  }
+  .topbar {
+    gap: 12px;
+  }
+}
 @media (max-width: 760px) {
   .topbar {
     padding: 9px 14px;
@@ -4489,9 +4459,7 @@ html {
     -webkit-backdrop-filter: var(--blur);
     backdrop-filter: var(--blur);
     background: color-mix(in srgb, var(--surface) 80%, transparent);
-    box-shadow:
-      var(--shadow-lg),
-      0 1px 0 color-mix(in srgb, #fff 50%, transparent) inset;
+    box-shadow: var(--shadow-lg);
   }
   .tabs::-webkit-scrollbar {
     display: none;
@@ -4582,27 +4550,6 @@ html {
 .lnk-a:hover {
   text-decoration: underline;
 }
-.lnk-add {
-  display: flex;
-  gap: 7px;
-  flex-wrap: wrap;
-  margin-top: 8px;
-}
-.lnk-add input {
-  flex: 1 1 140px;
-  min-width: 0;
-  font-family: inherit;
-  font-size: 13px;
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 8px 10px;
-  color: var(--ink);
-  outline: 0;
-}
-.lnk-add input:focus {
-  border-color: var(--coto-blue);
-}
 /* Bloques dentro de "Conexiones": Enlaces, Vínculos con el Mapa y
    Seguimiento técnico van juntos en un solo acordeón separados por un
    subtítulo en vez de tener cada uno su propio <details> — misma idea que
@@ -4663,6 +4610,12 @@ html {
   border-color: var(--coto-blue);
   color: #fff;
   box-shadow: 0 3px 10px color-mix(in srgb, var(--coto-blue) 30%, transparent);
+}
+/* Este va suelto en la barra de filtros, no dentro de .qchips, así que se
+   alinea a mano con los otros controles de la fila. */
+.qchip-mis {
+  flex: none;
+  padding: 8px 14px;
 }
 .cal-bar {
   cursor: grab;
