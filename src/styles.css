@@ -729,34 +729,6 @@ button {
 .hub-hero .logo-img {
   height: 28px;
 }
-.brand-mark {
-  width: 42px;
-  height: 42px;
-  border-radius: var(--r-sm);
-  background: linear-gradient(135deg, var(--coto-blue), var(--coto-navy));
-  position: relative;
-  box-shadow: var(--shadow);
-  flex: none;
-}
-.brand-mark::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: var(--r-sm);
-  background: radial-gradient(
-      circle at 30% 30%,
-      rgba(255, 255, 255, 0.5) 1.5px,
-      transparent 2px
-    )
-    0 0/9px 9px;
-}
-.brand-k {
-  font-size: 11px;
-  letter-spacing: 0.6px;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  font-weight: 600;
-}
 .brand-t {
   font-family: var(--titulo);
   font-weight: 900;
@@ -1015,9 +987,6 @@ button {
 }
 .filt input {
   min-width: 150px;
-}
-.filt-clear {
-  margin-left: auto;
 }
 .filt-pop-wrap {
   position: relative;
@@ -1722,6 +1691,12 @@ button {
   border: 1px solid var(--line);
   border-radius: var(--r-l);
   box-shadow: var(--shadow-lg);
+  /* La franja de color del encabezado dibujaba su propio redondeo, y un
+     elemento de 4px de alto no puede seguir una curva de 18px: el navegador la
+     achata y la línea quedaba corrida justo en las esquinas. Recortando acá,
+     la franja (y el fondo del encabezado) siguen la curva real del panel. El
+     scroll vive en .panel-body, así que esto no tapa nada. */
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   transition:
@@ -1864,6 +1839,47 @@ button {
   transform: rotate(90deg);
   color: var(--cat, var(--coto-blue));
 }
+/* En el panel de la tarjeta las secciones se abren y cierran SOLO con la
+   flecha: el encabezado es una barra ancha y cualquier clic cerca de él
+   plegaba la sección en la que se estaba trabajando (ver el guard de click en
+   app.js, con el mismo alcance). Por eso ahí la flecha deja de ser un ::after
+   y pasa a ser un elemento real, con un blanco cómodo de tocar. Fuera del
+   panel —la Ayuda, por ejemplo— el <details> sigue funcionando como siempre. */
+.acc-ar {
+  display: none;
+}
+#panel .acc > summary {
+  cursor: default;
+}
+#panel .acc > summary:hover {
+  background: 0 0;
+}
+#panel .acc > summary::after {
+  content: none;
+}
+#panel .acc-ar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -6px -4px 4px;
+  border-radius: 50%;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition:
+    transform 0.15s var(--ease),
+    background 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+#panel .acc-ar:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+#panel .acc[open] > summary .acc-ar {
+  transform: rotate(90deg);
+  color: var(--cat, var(--coto-blue));
+}
 .sec-acc {
   border-top: 1px solid var(--line);
   padding-top: 14px;
@@ -1902,7 +1918,6 @@ button {
   left: 0;
   right: 0;
   height: 4px;
-  border-radius: var(--r-l) var(--r-l) 0 0;
   background: var(--cat-grad, var(--cat, var(--coto-blue)));
 }
 .panel-head .tipo-pill {
@@ -2386,12 +2401,6 @@ button {
   width: 440px;
   max-width: 92vw;
   text-align: center;
-}
-.gate-card .brand-mark {
-  width: 58px;
-  height: 58px;
-  border-radius: 17px;
-  margin: 0 auto 14px;
 }
 .gate-card h1 {
   font-size: 24px;
@@ -3335,17 +3344,6 @@ button {
   text-align: center;
   padding: 38px 0 30px;
 }
-.hub-kicker {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--coto-blue);
-  background: color-mix(in srgb, var(--coto-blue) 11%, transparent);
-  padding: 5px 14px;
-  border-radius: var(--pill);
-}
 .hub-title {
   font-family: var(--titulo);
   font-weight: 900;
@@ -3467,9 +3465,6 @@ button {
 .hub-card:hover .hub-arrow {
   opacity: 1;
   transform: none;
-}
-.hub-cta .hub-ic {
-  font-size: 26px;
 }
 html {
   scroll-behavior: smooth;
@@ -4857,17 +4852,6 @@ html {
   color: var(--ink);
 }
 .tec-link,
-.tec-link-x {
-  border: 1px dashed var(--line);
-  background: 0 0;
-  color: var(--ink-soft);
-  font-size: 11px;
-  padding: 5px 9px;
-  border-radius: var(--pill);
-  cursor: pointer;
-  white-space: nowrap;
-  font-family: inherit;
-}
 .tec-link.on {
   border-style: solid;
   border-color: var(--coto-blue);

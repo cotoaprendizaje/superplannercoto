@@ -7898,7 +7898,7 @@ function vinculosHTML(tarjeta) {
     (total || sinTec ? "open" : "") +
     '><summary class="sub">Vínculos · ' +
     total +
-    '<span class="ring"></span></summary>\n        <div class="acc-body">\n    <div class="conx-block">' +
+    '<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">\n    <div class="conx-block">' +
     vinculosBlockHTML(tarjeta) +
     "</div>" +
     (tieneTec ? '\n    <div class="conx-block">' + tecVinculoBlockHTML(tarjeta) + "</div>" : "") +
@@ -8056,7 +8056,7 @@ function renderPanel() {
             '</div>\n        <div class="bridge-d">Publicado y visible para el equipo. ¿Necesita cambios? Generá una <b>actualización</b>: vuelve al tablero sin perder la ficha.</div>\n        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm" data-action="curso:actualizar">Generar actualización</button><button class="btn btn-ghost btn-sm" data-action="curso:baja" style="color:var(--bad)" title="Ya no está vigente: sacarlo del Mapa y de Reportería sin borrar la ficha">Dar de baja</button></div></div>');
   }
   const html = isCurso(tarjeta)
-      ? '<details class="acc sec-acc" data-acc="catalogo"><summary class="sub">Ficha de catálogo<span class="ring"></span></summary><div class="acc-body">\n    <div class="fld"><label>Imagen de portada (URL)</label><input value="' +
+      ? '<details class="acc sec-acc" data-acc="catalogo"><summary class="sub">Ficha de catálogo<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary><div class="acc-body">\n    <div class="fld"><label>Imagen de portada (URL)</label><input value="' +
         esc(tarjeta.catalogo.imagen) +
         '" data-field="cat:imagen" placeholder="https://..."></div>\n    <div class="fld"><label>Link Moodle</label><input value="' +
         esc(tarjeta.linkMoodle) +
@@ -8101,7 +8101,7 @@ function renderPanel() {
       "</div>",
     html3 =
       tarjeta.tipo === "app-web" || tarjeta.tipo === "base-sistema"
-        ? '<details class="acc sec-acc" data-acc="ficha"><summary class="sub">Ficha técnica<span class="ring"></span></summary><div class="acc-body">\n    <div class="fld"><label>URL / acceso</label><input value="' +
+        ? '<details class="acc sec-acc" data-acc="ficha"><summary class="sub">Ficha técnica<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary><div class="acc-body">\n    <div class="fld"><label>URL / acceso</label><input value="' +
           esc(tarjeta.ficha.url) +
           '" data-field="fi:url" placeholder="https://..."></div>\n    <div class="fld-row"><div class="fld"><label>Responsable técnico</label><input value="' +
           esc(tarjeta.ficha.owner) +
@@ -8131,7 +8131,7 @@ function renderPanel() {
       (comentarios.length ? "open" : "") +
       '><summary class="sub">Actividad · ' +
       linea.length +
-      '<span class="ring"></span></summary>\n        <div class="acc-body">\n    <div class="cmt-add"><textarea id="cmtInput" placeholder="Comentá… usá @nombre para mencionar a alguien"></textarea><button class="btn btn-sm btn-primary" data-action="cmt:add" style="align-self:flex-start">Comentar</button></div>\n    ' +
+      '<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">\n    <div class="cmt-add"><textarea id="cmtInput" placeholder="Comentá… usá @nombre para mencionar a alguien"></textarea><button class="btn btn-sm btn-primary" data-action="cmt:add" style="align-self:flex-start">Comentar</button></div>\n    ' +
       (linea
         .map((entrada) =>
           entrada.__tipo === "cmt"
@@ -8175,7 +8175,7 @@ function renderPanel() {
     // bloque "Más detalles": son los datos de la tarjeta, se cargan de una y se
     // leen de arriba a abajo. Va antes del checklist y arranca abierto, porque
     // es lo primero que se completa al crear algo.
-    '\n      <details class="acc sec-acc" data-acc="datos" open><summary class="sub">Datos<span class="ring"></span></summary>\n        <div class="acc-body">\n      <div class="fld-row">\n        <div class="fld"><label>Tipo</label><select data-field="tipo">' +
+    '\n      <details class="acc sec-acc" data-acc="datos" open><summary class="sub">Datos<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">\n      <div class="fld-row">\n        <div class="fld"><label>Tipo</label><select data-field="tipo">' +
     txt +
     '</select></div>\n        <div class="fld"><label title="Estado del proyecto en el Planner — no confundir con el estado libre de Seguimiento técnico ni con el estado operativo de la Ficha técnica">Estado ⓘ</label><select data-field="estado">' +
     txt2 +
@@ -8219,7 +8219,7 @@ function renderPanel() {
     avance.done +
     "/" +
     avance.total +
-    '<span class="ring"></span></summary>\n        <div class="acc-body">\n          <div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
+    '<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">\n          <div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
     avance.pct +
     '%"></div></div><span class="prog-num">' +
     avance.pct +
@@ -9478,6 +9478,14 @@ function applyEduField(id, campo, value) {
   // refrescar. nombre/nota se tipean letra a letra, ahí NO (perdería el foco).
   if (campo === "est" || campo === "tipo") renderEduList();
 }
+// En el panel de la tarjeta, las secciones se abren y se cierran SOLO con la
+// flechita: el encabezado es una barra ancha y cualquier clic cerca de él
+// plegaba la sección en la que se estaba trabajando. Afuera del panel (la
+// Ayuda, por ejemplo) el <details> sigue funcionando como siempre.
+document.addEventListener("click", (ev) => {
+  const resumen = ev.target.closest && ev.target.closest("#panel details.acc > summary");
+  if (resumen && !ev.target.closest(".acc-ar")) ev.preventDefault();
+});
 (document.addEventListener("input", (ev) => {
   if (ev.target.id === "cmdkInput") {
     renderPalette(ev.target.value);
