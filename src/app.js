@@ -3147,6 +3147,10 @@ function seedTecnico() {
     categoria: s.c,
     curso: s.t,
     publicacion: s.p,
+    // El Excel traía una sola fecha. Queda como "publicación" (cuándo se
+    // creó el curso) y "actualización" arranca vacía: se completa a mano a
+    // medida que se van tocando los cursos.
+    actualizacion: "",
     portada: s.po,
     mosaico: s.mo,
     evaluacion: s.ev,
@@ -5357,8 +5361,8 @@ function tecFechaISO(txt) {
 // "sin mosaico" salen de las mismas columnas de la tabla, así que el número
 // siempre se puede comprobar mirando las filas que quedan.
 function tecPendientePasa(fila, cual) {
-  if (cual === "sin-portada") return !fila.portada;
-  if (cual === "sin-mosaico") return !fila.mosaico;
+  if (cual === "sin-portada") return !fila.portada && tecFilaActiva(fila);
+  if (cual === "html") return (fila.diseno || "").toLowerCase().includes("html") && tecFilaActiva(fila);
   if (cual === "vinculados") return !!fila.cardId;
   return true;
 }
@@ -5380,7 +5384,9 @@ function tecRows() {
     // Una fecha mal escrita ordena como si estuviera vacía (al final) en vez de
     // colarse arriba de todo: un typo no puede descolocar la tabla entera.
     const clave = (fila) =>
-      campo === "publicacion" && tecFechaMala(fila[campo]) ? "" : (fila[campo] || "").toString().toLowerCase();
+      (campo === "publicacion" || campo === "actualizacion") && tecFechaMala(fila[campo])
+        ? ""
+        : (fila[campo] || "").toString().toLowerCase();
     lista = lista.slice().sort((a, b) => {
       const va = clave(a),
         vb = clave(b);
@@ -5461,6 +5467,28 @@ function tecLinkHTML(fila) {
     '" title="Vincular con una tarjeta del Mapa">🔗 Vincular</button>'
   );
 }
+// Las dos columnas de fecha se dibujan igual, así que una sola función:
+// "publicación" es cuándo se creó el curso y "actualización" la última vez que
+// se tocó. Antes había una sola fecha y no se podía distinguir un curso viejo
+// recién actualizado de uno que nadie mira desde 2018.
+function tecFechaCelda(fila, campo) {
+  const val = fila[campo] || "";
+  return (
+    '<td class="tec-pub">' +
+    (tecFechaMala(val)
+      ? '<div class="tec-fecha-mala-txt" title="Este valor no se entiende como fecha — elegí la correcta en el calendario">⚠ ' +
+        esc(val) +
+        "</div>"
+      : "") +
+    '<input type="date" data-tec-id="' +
+    fila.id +
+    '" data-tec-field="' +
+    campo +
+    '" value="' +
+    (tecFechaMala(val) ? "" : esc(val)) +
+    '"></td>'
+  );
+}
 function tecRowHTML(fila) {
   return (
     '<tr data-tec-row="' +
@@ -5477,21 +5505,10 @@ function tecRowHTML(fila) {
     fila.id +
     '" data-tec-field="curso" value="' +
     esc(fila.curso) +
-    '"></td><td class="tec-pub">' +
-    (tecFechaMala(fila.publicacion)
-      ? '<div class="tec-fecha-mala-txt" title="Este valor no se entiende como fecha — elegí la correcta en el calendario">⚠ ' +
-        esc(fila.publicacion) +
-        "</div>"
-      : "") +
-    '<div class="tec-pub-row"><input type="date" data-tec-id="' +
-    fila.id +
-    '" data-tec-field="publicacion" value="' +
-    (tecFechaMala(fila.publicacion) ? "" : esc(fila.publicacion)) +
-    '"><button type="button" class="tec-date-preset" data-action="tec:datepreset" data-tec-id="' +
-    fila.id +
-    '" data-preset="hoy" title="Hoy">H</button><button type="button" class="tec-date-preset" data-action="tec:datepreset" data-tec-id="' +
-    fila.id +
-    '" data-preset="semana" title="+1 semana">+7</button></div></td><td class="tec-chk">' +
+    '"></td>' +
+    tecFechaCelda(fila, "publicacion") +
+    tecFechaCelda(fila, "actualizacion") +
+    '<td class="tec-chk">' +
     tecCheckbox(fila, "portada") +
     '</td><td class="tec-chk">' +
     tecCheckbox(fila, "mosaico") +
@@ -5513,7 +5530,7 @@ function tecRowHTML(fila) {
   );
 }
 function tecGroupHTML(grupo) {
-  const cols = tecPlano() ? 11 : 10;
+  const cols = tecPlano() ? 12 : 11;
   // En modo plano no hay encabezado de categoría ni fila de "agregar acá":
   // la categoría ya es una columna y agregar se hace desde el botón de arriba.
   if (grupo.categoria === null) return '<tbody class="tec-group">' + grupo.filas.map(tecRowHTML).join("") + "</tbody>";
@@ -5557,6 +5574,7 @@ function tecHeadHTML() {
     (tecPlano() ? tecTh("categoria", "Categoría") : "") +
     tecTh("curso", "Curso") +
     tecTh("publicacion", "Publicación") +
+    tecTh("actualizacion", "Actualización") +
     "<th>Portada</th><th>Mosaico</th><th>Evaluación</th><th>Textos</th>" +
     tecTh("diseno", "Diseño") +
     tecTh("estado", "Estado / Comentario") +
@@ -5624,47 +5642,66 @@ function tecKpi(n, label, color, cual) {
   );
 }
 function tecKpisHTML() {
-  const lista = state.tecnico;
+  const lista = state.tecnico,
+    activas = lista.filter(tecFilaActiva),
+    html = activas.filter((f) => (f.diseno || "").toLowerCase().includes("html")).length;
   return (
     '<div class="res-grid">' +
     tecKpi(lista.length, "Cursos en la lista", "var(--coto-blue)", "") +
-    tecKpi(lista.filter((f) => !f.portada).length, "Sin portada", "var(--bad)", "sin-portada") +
-    tecKpi(lista.filter((f) => !f.mosaico).length, "Sin mosaico", "var(--warn)", "sin-mosaico") +
+    // Los pendientes se cuentan solo sobre cursos vigentes: un curso dado de
+    // baja sin portada no es trabajo que le quede a nadie.
+    tecKpi(activas.filter((f) => !f.portada).length, "Sin portada", "var(--bad)", "sin-portada") +
+    // La pregunta real del área no es cuántos mosaicos faltan sino cuánto
+    // catálogo quedó en HTML, que es lo que hay que rediseñar.
+    tecKpi(html, "En HTML · a rediseñar", "var(--warn)", "html") +
     tecKpi(lista.filter((f) => f.cardId).length, "Vinculados al Mapa", "var(--ok)", "vinculados") +
-    "</div>"
+    "</div>" +
+    tecDisenoChipsHTML()
   );
 }
-// El desglose por diseño en un select, con el número al lado de cada opción:
-// era la pregunta concreta que quedaba sin responder ("¿cuántos son HTML?")
-// y así se contesta sin tener que contar filas a ojo.
-function tecDisenoFiltroHTML() {
+// Un curso "activo" es el que sigue vigente: ni la tarjeta vinculada dada de
+// baja en el Mapa, ni un comentario del tipo "Dado de baja" en la columna de
+// estado (que es como venía marcado en el Excel).
+function tecFilaActiva(fila) {
+  if (tecEstadoSugiereBaja(fila.estado)) return false;
+  const card = fila.cardId ? state.cards.find((c) => c.id === fila.cardId) : null;
+  return !(card && card.activo === false);
+}
+// Desglose por diseño, en chips y sobre cursos activos: contesta de un vistazo
+// "cuántos son HTML" y "cuántos hay que pasar de Storyline V1 a V2", que es lo
+// que decide el trabajo de rediseño del año. Cada chip filtra la tabla.
+function tecDisenoChipsHTML() {
   const conteo = {};
-  state.tecnico.forEach((f) => {
+  state.tecnico.filter(tecFilaActiva).forEach((f) => {
     const k = f.diseno || "";
     conteo[k] = (conteo[k] || 0) + 1;
   });
   const claves = Object.keys(conteo)
     .filter(Boolean)
     .sort((a, b) => conteo[b] - conteo[a]);
+  if (!claves.length) return "";
   return (
-    '<div class="filt">🎨<select id="tecDiseno"><option value="">Diseño: todos (' +
-    state.tecnico.length +
-    ")</option>" +
+    '<div class="tec-diseno-chips"><span class="tec-diseno-lbl">Diseño de los cursos activos</span>' +
     claves
       .map(
         (k) =>
-          '<option value="' +
+          '<button class="qchip' +
+          (state.tecDiseno === k ? " on" : "") +
+          '" data-action="tec:diseno" data-diseno="' +
           esc(k) +
-          '"' +
-          (state.tecDiseno === k ? " selected" : "") +
-          ">" +
+          '" title="Ver solo los de ' +
           esc(k) +
-          " (" +
+          '">' +
+          esc(k) +
+          " <b>" +
           conteo[k] +
-          ")</option>",
+          "</b></button>",
       )
       .join("") +
-    "</select></div>"
+    (state.tecDiseno
+      ? '<button class="btn btn-ghost btn-sm" data-action="tec:diseno" data-diseno="">Ver todos</button>'
+      : "") +
+    "</div>"
   );
 }
 // Filtro por categoría real (las que ya existen en alguna fila), mismo
@@ -5729,7 +5766,6 @@ function renderTecnico() {
       : '<div class="tec-top"><div class="filt">🔎<input id="tecSearch" placeholder="Buscar curso o categoría..." value="' +
         esc(state.tecFiltro || "") +
         '"></div>' +
-        tecDisenoFiltroHTML() +
         tecCategoriaFiltroHTML() +
         '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' +
         '<span class="tec-top-n" id="tecTopN">' +
@@ -6205,6 +6241,7 @@ function tecNuevaFilaPara(tarjeta) {
     categoria: (tarjeta.sectores || [])[0] ? sectorName(tarjeta.sectores[0]) || "" : "",
     curso: tarjeta.titulo,
     publicacion: tarjeta.publicadoEl || "",
+    actualizacion: "",
     portada: false,
     mosaico: false,
     evaluacion: false,
@@ -6516,7 +6553,7 @@ function repSectoresHTML() {
           esc(e[0] ? sectorName(e[0]) || e[0] : "Sin sector"),
           e[1],
           max,
-          e[0] ? "var(--coto-blue)" : "var(--ink-soft)",
+          e[0] && SECTORES[e[0]] ? SECTORES[e[0]].cat : "var(--ink-soft)",
           null,
           "rep:sector",
           { sector: e[0] },
@@ -6532,41 +6569,6 @@ function repSectoresHTML() {
 // que el filtro va acá, en el único lugar que mide carga activa.
 function cargaActivaCards() {
   return boardCards().filter((tarjeta) => tarjeta.estado !== "finalizado");
-}
-function repEquipoHTML() {
-  const obj = {};
-  TEAM.forEach((m) => (obj[m.id] = { n: 0, alta: 0, venc: 0 }));
-  cargaActivaCards().forEach((tarjeta) => {
-    const lista = [tarjeta.responsable, ...(tarjeta.asignados || [])].filter(
-      (v, i, arr) => v && arr.indexOf(v) === i,
-    );
-    lista.forEach((id) => {
-      if (!obj[id]) return;
-      obj[id].n++;
-      if (tarjeta.prioridad === "alta") obj[id].alta++;
-      if (isOverdue(tarjeta)) obj[id].venc++;
-    });
-  });
-  const max = Math.max(1, ...TEAM.map((m) => obj[m.id].n));
-  return (
-    '<div class="carga-list">' +
-    TEAM.map((m) => {
-      const v = obj[m.id],
-        sub = [v.alta ? v.alta + " alta" : "", v.venc ? v.venc + " vencida" + (v.venc === 1 ? "" : "s") : ""]
-          .filter(Boolean)
-          .join(" · ");
-      return repBarraRow(
-        esc(m.nombre) + (sub ? ' <span class="carga-rol">· ' + sub + "</span>" : ""),
-        v.n,
-        max,
-        m.color,
-        avatarHTML(m.id),
-        "carga:go",
-        { id: m.id },
-      );
-    }).join("") +
-    "</div>"
-  );
 }
 function repRevisionHTML() {
   const enRevision = boardCards().filter((c) => c.estado === "en-revision" && c.revisionDesde),
@@ -6628,7 +6630,9 @@ function renderReportes() {
     repSeccion("Publicaciones por mes · " + anio, "", repChartHTML()) +
     repSeccion("Cursos por año de publicación", "Todo el historial, incluidos los sin fecha registrada", repChartAnualHTML()) +
     repSeccion("Cursos activos por sector", repCursosActivos().length + " en total", repSectoresHTML()) +
-    repSeccion("Carga y foco del equipo", "Tareas activas del Planner ahora mismo", repEquipoHTML()) +
+    // "Carga y foco del equipo" se sacó de acá: era exactamente el mismo
+    // bloque que ya está en Inicio, mirando los mismos datos. El CSV lo sigue
+    // exportando, que es donde sí sirve tenerlo junto al resto.
     repSeccion("Tiempo en revisión", "Cuánto tarda en salir de revisión", repRevisionHTML()) +
     repFuenteHTML()
   );
@@ -8822,6 +8826,7 @@ document.addEventListener("click", (ev) => {
         categoria: catTec,
         curso: nombreTec,
         publicacion: "",
+        actualizacion: "",
         portada: false,
         mosaico: false,
         evaluacion: false,
@@ -8841,11 +8846,9 @@ document.addEventListener("click", (ev) => {
       // quedar filtrado sin darse cuenta de por qué faltan filas.
       ((state.tecPendiente = state.tecPendiente === el.dataset.cual ? "" : el.dataset.cual || ""), render());
       break;
-    case "tec:datepreset": {
-      const iso4 = el.dataset.preset === "hoy" ? todayISO() : isoOf(addDays(new Date(), 7));
-      (applyTecField(el.dataset.tecId, "publicacion", iso4), renderTecList());
+    case "tec:diseno":
+      ((state.tecDiseno = el.dataset.diseno || ""), render());
       break;
-    }
     case "tec:sort": {
       // Mismo encabezado: ascendente → descendente → sin orden (vuelve a los
       // grupos por categoría). Siempre hay forma de volver al estado original.
@@ -9457,7 +9460,9 @@ function applyTecField(id, campo, value) {
   if (!fila) return;
   // Se guarda ISO, pero solo cuando la fecha ya está completa: mientras se
   // tipea "12/05/20…" no matchea y queda el texto crudo, sin pelearle al cursor.
-  ((fila[campo] = campo === "publicacion" ? tecFechaISO(value) : value), touchTecnico());
+  ((fila[campo] =
+    campo === "publicacion" || campo === "actualizacion" ? tecFechaISO(value) : value),
+    touchTecnico());
   // Espejo hacia la tarjeta del Mapa vinculada: Técnico sigue siendo
   // editable de punta a punta, el nombre solo viaja para el lado del curso.
   if (campo === "curso" && fila.cardId) {
@@ -9488,10 +9493,6 @@ function applyEduField(id, campo, value) {
   }
   if (ev.target.id === "tecSearch") {
     ((state.tecFiltro = ev.target.value), renderTecList());
-    return;
-  }
-  if (ev.target.id === "tecDiseno") {
-    ((state.tecDiseno = ev.target.value), render());
     return;
   }
   if (ev.target.id === "tecCategoria") {
