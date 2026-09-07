@@ -9349,14 +9349,34 @@ function writeBackups(list) {
 function saveBackup(doc, forzar) {
   const list = readBackups(),
     now = Date.now();
+  // Sin conexión la copia local NO es una copia de resguardo: es el único
+  // lugar donde queda el trabajo. Ahí se graba siempre (el espaciado de 15
+  // minutos haría perder lo último que se hizo) y se pisa la entrada anterior
+  // del mismo modo local, para no desalojar el historial previo al corte.
+  if (modoLocal) {
+    const entrada = nuevaEntradaBackup(doc, now);
+    ((entrada.local = true),
+      list.length && list[0].local ? (list[0] = entrada) : list.unshift(entrada),
+      writeBackups(list.slice(0, BACKUP_MAX)));
+    return;
+  }
   if (!forzar && list.length && now - list[0].ts < BACKUP_MIN_GAP) return;
-  (list.unshift({
+  (list.unshift(nuevaEntradaBackup(doc, now)), writeBackups(list.slice(0, BACKUP_MAX)));
+}
+function nuevaEntradaBackup(doc, now) {
+  return {
     ts: now,
     autor: state.user || "",
     tarjetas: doc.cards.length,
     doc: JSON.stringify(doc),
-  }),
-    writeBackups(list.slice(0, BACKUP_MAX)));
+    // Técnico y Archivos Edu Point viven en filas aparte del backend, así que
+    // no venían en la copia local: si el backend se caía, se recuperaba el
+    // tablero pero no la grilla ni los archivos. Van acá (son ~70 KB juntos).
+    // Las fotos de portada no: son 1,3 MB estáticos y no entran en el
+    // localStorage sin desalojar las copias anteriores.
+    tecnico: JSON.stringify(docSnapshotTecnico()),
+    edu: JSON.stringify(docSnapshotEduArchivo()),
+  };
 }
 async function mergeRemoteIntoState() {
   stampEditedCards();
@@ -9391,6 +9411,11 @@ function persist() {
   (clearTimeout(saveTimer), (saveTimer = setTimeout(() => guardarAhora(false), 250)));
 }
 let fotosPendientes = false;
+// Modo "trabajar sin conexión": el backend está caído por un rato largo (una
+// cuota agotada, por ejemplo) y la persona necesita seguir igual. Se trabaja
+// sobre la copia local y NO se escribe al backend, hasta que ella misma decida
+// subir todo. Es explícito a propósito: nadie entra acá sin querer.
+let modoLocal = false;
 // Sello de versión del documento del tablero tal como lo dejamos nosotros (al
 // guardar o al bajarlo). Si el del backend coincide, no hay nada nuevo y el
 // polling no baja nada.
@@ -9423,6 +9448,15 @@ async function guardarAhora(urgente) {
   // La copia local va primero: si el backend falla, el trabajo igual quedó
   // en algún lado y se puede restaurar.
   saveBackup(doc, urgente);
+  if (modoLocal) {
+    // Sin conexión: la copia local YA quedó guardada arriba, que es todo lo
+    // que se puede hacer. No se marca error, porque no lo hay: es el modo que
+    // la persona eligió.
+    ((guardadoPendiente = false), (state.saveError = false), (state.lastSyncTs = Date.now()));
+    (updateSavestate(), showBanner());
+    if (urgente) guardadoUrgenteEnCurso = false;
+    return;
+  }
   try {
     // Lo que acabamos de escribir ya lo tenemos: se anota su sello para que el
     // próximo polling no vuelva a bajar el documento entero por nuestro propio
@@ -14242,6 +14276,58 @@ document.addEventListener("click", (ev) => {
     case "reintentar:conexion":
       location.reload();
       break;
+    // Bajarse la copia local desde la pantalla de error: si el backend está
+    // caído no hay forma de entrar a Ajustes, y es justo cuando más falta hace
+    // tener los datos en la mano.
+    case "local:bajar": {
+      const copia = readBackups()[0];
+      if (!copia) {
+        flash("No hay ninguna copia local en este navegador", true);
+        break;
+      }
+      let docCopia = {};
+      try {
+        docCopia = JSON.parse(copia.doc);
+      } catch (e) {}
+      (download(
+        "cotonetes-copia-local.json",
+        JSON.stringify(
+          {
+            version: 1,
+            exportado: new Date().toISOString(),
+            copiaDel: new Date(copia.ts).toISOString(),
+            cards: docCopia.cards || [],
+            templates: docCopia.templates || {},
+            sectores: docCopia.sectores || {},
+            team: docCopia.team || [],
+            deleted: docCopia.deleted || {},
+            tecnico: copia.tecnico ? JSON.parse(copia.tecnico).tecnico : [],
+            eduArchivo: copia.edu ? JSON.parse(copia.edu).eduArchivo : [],
+          },
+          null,
+          2,
+        ),
+      ),
+        flash("⬇ Copia descargada"));
+      break;
+    }
+    case "local:trabajar": {
+      const copia2 = readBackups()[0];
+      if (!copia2) {
+        flash("No hay ninguna copia local en este navegador", true);
+        break;
+      }
+      confirmar(
+        "Vas a trabajar con la copia del " +
+          fmtBackupDate(copia2.ts) +
+          ", guardando solo en esta computadora. El equipo no ve estos cambios hasta que los subas. ¿Seguir?",
+        () => entrarModoLocal(copia2),
+      );
+      break;
+    }
+    case "local:subir":
+      subirTrabajoLocal();
+      break;
     case "gate:person": {
       const nombre = el.dataset.nombre;
       if (state.appPassHash) {
@@ -15810,17 +15896,96 @@ function mostrarPantallaSinConexion(err) {
         (ultima.tarjetas || 0) +
         " tarjetas. No se pierde: sigue guardada en este navegador.</p>"
       : "") +
-    '<p style="margin-top:16px">' +
-    '<button class="btn primary" data-action="reintentar:conexion">Reintentar</button></p>' +
+    // Cuando el backend se cae por un rato largo (una cuota agotada, por
+    // ejemplo) "reintentar" no alcanza: hace falta poder sacar los datos de acá
+    // y poder seguir trabajando igual. Las dos salidas van en la misma
+    // pantalla, que es donde la persona está parada cuando lo necesita.
+    '<p style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">' +
+    '<button class="btn primary" data-action="reintentar:conexion">Reintentar</button>' +
+    (ultima
+      ? '<button class="btn" data-action="local:bajar">⬇ Bajar mi copia (JSON)</button>' +
+        '<button class="btn" data-action="local:trabajar">✎ Trabajar sin conexión</button>'
+      : "") +
+    "</p>" +
+    (ultima
+      ? '<p style="font-size:12px;opacity:.75;margin-top:2px">"Trabajar sin conexión" abre el tablero con esa copia y guarda todo en esta computadora. El equipo no ve esos cambios hasta que el backend vuelva y los subas.</p>'
+      : "") +
     '<p style="margin-top:14px;font-size:12px;opacity:.7">Detalle técnico: ' +
     esc(String((err && err.message) || err)) +
     "</p></div>";
-  ($("#filters") && ($("#filters").innerHTML = ""), (state.ready = false));
+  // La pantalla de ingreso se esconde: sin backend no hay clave que validar
+  // (el hash vive en el documento que no se pudo leer), así que dejarla puesta
+  // solo tapa los botones de "bajar mi copia" y "trabajar sin conexión" — y
+  // quedarse afuera de la propia copia local es peor que una barrera que, sin
+  // datos que mostrar, no protege nada.
+  ($("#gate") && $("#gate").classList.add("hidden"),
+    $("#filters") && ($("#filters").innerHTML = ""),
+    (state.ready = false));
+}
+// Abre el tablero con la copia local y corta todo trato con el backend hasta
+// que la persona decida subir. Es el mismo camino que "restaurar una copia",
+// pero sin escribir nada afuera.
+function entrarModoLocal(copia) {
+  let doc;
+  try {
+    doc = JSON.parse(copia.doc);
+  } catch (e) {
+    flash("La copia local está dañada", true);
+    return;
+  }
+  ((modoLocal = true),
+    (state.cards = doc.cards || []),
+    (state.customTpl = doc.templates || {}),
+    (state.deleted = doc.deleted || {}));
+  aplicarSectores(doc.sectores);
+  (Array.isArray(doc.team) && doc.team.length && ((TEAM.length = 0), doc.team.forEach((m) => TEAM.push(m))),
+    doc.agenda && typeof doc.agenda === "object" && (state.agenda = doc.agenda),
+    typeof doc.appPassHash === "string" && (state.appPassHash = doc.appPassHash));
+  // Técnico y Edu Point solo están en las copias hechas desde esta versión en
+  // adelante; en una copia vieja no vienen y las grillas quedan vacías, que es
+  // preferible a mostrar la semilla del Excel como si fueran sus datos.
+  try {
+    if (copia.tecnico) state.tecnico = JSON.parse(copia.tecnico).tecnico || [];
+    if (copia.edu) state.eduArchivo = JSON.parse(copia.edu).eduArchivo || [];
+  } catch (e) {}
+  (ensureFraseDay(),
+    ensureTeam(),
+    injectSectorStyles(),
+    renderGateTeam(),
+    rememberFingerprints(state.cards),
+    (state.connOk = true),
+    (state.saveError = false),
+    (state.ready = true),
+    (state.view = "kanban"),
+    updateGatePass(),
+    render(),
+    showBanner(),
+    flash("✎ Trabajando sin conexión — se guarda en esta computadora"));
+}
+// Sale del modo local: intenta escribir TODO lo que se hizo al backend. Si
+// funciona, se recarga para volver al flujo normal; si no, se sigue como
+// estaba y no se pierde nada.
+async function subirTrabajoLocal() {
+  flash("Subiendo…");
+  try {
+    (sacarFotosDeLasTarjetas(), await Store.save(docSnapshotFotos(), false, FOTOS_FILA));
+    await Store.save(docSnapshotTecnico(), false, TEC_FILA);
+    await Store.save(docSnapshotEduArchivo(), false, EDU_FILA);
+    await Store.save(docSnapshot());
+    ((modoLocal = false), flash("✅ Subido — vuelve el trabajo compartido"));
+    setTimeout(() => location.reload(), 900);
+  } catch (err) {
+    flash("El backend sigue sin responder. Seguís trabajando local, no se perdió nada.", true);
+  }
 }
 function showBanner() {
   const val = Store.mode();
   let val2;
-  if (val === "supabase")
+  if (modoLocal)
+    val2 =
+      '<div class="note warn">✎ <b>Trabajando sin conexión.</b> Todo se guarda en esta computadora; el equipo todavía no lo ve. ' +
+      '<button class="btn btn-sm" data-action="local:subir" style="margin-left:6px">Subir al backend</button></div>';
+  else if (val === "supabase")
     val2 =
       '<div class="note" style="background:var(--ok-soft);border-color:color-mix(in srgb, var(--ok) 40%, transparent);color:var(--ok)">🟢 <b>Equipo conectado (Supabase)</b> — lo que carga cada uno lo ven todos en vivo. <span id="syncAgo" class="sync-ago"></span></div>';
   else {
