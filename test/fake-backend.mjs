@@ -32,6 +32,17 @@ export function startFakeBackend(port = 8099) {
       if (req.method === "GET") {
         const id = url.searchParams.get("id")?.replace(/^eq\./, "");
         const row = id ? rows.get(id) : null;
+        // PostgREST sabe devolver una sola clave del JSON ("select=data->>rev")
+        // en vez de la columna entera. La app se apoya en eso para preguntar
+        // "¿cambió algo?" gastando unos pocos bytes en vez de bajar todo el
+        // documento, así que el mock tiene que respetarlo o la prueba de
+        // consumo mide cualquier cosa.
+        const select = url.searchParams.get("select") || "data";
+        const m = /^data->>?(.+)$/.exec(select);
+        if (m) {
+          const clave = m[1];
+          return res.end(JSON.stringify(row ? [{ [clave]: row[clave] ?? null }] : []));
+        }
         return res.end(JSON.stringify(row ? [{ data: row }] : []));
       }
       if (req.method === "POST") {

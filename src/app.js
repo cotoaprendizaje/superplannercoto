@@ -3448,6 +3448,11 @@ const BACKEND = {
       async save(obj, urgente, fila) {
         fila = fila || BACKEND.fila;
         const key = fila === BACKEND.fila ? KEY : KEY + "." + fila;
+        // Sello de versión: lo lee el polling con Store.rev() para saber, en
+        // unos pocos bytes, si hay algo nuevo que bajar. Se devuelve al final
+        // para que quien guardó pueda anotarlo como "ya lo tengo".
+        const rev = String(Date.now()) + "." + uid();
+        obj = Object.assign({}, obj, { rev });
         const json = JSON.stringify(obj);
         if (useSupabase()) {
           // Guardado urgente (la pestaña se está por cerrar): un solo intento
@@ -3462,12 +3467,12 @@ const BACKEND = {
               ((modo = "error"), (memoria[key] = json));
               throw err;
             }
-            return;
+            return rev;
           }
           let ultimoError = null;
           for (let intento = 0; intento < 3; intento++) {
             try {
-              return ((await escribirEnSupabase(fila, obj)), (modo = "supabase"), undefined);
+              return ((await escribirEnSupabase(fila, obj)), (modo = "supabase"), rev);
             } catch (err) {
               ultimoError = err;
               if (intento < 2) await new Promise((r) => setTimeout(r, 400 * (intento + 1)));
@@ -3486,13 +3491,42 @@ const BACKEND = {
         fila = fila || BACKEND.fila;
         return useSupabase() ? await leerDeSupabase(fila) : null;
       },
+      // Devuelve SOLO el sello de versión de una fila (unas pocas decenas de
+      // bytes) en vez del documento entero. Es lo que hace el polling: si el
+      // sello no cambió, no hay nada nuevo y no hace falta bajar nada más.
+      // Si el backend no entiende la consulta se devuelve null y quien llama
+      // vuelve al comportamiento viejo (bajar todo), que es correcto aunque
+      // caro.
+      async rev(fila) {
+        if (!useSupabase()) return null;
+        try {
+          const url =
+              BACKEND.supabaseUrl +
+              "/rest/v1/" +
+              BACKEND.tabla +
+              "?id=eq." +
+              encodeURIComponent(fila || BACKEND.fila) +
+              "&select=data->>rev",
+            resp = await fetch(url, { headers: cabeceras(), cache: "no-store" });
+          if (!resp.ok) return null;
+          const datos = await resp.json();
+          return datos && datos[0] ? datos[0].rev || null : null;
+        } catch (e) {
+          return null;
+        }
+      },
     };
   })(),
   TEC_FILA = BACKEND.fila + "-tecnico",
   // Los Archivos Edu Point también viven en su propia fila, mismo motivo que
   // Técnico: no engordar el documento del tablero con 187 filas que casi
   // nunca cambian.
-  EDU_FILA = BACKEND.fila + "-eduarchivo";
+  EDU_FILA = BACKEND.fila + "-eduarchivo",
+  // Y las fotos de portada del catálogo, que son lo más pesado de todo: 83
+  // imágenes en base64 sumaban 1,35 MB DENTRO del documento del tablero, y ese
+  // documento se baja entero cada vez que alguien toca algo. Las fotos no
+  // cambian nunca, así que viven aparte y se bajan una sola vez por sesión.
+  FOTOS_FILA = BACKEND.fila + "-fotos";
 const TOMBSTONE_TTL = 30 * 24 * 60 * 60 * 1000;
 function cardFingerprint(card) {
   const { updatedAt, ...rest } = card;
@@ -3585,9 +3619,40 @@ function mergeCards(localCards, remoteCards, localDeleted, remoteDeleted) {
     deleted: pruneTombstones(deleted),
   };
 }
+// La foto de portada de una tarjeta: primero el mapa aparte, y si no está
+// (tarjeta recién ingestada, todavía sin mover) lo que quedó en la ficha.
+function cardImagen(tarjeta) {
+  return state.fotos[tarjeta.id] || ((tarjeta.catalogo || {}).imagen || "");
+}
+// Toda foto en base64 que aparezca dentro de una tarjeta se muda al mapa de
+// fotos. Corre antes de cada guardado, así el documento del tablero nunca
+// vuelve a engordar aunque se ingeste un catálogo nuevo.
+function sacarFotosDeLasTarjetas() {
+  let movidas = 0;
+  state.cards.forEach((tarjeta) => {
+    const img = (tarjeta.catalogo || {}).imagen || "";
+    if (img.slice(0, 5) !== "data:") return;
+    if (!state.fotos[tarjeta.id]) ((state.fotos[tarjeta.id] = img), movidas++);
+  });
+  return movidas;
+}
+// El documento que se sincroniza va SIN las fotos: se reemplazan por vacío en
+// una copia, sin tocar el estado en memoria (la pantalla las sigue mostrando).
+function cardsSinFotos() {
+  return state.cards.map((tarjeta) => {
+    const img = (tarjeta.catalogo || {}).imagen || "";
+    if (img.slice(0, 5) !== "data:") return tarjeta;
+    return Object.assign({}, tarjeta, {
+      catalogo: Object.assign({}, tarjeta.catalogo, { imagen: "" }),
+    });
+  });
+}
+function docSnapshotFotos() {
+  return { fotos: state.fotos };
+}
 function docSnapshot() {
   return {
-    cards: state.cards,
+    cards: cardsSinFotos(),
     templates: state.customTpl,
     sectores: SECTORES,
     team: TEAM,
@@ -3653,6 +3718,7 @@ async function mergeRemoteIntoState() {
   stampEditedCards();
   const remote = await Store.remote();
   if (!remote || !Array.isArray(remote.cards)) return [];
+  if (remote.rev) revConocida = remote.rev;
   const before = new Map(state.cards.map((c) => [c.id, cardFingerprint(c)])),
     merged = mergeCards(state.cards, remote.cards, state.deleted, remote.deleted || {});
   ((state.cards = merged.cards), (state.deleted = merged.deleted));
@@ -3680,6 +3746,11 @@ function persist() {
   ((guardadoPendiente = true), (state.saveError = false), updateSavestate());
   (clearTimeout(saveTimer), (saveTimer = setTimeout(() => guardarAhora(false), 250)));
 }
+let fotosPendientes = false;
+// Sello de versión del documento del tablero tal como lo dejamos nosotros (al
+// guardar o al bajarlo). Si el del backend coincide, no hay nada nuevo y el
+// polling no baja nada.
+let revConocida = null;
 async function guardarAhora(urgente) {
   if (urgente) {
     if (guardadoUrgenteEnCurso) return;
@@ -3695,12 +3766,25 @@ async function guardarAhora(urgente) {
       await mergeRemoteIntoState();
     } catch (e) {}
   }
+  // Las fotos van a su propia fila y se escriben ANTES que el tablero: si esto
+  // fallara, las imágenes siguen dentro de las tarjetas y no se pierde nada.
+  if (sacarFotosDeLasTarjetas() || fotosPendientes) {
+    try {
+      (await Store.save(docSnapshotFotos(), urgente, FOTOS_FILA), (fotosPendientes = false));
+    } catch (e) {
+      console.error("No se pudieron guardar las fotos de portada:", e);
+    }
+  }
   const doc = docSnapshot();
   // La copia local va primero: si el backend falla, el trabajo igual quedó
   // en algún lado y se puede restaurar.
   saveBackup(doc, urgente);
   try {
-    (await Store.save(doc, urgente), rememberFingerprints(state.cards));
+    // Lo que acabamos de escribir ya lo tenemos: se anota su sello para que el
+    // próximo polling no vuelva a bajar el documento entero por nuestro propio
+    // guardado.
+    const revEscrita = await Store.save(doc, urgente);
+    (rememberFingerprints(state.cards), revEscrita && (revConocida = revEscrita));
     ((state.saveError = false), (state.connOk = true), (guardadoPendiente = false), (state.lastSyncTs = Date.now()));
   } catch (err) {
     (console.error("No se pudo guardar:", err), (state.saveError = true), saveBackup(doc, true));
@@ -3822,6 +3906,8 @@ const state = {
   tecnico: [],
   deletedTecnico: {},
   eduArchivo: [],
+  // Fotos de portada, por id de tarjeta. Viven en su propia fila del backend.
+  fotos: {},
   deletedEduArchivo: {},
   tecFiltro: "",
   // Filtros y orden de Seguimiento técnico. Son de pantalla, no de datos: no
@@ -6971,7 +7057,7 @@ function sectionCursos() {
 }
 function cursoCard(tarjeta) {
   const val = primaryCat(tarjeta),
-    obj = tarjeta.catalogo || {};
+    obj = Object.assign({}, tarjeta.catalogo || {}, { imagen: cardImagen(tarjeta) });
   return (
     '<article class="curso" data-cat="' +
     val +
@@ -7961,8 +8047,12 @@ function renderPanel() {
   }
   const html = isCurso(tarjeta)
       ? '<details class="acc sec-acc" data-acc="catalogo"><summary class="sub">Ficha de catálogo<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary><div class="acc-body">\n    <div class="fld"><label>Imagen de portada (URL)</label><input value="' +
-        esc(tarjeta.catalogo.imagen) +
-        '" data-field="cat:imagen" placeholder="https://..."></div>\n    <div class="fld"><label>Link Moodle</label><input value="' +
+        // Las fotos en base64 viven aparte y son ilegibles en un input: se
+        // muestra un aviso en vez de volcar 16 KB de texto en la caja.
+        esc(cardImagen(tarjeta).slice(0, 5) === "data:" ? "" : cardImagen(tarjeta)) +
+        '" data-field="cat:imagen" placeholder="' +
+        (cardImagen(tarjeta).slice(0, 5) === "data:" ? "Foto cargada desde el catálogo — pegá una URL para reemplazarla" : "https://...") +
+        '"></div>\n    <div class="fld"><label>Link Moodle</label><input value="' +
         esc(tarjeta.linkMoodle) +
         '" data-field="linkMoodle" placeholder="https://..."></div>\n    <div class="fld"><label>Bajada</label><input value="' +
         esc(tarjeta.catalogo.bajada) +
@@ -8433,6 +8523,9 @@ function applyField(tarjeta, val, el) {
   const value = el.type === "checkbox" ? el.checked : el.value;
   if (val.startsWith("cat:")) {
     tarjeta.catalogo[val.slice(4)] = value;
+    // Una URL escrita a mano reemplaza a la foto que venía del catálogo: si no
+    // se saca del mapa de fotos, la vieja seguiría ganando al mostrarse.
+    if (val === "cat:imagen" && value) ((delete state.fotos[tarjeta.id]), (fotosPendientes = true));
     touch();
     return;
   }
@@ -9933,6 +10026,9 @@ function doDup(id) {
     (tarjeta.publicadoEl = null),
     tarjeta.checklist.forEach((item) => (item.id = uid())),
     (tarjeta.fases || []).forEach((arg) => (arg.id = uid())),
+    // La portada está en el mapa de fotos, indexada por id: la copia tiene id
+    // nuevo, así que hay que copiarla también o queda sin imagen.
+    state.fotos[tarjeta2.id] && ((state.fotos[tarjeta.id] = state.fotos[tarjeta2.id]), (fotosPendientes = true)),
     state.cards.push(tarjeta),
     touch(),
     flash("⧉ Tarjeta duplicada"),
@@ -10937,6 +11033,9 @@ function exportJSON() {
         templates: state.customTpl,
         sectores: SECTORES,
         team: TEAM,
+        // Las portadas ya no viven dentro de las tarjetas (ver FOTOS_FILA),
+        // así que van aparte para que el archivo exportado se baste solo.
+        fotos: state.fotos,
       },
       null,
       2,
@@ -10997,6 +11096,8 @@ function runImport() {
     (dropCards(state.cards.filter((c) => !restoredIds.has(c.id)).map((c) => c.id)),
       (state.cards = tarjeta.cards),
       (state.customTpl = tarjeta.templates || {}));
+    if (tarjeta.fotos && typeof tarjeta.fotos === "object")
+      ((state.fotos = Object.assign({}, state.fotos, tarjeta.fotos)), (fotosPendientes = true));
     aplicarSectores(tarjeta.sectores);
     (Array.isArray(tarjeta.team) &&
       tarjeta.team.length &&
@@ -11092,6 +11193,9 @@ async function boot() {
   try {
     const tarjeta = await Store.load();
     if (tarjeta && Array.isArray(tarjeta.cards)) {
+      // El documento recién bajado ya es la última versión: se anota su sello
+      // para que el primer polling no lo vuelva a pedir entero.
+      if (tarjeta.rev) revConocida = tarjeta.rev;
       ((state.cards = tarjeta.cards), (state.customTpl = tarjeta.templates || {}));
       if (tarjeta.deleted && typeof tarjeta.deleted === "object")
         state.deleted = pruneTombstones(tarjeta.deleted);
@@ -11127,16 +11231,23 @@ async function boot() {
           } catch (err) {}
       }
     } else {
+      // Primer arranque contra un backend vacío. Este guardado escribe directo
+      // (no pasa por guardarAhora), así que tiene que sacar las fotos a mano:
+      // si no, el documento del tablero nace con 1,35 MB de imágenes adentro y
+      // el polling las arrastra para siempre.
       (ensureFraseDay(),
         (state.cards = seedCards()),
         ingestCatalogo(CURSOS, {}),
-        await Store.save({
-          cards: state.cards,
-          templates: state.customTpl,
-          sectores: SECTORES,
-          team: TEAM,
-          cotofrase: state.cotofrase,
-        }));
+        sacarFotosDeLasTarjetas(),
+        await Store.save(docSnapshotFotos(), false, FOTOS_FILA),
+        (revConocida =
+          (await Store.save({
+            cards: cardsSinFotos(),
+            templates: state.customTpl,
+            sectores: SECTORES,
+            team: TEAM,
+            cotofrase: state.cotofrase,
+          })) || null));
     }
   } catch (err2) {
     console.error(err2);
@@ -11172,6 +11283,16 @@ async function boot() {
   } catch (errEdu) {
     console.error(errEdu);
   }
+  // Fotos de portada: se bajan una sola vez, de su propia fila. Si el tablero
+  // todavía las trae adentro (documento guardado por una versión anterior), se
+  // mudan acá y quedan marcadas para escribirse en el próximo guardado.
+  try {
+    const fotosDoc = await Store.load(FOTOS_FILA);
+    if (fotosDoc && fotosDoc.fotos && typeof fotosDoc.fotos === "object") state.fotos = fotosDoc.fotos;
+  } catch (errFotos) {
+    console.error(errFotos);
+  }
+  if (sacarFotosDeLasTarjetas()) fotosPendientes = true;
   (state.cards.forEach((tarjeta2) => {
     ((tarjeta2.ficha = tarjeta2.ficha || {
       url: "",
@@ -11211,12 +11332,33 @@ async function boot() {
   } catch (err3) {}
   startPolling();
 }
+async function hayNovedades() {
+  const rev = await Store.rev();
+  // Sin sello (backend que no entiende la consulta, o documento guardado por
+  // una versión vieja de la app) no se puede descartar nada: se baja igual.
+  if (!rev) return true;
+  if (rev === revConocida) return false;
+  revConocida = rev;
+  return true;
+}
 function startPolling() {
   if (!useSupabase()) return;
   state.lastSyncTs = Date.now();
-  setInterval(async () => {
+  const tick = async () => {
     if (state.connOk === false) return;
+    // Pestaña en segundo plano: nadie está mirando, no hay razón para seguir
+    // preguntando. Al volver se hace un chequeo inmediato (ver más abajo).
+    if (typeof document !== "undefined" && document.hidden) return;
     try {
+      // Primero el sello de versión: unos pocos bytes. El documento entero
+      // (que con el catálogo cargado pesa decenas de KB) se baja SOLO si
+      // cambió. Antes se bajaba completo cada 5 segundos, mirara alguien o
+      // no, y eso solo era ~7 GB por día por pestaña abierta: se comía la
+      // cuota de salida de Supabase en pocos días.
+      if (!(await hayNovedades())) {
+        state.lastSyncTs = Date.now();
+        return;
+      }
       const editing = $("#panel").classList.contains("open") || !$("#modal").classList.contains("hidden"),
         changed = await mergeRemoteIntoState();
       state.lastSyncTs = Date.now();
@@ -11228,7 +11370,11 @@ function startPolling() {
       // guardado igual reintenta en segundo plano); no hace falta avisar
       // por un hipo puntual de la red.
     }
-  }, BACKEND.pollMs);
+  };
+  (setInterval(tick, BACKEND.pollMs),
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) tick();
+    }));
 }
 boot();
 if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
