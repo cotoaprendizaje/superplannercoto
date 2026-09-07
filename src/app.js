@@ -3330,8 +3330,15 @@ function primaryCat(tarjeta) {
     : "tbd";
 }
 const BACKEND = {
-    supabaseUrl: "https://cxttmjudynfegkjyanhs.supabase.co",
-    supabaseKey: "sb_publishable_bKHAyRQKo2RtHCWfylTRew_PCH1MJaX",
+    // Proyecto nuevo (septiembre 2026): el anterior quedó restringido por
+    // agotar la cuota de salida del plan gratuito. La causa real está
+    // corregida — ver FOTOS_FILA y el chequeo de versión del polling.
+    // Acá va SOLO la clave publishable: está pensada para viajar en el
+    // navegador y termina embebida en el index.html que se despliega. La
+    // clave secreta (sb_secret_…) nunca va en este archivo — saltea las
+    // políticas RLS y daría acceso total a cualquiera que abra la página.
+    supabaseUrl: "https://lhxngngmrsanlyqbsvcw.supabase.co",
+    supabaseKey: "sb_publishable_SRJIUtzxxqVP-nig6tg8sA_wHQiSlNn",
     tabla: "planner",
     fila: "coto",
     pollMs: 5000,
