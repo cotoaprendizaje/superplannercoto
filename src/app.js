@@ -4285,7 +4285,7 @@ function backfillCatalogoImages() {
     if (c.imagen) imagenPorTitulo.set(String(c.titulo || "").trim().toLowerCase(), c.imagen);
   });
   state.cards.forEach((tarjeta) => {
-    if (!isCurso(tarjeta) || !tarjeta.catalogo || tarjeta.catalogo.imagen) return;
+    if (!isCurso(tarjeta) || !tarjeta.catalogo || cardImagen(tarjeta)) return;
     const imagen = imagenPorTitulo.get(String(tarjeta.titulo || "").trim().toLowerCase());
     if (imagen) ((tarjeta.catalogo.imagen = imagen), n++);
   });
@@ -11373,6 +11373,16 @@ async function boot() {
     if (footYear) footYear.textContent = new Date().getFullYear();
   }
   $("#app").classList.remove("hidden");
+  // Fotos de portada: se bajan de su propia fila y ANTES que el tablero. El
+  // orden importa: el arranque puede terminar guardando (ver más abajo), y si
+  // eso pasara con state.fotos todavía vacío, ese guardado pisaría las
+  // portadas ya guardadas en vez de sumarse a ellas.
+  try {
+    const fotosDoc = await Store.load(FOTOS_FILA);
+    if (fotosDoc && fotosDoc.fotos && typeof fotosDoc.fotos === "object") state.fotos = fotosDoc.fotos;
+  } catch (errFotos) {
+    console.error(errFotos);
+  }
   try {
     const tarjeta = await Store.load();
     if (tarjeta && Array.isArray(tarjeta.cards)) {
@@ -11402,15 +11412,17 @@ async function boot() {
         const val = ingestCatalogo(CURSOS, {}) + backfillCatalogoImages();
         if (val > 0)
           try {
-            await Store.save({
-              cards: state.cards,
-              templates: state.customTpl,
-              sectores: SECTORES,
-              team: TEAM,
-              appPassHash: state.appPassHash,
-              agenda: state.agenda,
-              cotofrase: state.cotofrase,
-            });
+            // Este guardado escribe directo, sin pasar por guardarAhora(), así
+            // que tiene que sacar las fotos a mano igual que él. Sin esto el
+            // documento del tablero volvía a engordar en cada arranque:
+            // backfillCatalogoImages() rellena catalogo.imagen con el base64
+            // del catálogo justamente porque el guardado anterior lo dejó
+            // vacío, y guardar state.cards crudo lo devolvía a la fila del
+            // tablero — 1,4 MB que el polling después arrastra para siempre.
+            // Es la fuga que agotó la cuota de salida del proyecto anterior.
+            if (sacarFotosDeLasTarjetas()) await Store.save(docSnapshotFotos(), false, FOTOS_FILA);
+            const revEscrita = await Store.save(docSnapshot());
+            if (revEscrita) revConocida = revEscrita;
           } catch (err) {}
       }
     } else {
@@ -11465,15 +11477,6 @@ async function boot() {
       state.deletedEduArchivo = pruneTombstones(eduDoc.deletedEduArchivo);
   } catch (errEdu) {
     console.error(errEdu);
-  }
-  // Fotos de portada: se bajan una sola vez, de su propia fila. Si el tablero
-  // todavía las trae adentro (documento guardado por una versión anterior), se
-  // mudan acá y quedan marcadas para escribirse en el próximo guardado.
-  try {
-    const fotosDoc = await Store.load(FOTOS_FILA);
-    if (fotosDoc && fotosDoc.fotos && typeof fotosDoc.fotos === "object") state.fotos = fotosDoc.fotos;
-  } catch (errFotos) {
-    console.error(errFotos);
   }
   if (sacarFotosDeLasTarjetas()) fotosPendientes = true;
   (state.cards.forEach((tarjeta2) => {
