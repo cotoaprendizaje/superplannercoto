@@ -16842,9 +16842,12 @@ function exportJSON() {
         templates: state.customTpl,
         sectores: SECTORES,
         team: TEAM,
-        // Las portadas ya no viven dentro de las tarjetas (ver FOTOS_FILA),
-        // así que van aparte para que el archivo exportado se baste solo.
+        // Lo que vive en filas separadas del backend (portadas, Seguimiento
+        // técnico y Archivos Edu Point) va aparte, para que el archivo
+        // exportado se baste solo y sirva para mudar todo de proyecto.
         fotos: state.fotos,
+        tecnico: state.tecnico,
+        eduArchivo: state.eduArchivo,
       },
       null,
       2,
@@ -16907,6 +16910,14 @@ function runImport() {
       (state.customTpl = tarjeta.templates || {}));
     if (tarjeta.fotos && typeof tarjeta.fotos === "object")
       ((state.fotos = Object.assign({}, state.fotos, tarjeta.fotos)), (fotosPendientes = true));
+    // Seguimiento técnico y Archivos Edu Point viven en filas propias del
+    // backend: sin esto, importar un respaldo devolvía el tablero pero dejaba
+    // las dos grillas como estaban — que es justo lo que hace falta al mudar
+    // los datos a otro proyecto.
+    if (Array.isArray(tarjeta.tecnico) && tarjeta.tecnico.length)
+      ((state.tecnico = tarjeta.tecnico), touchTecnico());
+    if (Array.isArray(tarjeta.eduArchivo) && tarjeta.eduArchivo.length)
+      ((state.eduArchivo = tarjeta.eduArchivo), touchEduArchivo());
     aplicarSectores(tarjeta.sectores);
     (Array.isArray(tarjeta.team) &&
       tarjeta.team.length &&
