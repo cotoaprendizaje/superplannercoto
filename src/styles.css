@@ -756,7 +756,7 @@ button {
   border: none;
   background: 0 0;
   color: var(--ink-soft);
-  padding: 7px 14px;
+  padding: 7px 11px;
   border-radius: var(--pill);
   font-size: 13px;
   font-weight: 600;
@@ -3635,8 +3635,12 @@ html {
   color: var(--chrome-ink);
   border-bottom: 1px solid var(--chrome-line);
   box-shadow: var(--shadow);
-  padding: 11px 22px;
-  gap: 16px;
+  /* Los cuatro bloques (marca, pestañas, buscador, herramientas) sumaban unos
+     40px más que el ancho de una pantalla de 1500px y las herramientas caían a
+     un segundo renglón. Se recorta el aire de los bordes y de entre bloques, y
+     las pestañas se aprietan un poco: alcanza para que entre todo en una fila. */
+  padding: 11px 16px;
+  gap: 10px;
 }
 .brand-t {
   color: var(--chrome-ink);
@@ -4226,7 +4230,7 @@ html {
 /* Antes de que la topbar se parta en dos filas, el buscador se achica a la
    lupa sola: es lo primero que sobra cuando falta ancho, porque el atajo
    (Ctrl+K o "/") sigue funcionando igual y las pestañas no son negociables. */
-@media (max-width: 1320px) {
+@media (max-width: 1440px) {
   .search-promo {
     min-width: 0;
     width: 36px;
@@ -5499,4 +5503,47 @@ html {
   opacity: 0.65;
   cursor: default;
   transform: none;
+}
+
+/* Casilla "Administra" en la lista de equipo de Ajustes. Va junto al email,
+   en la misma fila, sin robarle ancho al campo. */
+.set-admin {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.set-admin input {
+  width: auto;
+  margin: 0;
+  cursor: pointer;
+}
+
+/* Nombre de la app dentro de la píldora del logo, en la barra superior. Ocupa
+   el lugar que dejó el logo de la Dirección de RRHH y ahorra el hueco que
+   había entre la píldora y el título suelto. */
+.logo-t {
+  font-family: var(--titulo);
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #fff;
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  .logo-t {
+    font-size: 14px;
+  }
+}
+@media (max-width: 480px) {
+  .logo-t {
+    display: none;
+  }
+  .logo-lockup .logo-div {
+    display: none;
+  }
 }

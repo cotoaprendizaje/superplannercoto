@@ -1,13 +1,19 @@
 "use strict";
 const LOGO_COTO = "@@ASSET:assets/logo-coto.png@@",
   LOGO_APR = "@@ASSET:assets/logo-aprendizaje.png@@";
-function logoLockup() {
+function logoLockup(conTitulo) {
+  // En la barra superior el espacio es lo que escasea: ahí el logo de la
+  // Dirección de RRHH sale y en su lugar entra el nombre de la app, dentro de
+  // la misma píldora. La marca institucional completa sigue en la pantalla de
+  // ingreso y en el pie, que es donde corresponde y donde sobra lugar.
   return (
     '<span class="logo-lockup"><img class="logo-img" src="' +
     LOGO_COTO +
-    '" alt="COTO CICSA"><span class="logo-div"></span><img class="logo-img" src="' +
-    LOGO_APR +
-    '" alt="Aprendizaje"></span>'
+    '" alt="COTO CICSA"><span class="logo-div"></span>' +
+    (conTitulo
+      ? '<span class="logo-t">Cotonetes Forever</span>'
+      : '<img class="logo-img" src="' + LOGO_APR + '" alt="Aprendizaje">') +
+    "</span>"
   );
 }
 const EDU_DB = [
@@ -1738,6 +1744,7 @@ const EDU_DB = [
       nombre: "Dami",
       rol: "Líder e-Learning",
       color: "#006EA0",
+      admin: true,
     },
     {
       id: "vane",
@@ -1777,7 +1784,16 @@ function ensureTeam() {
   TEAM.forEach((miembro2) => {
     if (miembro2.email == null) miembro2.email = "";
   });
+  // Quién administra es un dato del equipo, sincronizado como el resto. Un
+  // equipo guardado antes de que esto existiera no tiene a nadie marcado: ahí
+  // queda Dami, que es quien pidió administrar la app, y desde Ajustes ella
+  // reparte el permiso. De ahí en más manda el dato y no esta constante.
+  if (!TEAM.some((miembro2) => miembro2.admin)) {
+    const elegida = TEAM.find((miembro2) => miembro2.id === ADMIN_POR_DEFECTO) || TEAM[0];
+    if (elegida) elegida.admin = true;
+  }
 }
+const ADMIN_POR_DEFECTO = "dami";
 const ESTADOS = [
     {
       id: "pendiente",
@@ -3762,11 +3778,11 @@ async function mergeRemoteIntoState() {
     merged = mergeCards(state.cards, remote.cards, state.deleted, remote.deleted || {});
   ((state.cards = merged.cards), (state.deleted = merged.deleted));
   if (remote.templates) state.customTpl = Object.assign({}, remote.templates, state.customTpl);
-  if (!importeManda) {
+  if (!localManda) {
     aplicarSectores(remote.sectores);
     Array.isArray(remote.team) &&
       remote.team.length &&
-      ((TEAM.length = 0), remote.team.forEach((m) => TEAM.push(m)));
+      ((TEAM.length = 0), remote.team.forEach((m) => TEAM.push(m)), ensureTeam());
   }
   if (remote.agenda && typeof remote.agenda === "object")
     state.agenda = Object.assign({}, remote.agenda, state.agenda);
@@ -3788,12 +3804,13 @@ function persist() {
   (clearTimeout(saveTimer), (saveTimer = setTimeout(() => guardarAhora(false), 250)));
 }
 let fotosPendientes = false;
-// Un backup recién importado es la fuente de verdad hasta que se escriba. Sin
-// esto, el primer guardado releía lo remoto y dejaba ganar SUS sectores y SU
-// equipo: la importación quedaba a medias, con las tarjetas nuevas y los
-// sectores viejos. Se notaba justo al mudar los datos a un proyecto recién
-// creado, donde lo remoto era la semilla.
-let importeManda = false;
+// Sectores y equipo no se mezclan elemento por elemento como las tarjetas, que
+// llevan su propio updatedAt: en cada guardado se releía lo remoto y lo remoto
+// ganaba siempre. Con eso, un cambio local se deshacía solo — marcar a alguien
+// como administrador, agregar un sector, o importar un backup entero: entraban
+// las tarjetas nuevas pero los sectores volvían a ser los viejos. Mientras este
+// flag está prendido manda el cambio local, y se apaga cuando quedó escrito.
+let localManda = false;
 // Modo "trabajar sin conexión": el backend está caído por un rato largo (una
 // cuota agotada, por ejemplo) y la persona necesita seguir igual. Se trabaja
 // sobre la copia local y NO se escribe al backend, hasta que ella misma decida
@@ -3848,7 +3865,7 @@ async function guardarAhora(urgente) {
     // próximo polling no vuelva a bajar el documento entero por nuestro propio
     // guardado.
     const revEscrita = await Store.save(doc, urgente);
-    (rememberFingerprints(state.cards), revEscrita && (revConocida = revEscrita), (importeManda = false));
+    (rememberFingerprints(state.cards), revEscrita && (revConocida = revEscrita), (localManda = false));
     ((state.saveError = false), (state.connOk = true), (guardadoPendiente = false), (state.lastSyncTs = Date.now()));
   } catch (err) {
     (console.error("No se pudo guardar:", err), (state.saveError = true), saveBackup(doc, true));
@@ -4565,7 +4582,7 @@ function render() {
     mostrarPantallaSinConexion(errorConexion);
     return;
   }
-  (renderFilters(), renderView(), updateBell());
+  (renderFilters(), renderView(), updateBell(), aplicarPermisos());
 }
 // Si el re-render es de la MISMA vista (por ej. editar una tarjeta del
 // Planner sin cambiar de pestaña), el documento entero se vuelve a armar
@@ -8638,6 +8655,27 @@ function applyField(tarjeta, val, el) {
   }
   touch();
 }
+// Quién puede entrar a Ajustes. Es un permiso de la app, no del backend: quien
+// sepa abrir la consola del navegador lo saltea. Sirve para lo que realmente
+// pasa — que alguien toque sin querer algo que le cambia el tablero a todo el
+// equipo (borrar un sector, reiniciar, importar un backup encima) — no para
+// frenar a alguien decidido. Ver SEGURIDAD.md.
+function esAdmin() {
+  if (!state.userId) return false;
+  const yo = TEAM.find((miembro) => miembro.id === state.userId);
+  if (!yo) return false;
+  return !!yo.admin;
+}
+// Las acciones sensibles se cortan acá y no solo escondiendo el botón: así
+// tampoco entran por la paleta de comandos ni por un atajo de teclado.
+function accionSensible(accion) {
+  if (accion === "data:csv") return false; // exportar lo que uno ve no le hace nada a nadie
+  return /^(settings:|set:|data:|ingest:)/.test(accion);
+}
+function aplicarPermisos() {
+  const item = document.querySelector('#userMenu [data-action="settings:open"]');
+  if (item) item.classList.toggle("hidden", !esAdmin());
+}
 const STRUCTURAL = ["tipo", "estado", "responsable", "inicio", "fin", "prioridad"];
 document.addEventListener("click", (ev) => {
   const el3 = ev.target.closest(".tab[data-view]");
@@ -8652,6 +8690,10 @@ document.addEventListener("click", (ev) => {
   if (!el) return;
   const val9 = el.dataset.action,
     val10 = el.dataset.id;
+  if (accionSensible(val9) && !esAdmin()) {
+    flash("Ajustes es solo para quien administra la app", true);
+    return;
+  }
   switch (val9) {
     case "gate:enter":
       gateTry($("#gateInput").value);
@@ -9725,7 +9767,7 @@ document.addEventListener("click", (ev) => {
     }
     const val4 = ev.target.dataset.set;
     if (val4) {
-      applySetting(val4, ev.target.value);
+      applySetting(val4, ev.target.type === "checkbox" ? ev.target.checked : ev.target.value);
       return;
     }
     const val5 = ev.target.dataset.field;
@@ -10432,6 +10474,7 @@ function enterAs(value) {
   ((state.user = value), $("#gate").classList.add("hidden"));
   const hallado = TEAM.find((miembro) => miembro.nombre.toLowerCase() === value.toLowerCase());
   ((state.userId = hallado ? hallado.id : null),
+    aplicarPermisos(),
     ($("#userChip").innerHTML =
       (hallado
         ? avatarHTML(hallado.id)
@@ -10625,6 +10668,7 @@ function paletteCommands() {
       act: "do",
       arg: "settings:open",
       kw: "ajustes config sectores backup",
+      soloAdmin: true,
     },
     {
       t: "Ayuda",
@@ -10677,7 +10721,9 @@ function renderPalette(value) {
   if (!el) return;
   value = (value || "").trim().toLowerCase();
   const lista = paletteCommands().filter(
-      (arg) => !value || (arg.t + " " + arg.kw).toLowerCase().includes(value),
+      (arg) =>
+        (!arg.soloAdmin || esAdmin()) &&
+        (!value || (arg.t + " " + arg.kw).toLowerCase().includes(value)),
     ),
     lista2 = value
       ? state.cards
@@ -10964,6 +11010,11 @@ function openSettings() {
         ':email" value="' +
         esc(miembro.email || "") +
         '" placeholder="📧 email para alertas" style="flex:1 1 100%;min-width:0">' +
+        '<label class="set-admin" title="Puede entrar a Ajustes y datos"><input type="checkbox" data-set="team:' +
+        miembro.id +
+        ':admin"' +
+        (miembro.admin ? " checked" : "") +
+        "> Administra</label>" +
         '<span class="chk-del" data-action="set:del-member" data-mem="' +
         miembro.id +
         '" title="Sacar del equipo">✕</span></div>',
@@ -11098,17 +11149,32 @@ function restoreBackup(ts) {
 }
 function applySetting(val, value) {
   const partes = val.split(":");
+  // Tanto "sec:" como "team:" tocan datos que no se mezclan por elemento: el
+  // guardado que viene ahora no puede dejar que lo remoto los pise.
+  if (partes[0] === "sec" || partes[0] === "team") localManda = true;
   if (partes[0] === "sec") {
     const val2 = partes[1];
     SECTORES[val2] && ((SECTORES[val2][partes[2]] = value), injectSectorStyles(), persist(), render());
   } else {
     if (partes[0] === "team") {
       const miembro = member(partes[1]);
-      miembro && ((miembro[partes[2]] = value), persist(), render());
+      if (!miembro) return;
+      if (partes[2] === "admin") {
+        // Sacarle el permiso a la única persona que administra dejaría la app
+        // sin nadie que pueda entrar a Ajustes, y desde la app no habría vuelta.
+        if (!value && TEAM.filter((m) => m.admin).length < 2) {
+          (openSettings(), flash("Tiene que quedar al menos una persona administrando", true));
+          return;
+        }
+        ((miembro.admin = !!value), persist(), aplicarPermisos(), openSettings(), render());
+        return;
+      }
+      ((miembro[partes[2]] = value), persist(), render());
     }
   }
 }
 function addSector() {
+  localManda = true;
   const txt = ($("#newSecNombre").value || "").trim(),
     value = $("#newSecCat").value || "#3FA7D6";
   if (!txt) {
@@ -11161,6 +11227,7 @@ function createSectorInline(nombre) {
   if (el) ((el.value = ""), el.focus());
 }
 function addMember() {
+  localManda = true;
   const txt = ($("#newMemNombre").value || "").trim();
   if (!txt) {
     flash("Poné un nombre", true);
@@ -11184,6 +11251,7 @@ function delTpl(arg) {
   (delete state.customTpl[arg], persist(), openSettings());
 }
 function delSector(key) {
+  localManda = true;
   if (!key || !SECTORES[key] || OFFICIAL_CATS.has(key)) return;
   const nombre = SECTORES[key].nombre;
   confirmar('¿Borrar el sector "' + nombre + '"? Las tarjetas que lo tenían van a perder esa etiqueta.', () => {
@@ -11191,6 +11259,7 @@ function delSector(key) {
   });
 }
 function delMember(id) {
+  localManda = true;
   const miembro = member(id);
   if (!miembro) return;
   confirmar('¿Sacar a "' + miembro.nombre + '" del equipo? Sus tarjetas asignadas van a quedar sin esa persona.', () => {
@@ -11321,10 +11390,11 @@ function runImport() {
       ((state.tecnico = tarjeta.tecnico), touchTecnico());
     if (Array.isArray(tarjeta.eduArchivo) && tarjeta.eduArchivo.length)
       ((state.eduArchivo = tarjeta.eduArchivo), touchEduArchivo());
-    ((importeManda = true), aplicarSectores(tarjeta.sectores));
+    ((localManda = true), aplicarSectores(tarjeta.sectores));
     (Array.isArray(tarjeta.team) &&
       tarjeta.team.length &&
       ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro))),
+      ensureTeam(),
       injectSectorStyles(),
       touch(),
       closeModal(),
@@ -11407,7 +11477,9 @@ async function boot() {
   ((state.savedViews = loadViews()),
     injectSectorStyles(),
     renderGateTeam(),
-    document.querySelectorAll(".logo-slot").forEach((el) => (el.innerHTML = logoLockup())));
+    document
+      .querySelectorAll(".logo-slot")
+      .forEach((el) => (el.innerHTML = logoLockup("brand" in el.dataset))));
   {
     const footYear = $("#footYear");
     if (footYear) footYear.textContent = new Date().getFullYear();
