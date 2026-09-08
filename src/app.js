@@ -3654,6 +3654,18 @@ function cardsSinFotos() {
     });
   });
 }
+// Las portadas de tarjetas que ya no existen (borradas, o reemplazadas de una
+// por un backup importado) son puro peso muerto: nadie las puede ver y viajan
+// en cada guardado. Al mudar los datos a un proyecto nuevo esto era la
+// diferencia entre 1,4 y 2,7 MB, porque quedaban también las de la semilla.
+function podarFotos() {
+  const vivas = new Set(state.cards.map((tarjeta) => tarjeta.id));
+  let podadas = 0;
+  Object.keys(state.fotos).forEach((id) => {
+    if (!vivas.has(id)) ((delete state.fotos[id]), podadas++);
+  });
+  return podadas;
+}
 function docSnapshotFotos() {
   return { fotos: state.fotos };
 }
@@ -3750,10 +3762,12 @@ async function mergeRemoteIntoState() {
     merged = mergeCards(state.cards, remote.cards, state.deleted, remote.deleted || {});
   ((state.cards = merged.cards), (state.deleted = merged.deleted));
   if (remote.templates) state.customTpl = Object.assign({}, remote.templates, state.customTpl);
-  aplicarSectores(remote.sectores);
-  Array.isArray(remote.team) &&
-    remote.team.length &&
-    ((TEAM.length = 0), remote.team.forEach((m) => TEAM.push(m)));
+  if (!importeManda) {
+    aplicarSectores(remote.sectores);
+    Array.isArray(remote.team) &&
+      remote.team.length &&
+      ((TEAM.length = 0), remote.team.forEach((m) => TEAM.push(m)));
+  }
   if (remote.agenda && typeof remote.agenda === "object")
     state.agenda = Object.assign({}, remote.agenda, state.agenda);
   ensureFraseDay();
@@ -3774,6 +3788,12 @@ function persist() {
   (clearTimeout(saveTimer), (saveTimer = setTimeout(() => guardarAhora(false), 250)));
 }
 let fotosPendientes = false;
+// Un backup recién importado es la fuente de verdad hasta que se escriba. Sin
+// esto, el primer guardado releía lo remoto y dejaba ganar SUS sectores y SU
+// equipo: la importación quedaba a medias, con las tarjetas nuevas y los
+// sectores viejos. Se notaba justo al mudar los datos a un proyecto recién
+// creado, donde lo remoto era la semilla.
+let importeManda = false;
 // Modo "trabajar sin conexión": el backend está caído por un rato largo (una
 // cuota agotada, por ejemplo) y la persona necesita seguir igual. Se trabaja
 // sobre la copia local y NO se escribe al backend, hasta que ella misma decida
@@ -3800,7 +3820,10 @@ async function guardarAhora(urgente) {
   }
   // Las fotos van a su propia fila y se escriben ANTES que el tablero: si esto
   // fallara, las imágenes siguen dentro de las tarjetas y no se pierde nada.
-  if (sacarFotosDeLasTarjetas() || fotosPendientes) {
+  // Podar es tarea de mantenimiento y puede esperar: en el guardado urgente
+  // (la pestaña se está cerrando) no se hace, para no agregar un segundo POST
+  // grande justo cuando el navegador ya casi no da tiempo.
+  if (sacarFotosDeLasTarjetas() + (urgente ? 0 : podarFotos()) > 0 || fotosPendientes) {
     try {
       (await Store.save(docSnapshotFotos(), urgente, FOTOS_FILA), (fotosPendientes = false));
     } catch (e) {
@@ -3825,7 +3848,7 @@ async function guardarAhora(urgente) {
     // próximo polling no vuelva a bajar el documento entero por nuestro propio
     // guardado.
     const revEscrita = await Store.save(doc, urgente);
-    (rememberFingerprints(state.cards), revEscrita && (revConocida = revEscrita));
+    (rememberFingerprints(state.cards), revEscrita && (revConocida = revEscrita), (importeManda = false));
     ((state.saveError = false), (state.connOk = true), (guardadoPendiente = false), (state.lastSyncTs = Date.now()));
   } catch (err) {
     (console.error("No se pudo guardar:", err), (state.saveError = true), saveBackup(doc, true));
@@ -11251,8 +11274,25 @@ function exportCSV() {
 }
 function doImport() {
   openModal(
-    '<h2>Importar JSON</h2><div class="sub-t">Pegá un backup exportado. <b>Reemplaza</b> los datos actuales.</div>\n  <div class="fld"><label>Backup JSON</label><textarea id="importText" style="min-height:160px;font-family:monospace;font-size:12px"></textarea></div>\n  <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="data:import-run">Importar y reemplazar</button></div>',
+    '<h2>Importar JSON</h2><div class="sub-t">Elegí el archivo del backup (o pegá su contenido abajo). <b>Reemplaza</b> los datos actuales.</div>\n  <div class="fld"><label>Archivo de backup</label><input type="file" id="importFile" accept=".json,application/json"></div>\n  <div class="fld"><label>…o pegá el JSON acá</label><textarea id="importText" style="min-height:120px;font-family:monospace;font-size:12px"></textarea></div>\n  <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="data:import-run">Importar y reemplazar</button></div>',
   );
+  // Un backup real pesa cientos de KB (con las portadas, más de un mega):
+  // copiarlo y pegarlo a mano es incómodo, y el importador del panel de
+  // Supabase directamente se cuelga con celdas así de grandes. Eligiendo el
+  // archivo, el navegador lo lee entero y la app lo sube por su cuenta.
+  const elFile = $("#importFile");
+  if (elFile)
+    elFile.addEventListener("change", () => {
+      const archivo = elFile.files && elFile.files[0];
+      if (!archivo) return;
+      const lector = new FileReader();
+      ((lector.onload = () => {
+        (($("#importText").value = String(lector.result || "")),
+          flash("Archivo leído: " + archivo.name));
+      }),
+        (lector.onerror = () => flash("No pude leer el archivo", true)),
+        lector.readAsText(archivo));
+    });
 }
 function runImport() {
   let tarjeta;
@@ -11281,7 +11321,7 @@ function runImport() {
       ((state.tecnico = tarjeta.tecnico), touchTecnico());
     if (Array.isArray(tarjeta.eduArchivo) && tarjeta.eduArchivo.length)
       ((state.eduArchivo = tarjeta.eduArchivo), touchEduArchivo());
-    aplicarSectores(tarjeta.sectores);
+    ((importeManda = true), aplicarSectores(tarjeta.sectores));
     (Array.isArray(tarjeta.team) &&
       tarjeta.team.length &&
       ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro))),
