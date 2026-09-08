@@ -9047,7 +9047,13 @@ const BACKEND = {
     supabaseKey: "sb_publishable_SRJIUtzxxqVP-nig6tg8sA_wHQiSlNn",
     tabla: "planner",
     fila: "coto",
-    pollMs: 5000,
+    // Cada cambio obliga a las demás pantallas a bajar el tablero entero: es
+    // el costo de guardar todo en un solo documento. Preguntando cada 12 s en
+    // vez de cada 5, una ráfaga de ediciones (alguien completando una ficha)
+    // se junta en una sola bajada en lugar de tres. Lo que se paga es que un
+    // cambio ajeno tarda hasta 12 s en aparecer en pantalla, que para un
+    // tablero de planificación no se nota.
+    pollMs: 12000,
   },
   useSupabase = () => !!(BACKEND.supabaseUrl && BACKEND.supabaseKey),
   KEY = "coto.superplanner.v1",
@@ -9461,6 +9467,13 @@ function nuevaEntradaBackup(doc, now) {
 }
 async function mergeRemoteIntoState() {
   stampEditedCards();
+  // Antes de bajar el tablero entero se pregunta el sello, que son 36 bytes:
+  // si nadie escribió desde la última vez que lo leímos, no hay nada que
+  // mezclar. Importa porque guardar pasa muchas veces seguidas —cada campo que
+  // alguien completa dispara uno— y cada guardado bajaba el documento completo
+  // aunque el resto del equipo no hubiera tocado nada.
+  const sello = await Store.rev();
+  if (sello && sello === revConocida) return [];
   const remote = await Store.remote();
   if (!remote || !Array.isArray(remote.cards)) return [];
   if (remote.rev) revConocida = remote.rev;
@@ -9491,7 +9504,12 @@ let guardadoPendiente = false;
 let guardadoUrgenteEnCurso = false;
 function persist() {
   ((guardadoPendiente = true), (state.saveError = false), updateSavestate());
-  (clearTimeout(saveTimer), (saveTimer = setTimeout(() => guardarAhora(false), 250)));
+  // Cada campo que alguien completa dispara un persist(). Con 250 ms, llenar
+  // una ficha de seis campos eran seis guardados, y cada uno le costaba una
+  // bajada del tablero a cada pantalla abierta. Esperando algo más, esa misma
+  // ficha se guarda de una sola vez. El guardado urgente al cerrar la pestaña
+  // no pasa por acá, así que no se pierde nada por esperar.
+  (clearTimeout(saveTimer), (saveTimer = setTimeout(() => guardarAhora(false), 900)));
 }
 let fotosPendientes = false;
 // Sectores y equipo no se mezclan elemento por elemento como las tarjetas, que
@@ -17325,9 +17343,12 @@ async function hayNovedades() {
   // Sin sello (backend que no entiende la consulta, o documento guardado por
   // una versión vieja de la app) no se puede descartar nada: se baja igual.
   if (!rev) return true;
-  if (rev === revConocida) return false;
-  revConocida = rev;
-  return true;
+  // El sello NO se anota acá. Lo anota quien baja el documento de verdad: si
+  // se anotara antes, la mezcla que viene justo después vería "ya lo tengo" y
+  // no bajaría nada — el cambio del otro nunca llegaría. Y si la bajada
+  // fallara, en la próxima vuelta se vuelve a intentar en vez de darla por
+  // vista.
+  return rev !== revConocida;
 }
 function startPolling() {
   if (!useSupabase()) return;
