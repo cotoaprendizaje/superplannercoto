@@ -9,9 +9,10 @@
 //   npm test
 
 import { chromium } from "playwright";
+import { rutaChromium } from "./navegador.mjs";
 import { startFakeBackend } from "./fake-backend.mjs";
 
-const CHROMIUM = process.env.CHROMIUM_PATH || "/opt/pw-browsers/chromium";
+const CHROMIUM = rutaChromium();
 const CLAVE = "Minuevacontra5";
 
 const results = [];
