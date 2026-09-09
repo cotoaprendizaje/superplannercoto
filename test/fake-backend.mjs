@@ -22,13 +22,60 @@ export function startFakeBackend(port = 8099) {
   // ("coto"), así que este mock ya no puede asumir una sola fila global.
   const rows = new Map();
   let writes = 0;
+  // Cuentas de mentira para probar el ingreso. La app ya no entra con un
+  // nombre: pide mail y contraseña contra /auth/v1/token, igual que Supabase.
+  const CLAVE_OK = "Cotonetes2026";
+  let vidaToken = 3600; // segundos; bajarlo sirve para probar la renovación
+  let exigirSesion = false; // simula la base cerrada por las políticas RLS
+  let tokens = new Map(); // token -> email
+  const nuevoToken = (email, tipo) => {
+    const t = tipo + "-" + Math.random().toString(36).slice(2) + "-" + encodeURIComponent(email);
+    return (tokens.set(t, email), t);
+  };
+  const sesionDe = (req) => {
+    const auth = String(req.headers.authorization || "").replace(/^Bearer /, "");
+    return tokens.get(auth) || null;
+  };
 
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, "http://localhost");
 
+    // Ingreso y renovación, como los endpoints de Supabase Auth.
+    if (url.pathname === "/auth/v1/token") {
+      res.setHeader("Content-Type", "application/json");
+      let body = "";
+      req.on("data", (c) => (body += c));
+      return req.on("end", () => {
+        const datos = JSON.parse(body || "{}"),
+          tipo = url.searchParams.get("grant_type");
+        let email = null;
+        if (tipo === "refresh_token") email = tokens.get(datos.refresh_token) || null;
+        else if (datos.password === CLAVE_OK) email = String(datos.email || "").toLowerCase();
+        if (!email) {
+          ((res.statusCode = 400),
+            res.end(JSON.stringify({ error: "invalid_grant", error_description: "Invalid login credentials" })));
+          return;
+        }
+        res.end(
+          JSON.stringify({
+            access_token: nuevoToken(email, "acc"),
+            refresh_token: nuevoToken(email, "ref"),
+            expires_in: vidaToken,
+            user: { email },
+          }),
+        );
+      });
+    }
+
     if (url.pathname.startsWith("/rest/v1/")) {
       res.setHeader("Cache-Control", "no-store");
       res.setHeader("Content-Type", "application/json");
+      // Con la base cerrada, sin sesión válida no se contesta nada. Es lo que
+      // hacen las políticas RLS del proyecto real.
+      if (exigirSesion && !sesionDe(req)) {
+        ((res.statusCode = 401), res.end(JSON.stringify({ message: "JWT expired" })));
+        return;
+      }
       if (req.method === "GET") {
         const id = url.searchParams.get("id")?.replace(/^eq\./, "");
         const row = id ? rows.get(id) : null;
@@ -90,6 +137,12 @@ export function startFakeBackend(port = 8099) {
         url: `http://localhost:${port}`,
         state: async () => (await fetch(`http://localhost:${port}/__state`)).json(),
         reset: () => fetch(`http://localhost:${port}/__reset`),
+        clave: CLAVE_OK,
+        // Interruptores para las pruebas: cerrar la base, acortar la vida del
+        // token, o invalidar todas las sesiones de golpe.
+        exigirSesion: (flag) => (exigirSesion = flag !== false),
+        vidaToken: (seg) => (vidaToken = seg),
+        vencerTodo: () => tokens.clear(),
         stop: () => new Promise((r) => server.close(r)),
       }),
     );

@@ -13,7 +13,10 @@ import { rutaChromium } from "./navegador.mjs";
 import { startFakeBackend } from "./fake-backend.mjs";
 
 const CHROMIUM = rutaChromium();
-const CLAVE = "Minuevacontra5";
+// El ingreso pasó a ser una cuenta de verdad: mail y contraseña contra
+// /auth/v1/token. La clave la fija el backend de mentira.
+const CLAVE = "Cotonetes2026";
+const correo = (nombre) => String(nombre).toLowerCase() + "@coto.com.ar";
 
 const results = [];
 const check = (name, ok, extra) => {
@@ -25,7 +28,7 @@ const check = (name, ok, extra) => {
 // Intercepta a nivel de red conservando el hostname de Supabase, para que el
 // service worker lo siga esquivando igual que en producción.
 async function attachBackend(page, base) {
-  await page.route("**://*.supabase.co/rest/v1/**", async (route) => {
+  await page.route("**://*.supabase.co/**", async (route) => {
     const req = route.request();
     const { pathname, search } = new URL(req.url());
     const upstream = await fetch(base + pathname + search, {
@@ -51,10 +54,13 @@ async function openClient(browser, base, nombre) {
   page.on("pageerror", (e) => console.log(`  [${nombre}] error de página:`, e.message));
   await attachBackend(page, base);
   await page.goto(base + "/index.html");
-  await page.waitForFunction(() => state?.ready === true);
+  // Ahora el tablero se carga DESPUÉS de entrar: primero la pantalla de
+  // ingreso, y recién cuando la sesión es válida se baja algo.
+  await page.waitForSelector("#gateMail");
+  await page.fill("#gateMail", correo(nombre));
   await page.fill("#gatePassInput", CLAVE);
-  await page.fill("#gateInput", nombre);
   await page.click('#gate button:has-text("Entrar")');
+  await page.waitForFunction(() => state?.ready === true, { timeout: 30000 });
   await page.waitForTimeout(1600);
   return page;
 }
@@ -370,7 +376,7 @@ async function pruebaBackendCaido(browser, backend) {
   const abrir = async (control) => {
     const page = await browser.newPage({ ...CONTEXTO, viewport: { width: 1280, height: 900 } });
     page.on("pageerror", (e) => console.log("  [caido] error de página:", e.message));
-    await page.route("**://*.supabase.co/rest/v1/**", async (route) => {
+    await page.route("**://*.supabase.co/**", async (route) => {
       const req = route.request();
       if (control.cortarLectura && req.method() === "GET") return route.fulfill({ status: 503, body: "{}" });
       if (control.cortarEscritura && req.method() === "POST")
@@ -393,8 +399,16 @@ async function pruebaBackendCaido(browser, backend) {
   };
 
   // 1. la lectura falla
+  // El ingreso es un POST a /auth/v1/token, así que entra igual con la lectura
+  // cortada: lo que se rompe es la carga del tablero, justo después. Es la
+  // situación que importa — la persona entró y no tiene que quedarse mirando
+  // un tablero vacío como si no hubiera nada cargado.
   const control = { cortarLectura: true, cortarEscritura: false };
   let page = await abrir(control);
+  await page.waitForSelector("#gateMail");
+  await page.fill("#gateMail", correo("Vivi"));
+  await page.fill("#gatePassInput", CLAVE);
+  await page.click('#gate button:has-text("Entrar")');
   await page.waitForTimeout(2500);
 
   const traslaCaida = await page.evaluate(() => ({
@@ -410,10 +424,11 @@ async function pruebaBackendCaido(browser, backend) {
   // 2. la lectura anda pero la escritura no
   ((control.cortarLectura = false), (control.cortarEscritura = false));
   page = await abrir(control);
-  await page.waitForFunction(() => state?.ready === true);
+  await page.waitForSelector("#gateMail");
+  await page.fill("#gateMail", correo("Vivi"));
   await page.fill("#gatePassInput", CLAVE);
-  await page.fill("#gateInput", "Vivi");
   await page.click('#gate button:has-text("Entrar")');
+  await page.waitForFunction(() => state?.ready === true, { timeout: 30000 });
   await page.waitForTimeout(1200);
 
   check(

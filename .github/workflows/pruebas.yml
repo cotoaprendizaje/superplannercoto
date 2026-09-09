@@ -50,3 +50,6 @@ jobs:
 
       - name: Tamaño del documento sincronizado
         run: node test/tamano.test.mjs
+
+      - name: Ingreso con cuenta propia
+        run: node test/ingreso.test.mjs

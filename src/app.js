@@ -3345,6 +3345,91 @@ function primaryCat(tarjeta) {
     ? tarjeta.sectores[0]
     : "tbd";
 }
+// ── Sesión ─────────────────────────────────────────────────────────────────
+// El ingreso dejó de ser un cartelito con el nombre para pasar a ser una
+// cuenta de verdad contra Supabase. Lo importante no es esta pantalla: es que
+// las políticas de la base solo le contestan a quien manda una sesión válida.
+// Antes, con la política abierta, cualquiera con el link podía leer y borrar
+// todo el inventario de capacitación.
+const SESION_KEY = "cf.sesion.v1";
+let sesion = null;
+function leerSesionGuardada() {
+  try {
+    const raw = localStorage.getItem(SESION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function guardarSesion(valor) {
+  sesion = valor;
+  try {
+    if (valor) localStorage.setItem(SESION_KEY, JSON.stringify(valor));
+    else localStorage.removeItem(SESION_KEY);
+  } catch (e) {}
+}
+function sesionDesde(datos) {
+  return {
+    access: datos.access_token,
+    refresh: datos.refresh_token,
+    // Un minuto de margen: si el token vence justo mientras viaja un pedido,
+    // la respuesta es un 401 confuso en vez de una renovación limpia.
+    expira: Date.now() + ((datos.expires_in || 3600) * 1000 - 60000),
+    email: String((datos.user || {}).email || "").trim().toLowerCase(),
+  };
+}
+async function ingresar(email, clave) {
+  const resp = await fetch(BACKEND.supabaseUrl + "/auth/v1/token?grant_type=password", {
+      method: "POST",
+      headers: { apikey: BACKEND.supabaseKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email, password: clave }),
+    }),
+    datos = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    const err = new Error(datos.error_description || datos.msg || datos.error || "Supabase " + resp.status);
+    ((err.status = resp.status), (err.codigo = datos.error_code || datos.error || ""));
+    throw err;
+  }
+  guardarSesion(sesionDesde(datos));
+  return sesion;
+}
+async function renovarSesion() {
+  if (!sesion || !sesion.refresh) return false;
+  try {
+    const resp = await fetch(BACKEND.supabaseUrl + "/auth/v1/token?grant_type=refresh_token", {
+      method: "POST",
+      headers: { apikey: BACKEND.supabaseKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: sesion.refresh }),
+    });
+    if (!resp.ok) return false;
+    return (guardarSesion(sesionDesde(await resp.json())), true);
+  } catch (e) {
+    return false;
+  }
+}
+async function sesionValida() {
+  // Sin backend (modo demo o pruebas locales) no hay a quién pedirle sesión.
+  if (!useSupabase()) return true;
+  if (!sesion) sesion = leerSesionGuardada();
+  if (!sesion) return false;
+  if (Date.now() < sesion.expira) return true;
+  return await renovarSesion();
+}
+let avisoVencidaMostrado = false;
+function sesionVencida() {
+  if (avisoVencidaMostrado) return;
+  avisoVencidaMostrado = true;
+  guardarSesion(null);
+  const g = document.getElementById("gate");
+  if (g) g.classList.remove("hidden");
+  gateAviso(
+    "Tu sesión venció. Volvé a entrar — lo que tenías sin guardar quedó en la copia local de esta computadora.",
+  );
+}
+function cerrarSesion() {
+  (guardarSesion(null), location.reload());
+}
+
 const BACKEND = {
     // Proyecto nuevo (septiembre 2026): el anterior quedó restringido por
     // agotar la cuota de salida del plan gratuito. La causa real está
@@ -3365,10 +3450,13 @@ const BACKEND = {
     // tablero de planificación no se nota.
     pollMs: 12000,
   },
+
+
   useSupabase = () => !!(BACKEND.supabaseUrl && BACKEND.supabaseKey),
   KEY = "coto.superplanner.v1",
   Store = (function () {
     const memoria = {};
+
     let modo = "storage";
     function storageAPI() {
       return typeof window !== "undefined" ? window.storage : null;
@@ -3404,13 +3492,27 @@ const BACKEND = {
       // claves viejas (JWT, empiezan con eyJ) alcanzaba con apikey; con las
       // nuevas (sb_publishable_...) hay que mandar las dos o PostgREST no
       // resuelve el rol y contesta 401.
+      // La clave publishable sigue yendo en apikey (identifica al proyecto),
+      // pero el Authorization pasa a llevar el token de quien entró: es lo que
+      // mira la política de la base para decidir si contesta.
       return Object.assign(
         {
           apikey: BACKEND.supabaseKey,
-          Authorization: "Bearer " + BACKEND.supabaseKey,
+          Authorization: "Bearer " + ((sesion && sesion.access) || BACKEND.supabaseKey),
         },
         obj || {},
       );
+    }
+    // Un 401 en el medio de la jornada casi siempre es el token que venció.
+    // Se renueva y se reintenta una vez; si tampoco así, la sesión murió y hay
+    // que volver a entrar — con un cartel que lo diga, no rompiéndose en
+    // silencio. En el guardado urgente no se reintenta: la pestaña se está
+    // cerrando y no hay tiempo para un ida y vuelta más.
+    async function pedirConSesion(hacer, urgente) {
+      const resp = await hacer();
+      if (resp.status !== 401 || urgente || !sesion) return resp;
+      if (!(await renovarSesion())) return (sesionVencida(), resp);
+      return await hacer();
     }
     async function leerDeSupabase(fila) {
       const txt =
@@ -3420,17 +3522,15 @@ const BACKEND = {
           "?id=eq." +
           encodeURIComponent(fila) +
           "&select=data",
-        resp = await fetch(txt, {
-          headers: cabeceras(),
-          cache: "no-store",
-        });
+        resp = await pedirConSesion(() => fetch(txt, { headers: cabeceras(), cache: "no-store" }));
       if (!resp.ok) throw new Error("Supabase " + resp.status);
       const datos = await resp.json();
       return datos && datos[0] ? datos[0].data : null;
     }
     async function escribirEnSupabase(fila, obj, urgente) {
       const txt = BACKEND.supabaseUrl + "/rest/v1/" + BACKEND.tabla,
-        resp = await fetch(txt, {
+        armar = () =>
+          fetch(txt, {
           method: "POST",
           // keepalive: el pedido sobrevive aunque la pestaña se cierre o
           // navegue a otro lado justo después de mandarlo. Sin esto, cerrar
@@ -3445,7 +3545,8 @@ const BACKEND = {
             id: fila,
             data: obj,
           }),
-        });
+        }),
+        resp = await pedirConSesion(armar, urgente);
       if (!resp.ok) throw new Error("Supabase " + resp.status);
     }
     // "fila" es opcional en las tres funciones: por defecto apunta a la fila
@@ -3536,7 +3637,7 @@ const BACKEND = {
               "?id=eq." +
               encodeURIComponent(fila || BACKEND.fila) +
               "&select=data->>rev",
-            resp = await fetch(url, { headers: cabeceras(), cache: "no-store" });
+            resp = await pedirConSesion(() => fetch(url, { headers: cabeceras(), cache: "no-store" }));
           if (!resp.ok) return null;
           const datos = await resp.json();
           return datos && datos[0] ? datos[0].rev || null : null;
@@ -4004,6 +4105,9 @@ const state = {
   // Cuándo se bajó el último respaldo. Sincronizado a propósito: si lo bajó
   // Vivi, a Dami no le tiene que volver a saltar el aviso.
   ultimoExport: 0,
+  // Mail de quien entró cuando no coincide con nadie del equipo. Vacío = todo
+  // en orden.
+  mailSinEquipo: "",
   appPassHash: "1waoja",
   agenda: {},
   cotofrase: { day: "", porUsuario: {} },
@@ -7445,6 +7549,16 @@ function diasSinRespaldo() {
   if (!state.ultimoExport) return Infinity;
   return Math.floor((Date.now() - state.ultimoExport) / 86400000);
 }
+function sinEquipoAvisoHTML() {
+  if (!state.mailSinEquipo) return "";
+  return (
+    '<div class="note warn hub-aviso"><span>👤 Entraste como <b>' +
+    esc(state.mailSinEquipo) +
+    "</b>, pero ese mail no figura en ningún integrante del equipo. Podés trabajar igual, " +
+    "pero tus tareas y tu color no te van a reconocer hasta que quien administra lo cargue en " +
+    "<b>Ajustes → Equipo</b>.</span></div>"
+  );
+}
 function respaldoAvisoHTML() {
   if (!esAdmin()) return "";
   const dias = diasSinRespaldo();
@@ -8745,7 +8859,7 @@ document.addEventListener("click", (ev) => {
   }
   switch (val9) {
     case "gate:enter":
-      gateTry($("#gateInput").value);
+      gateTry();
       break;
     case "reintentar:guardar":
       (flash("Reintentando…"), persist());
@@ -8805,16 +8919,6 @@ document.addEventListener("click", (ev) => {
     case "local:subir":
       subirTrabajoLocal();
       break;
-    case "gate:person": {
-      const nombre = el.dataset.nombre;
-      if (state.appPassHash) {
-        const campo = $("#gateInput");
-        if (campo) campo.value = nombre;
-        const el4 = $("#gatePassInput");
-        if (el4) el4.focus();
-      } else gateTry(nombre);
-      break;
-    }
     case "gate:open":
       $("#gate").classList.remove("hidden");
       break;
@@ -8831,15 +8935,11 @@ document.addEventListener("click", (ev) => {
       if (el5b) el5b.classList.toggle("hidden");
       break;
     }
-    case "user:logout": {
-      ((state.user = null), (state.userId = null), (state.mis = false));
-      const el6 = $("#userMenu");
-      if (el6) el6.classList.add("hidden");
-      $("#gate").classList.remove("hidden");
-      const campo2 = $("#gateInput");
-      if (campo2) campo2.value = "";
+    case "user:logout":
+      // Cerrar sesión de verdad: borra el token y recarga. Antes solo
+      // escondía el nombre, y el navegador seguía pudiendo escribir.
+      cerrarSesion();
       break;
-    }
     case "mis:toggle":
       if (!state.userId) {
         flash("Entrá con tu nombre del equipo para usar “Mis tareas”", true);
@@ -9161,13 +9261,12 @@ document.addEventListener("click", (ev) => {
       }
       ((state.appPassHash = hashStr(txt2)),
         persist(),
-        updateGatePass(),
-        openSettings(),
+            openSettings(),
         flash("🔐 Clave grupal guardada"));
       break;
     }
     case "set:pass-clear": {
-      ((state.appPassHash = ""), persist(), updateGatePass(), openSettings(), flash("Clave quitada"));
+      ((state.appPassHash = ""), persist(), openSettings(), flash("Clave quitada"));
       break;
     }
     case "backup:restore":
@@ -10111,8 +10210,8 @@ function pushRecent(id2) {
         if ($("#panel").classList.contains("open")) closePanel();
       }
     }
-    if (ev.key === "Enter" && (ev.target.id === "gateInput" || ev.target.id === "gatePassInput")) {
-      (ev.preventDefault(), gateTry($("#gateInput").value));
+    if (ev.key === "Enter" && (ev.target.id === "gateMail" || ev.target.id === "gatePassInput")) {
+      (ev.preventDefault(), gateTry());
       return;
     }
     if (ev.key === "Enter" && ev.target.dataset && ev.target.dataset.quickadd) {
@@ -10428,13 +10527,12 @@ function entrarModoLocal(copia) {
   (ensureFraseDay(),
     ensureTeam(),
     injectSectorStyles(),
-    renderGateTeam(),
+    prepararGate(),
     rememberFingerprints(state.cards),
     (state.connOk = true),
     (state.saveError = false),
     (state.ready = true),
     (state.view = "kanban"),
-    updateGatePass(),
     render(),
     showBanner(),
     flash("✎ Trabajando sin conexión — se guarda en esta computadora"));
@@ -10477,7 +10575,9 @@ function showBanner() {
         val2 = '<div class="note">🔗 Persistencia compartida activa — lo que cargás lo ve el equipo.</div>';
     }
   }
-  ($("#banner").innerHTML = val2), updateSyncAgo();
+  // El aviso de "tu mail no está en el equipo" va acá y no en Inicio: es un
+  // problema de la cuenta, y tiene que verse en cualquier vista.
+  ($("#banner").innerHTML = sinEquipoAvisoHTML() + val2), updateSyncAgo();
 }
 function updateSyncAgo() {
   const el = $("#syncAgo");
@@ -10503,17 +10603,48 @@ function flash(txt, flag) {
       ((flash2.style.opacity = "0"), (flash2.hidden = true));
     }, 2600)));
 }
-function renderGateTeam() {
-  $("#gateTeam").innerHTML = TEAM.map(
-    (miembro) =>
-      '<button type="button" class="gate-person" data-action="gate:person" data-nombre="' +
-      esc(miembro.nombre) +
-      '">' +
-      avatarHTML(miembro.id) +
-      '<div><div class="nm">' +
-      esc(miembro.nombre) +
-      "</div></div></button>",
-  ).join("");
+// La pantalla de ingreso ya no muestra al equipo: con la base cerrada, quién
+// lo integra recién se sabe después de entrar. Lo que sí se recuerda es el
+// último mail usado en esta computadora, para no tipearlo todos los días.
+const MAIL_KEY = "cf.ultimoMail";
+document.addEventListener("submit", (ev) => {
+  if (ev.target && ev.target.id === "gateForm") (ev.preventDefault(), gateTry());
+});
+function prepararGate() {
+  const elMail = $("#gateMail");
+  if (!elMail) return;
+  try {
+    const previo = localStorage.getItem(MAIL_KEY);
+    if (previo && !elMail.value) elMail.value = previo;
+  } catch (e) {}
+  const elPass = $("#gatePassInput");
+  ((previoVacio(elMail) ? elMail : elPass) || elMail).focus();
+}
+function previoVacio(el) {
+  return !el.value;
+}
+function gateAviso(txt, tipo) {
+  const el = $("#gateMsg");
+  if (!el) return;
+  ((el.textContent = txt || ""), (el.hidden = !txt), el.classList.toggle("mal", tipo !== "ok"));
+}
+function gateOcupado(flag) {
+  const form = $("#gateForm");
+  if (form) form.classList.toggle("ocupado", !!flag);
+  const btn = form && form.querySelector("button");
+  if (btn) ((btn.disabled = !!flag), (btn.textContent = flag ? "Entrando…" : "Entrar"));
+}
+// Los mensajes de Supabase vienen en inglés y de sistema. Nadie del equipo
+// tiene por qué leer "Invalid login credentials".
+function mensajeDeIngreso(err) {
+  const txt = String((err && err.message) || "").toLowerCase();
+  if (/invalid login|invalid_credentials|bad_credentials/.test(txt))
+    return "Ese mail o esa contraseña no coinciden. Fijate que el mail sea el mismo con el que te crearon la cuenta.";
+  if (/email not confirmed|not_confirmed/.test(txt))
+    return "La cuenta existe pero está sin confirmar. Pedile a quien administra que la confirme desde Supabase.";
+  if (/rate|too many/.test(txt)) return "Demasiados intentos seguidos. Esperá un minuto y probá de nuevo.";
+  if (/failed to fetch|networkerror/.test(txt)) return "No pude conectarme. Fijate que tengas internet y probá de nuevo.";
+  return "No pude entrar: " + ((err && err.message) || "error desconocido");
 }
 function enterAs(value) {
   if (!value) {
@@ -10541,28 +10672,53 @@ function enterAs(value) {
     }
   } catch (err) {}
 }
-function updateGatePass() {
-  const el = $("#gatePassInput");
-  if (el) el.classList.toggle("hidden", !state.appPassHash);
-}
-function gateTry(value) {
-  value = (value || "").trim();
-  if (!value) {
-    flash("Decinos quién sos 🙂", true);
+
+async function gateTry() {
+  const elMail = $("#gateMail"),
+    elPass = $("#gatePassInput"),
+    email = ((elMail && elMail.value) || "").trim().toLowerCase(),
+    clave = (elPass && elPass.value) || "";
+  if (!email || !clave) {
+    gateAviso("Poné tu mail y tu contraseña.");
     return;
   }
-  if (state.appPassHash) {
-    const el = $("#gatePassInput"),
-      value2 = el ? el.value : "";
-    if (hashStr(value2) !== state.appPassHash) {
-      flash("Clave incorrecta 🔒", true);
-      el && ((el.value = ""), el.focus());
-      return;
-    }
-    if (el) el.value = "";
+  (gateAviso(""), gateOcupado(true));
+  try {
+    await ingresar(email, clave);
+  } catch (err) {
+    (gateOcupado(false), gateAviso(mensajeDeIngreso(err)));
+    if (elPass) ((elPass.value = ""), elPass.focus());
+    return;
   }
-  enterAs(value);
+  if (elPass) elPass.value = "";
+  try {
+    localStorage.setItem(MAIL_KEY, email);
+  } catch (e) {}
+  try {
+    await arrancarApp();
+  } catch (err) {
+    (console.error(err), gateAviso("Entraste bien, pero no pude cargar el tablero. Probá recargar la página."));
+  }
+  gateOcupado(false);
 }
+// Quién es, del equipo, la persona que acaba de entrar. El cruce es por mail:
+// el mismo que se carga en Ajustes → Equipo. Si no coincide con nadie, no se
+// entra: antes de esto cualquier nombre tipeado servía, y una persona sin
+// registrar quedaba como un fantasma sin color ni tareas.
+function entrarConSesion() {
+  if (!useSupabase()) return (enterAs(state.user || "Equipo"), true);
+  const email = (sesion && sesion.email) || "",
+    miembro = TEAM.find((m) => String(m.email || "").trim().toLowerCase() === email);
+  if (miembro) return (state.mailSinEquipo = "", enterAs(miembro.nombre), true);
+  // Sin coincidencia NO se bloquea el paso. Entrar ya requirió una cuenta
+  // válida: eso es lo que protege los datos. El cruce con el equipo solo
+  // decide de quién es el color y las tareas, y hacerlo obligatorio dejaría a
+  // todo el equipo afuera por un mail mal tipeado en Ajustes — incluida la
+  // persona que tendría que corregirlo. Se entra, y se avisa fuerte.
+  state.mailSinEquipo = email;
+  return (enterAs(email.split("@")[0] || email), true);
+}
+
 function relTime(ts2) {
   if (!ts2) return "";
   const val = Math.floor((Date.now() - ts2) / 1000);
@@ -11528,7 +11684,7 @@ function injectSectorStyles() {
 async function boot() {
   ((state.savedViews = loadViews()),
     injectSectorStyles(),
-    renderGateTeam(),
+    prepararGate(),
     document
       .querySelectorAll(".logo-slot")
       .forEach((el) => (el.innerHTML = logoLockup("brand" in el.dataset))));
@@ -11536,6 +11692,21 @@ async function boot() {
     const footYear = $("#footYear");
     if (footYear) footYear.textContent = new Date().getFullYear();
   }
+  // Con la base cerrada no se puede leer nada sin sesión: primero se entra y
+  // recién después se carga el tablero. Antes era al revés —se cargaba todo y
+  // la pantalla de ingreso se ponía encima— porque cualquiera con el link
+  // podía leer.
+  if (!(await sesionValida())) {
+    (gateOcupado(false), $("#gate").classList.remove("hidden"));
+    return;
+  }
+  try {
+    await arrancarApp();
+  } catch (err) {
+    (console.error(err), $("#gate").classList.remove("hidden"), gateAviso("No pude cargar el tablero. Probá recargar la página."));
+  }
+}
+async function arrancarApp() {
   $("#app").classList.remove("hidden");
   // Fotos de portada: se bajan de su propia fila y ANTES que el tablero. El
   // orden importa: el arranque puede terminar guardando (ver más abajo), y si
@@ -11565,7 +11736,7 @@ async function boot() {
       if (tarjeta.cotofrase && typeof tarjeta.cotofrase === "object") state.cotofrase = tarjeta.cotofrase;
       if (typeof tarjeta.ultimoExport === "number") state.ultimoExport = tarjeta.ultimoExport;
       ensureFraseDay();
-      (ensureTeam(), injectSectorStyles(), renderGateTeam());
+      (ensureTeam(), injectSectorStyles());
       // ingestCatalogo() con replace:false es no-destructivo: solo agrega los
       // títulos del catálogo que todavía no existen como curso. Antes esto
       // solo corría si el inventario estaba vacío, así que un tablero real
@@ -11675,9 +11846,15 @@ async function boot() {
     rememberFingerprintsTec(state.tecnico),
     rememberFingerprintsEdu(state.eduArchivo),
     (state.ready = true),
-    updateGatePass(),
     showBanner(),
     render());
+  // Recién acá se sabe quién es quién: el equipo viaja en el documento que
+  // acabamos de bajar. Si el mail de la sesión no figura en ninguno, no se
+  // entra.
+  if (!entrarConSesion()) return;
+  // El banner se armó unas líneas antes, cuando todavía no se sabía quién
+  // había entrado: se rehace ahora para que el aviso de cuenta aparezca.
+  showBanner();
   try {
     history.replaceState(navState(), "");
   } catch (err3) {}

@@ -49,18 +49,18 @@
 <body>
 <div class="aurora" aria-hidden="true"></div>
 
-<!-- GATE: identificación por nombre -->
+<!-- GATE: ingreso con la cuenta de cada persona -->
 <div id="gate" class="gate">
   <div class="gate-card">
     <div class="logo-slot" style="margin-bottom:18px"></div>
     <h1>Cotonetes Forever</h1>
-    <p>COTO Aprendizaje e-Learning. Identificate para que el equipo vea lo que cargás.</p>
-    <div class="gate-team" id="gateTeam"></div>
-    <input id="gatePassInput" type="password" placeholder="🔑 Clave de ingreso" class="gate-passinput hidden" autocomplete="current-password" />
-    <div class="gate-other">
-      <input id="gateInput" placeholder="...o escribí tu nombre" />
-      <button class="btn btn-primary" data-action="gate:enter">Entrar</button>
-    </div>
+    <p>COTO Aprendizaje e-Learning. Entrá con tu cuenta.</p>
+    <form id="gateForm" class="gate-form">
+      <input id="gateMail" type="email" placeholder="✉ Tu mail" autocomplete="username" spellcheck="false" />
+      <input id="gatePassInput" type="password" placeholder="🔑 Tu contraseña" autocomplete="current-password" />
+      <button class="btn btn-primary" type="submit">Entrar</button>
+    </form>
+    <div id="gateMsg" class="gate-msg" hidden></div>
   </div>
 </div>
 
