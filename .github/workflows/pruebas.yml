@@ -1,9 +1,13 @@
-# Pruebas automáticas en cada cambio.
+# Pruebas y publicación.
 #
 # Antes de esto, las pruebas existían pero no las corría nadie: cada fusión a
-# main se publicaba derecho a producción sin que nada las mirara. Así llegó a
-# producción el error que devolvía las portadas al documento del tablero, que
-# habría vuelto a agotar la cuota de salida de Supabase en pocos días.
+# main se publicaba derecho a producción sin que nada las mirara. Así llegó el
+# error que devolvía las portadas al documento del tablero, que habría vuelto a
+# agotar la cuota de salida de Supabase en pocos días.
+#
+# Ahora publicar depende de que las pruebas pasen: el trabajo de despliegue
+# necesita el de pruebas, y si ese queda en rojo el sitio en línea sigue siendo
+# el último que estaba bien.
 
 name: Pruebas
 
@@ -12,6 +16,18 @@ on:
     branches: ["**"]
   pull_request:
   workflow_dispatch:
+
+# Permisos que pide GitHub Pages para publicar desde Actions.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Si se empujan dos cambios seguidos, el segundo espera al primero en vez de
+# pisarlo a mitad de camino.
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
   pruebas:
@@ -53,3 +69,33 @@ jobs:
 
       - name: Ingreso con cuenta propia
         run: node test/ingreso.test.mjs
+
+      # Lo que se va a publicar es exactamente lo que se acaba de probar: el
+      # sitio se arma acá y se guarda, en vez de reconstruirse después.
+      - name: Preparar el sitio
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p _sitio
+          cp index.html manifest.webmanifest sw.js _sitio/
+          cp -r assets _sitio/
+
+      - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main'
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: _sitio
+
+  publicar:
+    # Sin este "needs" no habría nada nuevo: es lo que hace que un rojo en las
+    # pruebas impida que el cambio salga a producción.
+    needs: pruebas
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
