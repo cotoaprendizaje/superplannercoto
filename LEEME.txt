@@ -1,13 +1,22 @@
-Cotonetes Forever — cómo desplegar
-==================================
+Cotonetes Forever — cómo se publica
+===================================
 
-Deploy: arrastrá index.html + assets/ + manifest.webmanifest + sw.js a Netlify
-(app.netlify.com/drop) o subilos a tu hosting. Van SIEMPRE juntos.
+NO hay que subir archivos a ningún lado. El hosting es GitHub Pages, sobre este
+mismo repositorio: todo lo que llega a la rama `main` se publica solo, en un
+minuto, en
+
+    https://cotoaprendizaje.github.io/superplannercoto/
+
+Si hiciste un cambio y no lo ves, casi siempre es el navegador: recargá con
+Ctrl+Shift+R. Para ver si la publicación salió bien, mirá la pestaña "Actions"
+del repositorio en GitHub.
 
 IMPORTANTE
 - index.html es un archivo GENERADO. No lo edites a mano: se regenera con
-  `npm run build` a partir de la carpeta src/.
-- El código editable ahora vive en este mismo repo, en src/. Ver README.md.
+  `npm run build` a partir de la carpeta src/, y el siguiente build te pisa
+  los cambios. Hay una prueba que falla si los dos dejan de coincidir.
+- El código editable vive en src/. Ver README.md.
+- Antes de publicar, `npm test`. Son 70 pruebas y tardan un minuto.
 
-La clave de ingreso se cambia desde Ajustes, dentro de la app. No la anotes
-acá: este repo es público. Ver SEGURIDAD.md.
+Las contraseñas no se anotan acá: este repositorio es público. Cada persona
+entra a la app con su propia cuenta de Supabase. Ver SEGURIDAD.md.

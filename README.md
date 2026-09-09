@@ -7,8 +7,13 @@ de cursos y Edu Points.
 ## Cómo está armado
 
 La app se despliega como **un solo archivo** (`index.html`), con el CSS, el JS,
-las fuentes y los logos embebidos. Eso la hace trivial de subir a Netlify o
+las fuentes y los logos embebidos. Eso la hace trivial de servir desde
 cualquier hosting estático, pero imposible de editar a mano.
+
+Se publica sola: el hosting es **GitHub Pages** sobre este mismo repositorio, y
+todo lo que llega a `main` queda en línea en un minuto, en
+<https://cotoaprendizaje.github.io/superplannercoto/>. No hay nada que subir a
+ningún lado.
 
 Por eso el código vive separado en `src/` y `index.html` se **genera**:
 
@@ -27,7 +32,7 @@ index.html        ← generado, es lo que se despliega. No editar a mano.
 npm install       # una sola vez (Playwright, para los tests)
 npm run build     # regenera index.html desde src/
 npm start         # sirve la carpeta en http://localhost:8080
-npm test          # pruebas de sincronización
+npm test          # las 70 pruebas (build incluido)
 ```
 
 El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
@@ -68,11 +73,43 @@ riesgo permanente es que dos personas editando a la vez se pisen. Para evitarlo:
 navegadores que editan al mismo tiempo. Si alguien vuelve a hacer que el
 guardado escriba la copia local entera, esas pruebas se ponen en rojo.
 
+## Pruebas
+
+Son 70, en tres baterías, y corren solas en cada cambio (ver
+`.github/workflows/pruebas.yml`). Todas abren la app de verdad en un navegador
+contra `test/fake-backend.mjs`, que imita las filas de Supabase y su endpoint
+de ingreso.
+
+| batería | qué fija |
+|---|---|
+| `test/sync.test.mjs` | Que dos personas editando a la vez no se pisen. |
+| `test/tamano.test.mjs` | Que el documento sincronizado no engorde ni se lleve las imágenes adentro. Es la prueba que faltaba el día que se agotó la cuota. |
+| `test/ingreso.test.mjs` | Que sin sesión no se baje nada, y que con sesión se trabaje normal aunque el token venza en el medio. |
+
+El flujo también verifica que `index.html` coincida con lo generado desde
+`src/`: si alguien edita el archivo generado a mano, se pone en rojo.
+
+Una prueba que no puede fallar no sirve. Cuando agregues una, comprobá que se
+ponga en rojo rompiendo a propósito lo que dice cuidar.
+
 ## Ingreso
 
-La pantalla de entrada pide identificarse con un nombre y, si hay clave
-configurada, una clave de ingreso. Ambas cosas se manejan del lado del cliente:
-sirven para saber quién carga qué, **no** son un control de acceso real.
+Cada persona entra con su propia cuenta de Supabase (mail y contraseña). La app
+manda el token de esa sesión en cada pedido, y la política de la tabla solo le
+contesta a quien está autenticado: sin cuenta, la base devuelve una lista
+vacía.
 
-Los datos del planner hoy son accesibles para cualquiera que abra la app. Ver
-[SEGURIDAD.md](SEGURIDAD.md) para el detalle y qué se puede hacer al respecto.
+Dos consecuencias en el código, que si no sorprenden:
+
+- **El tablero se carga después de entrar, no antes.** `boot()` decide si hay
+  sesión y recién entonces llama a `arrancarApp()`, que es lo que baja los
+  datos. Antes era al revés porque cualquiera podía leer.
+- **Quién es quién se resuelve por el mail**, cruzado contra el que se carga en
+  Ajustes → Equipo. Si no coincide con nadie NO se bloquea el paso: entrar ya
+  requirió una cuenta válida, y hacerlo obligatorio dejaría al equipo afuera
+  por un mail mal tipeado, incluida la persona que tendría que corregirlo. Se
+  entra y se avisa en la barra.
+
+El permiso de administrador (quien ve Ajustes) es del lado del cliente: evita
+accidentes, no frena a alguien decidido que ya tiene cuenta. Ver
+[SEGURIDAD.md](SEGURIDAD.md).
