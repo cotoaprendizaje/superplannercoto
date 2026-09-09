@@ -1,3 +1,7 @@
 node_modules
 package-lock.json
 .DS_Store
+
+# Archivo generado: se arma con `npm run build` y, al publicar, lo construye
+# GitHub Actions. Guardarlo sumaba 2,3 MB al repositorio en cada publicación.
+index.html

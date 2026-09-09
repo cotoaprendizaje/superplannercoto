@@ -12,9 +12,9 @@ Ctrl+Shift+R. Para ver si la publicación salió bien, mirá la pestaña "Action
 del repositorio en GitHub.
 
 IMPORTANTE
-- index.html es un archivo GENERADO. No lo edites a mano: se regenera con
-  `npm run build` a partir de la carpeta src/, y el siguiente build te pisa
-  los cambios. Hay una prueba que falla si los dos dejan de coincidir.
+- index.html es un archivo GENERADO y no está en el repositorio. Lo arma
+  `npm run build` a partir de la carpeta src/, y al publicar lo construye
+  GitHub Actions. Si acabás de clonar y no lo ves, es eso: corré el build.
 - El código editable vive en src/. Ver README.md.
 - Antes de publicar, `npm test`. Son 70 pruebas y tardan un minuto.
 
