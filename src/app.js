@@ -4558,9 +4558,11 @@ function renderFilters() {
   // Elegir un filtro reconstruye toda la barra (así se actualiza el contador
   // del botón), lo que cerraría el popover después de cada click si no se
   // preserva a mano: nadie quiere reabrirlo para poner un segundo filtro.
-  const popAbierto = $("#filtrosPop") && !$("#filtrosPop").classList.contains("hidden");
+  const popAbierto = $("#filtrosPop") && !$("#filtrosPop").classList.contains("hidden"),
+    cont = $("#filters");
+  if (!cont) return;
   if (state.view === "inicio" || state.view === "tecnico" || state.view === "reportes") {
-    $("#filters").innerHTML = "";
+    cont.innerHTML = "";
     return;
   }
   const tarjeta = state.filters,
@@ -4689,7 +4691,7 @@ function renderFilters() {
       quickHTML +
       savedHTML +
       "</div></div>";
-  $("#filters").innerHTML = html6 + misHTML + htmlFiltrosBtn;
+  cont.innerHTML = html6 + misHTML + htmlFiltrosBtn;
   if (popAbierto) {
     const p = $("#filtrosPop");
     if (p) p.classList.remove("hidden");
@@ -4703,9 +4705,17 @@ const VIEW_TITLES = {
   tecnico: ["Seguimiento técnico", "Cada categoría con sus cursos e-learning y sus archivos de Edu Point — para no volver al Excel."],
   reportes: ["Reportes", "Métricas del área para gestionar al equipo y llevar a fin de año: publicaciones, catálogo, carga y tiempos."],
 };
+// La barra de filtros vivía FUERA de la vista, arriba del título: el
+// buscador y "Filtros" aparecían antes de que dijera de qué vista se trata, y
+// el resto de los controles de la misma tabla (contador, orden, exportar)
+// quedaban del otro lado del título. Ahora el contenedor lo emite el propio
+// encabezado, así todo queda junto y debajo del nombre de la vista.
 function viewHeader() {
   const val = VIEW_TITLES[state.view];
-  return val ? '<div class="view-head"><h2>' + val[0] + "</h2><p>" + val[1] + "</p></div>" : "";
+  return (
+    (val ? '<div class="view-head"><h2>' + val[0] + "</h2><p>" + val[1] + "</p></div>" : "") +
+    '<div class="filters" id="filters"></div>'
+  );
 }
 function render() {
   // Sin backend no hay tablero que dibujar: la pantalla de corte manda.
@@ -4713,7 +4723,9 @@ function render() {
     mostrarPantallaSinConexion(errorConexion);
     return;
   }
-  (renderFilters(), renderView(), updateBell(), aplicarPermisos());
+  // renderView() primero: el contenedor de los filtros lo dibuja el
+  // encabezado de la vista, así que antes de eso todavía no existe.
+  (renderView(), renderFilters(), updateBell(), aplicarPermisos());
 }
 // Si el re-render es de la MISMA vista (por ej. editar una tarjeta del
 // Planner sin cambiar de pestaña), el documento entero se vuelve a armar
@@ -4932,7 +4944,9 @@ function renderCalendario() {
     html =
       '<div class="cal-head">\n    <button class="btn btn-sm" data-action="cal:hoy">Hoy</button>\n    <button class="btn btn-icon btn-ghost" data-action="cal:prev">‹</button>\n    <button class="btn btn-icon btn-ghost" data-action="cal:next">›</button>\n    <div class="cal-title">' +
       txt +
-      '</div>\n    <div style="margin-left:auto" class="tabs">\n      <button class="tab ' +
+      "</div>" +
+      calSaltoHTML(fecha) +
+      '\n    <div style="margin-left:auto" class="tabs">\n      <button class="tab ' +
       (state.calMode === "mes" ? "active" : "") +
       '" data-action="cal:mes">Mes</button>\n      <button class="tab ' +
       (state.calMode === "semana" ? "active" : "") +
@@ -4943,12 +4957,7 @@ function renderCalendario() {
         ? monthGrid(tarjetas, fecha, txt2)
         : '<div class="cal-grid cal-week">' + txt2 + weekCells(tarjetas, fecha) + "</div>";
   return (
-    '<div class="cal-layout">\n    <aside class="cal-mini">' +
-    miniCal(fecha) +
-    '</aside>\n    <div class="cal-main">' +
-    html +
-    html2 +
-    "</div>\n  </div>"
+    '<div class="cal-layout"><div class="cal-main">' + html + html2 + "</div></div>"
   );
 }
 function cardsInRange(lista, iso, iso2) {
@@ -5080,35 +5089,24 @@ function weekRow(fecha3, lista3, fecha2) {
     "</div>\n  </div>"
   );
 }
-function miniCal(fecha) {
-  const fecha3 = new Date(fecha.getFullYear(), fecha.getMonth(), 1),
-    fecha4 = weekStart(fecha3);
-  let txt = "";
-  for (let i = 0; i < 42; i++) {
-    const fecha2 = addDays(fecha4, i),
-      iso = isoOf(fecha2),
-      flag = fecha2.getMonth() !== fecha.getMonth(),
-      flag2 = iso === todayISO();
-    txt +=
-      '<button class="mc-day ' +
-      (flag ? "out" : "") +
-      " " +
-      (flag2 ? "today" : "") +
-      '" data-action="cal:goto" data-iso="' +
-      iso +
-      '">' +
-      fecha2.getDate() +
-      "</button>";
-  }
+// Reemplaza al calendario chico que estaba al costado repitiendo el mes que
+// ya se veía al lado. Ir al mes de al lado son las flechas; ir a uno lejano,
+// esto — y ocupa una fracción de los 214 px que se llevaba el otro.
+function calSaltoHTML(fecha) {
+  const anio = fecha.getFullYear(),
+    anios = [];
+  for (let a = anio - 3; a <= anio + 2; a++) anios.push(a);
   return (
-    '<div class="mc-head">\n      <button class="btn btn-icon btn-ghost btn-sm" data-action="cal:prev">‹</button>\n      <div class="mc-title">' +
-    MESES[fecha.getMonth()] +
-    " " +
-    fecha.getFullYear() +
-    '</div>\n      <button class="btn btn-icon btn-ghost btn-sm" data-action="cal:next">›</button>\n    </div>\n    <div class="mc-grid">' +
-    ["L", "M", "X", "J", "V", "S", "D"].map((arg) => '<div class="mc-dow">' + arg + "</div>").join("") +
-    txt +
-    "</div>"
+    '<div class="cal-mes-sel"><select data-action="cal:mes-sel" aria-label="Mes">' +
+    MESES.map(
+      (m, i) =>
+        '<option value="' + i + '"' + (i === fecha.getMonth() ? " selected" : "") + ">" + esc(m) + "</option>",
+    ).join("") +
+    '</select><select data-action="cal:anio-sel" aria-label="Año">' +
+    anios
+      .map((a) => '<option value="' + a + '"' + (a === anio ? " selected" : "") + ">" + a + "</option>")
+      .join("") +
+    "</select></div>"
   );
 }
 function weekStart(fecha2) {
@@ -7694,35 +7692,12 @@ function renderInicio() {
   const lista2 = boardCards(),
     cantidad = lista2.filter(isOverdue).length,
     cantidad2 = alertasSinLeer().length,
+    // Acá había seis tarjetas, y cuatro —Planner, Calendario, Timeline y
+    // Mapa— llevaban justo a donde llevan las pestañas de la barra de arriba,
+    // en la misma pantalla y tres centímetros más arriba. Quedan las dos que
+    // no están en ningún otro lado; con eso "Próximos vencimientos" entra en
+    // la primera pantalla, que es lo que uno viene a ver a la mañana.
     lista = [
-      {
-        go: "kanban",
-        hub: "planner",
-        ic: ICONOS.kanban,
-        t: "Planner",
-        d: "Lo que estamos haciendo, por estado.",
-      },
-      {
-        go: "calendario",
-        hub: "calendario",
-        ic: ICONOS.calendario,
-        t: "Calendario",
-        d: "Qué pasa y cuándo, mes a mes.",
-      },
-      {
-        go: "timeline",
-        hub: "timeline",
-        ic: ICONOS.timeline,
-        t: "Timeline",
-        d: "El panorama macro del área.",
-      },
-      {
-        go: "mapa",
-        hub: "mapa",
-        ic: ICONOS.mapa,
-        t: "Mapa del área",
-        d: "Cursos, Edu Points y contenido audiovisual.",
-      },
       {
         action: "misemana:open",
         hub: "misemana",
@@ -7761,10 +7736,10 @@ function renderInicio() {
   return (
     '<div class="hub">\n    <div class="hub-main">\n    <div class="hub-hero">\n      <h1 class="hub-title">Hola, ' +
     esc(state.user || "equipo") +
-    '</h1>\n      <p class="hub-sub">¿Qué querés ver hoy?' +
+    '</h1>\n      <p class="hub-sub">' +
     (cantidad
-      ? ' · <b style="color:var(--bad)">' + cantidad + " vencida" + (cantidad !== 1 ? "s" : "") + "</b>"
-      : "") +
+      ? '<b style="color:var(--bad)">' + cantidad + " vencida" + (cantidad !== 1 ? "s" : "") + "</b>"
+      : "Nada vencido") +
     (cantidad2 ? " · <b>" + cantidad2 + "</b> alerta" + (cantidad2 !== 1 ? "s" : "") : "") +
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
@@ -10131,6 +10106,15 @@ document.addEventListener("click", (ev) => {
     true,
   ),
   document.addEventListener("change", (ev) => {
+    const accion = ev.target.dataset && ev.target.dataset.action;
+    if (accion === "cal:mes-sel" || accion === "cal:anio-sel") {
+      const base = state.calCursor || new Date(),
+        mes = accion === "cal:mes-sel" ? +ev.target.value : base.getMonth(),
+        anio = accion === "cal:anio-sel" ? +ev.target.value : base.getFullYear();
+      // Día 1: saltar de "31 de enero" a febrero con el día puesto daría marzo.
+      ((state.calCursor = new Date(anio, mes, 1)), render());
+      return;
+    }
     if (ev.target.dataset && ev.target.dataset.tecCol) {
       // Solo la tabla, no la barra: redibujar la barra cerraría el popover y
       // habría que reabrirlo para cada columna.
