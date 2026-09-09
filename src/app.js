@@ -3163,14 +3163,9 @@ function seedTecnico() {
     categoria: s.c,
     curso: s.t,
     publicacion: s.p,
-    // El Excel traía una sola fecha. Queda como "publicación" (cuándo se
-    // creó el curso) y "actualización" arranca vacía: se completa a mano a
-    // medida que se van tocando los cursos.
-    actualizacion: "",
-    // Las tres fechas del circuito de publicación (alta en Moodle, última
-    // subida del SCORM, mail al personal) arrancan vacías: son datos que solo
-    // tiene el equipo y se cargan a mano. Ver TEC_FECHAS.
-    moodle: "",
+    // El Excel traía una sola fecha: es el alta del curso en Moodle. Las otras
+    // dos del circuito de publicación (subida del SCORM y mail al personal)
+    // arrancan vacías y se cargan a mano. Ver TEC_FECHAS.
     scorm: "",
     mail: "",
     portada: s.po,
@@ -4136,6 +4131,10 @@ const state = {
   tecOrden: "",
   tecOrdenDir: 1,
   tecSubView: "grilla",
+  // Año que mira el gráfico por mes de Reportes. Antes estaba clavado en el
+  // año en curso: el 2 de enero la vista quedaba vacía y no había forma de
+  // mirar el año que se acababa de cerrar, que es justo cuando se mira.
+  repAnio: 0,
   // Columnas escondidas de la grilla. null = todavía no se leyó del
   // navegador; lo resuelve tecColsOcultas() la primera vez que se dibuja.
   tecColsOcultas: null,
@@ -5620,18 +5619,21 @@ function renderMapa() {
 // Las fechas se guardan en ISO (AAAA-MM-DD) porque así ordenan solas y no
 // dependen de la zona horaria, pero se muestran y se escriben en DD/MM/AAAA,
 // que es como las lee el equipo. La conversión pasa acá y en applyTecField.
-// Las cinco fechas de la grilla. Se guardan en ISO y se muestran en
-// DD/MM/AAAA (ver tecFechaVer/tecFechaISO); tenerlas listadas en un solo lugar
-// evita que agregar una sexta obligue a acordarse de cuatro sitios distintos.
-const TEC_FECHAS = ["publicacion", "actualizacion", "moodle", "scorm", "mail"];
+// Las tres fechas de la grilla. Se guardan en ISO y se muestran en DD/MM/AAAA
+// (ver tecFechaVer/tecFechaISO); tenerlas listadas en un solo lugar evita que
+// agregar una cuarta obligue a acordarse de cuatro sitios distintos.
+//
+// Hubo dos más, "Actualización" y "Alta en Moodle", que resultaron ser lo
+// mismo que "SCORM actualizado" y "Publicación". Se sacaron de la grilla; lo
+// que alguien haya llegado a cargar en esos campos sigue en el dato, sin
+// mostrarse, por si hiciera falta recuperarlo.
+const TEC_FECHAS = ["publicacion", "scorm", "mail"];
 // Columnas que se pueden mostrar u ocultar, con el grupo bajo el que se
 // eligen. "Curso" y la papelera no están acá a propósito: sin el nombre no se
 // sabe qué fila se está editando, y sin la ✕ no habría cómo borrarla.
 // El orden de esta lista es el orden de la tabla.
 const TEC_COLS = [
-  { k: "publicacion", label: "Publicación", grupo: "Fechas", tit: "Cuándo se creó el curso" },
-  { k: "actualizacion", label: "Actualización", grupo: "Fechas", tit: "Última vez que se tocó el curso" },
-  { k: "moodle", label: "Alta en Moodle", grupo: "Fechas", tit: "Cuándo se creó el curso en Moodle" },
+  { k: "publicacion", label: "Publicación", grupo: "Fechas", tit: "Cuándo se creó el curso en Moodle" },
   { k: "scorm", label: "SCORM actualizado", grupo: "Fechas", tit: "Última vez que se subió el paquete SCORM" },
   { k: "mail", label: "Mail publicado", grupo: "Fechas", tit: "Cuándo salió el mail avisando el curso" },
   { k: "portada", label: "Portada", grupo: "Producción" },
@@ -6692,8 +6694,6 @@ function tecNuevaFilaPara(tarjeta) {
     categoria: (tarjeta.sectores || [])[0] ? sectorName(tarjeta.sectores[0]) || "" : "",
     curso: tarjeta.titulo,
     publicacion: tarjeta.publicadoEl || "",
-    actualizacion: "",
-    moodle: "",
     scorm: "",
     mail: "",
     portada: false,
@@ -6769,7 +6769,15 @@ function repResumenHTML() {
     sinFecha = activos.length - puntos.length;
   let variacion;
   if (!anioPasado && !esteAnio) variacion = "Sin datos de " + (anio - 1) + " para comparar";
-  else if (!anioPasado) variacion = "No había publicados en " + (anio - 1);
+  else if (anioPasado < 3)
+    // Un porcentaje sobre una base de uno o dos cursos da cifras enormes que
+    // no miden el trabajo del área sino los datos que faltan cargar: con un
+    // solo curso en 2025, la vista mostraba "▲ 7800%". Decir qué pasa es más
+    // útil que un número exacto que nadie puede defender en una reunión.
+    variacion =
+      anioPasado === 0
+        ? "En " + (anio - 1) + " no hay ninguno con fecha registrada"
+        : "En " + (anio - 1) + " solo " + anioPasado + " tiene fecha registrada: no alcanza para comparar";
   else {
     const v = Math.round(((esteAnio - anioPasado) / anioPasado) * 100);
     variacion = (v >= 0 ? "▲ " : "▼ ") + Math.abs(v) + "% vs. " + (anio - 1);
@@ -6785,11 +6793,14 @@ function repResumenHTML() {
     ) +
     repKpi(esteAnio, "Publicados en " + anio, "var(--ok)", variacion, "rep:anio", { anio }) +
     repKpi(anioPasado, "Publicados en " + (anio - 1), "var(--coto-navy)", "", "rep:anio", { anio: anio - 1 }) +
+    // Solo cursos vigentes, igual que los KPI de Técnico. Contando también
+    // los dados de baja, Reportería daba un número más alto que Técnico para
+    // exactamente lo mismo, y no había forma de saber a cuál creerle.
     repKpi(
-      state.tecnico.filter((f) => !f.portada || !f.mosaico).length,
+      state.tecnico.filter(tecFilaActiva).filter((f) => !f.portada || !f.mosaico).length,
       "Con portada o mosaico pendiente",
       "var(--warn)",
-      "En Seguimiento técnico",
+      "Sobre los cursos vigentes de Técnico",
       "hub:go",
       { go: "tecnico" },
     ) +
@@ -6830,11 +6841,15 @@ function repBarsHTML(bars, vacioMsg) {
           attrs +
           '><div class="rep-bar-n">' +
           (b.n || "") +
-          '</div><div class="rep-bar-track"><div class="rep-bar' +
-          (b.otro ? " rep-bar-otro" : "") +
-          '" style="height:' +
-          Math.max(3, Math.round((b.n / max) * 100)) +
-          '%"></div></div><div class="rep-bar-lbl">' +
+          '</div><div class="rep-bar-track">' +
+          (b.n
+            ? '<div class="rep-bar' +
+              (b.otro ? " rep-bar-otro" : "") +
+              '" style="height:' +
+              Math.round((b.n / max) * 100) +
+              '%"></div>'
+            : "") +
+          '</div><div class="rep-bar-lbl">' +
           esc(b.lbl) +
           "</div></div>"
         );
@@ -6844,25 +6859,62 @@ function repBarsHTML(bars, vacioMsg) {
     (total ? "" : '<div class="rep-empty">' + vacioMsg + "</div>")
   );
 }
-// Doce meses del año actual: enero primero, como cualquier reporte anual
+// Qué año mira el gráfico por mes. Sin elección, el año en curso.
+function repAnioActual() {
+  return state.repAnio || new Date().getFullYear();
+}
+// Años con al menos una publicación registrada, del más nuevo al más viejo,
+// más el año en curso aunque todavía no tenga ninguna — que alguien pueda
+// pararse en el año actual no depende de que ya haya publicado algo.
+function repAniosDisponibles() {
+  const set = new Set(repPublicaciones().map((p) => +p.fecha.slice(0, 4)));
+  set.add(new Date().getFullYear());
+  return [...set].sort((a, b) => b - a);
+}
+// Doce meses del año elegido: enero primero, como cualquier reporte anual
 // que se vaya a mostrar tal cual en una presentación de fin de año.
-function repPublicacionesPorMes() {
-  const anio = new Date().getFullYear(),
-    porMes = Array(12).fill(0);
+function repPublicacionesPorMes(anio) {
+  anio = anio || repAnioActual();
+  const porMes = Array(12).fill(0);
   repPublicaciones().forEach((p) => {
     if (+p.fecha.slice(0, 4) === anio) porMes[+p.fecha.slice(5, 7) - 1]++;
   });
   return porMes;
 }
+function repAnioChipsHTML() {
+  const anios = repAniosDisponibles(),
+    actual = repAnioActual();
+  if (anios.length < 2) return "";
+  return (
+    '<div class="rep-anios">' +
+    anios
+      .map(
+        (a) =>
+          '<button class="qchip' +
+          (a === actual ? " on" : "") +
+          '" data-action="rep:anio-sel" data-anio="' +
+          a +
+          '">' +
+          a +
+          "</button>",
+      )
+      .join("") +
+    "</div>"
+  );
+}
 function repChartHTML() {
-  const bars = repPublicacionesPorMes().map((n, i) => ({
-    n,
-    lbl: MESES[i].slice(0, 3),
-    titulo: MESES[i],
-    accion: "rep:mes",
-    dataset: { mes: i },
-  }));
-  return repBarsHTML(bars, "Todavía no hay publicaciones con fecha registrada este año.");
+  const anio = repAnioActual(),
+    bars = repPublicacionesPorMes(anio).map((n, i) => ({
+      n,
+      lbl: MESES[i].slice(0, 3),
+      titulo: MESES[i] + " de " + anio,
+      accion: "rep:mes",
+      dataset: { mes: i, anio },
+    }));
+  return (
+    repAnioChipsHTML() +
+    repBarsHTML(bars, "No hay publicaciones con fecha registrada en " + anio + ".")
+  );
 }
 // El histórico completo: TODOS los cursos activos cuentan acá, tengan o no
 // fecha conocida — los que no la tienen van a su propia barra "S/F" en vez
@@ -6933,7 +6985,7 @@ function repAbrirActivos() {
   openModal(repListaModalHTML("Cursos activos", repCursosActivos()));
 }
 function repAbrirMes(mes) {
-  const anio = new Date().getFullYear(),
+  const anio = repAnioActual(),
     lista = repPublicaciones()
       .filter((p) => +p.fecha.slice(0, 4) === anio && +p.fecha.slice(5, 7) - 1 === mes)
       .map((p) => p.card);
@@ -7000,7 +7052,7 @@ function repSectoresHTML() {
   if (!entradas.length) return '<div class="rep-empty">Sin cursos activos todavía.</div>';
   const max = Math.max(...entradas.map((e) => e[1]));
   return (
-    '<div class="carga-list">' +
+    '<div class="carga-list rep-sect-grid">' +
     entradas
       .map((e) =>
         repBarraRow(
@@ -7025,17 +7077,38 @@ function cargaActivaCards() {
   return boardCards().filter((tarjeta) => tarjeta.estado !== "finalizado");
 }
 function repRevisionHTML() {
-  const enRevision = boardCards().filter((c) => c.estado === "en-revision" && c.revisionDesde),
-    dias = enRevision.map((c) => Math.max(0, daysBetween(c.revisionDesde, todayISO()))),
+  // Todas las que están en revisión, tengan o no sello de cuándo entraron.
+  // Antes se contaban solo las que lo tenían: el número daba menos que la
+  // columna del Planner y no había nada en pantalla que explicara por qué.
+  const todas = boardCards().filter((c) => c.estado === "en-revision"),
+    conSello = todas.filter((c) => c.revisionDesde),
+    sinSello = todas.length - conSello.length,
+    dias = conSello.map((c) => Math.max(0, daysBetween(c.revisionDesde, todayISO()))),
     prom = dias.length ? Math.round(dias.reduce((a, b) => a + b, 0) / dias.length) : 0,
-    peores = enRevision
+    peores = conSello
       .map((c, i) => ({ c, d: dias[i] }))
       .sort((a, b) => b.d - a.d)
       .slice(0, 5);
   return (
     '<div class="res-grid" style="margin-bottom:14px">' +
-    repKpi(enRevision.length, "En revisión ahora", "var(--warn)", "") +
-    repKpi(prom, "Días en promedio", "var(--coto-navy)", enRevision.length ? "" : "Nada esperando revisión") +
+    repKpi(
+      todas.length,
+      "Esperando revisión",
+      "var(--warn)",
+      sinSello ? sinSello + " sin fecha de entrada" : "",
+      "hub:go",
+      { go: "kanban" },
+    ) +
+    repKpi(
+      prom,
+      "Días esperando, en promedio",
+      "var(--coto-navy)",
+      todas.length
+        ? dias.length
+          ? "Sobre " + dias.length + " con fecha de entrada"
+          : "Ninguna tiene fecha de entrada"
+        : "Nada esperando revisión",
+    ) +
     "</div>" +
     (peores.length
       ? peores
@@ -7052,7 +7125,11 @@ function repRevisionHTML() {
               "</span></div>",
           )
           .join("")
-      : '<div class="rep-empty">Nada esperando revisión en este momento.</div>')
+      : '<div class="rep-empty">' +
+        (todas.length
+          ? "Ninguna tiene registrada la fecha en que entró a revisión, así que no se puede decir cuánto hace que esperan."
+          : "Nada esperando revisión en este momento.") +
+        "</div>")
   );
 }
 function repFuenteHTML() {
@@ -7077,7 +7154,7 @@ function repSeccion(titulo, sub, contenido) {
   );
 }
 function renderReportes() {
-  const anio = new Date().getFullYear();
+  const anio = repAnioActual();
   return (
     '<div class="rep-top"><button class="btn btn-ghost btn-sm" data-action="reportes:csv" title="Descargar estos números en CSV">⬇ CSV</button><button class="btn btn-ghost btn-sm" data-action="app:print" title="Imprimir o guardar como PDF">🖨 PDF</button></div>' +
     repResumenHTML() +
@@ -7087,13 +7164,15 @@ function renderReportes() {
     // "Carga y foco del equipo" se sacó de acá: era exactamente el mismo
     // bloque que ya está en Inicio, mirando los mismos datos. El CSV lo sigue
     // exportando, que es donde sí sirve tenerlo junto al resto.
-    repSeccion("Tiempo en revisión", "Cuánto tarda en salir de revisión", repRevisionHTML()) +
+    repSeccion("Esperando revisión", "Cuánto hace que están frenadas", repRevisionHTML()) +
     repFuenteHTML()
   );
 }
 function exportReportesCSV() {
-  const anio = new Date().getFullYear(),
-    porMes = repPublicacionesPorMes(),
+  // El año que se esté mirando en pantalla, no el del calendario: lo que se
+  // baja tiene que ser lo que se ve, como en el CSV del Planner.
+  const anio = repAnioActual(),
+    porMes = repPublicacionesPorMes(anio),
     filas = [["Reportería · Cotonetes Forever"], ["Exportado", new Date().toLocaleString("es-AR")], []];
   (filas.push(["Publicaciones por mes", anio]),
     filas.push(["Mes", "Cursos publicados"]),
@@ -9202,6 +9281,9 @@ document.addEventListener("click", (ev) => {
     case "notif:open":
       openNotif();
       break;
+    case "notif:read-one":
+      (marcarAlertasLeidas([el.dataset.clave]), updateBell(), openNotif());
+      break;
     case "notif:markread":
       (marcarAlertasLeidas(computeAlerts().map(alertaKey)), openNotif(), updateBell());
       break;
@@ -9242,6 +9324,9 @@ document.addEventListener("click", (ev) => {
       break;
     case "rep:activos":
       repAbrirActivos();
+      break;
+    case "rep:anio-sel":
+      ((state.repAnio = +el.dataset.anio), render());
       break;
     case "rep:mes":
       repAbrirMes(+el.dataset.mes);
@@ -9299,8 +9384,6 @@ document.addEventListener("click", (ev) => {
         categoria: catTec,
         curso: nombreTec,
         publicacion: "",
-        actualizacion: "",
-        moodle: "",
         scorm: "",
         mail: "",
         portada: false,
@@ -11195,13 +11278,23 @@ function computeAlerts() {
   (boardCards().forEach((arg) => {
     const val = arg.fin || arg.inicio;
     if (!val) return;
-    if (val < iso)
+    // Una tarjeta terminada no está vencida ni por vencer, por más que su
+    // fecha haya pasado. El resto de la app ya lo daba por sentado —lo dice
+    // isOverdue()— pero acá la cuenta estaba hecha a mano y sin ese chequeo:
+    // por eso la campana seguía marcando como pendientes cosas ya cerradas.
+    if (arg.estado === "finalizado") return;
+    if (isOverdue(arg))
       lista.push({
         c: arg,
         kind: "bad",
         ic: "⚑",
         label: "Vencida",
         sub: "venció " + fmtShort(val),
+        // Días de atraso (negativos) o que faltan: es lo que ordena la lista.
+        // Sin esto las alertas salían en el orden en que estaban las tarjetas
+        // en el tablero, o sea en ninguno: lo de hace tres meses quedaba
+        // mezclado con lo que vence mañana.
+        dias: daysBetween(iso, val),
       });
     else {
       if (val <= iso2)
@@ -11211,10 +11304,14 @@ function computeAlerts() {
           ic: "⏳",
           label: "Vence pronto",
           sub: "para " + fmtShort(val),
+          dias: daysBetween(iso, val),
         });
     }
   }),
     state.cards.forEach((tarjeta) => {
+      // Una recurrente terminada sí avisa —de eso se trata, toca la próxima
+      // vuelta—, pero una dada de baja no: ya no forma parte del trabajo.
+      if (tarjeta.activo === false) return;
       if (tarjeta.recurrencia && tarjeta.recurrencia !== "none" && !isInventory(tarjeta)) {
         const val = tarjeta.fin || tarjeta.inicio;
         if (val && val <= iso)
@@ -11224,14 +11321,21 @@ function computeAlerts() {
             ic: "↻",
             label: "Recurrente",
             sub: "corresponde nueva instancia",
+            dias: daysBetween(iso, val),
           });
       }
     }));
-  const obj = {};
-  return lista.filter((arg) => {
-    if (obj[arg.c.id]) return false;
-    return ((obj[arg.c.id] = 1), true);
-  });
+  const obj = {},
+    orden = { bad: 0, warn: 1, rec: 2 };
+  return lista
+    .filter((arg) => {
+      if (obj[arg.c.id]) return false;
+      return ((obj[arg.c.id] = 1), true);
+    })
+    // Primero lo vencido, después lo que vence pronto, al final lo recurrente;
+    // y dentro de cada grupo, lo más atrasado arriba. Lo de hace tres meses
+    // importa más que lo de ayer, y lo de mañana más que lo del jueves.
+    .sort((a, b) => orden[a.kind] - orden[b.kind] || (a.dias || 0) - (b.dias || 0));
 }
 // Las alertas se recalculan en vivo desde las tarjetas (no son un log
 // guardado), así que "leídas" no las borra: solo las oculta hasta que
@@ -11269,29 +11373,64 @@ function updateBell() {
   // aunque el equipo esté mirando otra ventana.
   document.title = cantidad ? "(" + cantidad + ") Cotonetes Forever" : "Cotonetes Forever · COTO Aprendizaje e-Learning";
 }
+// Cuánto hace que está vencida, en palabras. "venció el 12/05" no dice si
+// eso fue anteayer o en marzo, que es lo único que decide qué se mira primero.
+function notifAtraso(recurso) {
+  const d = recurso.dias;
+  if (typeof d !== "number") return "";
+  if (recurso.kind === "warn") return d <= 0 ? "hoy" : d === 1 ? "mañana" : "en " + d + " días";
+  const atraso = -d;
+  if (atraso <= 0) return "hoy";
+  if (atraso === 1) return "hace 1 día";
+  if (atraso < 31) return "hace " + atraso + " días";
+  const meses = Math.round(atraso / 30);
+  return "hace " + meses + (meses === 1 ? " mes" : " meses");
+}
+function notifItemHTML(recurso) {
+  const quien = recurso.c.responsable ? member(recurso.c.responsable) : null,
+    atraso = notifAtraso(recurso);
+  return (
+    '<div class="notif-item"><div class="notif-ic ' +
+    recurso.kind +
+    '" data-action="card:open" data-id="' +
+    recurso.c.id +
+    '">' +
+    recurso.ic +
+    '</div><div class="notif-main" data-action="card:open" data-id="' +
+    recurso.c.id +
+    '"><div class="notif-t">' +
+    esc(recurso.c.titulo) +
+    '</div><div class="notif-s">' +
+    esc(recurso.sub) +
+    (atraso ? ' <span class="notif-atraso ' + recurso.kind + '">' + esc(atraso) + "</span>" : "") +
+    (quien ? " · " + esc(quien.nombre) : ' · <span class="notif-nadie">sin responsable</span>') +
+    "</div></div>" +
+    // Una por una, además del "marcar todas": mirar diez y querer sacar una
+    // sola es lo normal, y hasta ahora había que sacarlas todas o ninguna.
+    '<button class="notif-ok" data-action="notif:read-one" data-clave="' +
+    esc(alertaKey(recurso)) +
+    '" title="Marcar esta como leída">✓</button></div>'
+  );
+}
+function notifGrupoHTML(titulo, items) {
+  if (!items.length) return "";
+  return (
+    '<div class="notif-grupo">' +
+    esc(titulo) +
+    " <b>" +
+    items.length +
+    "</b></div>" +
+    items.map(notifItemHTML).join("")
+  );
+}
 function openNotif() {
   const lista0 = alertasSinLeer(),
     lista = state.alertasMias ? lista0.filter((recurso) => mine(recurso.c)) : lista0;
   state.selectedId = null;
   const txt = lista.length
-    ? lista
-        .map(
-          (recurso) =>
-            '<div class="notif-item" data-action="card:open" data-id="' +
-            recurso.c.id +
-            '"><div class="notif-ic ' +
-            recurso.kind +
-            '">' +
-            recurso.ic +
-            '</div><div style="flex:1"><div class="notif-t">' +
-            esc(recurso.c.titulo) +
-            '</div><div class="notif-s">' +
-            recurso.label +
-            " · " +
-            recurso.sub +
-            "</div></div></div>",
-        )
-        .join("")
+    ? notifGrupoHTML("⚑ Vencidas", lista.filter((a) => a.kind === "bad")) +
+      notifGrupoHTML("⏳ Vencen en los próximos días", lista.filter((a) => a.kind === "warn")) +
+      notifGrupoHTML("↻ Recurrentes por rearmar", lista.filter((a) => a.kind === "rec"))
     : state.alertasMias && lista0.length
       ? '<div class="empty"><div class="big">✅</div><div style="font-weight:700;color:var(--ink)">Nada tuyo pendiente</div><div style="margin-top:4px">Hay ' +
         lista0.length +
@@ -11328,13 +11467,13 @@ function openHelp() {
     ["☰ Filtros del Planner", "Agrupa persona, sector, tipo y estado en un solo botón — el contador muestra cuántos hay activos. También te deja guardar combinaciones de filtros frecuentes."],
     ["Acciones rápidas en las tarjetas", "Pasá el mouse sobre una tarjeta del Planner: aparecen accesos directos para edición rápida, duplicar, copiar el enlace y eliminar, sin tener que abrir el panel completo."],
     ["Exportar CSV / PDF", "En la barra del Planner, junto al orden. Exporta lo que estás viendo en pantalla — respeta los filtros activos."],
-    ["🔔 Alertas", "Vencidas y por vencer. \"Marcar todas como leídas\" las oculta hasta que algo cambie en esa tarjeta puntual (nueva fecha, otro estado)."],
+    ["🔔 Alertas", "Vencidas primero (la más atrasada arriba), después lo que vence en los próximos días. Cada una dice hace cuánto y de quién es. El ✓ de cada fila la saca sola; \"Marcar todas como leídas\" las oculta todas, hasta que algo cambie en esa tarjeta (nueva fecha, otro estado). Una tarjeta finalizada nunca aparece acá."],
     ["Menú de usuario (▾)", "Mi semana (tu foco de los próximos días), Carga del equipo, e Imprimir/PDF están ahí."],
     ["🎲 ¿Qué curso me toca?", "Botoncito flotante a la derecha del Planner (🎡): tocalo para desplegar el sorteo entre los cursos que todavía no arrancaron."],
     ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
     ["Mapa del área", "Todo lo publicado (cursos, Edu Points, contenido audiovisual), organizado por sector y filtrable con un clic."],
-    ["🔧 Seguimiento técnico", "Reemplaza al Excel de Categorías y Cursos: publicación, actualización, portada, mosaico, evaluación, textos y diseño de cada curso, editable ahí mismo. \"🔗 Vincular\" une una fila con su tarjeta del Mapa. Debajo de los cursos de cada categoría cuelgan sus <b>Archivos Edu Point</b>, con el mismo tratamiento."],
-    ["📈 Reportes", "Métricas para gestionar el área: publicaciones por mes, catálogo por sector, carga del equipo y tiempo en revisión. \"⬇ CSV\" y \"🖨 PDF\" exportan lo mismo que se ve en pantalla."],
+    ["🔧 Seguimiento técnico", "Reemplaza al Excel de Categorías y Cursos: publicación, subida del SCORM, mail, portada, mosaico, evaluación, textos y diseño de cada curso, editable ahí mismo. Con <b>▦ Columnas</b> elegís cuáles ver (queda guardado en tu computadora, no le cambia la vista al resto). \"🔗 Vincular\" une una fila con su tarjeta del Mapa. Debajo de los cursos de cada categoría cuelgan sus <b>Archivos Edu Point</b>, con el mismo tratamiento."],
+    ["📈 Reportes", "Métricas para gestionar el área: publicaciones por mes (elegís el año), catálogo por sector y qué está esperando revisión. \"⬇ CSV\" y \"🖨 PDF\" exportan lo mismo que se ve en pantalla, para el año que estés mirando."],
   ];
   openModal(
     '<h2>❓ Ayuda</h2><div class="sub-t">Funciones que ya existen pero a veces cuestan de encontrar.</div>\n    <div style="margin-top:4px">' +

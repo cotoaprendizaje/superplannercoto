@@ -32,7 +32,7 @@ index.html        ← generado. NO está en el repositorio: lo arma el build.
 npm install       # una sola vez (Playwright, para los tests)
 npm run build     # regenera index.html desde src/
 npm start         # sirve la carpeta en http://localhost:8080
-npm test          # las 70 pruebas (build incluido)
+npm test          # las 85 pruebas (build incluido)
 ```
 
 El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
@@ -90,9 +90,11 @@ de ingreso.
 | `test/sync.test.mjs` | Que dos personas editando a la vez no se pisen. |
 | `test/tamano.test.mjs` | Que el documento sincronizado no engorde ni se lleve las imágenes adentro. Es la prueba que faltaba el día que se agotó la cuota. |
 | `test/ingreso.test.mjs` | Que sin sesión no se baje nada, y que con sesión se trabaje normal aunque el token venza en el medio. |
+| `test/numeros.test.mjs` | Que los números que el equipo lee sean los mismos en todas las vistas: que la campana no marque como pendiente algo terminado, y que Reportería coincida con el Planner y con Técnico. |
 
-El flujo también verifica que `index.html` coincida con lo generado desde
-`src/`: si alguien edita el archivo generado a mano, se pone en rojo.
+El flujo genera `index.html` desde `src/` antes de correr las pruebas y
+publica exactamente ese archivo: lo que se prueba y lo que sale a producción
+son el mismo byte.
 
 Una prueba que no puede fallar no sirve. Cuando agregues una, comprobá que se
 ponga en rojo rompiendo a propósito lo que dice cuidar.
