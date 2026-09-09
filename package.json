@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node build.mjs",
     "start": "npm run build && npx --yes http-server . -p 8080 -c-1",
-    "test": "npm run build && node test/sync.test.mjs && node test/tamano.test.mjs && node test/ingreso.test.mjs"
+    "test": "npm run build && node test/sync.test.mjs && node test/tamano.test.mjs && node test/ingreso.test.mjs && node test/numeros.test.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.0"

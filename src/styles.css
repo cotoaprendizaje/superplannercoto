@@ -2895,8 +2895,11 @@ button {
   border-bottom: 1px dashed var(--line);
   cursor: pointer;
 }
-.notif-item:hover {
-  opacity: 0.78;
+.notif-item {
+  cursor: default;
+}
+.notif-item:hover .notif-t {
+  color: var(--coto-blue);
 }
 .notif-ic {
   width: 30px;
@@ -2923,15 +2926,71 @@ button {
 [data-theme="dark"] .notif-ic.warn {
   background: #3a2f12;
 }
-.notif-t {
+.notif-main {
   flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+.notif-t {
   font-size: 13px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 .notif-s {
   font-size: 11px;
   color: var(--ink-soft);
+  margin-top: 2px;
+}
+/* Encabezado de cada grupo del panel de alertas. Antes las vencidas, las que
+   vencen pronto y las recurrentes iban todas en una misma lista sin orden:
+   lo de hace tres meses quedaba entre lo de mañana. */
+.notif-grupo {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 16px 0 2px;
+}
+.notif-grupo:first-child {
+  margin-top: 2px;
+}
+.notif-grupo b {
+  color: var(--ink);
+}
+/* Cuánto hace que venció, en palabras: una fecha sola no dice si fue
+   anteayer o en marzo, que es lo único que decide qué se mira primero. */
+.notif-atraso {
+  font-weight: 800;
+}
+.notif-atraso.bad {
+  color: var(--bad);
+}
+.notif-atraso.warn {
+  color: #b7791f;
+}
+[data-theme="dark"] .notif-atraso.warn {
+  color: #e2a03f;
+}
+.notif-nadie {
+  font-style: italic;
+}
+.notif-ok {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: 0 0;
+  color: var(--ink-soft);
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.14s;
+}
+.notif-ok:hover {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 14%, var(--surface));
+  color: var(--ok);
 }
 /* ===== Panel de Ajustes =====
    Navegación al costado y una sección por tarea, en vez del scroll único de
@@ -5115,7 +5174,28 @@ html {
   margin-bottom: 16px;
 }
 .rep-sec {
-  margin: 26px 0;
+  margin: 22px 0;
+}
+/* Selector de año del gráfico por mes. Antes el año estaba clavado en el del
+   calendario: el 2 de enero la vista quedaba vacía y no se podía mirar el año
+   que se acababa de cerrar, que es justo cuando se mira. */
+.rep-anios {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+/* Diecinueve sectores en una sola columna ocupaban novecientos píxeles para
+   una lista ordenada. En dos columnas se lee de una sola pasada. */
+.rep-sect-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 10px 26px;
+}
+/* En columnas angostas los 74px reservados para el número dejaban un hueco
+   más ancho que la propia barra. */
+.rep-sect-grid .carga-num {
+  min-width: 26px;
 }
 .rep-sec-h {
   display: flex;
@@ -5186,7 +5266,10 @@ html {
 }
 .rep-bar {
   width: 100%;
-  min-height: 3px;
+  /* Piso en píxeles, no en porcentaje: una barra de 1 sobre 78 tiene que
+     verse, pero sin dibujarse igual que una de 4 sobre 78. Los meses en cero
+     directamente no dibujan barra (ver repBarsHTML). */
+  min-height: 5px;
   border-radius: 4px 4px 0 0;
   background: var(--coto-blue);
   transition: height 0.4s;

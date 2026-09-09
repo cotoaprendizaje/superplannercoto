@@ -68,6 +68,9 @@ jobs:
       - name: Ingreso con cuenta propia
         run: node test/ingreso.test.mjs
 
+      - name: Los números que el equipo lee
+        run: node test/numeros.test.mjs
+
       # Lo que se va a publicar es exactamente lo que se acaba de probar: el
       # sitio se arma acá y se guarda, en vez de reconstruirse después.
       - name: Preparar el sitio
