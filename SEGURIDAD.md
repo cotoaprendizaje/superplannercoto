@@ -80,16 +80,17 @@ Dos niveles, y conviene entender qué cubre cada uno.
 
 **Automático, en el navegador.** Cada guardado deja una copia en el navegador
 de quien está usando la app, hasta ocho, espaciadas al menos 15 minutos. Se
-restauran desde **Ajustes → Copias de resguardo**. Cubre el caso "alguien borró
+restauran desde **Ajustes → Copias**. Cubre el caso "alguien borró
 algo sin querer": si otra persona tuvo la app abierta hace poco, ahí está.
 
 No cubre nada más. Son copias locales: si todos limpian los datos del navegador
 el mismo día, o si el proyecto de Supabase desaparece, no queda nada.
 
-**Manual, fuera del navegador.** `Ajustes → ⬇ Exportar JSON`, y el archivo al
-Drive del área. Es lo único que sobrevive a que la base se pierda. La app lo
-recuerda: pasados siete días sin bajar un respaldo, quien administra ve un
-aviso en Inicio.
+**Manual, fuera del navegador.** `Ajustes → Datos → ⬇ Exportar JSON`, y el
+archivo al Drive del área. Es lo único que sobrevive a que la base se pierda.
+La app lo recuerda en dos lugares: pasados siete días sin bajar un respaldo,
+quien administra ve un aviso en Inicio, y el **Panel** de Ajustes muestra
+siempre cuántos días pasaron desde el último, en verde o en ámbar.
 
 El plan gratuito de Supabase **no hace copias de seguridad ni permite volver a
 un punto en el tiempo**. Mientras se siga en ese plan, ese respaldo semanal no
