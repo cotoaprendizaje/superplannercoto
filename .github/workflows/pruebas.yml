@@ -40,8 +40,18 @@ jobs:
 
       # Las pruebas abren la app de verdad en un navegador: sin esto no hay
       # con qué correrlas.
+      #
+      # El "--with-deps" corre un apt-get update, y la máquina de GitHub viene
+      # con el repositorio de Google Chrome configurado — algo que no tiene
+      # nada que ver con este proyecto. El 9 de septiembre ese repositorio
+      # sirvió un índice con el hash cambiado, apt cortó con error, y la
+      # publicación quedó frenada por una falla ajena. Se saca antes de
+      # instalar: las bibliotecas que Chromium necesita salen de Ubuntu.
       - name: Instalar Chromium
-        run: npx playwright install --with-deps chromium
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list \
+            /etc/apt/sources.list.d/google-chrome.sources
+          npx playwright install --with-deps chromium
 
       # El index.html no se guarda en el repositorio: se arma acá, a partir de
       # src/. Así lo que se prueba y lo que se publica son literalmente el
