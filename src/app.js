@@ -3701,6 +3701,7 @@ function docSnapshot() {
     agenda: state.agenda,
     cotofrase: state.cotofrase,
     deleted: state.deleted,
+    ultimoExport: state.ultimoExport,
   };
 }
 // Seguimiento técnico vive en su propia fila del backend (ver TEC_FILA):
@@ -3797,6 +3798,8 @@ async function mergeRemoteIntoState() {
       remote.team.length &&
       ((TEAM.length = 0), remote.team.forEach((m) => TEAM.push(m)), ensureTeam());
   }
+  if (typeof remote.ultimoExport === "number")
+    state.ultimoExport = Math.max(state.ultimoExport || 0, remote.ultimoExport);
   if (remote.agenda && typeof remote.agenda === "object")
     state.agenda = Object.assign({}, remote.agenda, state.agenda);
   ensureFraseDay();
@@ -3998,6 +4001,9 @@ const state = {
   connOk: true,
   saveError: false,
   lastSyncTs: null,
+  // Cuándo se bajó el último respaldo. Sincronizado a propósito: si lo bajó
+  // Vivi, a Dami no le tiene que volver a saltar el aviso.
+  ultimoExport: 0,
   appPassHash: "1waoja",
   agenda: {},
   cotofrase: { day: "", porUsuario: {} },
@@ -7421,6 +7427,7 @@ function renderInicio() {
     '</p>\n    </div>\n    <div class="hub-grid">' +
     lista.map(fn).join("") +
     "</div>\n    " +
+    respaldoAvisoHTML() +
     agendaAvisoHTML() +
     renderResumen() +
     "\n    </div>\n  </div>"
@@ -7429,6 +7436,30 @@ function renderInicio() {
 // Aviso breve y descartable donde antes vivía la pestaña de Agenda, para
 // que el equipo no se quede buscándola — se va a rehacer de cero más
 // adelante, esto no es un error.
+// El plan gratuito de Supabase no hace copias de seguridad: si la base se
+// pierde, lo único que queda es un respaldo bajado a mano. Y un respaldo que
+// depende de que alguien se acuerde no existe. Así que lo recuerda la app, y
+// solo a quien puede hacerlo.
+const RESPALDO_DIAS = 7;
+function diasSinRespaldo() {
+  if (!state.ultimoExport) return Infinity;
+  return Math.floor((Date.now() - state.ultimoExport) / 86400000);
+}
+function respaldoAvisoHTML() {
+  if (!esAdmin()) return "";
+  const dias = diasSinRespaldo();
+  if (dias < RESPALDO_DIAS) return "";
+  const cuando =
+    dias === Infinity
+      ? "Todavía no bajaste ningún respaldo."
+      : "Hace " + dias + " día" + (dias === 1 ? "" : "s") + " que no se baja un respaldo.";
+  return (
+    '<div class="note warn hub-aviso">\n    <span>🛟 <b>' +
+    cuando +
+    "</b> El plan gratuito no guarda copias: si algo le pasa a la base, esto es lo único que queda. Bajá una y dejala en el Drive del área.</span>\n" +
+    '    <button class="btn btn-sm" data-action="data:export">⬇ Bajar respaldo</button>\n  </div>'
+  );
+}
 function agendaAvisoHTML() {
   if (localStorage.getItem("cf.avisoAgendaOculto") === "1") return "";
   return (
@@ -11326,7 +11357,10 @@ function exportJSON() {
       2,
     ),
   ),
-    flash("⬇ Backup exportado"));
+    (state.ultimoExport = Date.now()),
+    persist(),
+    render(),
+    flash("⬇ Backup exportado · guardalo en el Drive del área"));
 }
 function exportCSV() {
   const lista = [
@@ -11529,6 +11563,7 @@ async function boot() {
       if (typeof tarjeta.appPassHash === "string") state.appPassHash = tarjeta.appPassHash;
       if (tarjeta.agenda && typeof tarjeta.agenda === "object") state.agenda = tarjeta.agenda;
       if (tarjeta.cotofrase && typeof tarjeta.cotofrase === "object") state.cotofrase = tarjeta.cotofrase;
+      if (typeof tarjeta.ultimoExport === "number") state.ultimoExport = tarjeta.ultimoExport;
       ensureFraseDay();
       (ensureTeam(), injectSectorStyles(), renderGateTeam());
       // ingestCatalogo() con replace:false es no-destructivo: solo agrega los
