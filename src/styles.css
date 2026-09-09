@@ -1044,6 +1044,33 @@ button {
   background: var(--line);
   margin: 2px 0;
 }
+/* Aclaración al tope del selector de columnas de Técnico: que quede claro
+   que esconder una columna es cosa de esta computadora y no del equipo. */
+.filt-pop-nota {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+.tec-col-opt {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  padding: 3px 2px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.tec-col-opt:hover {
+  background: var(--surface-2);
+}
+.tec-col-opt input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--coto-blue);
+  cursor: pointer;
+  flex: none;
+}
 .filt-pop-label {
   font-size: 10.5px;
   font-weight: 800;
@@ -2906,15 +2933,262 @@ button {
   font-size: 11px;
   color: var(--ink-soft);
 }
-.set-sec {
-  margin-bottom: 22px;
+/* ===== Panel de Ajustes =====
+   Navegación al costado y una sección por tarea, en vez del scroll único de
+   ocho bloques donde "Exportar" y "Reiniciar todo" quedaban pegados. */
+.modal-set {
+  width: 940px;
+  padding: 22px 24px 18px;
 }
-.set-sec h3 {
-  font-size: 14px;
-  margin-bottom: 10px;
+.set-layout {
+  display: grid;
+  grid-template-columns: 186px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.set-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: sticky;
+  top: 0;
+}
+.set-nav-i {
   display: flex;
   align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: 0 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-align: left;
+  cursor: pointer;
+  transition: 0.14s;
+}
+.set-nav-i:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.set-nav-i.on {
+  background: color-mix(in srgb, var(--coto-blue) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--coto-blue) 35%, var(--line));
+  color: var(--coto-blue);
+  font-weight: 800;
+}
+.set-nav-ic {
+  font-size: 15px;
+  line-height: 1;
+}
+.set-pane {
+  min-width: 0;
+  max-height: 62vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.set-pane-h {
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.set-pane-h h3 {
+  font-size: 16px;
+  margin: 0;
+}
+.set-pane-h span {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.set-sub-h {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 18px 0 8px;
+}
+.set-pane > .set-sub-h:first-of-type {
+  margin-top: 4px;
+}
+.set-nota {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.set-nota.warn {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--warn) 13%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line));
+  border-radius: var(--r-sm);
+  padding: 9px 11px;
+}
+/* Estado del respaldo. Se dibuja siempre, en verde o en ámbar: la pregunta
+   "¿cuándo fue el último?" hay que poder contestarla antes de tocar nada. */
+.set-respaldo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  border: 1px solid color-mix(in srgb, var(--ok) 38%, var(--line));
+  background: color-mix(in srgb, var(--ok) 10%, var(--surface));
+  margin-bottom: 16px;
+}
+.set-respaldo.tarde {
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--line));
+  background: color-mix(in srgb, var(--warn) 13%, var(--surface));
+}
+.set-respaldo > div:first-child {
+  flex: 1;
+  min-width: 220px;
+}
+.set-respaldo b {
+  font-size: 13.5px;
+}
+.set-respaldo div div {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-top: 3px;
+}
+.set-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+  margin-bottom: 14px;
+}
+.set-tile {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  padding: 10px 11px;
+}
+.set-tile-n {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.set-tile-l {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.set-tile-s {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+.set-peso {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.set-peso-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  background: var(--surface);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.set-peso-row + .set-peso-row {
+  border-top: 1px solid var(--line);
+}
+.set-peso-row b {
+  color: var(--ink);
+  font-size: 12.5px;
+}
+.set-peso-n {
+  min-width: 66px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+/* Lo que no se puede deshacer va acá adentro y en ningún otro lado: la
+   distancia visual entre "Exportar" y "Reiniciar" es la protección. */
+.set-peligro {
+  margin-top: 22px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--bad) 42%, var(--line));
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--bad) 7%, var(--surface));
+}
+.set-peligro-h {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--bad);
+  margin-bottom: 6px;
+}
+.set-peligro > div:not(.set-peligro-h) {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.btn-peligro {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+}
+.btn-peligro:hover {
+  background: color-mix(in srgb, var(--bad) 12%, var(--surface));
+}
+.set-seg {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--ink-soft);
+  border-radius: var(--r-sm);
+  padding: 11px 13px;
+  margin-bottom: 10px;
+  background: var(--surface-2);
+}
+.set-seg.ok {
+  border-left-color: var(--ok);
+}
+.set-seg.warn {
+  border-left-color: var(--warn);
+}
+.set-seg b {
+  font-size: 13px;
+}
+.set-seg div {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+@media (max-width: 780px) {
+  .set-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .set-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    position: static;
+  }
+  .set-nav-i {
+    width: auto;
+  }
+  .set-pane {
+    max-height: none;
+  }
 }
 .set-row {
   display: flex;
@@ -2946,8 +3220,6 @@ button {
   flex: none;
 }
 .set-grid {
-  max-height: 230px;
-  overflow-y: auto;
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 10px;
@@ -2956,6 +3228,39 @@ button {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+/* Van después de .set-row a propósito: misma especificidad, gana la última.
+   Una persona por línea — nombre, mail, color, permiso — en vez de las tres
+   líneas sueltas que ocupaba antes cada integrante. */
+.set-add {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+.set-mem {
+  display: grid;
+  grid-template-columns: auto minmax(90px, 1fr) auto minmax(150px, 1.5fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+.set-mem > input {
+  min-width: 0;
+}
+@media (max-width: 900px) {
+  .set-mem {
+    grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  }
+  .set-mem input[type="email"] {
+    grid-column: 1 / -1;
+  }
+}
+.set-sec-key {
+  font-size: 11px;
+  color: var(--ink-soft);
+  min-width: 118px;
 }
 .tpl-row {
   display: flex;
@@ -2972,8 +3277,6 @@ button {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 10px;
-  max-height: 340px;
-  overflow-y: auto;
   padding: 2px;
 }
 .tpl-chk-row {
@@ -4642,7 +4945,7 @@ html {
   font-weight: 600;
 }
 .tec-pub input {
-  min-width: 130px;
+  min-width: 118px;
   font-variant-numeric: tabular-nums;
 }
 .tec-estado input {

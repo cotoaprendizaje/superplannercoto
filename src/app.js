@@ -3167,6 +3167,12 @@ function seedTecnico() {
     // creó el curso) y "actualización" arranca vacía: se completa a mano a
     // medida que se van tocando los cursos.
     actualizacion: "",
+    // Las tres fechas del circuito de publicación (alta en Moodle, última
+    // subida del SCORM, mail al personal) arrancan vacías: son datos que solo
+    // tiene el equipo y se cargan a mano. Ver TEC_FECHAS.
+    moodle: "",
+    scorm: "",
+    mail: "",
     portada: s.po,
     mosaico: s.mo,
     evaluacion: s.ev,
@@ -4108,6 +4114,9 @@ const state = {
   // Mail de quien entró cuando no coincide con nadie del equipo. Vacío = todo
   // en orden.
   mailSinEquipo: "",
+  // Resto de la clave grupal que había antes del login con cuenta propia.
+  // Ya nadie la verifica ni la puede cambiar; se sigue leyendo y guardando
+  // solo para no romperle el documento a una pestaña con la versión vieja.
   appPassHash: "1waoja",
   agenda: {},
   cotofrase: { day: "", porUsuario: {} },
@@ -4127,20 +4136,15 @@ const state = {
   tecOrden: "",
   tecOrdenDir: 1,
   tecSubView: "grilla",
+  // Columnas escondidas de la grilla. null = todavía no se leyó del
+  // navegador; lo resuelve tecColsOcultas() la primera vez que se dibuja.
+  tecColsOcultas: null,
 };
 // Si cambió el día desde la última visita, la ronda de frases arranca de
 // cero: nadie "ya tiró hoy" con una frase de ayer.
 function ensureFraseDay() {
   const hoy = isoOf(new Date());
   if (state.cotofrase.day !== hoy) state.cotofrase = { day: hoy, porUsuario: {} };
-}
-function hashStr(lista) {
-  lista = String(lista);
-  let n = 5381;
-  for (let i = 0; i < lista.length; i++) {
-    n = ((n << 5) + n + lista.charCodeAt(i)) >>> 0;
-  }
-  return n.toString(36);
 }
 const allTipos = () => Object.assign({}, TIPOS, mapCustom());
 // "__checklistOverrides" vive DENTRO de customTpl (con ese prefijo para no
@@ -5616,6 +5620,85 @@ function renderMapa() {
 // Las fechas se guardan en ISO (AAAA-MM-DD) porque así ordenan solas y no
 // dependen de la zona horaria, pero se muestran y se escriben en DD/MM/AAAA,
 // que es como las lee el equipo. La conversión pasa acá y en applyTecField.
+// Las cinco fechas de la grilla. Se guardan en ISO y se muestran en
+// DD/MM/AAAA (ver tecFechaVer/tecFechaISO); tenerlas listadas en un solo lugar
+// evita que agregar una sexta obligue a acordarse de cuatro sitios distintos.
+const TEC_FECHAS = ["publicacion", "actualizacion", "moodle", "scorm", "mail"];
+// Columnas que se pueden mostrar u ocultar, con el grupo bajo el que se
+// eligen. "Curso" y la papelera no están acá a propósito: sin el nombre no se
+// sabe qué fila se está editando, y sin la ✕ no habría cómo borrarla.
+// El orden de esta lista es el orden de la tabla.
+const TEC_COLS = [
+  { k: "publicacion", label: "Publicación", grupo: "Fechas", tit: "Cuándo se creó el curso" },
+  { k: "actualizacion", label: "Actualización", grupo: "Fechas", tit: "Última vez que se tocó el curso" },
+  { k: "moodle", label: "Alta en Moodle", grupo: "Fechas", tit: "Cuándo se creó el curso en Moodle" },
+  { k: "scorm", label: "SCORM actualizado", grupo: "Fechas", tit: "Última vez que se subió el paquete SCORM" },
+  { k: "mail", label: "Mail publicado", grupo: "Fechas", tit: "Cuándo salió el mail avisando el curso" },
+  { k: "portada", label: "Portada", grupo: "Producción" },
+  { k: "mosaico", label: "Mosaico", grupo: "Producción" },
+  { k: "evaluacion", label: "Evaluación", grupo: "Producción" },
+  { k: "textos", label: "Textos", grupo: "Producción" },
+  { k: "diseno", label: "Diseño", grupo: "Producción" },
+  { k: "estado", label: "Estado / Comentario", grupo: "Producción" },
+  { k: "mapa", label: "Mapa", grupo: "Producción", tit: "Tarjeta del Mapa vinculada" },
+];
+const TEC_CHKS = ["portada", "mosaico", "evaluacion", "textos"];
+function tecColLabel(k) {
+  const col = TEC_COLS.find((c) => c.k === k);
+  return col ? col.label : k;
+}
+// Qué columnas se ven es preferencia de cada persona, no un dato del área: va
+// al navegador y no al documento sincronizado. Con quince columnas nadie
+// trabaja mirando las quince, y si viajara al backend la que esconde una
+// columna se la escondería a las otras cinco.
+const TEC_COLS_KEY = "cf.tecCols.v1";
+function tecColsOcultas() {
+  if (!state.tecColsOcultas) {
+    let guardadas = [];
+    try {
+      guardadas = JSON.parse(localStorage.getItem(TEC_COLS_KEY) || "[]");
+    } catch (e) {}
+    state.tecColsOcultas = (Array.isArray(guardadas) ? guardadas : []).filter((k) =>
+      TEC_COLS.some((c) => c.k === k),
+    );
+  }
+  return state.tecColsOcultas;
+}
+function tecColVisible(k) {
+  return !tecColsOcultas().includes(k);
+}
+function tecColsVisibles() {
+  return TEC_COLS.filter((c) => tecColVisible(c.k));
+}
+function tecColsGuardar() {
+  try {
+    localStorage.setItem(TEC_COLS_KEY, JSON.stringify(tecColsOcultas()));
+  } catch (e) {}
+}
+function tecColToggle(k) {
+  const ocultas = tecColsOcultas().slice(),
+    i = ocultas.indexOf(k);
+  (i === -1 ? ocultas.push(k) : ocultas.splice(i, 1), (state.tecColsOcultas = ocultas));
+  // Ordenar por una columna que ya no se ve dejaría la tabla en un orden que
+  // no se puede leer. Cae al nombre del curso en vez de quedar sin orden:
+  // así la tabla no se reagrupa de golpe y la flecha queda a la vista, en
+  // "Curso", para poder deshacerlo.
+  if (state.tecOrden === k && ocultas.includes(k)) ((state.tecOrden = "curso"), (state.tecOrdenDir = 1));
+  tecColsGuardar();
+}
+function tecColsTodas() {
+  ((state.tecColsOcultas = []), tecColsGuardar());
+}
+// Ancho mínimo de la tabla según lo que esté a la vista: con las quince
+// columnas hay scroll horizontal sí o sí, con cinco no tiene por qué haberlo.
+function tecTableMin() {
+  const ancho = { estado: 210, mapa: 150, diseno: 130 };
+  return (
+    320 +
+    (tecPlano() ? 120 : 0) +
+    tecColsVisibles().reduce((n, c) => n + (ancho[c.k] || (TEC_CHKS.includes(c.k) ? 74 : 132)), 0)
+  );
+}
 function tecFechaVer(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec((iso || "").trim());
   return m ? m[3] + "/" + m[2] + "/" + m[1] : iso || "";
@@ -5663,7 +5746,7 @@ function tecRows() {
     // Una fecha mal escrita ordena como si estuviera vacía (al final) en vez de
     // colarse arriba de todo: un typo no puede descolocar la tabla entera.
     const clave = (fila) =>
-      (campo === "publicacion" || campo === "actualizacion") && tecFechaMala(fila[campo])
+      TEC_FECHAS.includes(campo) && tecFechaMala(fila[campo])
         ? ""
         : (fila[campo] || "").toString().toLowerCase();
     lista = lista.slice().sort((a, b) => {
@@ -5780,6 +5863,21 @@ function tecFechaCelda(fila, campo) {
     '"></td>'
   );
 }
+// Una celda por tipo de columna. Las cinco fechas comparten dibujo, los
+// cuatro tildes también: lo único propio de cada columna es su clave.
+function tecCeldaHTML(fila, col) {
+  if (TEC_FECHAS.includes(col.k)) return tecFechaCelda(fila, col.k);
+  if (TEC_CHKS.includes(col.k)) return '<td class="tec-chk">' + tecCheckbox(fila, col.k) + "</td>";
+  if (col.k === "diseno") return '<td class="tec-diseno">' + tecDisenoSelect(fila) + "</td>";
+  if (col.k === "mapa") return '<td class="tec-linkcell">' + tecLinkHTML(fila) + "</td>";
+  return (
+    '<td class="tec-estado"><input type="text" data-tec-id="' +
+    fila.id +
+    '" data-tec-field="estado" value="' +
+    esc(fila.estado) +
+    '" placeholder="Comentario…"></td>'
+  );
+}
 function tecRowHTML(fila) {
   return (
     '<tr data-tec-row="' +
@@ -5797,31 +5895,17 @@ function tecRowHTML(fila) {
     '" data-tec-field="curso" value="' +
     esc(fila.curso) +
     '"></td>' +
-    tecFechaCelda(fila, "publicacion") +
-    tecFechaCelda(fila, "actualizacion") +
-    '<td class="tec-chk">' +
-    tecCheckbox(fila, "portada") +
-    '</td><td class="tec-chk">' +
-    tecCheckbox(fila, "mosaico") +
-    '</td><td class="tec-chk">' +
-    tecCheckbox(fila, "evaluacion") +
-    '</td><td class="tec-chk">' +
-    tecCheckbox(fila, "textos") +
-    '</td><td class="tec-diseno">' +
-    tecDisenoSelect(fila) +
-    '</td><td class="tec-estado"><input type="text" data-tec-id="' +
-    fila.id +
-    '" data-tec-field="estado" value="' +
-    esc(fila.estado) +
-    '" placeholder="Comentario…"></td><td class="tec-linkcell">' +
-    tecLinkHTML(fila) +
-    '</td><td class="tec-delcell"><span class="chk-del" data-action="tec:del" data-id="' +
+    tecColsVisibles()
+      .map((col) => tecCeldaHTML(fila, col))
+      .join("") +
+    '<td class="tec-delcell"><span class="chk-del" data-action="tec:del" data-id="' +
     fila.id +
     '" title="Borrar fila">✕</span></td></tr>'
   );
 }
 function tecGroupHTML(grupo) {
-  const cols = tecPlano() ? 12 : 11;
+  // +2 = la columna del curso y la de la ✕, que están siempre.
+  const cols = tecColsVisibles().length + 2 + (tecPlano() ? 1 : 0);
   // En modo plano no hay encabezado de categoría ni fila de "agregar acá":
   // la categoría ya es una columna y agregar se hace desde el botón de arriba.
   if (grupo.categoria === null) return '<tbody class="tec-group">' + grupo.filas.map(tecRowHTML).join("") + "</tbody>";
@@ -5847,15 +5931,15 @@ function tecGroupHTML(grupo) {
     "</tbody>"
   );
 }
-function tecTh(campo, label) {
+function tecTh(campo, label, tit) {
   const activo = state.tecOrden === campo;
   return (
     '<th class="tec-th-sort' +
     (activo ? " on" : "") +
     '" data-action="tec:sort" data-campo="' +
     campo +
-    '" title="Ordenar por ' +
-    esc(label) +
+    '" title="' +
+    esc(tit ? tit + " — clic para ordenar" : "Ordenar por " + label) +
     '">' +
     esc(label) +
     '<span class="tec-th-ar">' +
@@ -5868,12 +5952,16 @@ function tecHeadHTML() {
     "<thead><tr>" +
     (tecPlano() ? tecTh("categoria", "Categoría") : "") +
     tecTh("curso", "Curso") +
-    tecTh("publicacion", "Publicación") +
-    tecTh("actualizacion", "Actualización") +
-    "<th>Portada</th><th>Mosaico</th><th>Evaluación</th><th>Textos</th>" +
-    tecTh("diseno", "Diseño") +
-    tecTh("estado", "Estado / Comentario") +
-    "<th>Mapa</th><th></th></tr></thead>"
+    tecColsVisibles()
+      .map((col) =>
+        // Los tildes y el vínculo con el Mapa no se ordenan: ordenar por
+        // "tiene portada" es lo mismo que el KPI de arriba, que ya filtra.
+        TEC_CHKS.includes(col.k) || col.k === "mapa"
+          ? '<th title="' + esc(col.tit || col.label) + '">' + esc(col.label) + "</th>"
+          : tecTh(col.k, col.label, col.tit),
+      )
+      .join("") +
+    "<th></th></tr></thead>"
   );
 }
 // Categorías ya usadas en alguna fila — alimenta tanto el datalist de
@@ -5909,7 +5997,9 @@ function tecListHTML() {
     );
   return (
     tecCategoriasDatalistHTML() +
-    '<div class="tec-table-wrap"><table class="tec-table">' +
+    '<div class="tec-table-wrap"><table class="tec-table" style="min-width:' +
+    tecTableMin() +
+    'px">' +
     tecHeadHTML() +
     grupos.map(tecGroupHTML).join("") +
     "</table></div>"
@@ -6034,6 +6124,60 @@ function tecCategoriaFiltroHTML() {
     "</select></div>"
   );
 }
+// Selector de columnas. Mismo patrón que el popover de "☰ Filtros" del
+// Planner: se abre sobre el botón, se cierra al tocar afuera, y lo que se
+// marca queda guardado en este navegador.
+function tecColsPopHTML() {
+  const ocultas = tecColsOcultas().length,
+    grupos = [...new Set(TEC_COLS.map((c) => c.grupo))];
+  return (
+    '<div class="filt-pop-wrap"><button class="btn btn-ghost btn-sm" data-action="tec:cols-toggle" id="tecColsBtn" title="Elegir qué columnas se ven">▦ Columnas' +
+    (ocultas ? '<span class="filt-badge">' + ocultas + "</span>" : "") +
+    '</button><div class="filt-pop hidden" id="tecColsPop">' +
+    '<div class="filt-pop-nota">Se guarda en esta computadora. Cada persona ve las columnas que eligió.</div>' +
+    grupos
+      .map(
+        (g) =>
+          '<div class="filt-pop-label">' +
+          esc(g) +
+          "</div>" +
+          TEC_COLS.filter((c) => c.grupo === g)
+            .map(
+              (c) =>
+                '<label class="tec-col-opt"' +
+                (c.tit ? ' title="' + esc(c.tit) + '"' : "") +
+                '><input type="checkbox" data-tec-col="' +
+                c.k +
+                '"' +
+                (tecColVisible(c.k) ? " checked" : "") +
+                "> " +
+                esc(c.label) +
+                "</label>",
+            )
+            .join(""),
+      )
+      .join('<div class="filt-pop-sep"></div>') +
+    '<button class="btn btn-ghost btn-sm" data-action="tec:cols-todas" style="align-self:flex-start;margin-top:4px"' +
+    (ocultas ? "" : " hidden") +
+    ">Mostrar todas</button></div></div>"
+  );
+}
+// El badge del botón se toca a mano al marcar/desmarcar: redibujar la barra
+// entera cerraría el popover en la primera columna y habría que volver a
+// abrirlo para esconder la segunda.
+function tecColsBadgeSync() {
+  const btn = $("#tecColsBtn");
+  if (!btn) return;
+  const ocultas = tecColsOcultas().length,
+    badge = btn.querySelector(".filt-badge");
+  if (ocultas && badge) badge.textContent = ocultas;
+  else {
+    if (ocultas) btn.insertAdjacentHTML("beforeend", '<span class="filt-badge">' + ocultas + "</span>");
+    else if (badge) badge.remove();
+  }
+  const todas = $('#tecColsPop [data-action="tec:cols-todas"]');
+  if (todas) todas.hidden = !ocultas;
+}
 function tecFiltrando() {
   return !!(state.tecFiltro || state.tecDiseno || state.tecCategoria || state.tecPendiente || state.tecOrden);
 }
@@ -6063,6 +6207,7 @@ function renderTecnico() {
         '"></div>' +
         tecCategoriaFiltroHTML() +
         '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' +
+        tecColsPopHTML() +
         '<span class="tec-top-n" id="tecTopN">' +
         tecRows().length +
         " de " +
@@ -6273,9 +6418,20 @@ function valFilasSinCurso() {
 // Fecha inválida (tecFechaMala) en cualquier fila, o fecha vacía en una fila
 // que sí representa un curso activo — una fila de un curso que ni siquiera
 // se publicó todavía no necesita fecha.
+// Primera de las cinco columnas de fecha con un valor que no se entiende como
+// fecha, o "" si están todas bien. Antes solo se miraba "publicación", que era
+// la única que había; ahora un typo en cualquiera de las cinco aparece acá en
+// vez de quedarse escondido en la grilla.
+function tecFechaMalaCampo(fila) {
+  return TEC_FECHAS.find((k) => tecFechaMala(fila[k])) || "";
+}
+function valFechaMotivo(fila) {
+  const campo = tecFechaMalaCampo(fila);
+  return campo ? tecColLabel(campo) + ' no se entiende: "' + fila[campo] + '"' : "sin fecha de publicación";
+}
 function valFechas() {
   return state.tecnico.filter((f) => {
-    if (tecFechaMala(f.publicacion)) return true;
+    if (tecFechaMalaCampo(f)) return true;
     if (f.publicacion) return false;
     const card = tecCardDeFila(f);
     return !!card && inInventory(card);
@@ -6441,7 +6597,7 @@ function tecValidacionHTML() {
                 '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span style="flex:1;min-width:160px;font-size:13px">' +
                 esc(f.curso || "(sin nombre)") +
                 '</span><span style="font-size:12px;color:var(--bad);margin-right:8px">' +
-                (tecFechaMala(f.publicacion) ? 'fecha inválida: "' + esc(f.publicacion) + '"' : "sin fecha") +
+                esc(valFechaMotivo(f)) +
                 '</span><button class="btn btn-ghost btn-sm" data-action="tec:goto" data-id="' +
                 f.id +
                 '">Corregir</button></div>',
@@ -6537,6 +6693,9 @@ function tecNuevaFilaPara(tarjeta) {
     curso: tarjeta.titulo,
     publicacion: tarjeta.publicadoEl || "",
     actualizacion: "",
+    moodle: "",
+    scorm: "",
+    mail: "",
     portada: false,
     mosaico: false,
     evaluacion: false,
@@ -8630,9 +8789,13 @@ function saveViews() {
 function closeModal() {
   ($("#modal").classList.add("hidden"), ($("#modal").innerHTML = ""));
 }
-function openModal(html) {
+function openModal(html, cls) {
   (($("#modal").innerHTML =
-    '<div class="modal-bg" data-action="modal:close"></div><div class="modal">' + html + "</div>"),
+    '<div class="modal-bg" data-action="modal:close"></div><div class="modal' +
+    (cls ? " " + cls : "") +
+    '">' +
+    html +
+    "</div>"),
     $("#modal").classList.remove("hidden"));
 }
 // Reemplaza al confirm() nativo del navegador (que corta el flujo con un
@@ -8935,6 +9098,17 @@ document.addEventListener("click", (ev) => {
       if (el5b) el5b.classList.toggle("hidden");
       break;
     }
+    case "tec:cols-toggle": {
+      const elCols = $("#tecColsPop");
+      if (elCols) elCols.classList.toggle("hidden");
+      break;
+    }
+    case "tec:cols-todas": {
+      tecColsTodas();
+      document.querySelectorAll("#tecColsPop [data-tec-col]").forEach((chk) => (chk.checked = true));
+      (tecColsBadgeSync(), renderTecList());
+      break;
+    }
     case "user:logout":
       // Cerrar sesión de verdad: borra el token y recarga. Antes solo
       // escondía el nombre, y el navegador seguía pudiendo escribir.
@@ -9037,6 +9211,9 @@ document.addEventListener("click", (ev) => {
     case "help:open":
       openHelp();
       break;
+    case "set:sec":
+      openSettings(el.dataset.sec);
+      break;
     case "settings:open":
       openSettings();
       break;
@@ -9053,6 +9230,9 @@ document.addEventListener("click", (ev) => {
     }
     case "data:export":
       exportJSON();
+      // El Panel y Copias muestran "hace X días": si el modal está abierto,
+      // se vuelve a dibujar para que el número no quede en el de antes.
+      if ($(".modal-set")) openSettings();
       break;
     case "data:csv":
       exportCSV();
@@ -9120,6 +9300,9 @@ document.addEventListener("click", (ev) => {
         curso: nombreTec,
         publicacion: "",
         actualizacion: "",
+        moodle: "",
+        scorm: "",
+        mail: "",
         portada: false,
         mosaico: false,
         evaluacion: false,
@@ -9251,22 +9434,6 @@ document.addEventListener("click", (ev) => {
           (valLimpiarDuplicados(), render(), flash("🧹 Duplicados limpiados"));
         },
       );
-      break;
-    }
-    case "set:pass": {
-      const txt2 = ($("#setPass").value || "").trim();
-      if (!txt2) {
-        flash("Escribí una clave", true);
-        break;
-      }
-      ((state.appPassHash = hashStr(txt2)),
-        persist(),
-            openSettings(),
-        flash("🔐 Clave grupal guardada"));
-      break;
-    }
-    case "set:pass-clear": {
-      ((state.appPassHash = ""), persist(), openSettings(), flash("Clave quitada"));
       break;
     }
     case "backup:restore":
@@ -9748,9 +9915,7 @@ function applyTecField(id, campo, value) {
   if (!fila) return;
   // Se guarda ISO, pero solo cuando la fecha ya está completa: mientras se
   // tipea "12/05/20…" no matchea y queda el texto crudo, sin pelearle al cursor.
-  ((fila[campo] =
-    campo === "publicacion" || campo === "actualizacion" ? tecFechaISO(value) : value),
-    touchTecnico());
+  ((fila[campo] = TEC_FECHAS.includes(campo) ? tecFechaISO(value) : value), touchTecnico());
   // Espejo hacia la tarjeta del Mapa vinculada: Técnico sigue siendo
   // editable de punta a punta, el nombre solo viaja para el lado del curso.
   if (campo === "curso" && fila.cardId) {
@@ -9883,6 +10048,12 @@ document.addEventListener("click", (ev) => {
     true,
   ),
   document.addEventListener("change", (ev) => {
+    if (ev.target.dataset && ev.target.dataset.tecCol) {
+      // Solo la tabla, no la barra: redibujar la barra cerraría el popover y
+      // habría que reabrirlo para cada columna.
+      (tecColToggle(ev.target.dataset.tecCol), tecColsBadgeSync(), renderTecList());
+      return;
+    }
     if (ev.target.dataset && ev.target.dataset.tecId) {
       const value = ev.target.type === "checkbox" ? ev.target.checked : ev.target.value;
       applyTecField(ev.target.dataset.tecId, ev.target.dataset.tecField, value);
@@ -10162,6 +10333,9 @@ function pushRecent(id2) {
   const elFiltros = $("#filtrosPop");
   if (elFiltros && !elFiltros.classList.contains("hidden") && !ev.target.closest(".filt-pop-wrap"))
     elFiltros.classList.add("hidden");
+  const elCols = $("#tecColsPop");
+  if (elCols && !elCols.classList.contains("hidden") && !ev.target.closest(".filt-pop-wrap"))
+    elCols.classList.add("hidden");
   const elRoulettePop = $("#roulettePop");
   if (elRoulettePop && !elRoulettePop.classList.contains("hidden") && !ev.target.closest(".roulette-launcher"))
     elRoulettePop.classList.add("hidden");
@@ -10198,7 +10372,7 @@ function pushRecent(id2) {
         el2.classList.add("hidden");
         return;
       }
-      for (const sel of ["#filtrosPop", "#roulettePop", "#cotofracePop"]) {
+      for (const sel of ["#filtrosPop", "#tecColsPop", "#roulettePop", "#cotofracePop"]) {
         const pop = $(sel);
         if (pop && !pop.classList.contains("hidden")) {
           pop.classList.add("hidden");
@@ -11177,30 +11351,128 @@ function openHelp() {
       '</div>\n    <div class="modal-foot"><button class="btn btn-primary" data-action="modal:close">Listo</button></div>',
   );
 }
-function openSettings() {
-  const txt = Object.keys(SECTORES)
+// ===== Ajustes: panel de administración =====
+// Antes era un scroll único de ocho secciones: "⬇ Exportar JSON" y
+// "🧹 Reiniciar (Planner vacío)" quedaban a un centímetro uno del otro, no
+// había forma de ver el estado del área sin recorrerlo entero, y la sección
+// de "clave grupal" prometía una protección que ya no existía. Ahora es una
+// sección por tarea, con la navegación al costado y lo que puede romper algo
+// separado del resto.
+const SET_SECS = [
+  { k: "panel", icon: "📊", label: "Panel", sub: "Cómo está el área hoy" },
+  { k: "equipo", icon: "👥", label: "Equipo", sub: "Quién entra y quién administra" },
+  { k: "sectores", icon: "🎨", label: "Sectores", sub: "Nombres y colores" },
+  { k: "plantillas", icon: "🧩", label: "Plantillas", sub: "Tipos de tarjeta y checklists" },
+  { k: "copias", icon: "🛟", label: "Copias", sub: "Volver atrás y respaldar" },
+  { k: "datos", icon: "💾", label: "Datos", sub: "Importar, exportar, reiniciar" },
+  { k: "seguridad", icon: "🔐", label: "Seguridad", sub: "Cómo está protegida la base" },
+];
+// Vive fuera de state a propósito: es dónde está parada la persona que
+// administra, no un dato del área. Y openSettings() se vuelve a llamar sola
+// después de casi cada cambio (agregar un sector, tildar "Administra"), así
+// que si no se acordara, cada clic devolvería la vista al principio.
+let setSec = "panel";
+function setKb(obj) {
+  try {
+    return Math.round(JSON.stringify(obj).length / 1024);
+  } catch (e) {
+    return 0;
+  }
+}
+function setTile(num, label, sub) {
+  return (
+    '<div class="set-tile"><div class="set-tile-n">' +
+    num +
+    '</div><div class="set-tile-l">' +
+    esc(label) +
+    "</div>" +
+    (sub ? '<div class="set-tile-s">' + esc(sub) + "</div>" : "") +
+    "</div>"
+  );
+}
+// El estado del respaldo, siempre a la vista y no solo cuando ya se pasó de
+// los siete días: la pregunta "¿cuándo fue el último?" es la que hay que
+// poder contestar antes de tocar cualquier cosa de esta pantalla.
+function setRespaldoHTML() {
+  const dias = diasSinRespaldo(),
+    nunca = dias === Infinity,
+    tarde = nunca || dias >= RESPALDO_DIAS,
+    txt = nunca
+      ? "Todavía no se bajó ningún respaldo."
+      : dias === 0
+        ? "Último respaldo: hoy."
+        : "Último respaldo: hace " + dias + " día" + (dias === 1 ? "" : "s") + ".";
+  return (
+    '<div class="set-respaldo' +
+    (tarde ? " tarde" : "") +
+    '"><div><b>' +
+    (tarde ? "🛟 " : "✅ ") +
+    esc(txt) +
+    "</b><div>" +
+    (tarde
+      ? "El plan gratuito de Supabase no guarda copias ni permite volver atrás en el tiempo. Este archivo es lo único que sobrevive si la base se pierde: bajalo y dejalo en el Drive del área."
+      : "Se recomienda bajar uno por semana y dejarlo en el Drive del área.") +
+    '</div></div><button class="btn btn-primary btn-sm" data-action="data:export">⬇ Bajar respaldo</button></div>'
+  );
+}
+function setPanelHTML() {
+  const admins = TEAM.filter((m) => m.admin),
+    sinMail = TEAM.filter((m) => !(m.email || "").trim()).length,
+    peso = {
+      tablero: setKb(docSnapshot()),
+      portadas: setKb(docSnapshotFotos()),
+      tecnico: setKb(docSnapshotTecnico()),
+      edu: setKb(docSnapshotEduArchivo()),
+    };
+  return (
+    setRespaldoHTML() +
+    '<div class="set-tiles">' +
+    setTile(state.cards.length, "Tarjetas", "en el Planner y el Mapa") +
+    setTile(state.tecnico.length, "Cursos", "en Seguimiento técnico") +
+    setTile(state.eduArchivo.length, "Archivos", "de Edu Point") +
+    setTile(Object.keys(state.fotos || {}).length, "Portadas", "guardadas aparte") +
+    setTile(TEAM.length, "Personas", "en el equipo") +
+    setTile(admins.length, admins.length === 1 ? "Administra" : "Administran", admins.map((m) => m.nombre).join(", ")) +
+    "</div>" +
+    (sinMail
+      ? '<div class="set-nota warn">⚠ ' +
+        sinMail +
+        (sinMail === 1 ? " persona no tiene" : " personas no tienen") +
+        " el mail cargado. Sin el mail, la app no reconoce quién entró: sus tareas y su color no le aparecen. Se carga en <b>Equipo</b>." +
+        "</div>"
+      : "") +
+    // Lo que costó tres semanas de proyecto restringido: 1,35 MB de portadas
+    // adentro del documento del tablero, bajándose entero cada cinco
+    // segundos. El número que hay que mirar es el primero.
+    '<div class="set-sub-h">Peso de lo que se sincroniza</div>' +
+    '<div class="set-peso">' +
+    [
+      ["Tablero", peso.tablero, "Baja cada vez que alguien abre la app o cambia algo."],
+      ["Portadas", peso.portadas, "Fila aparte: solo se baja al entrar, no en cada cambio."],
+      ["Seguimiento técnico", peso.tecnico, "Fila aparte."],
+      ["Edu Point", peso.edu, "Fila aparte."],
+    ]
       .map(
-        (arg) =>
-          '<div class="set-row"><input type="color" data-set="sec:' +
-          arg +
-          ':cat" value="' +
-          SECTORES[arg].cat +
-          '"><input type="text" data-set="sec:' +
-          arg +
-          ':nombre" value="' +
-          esc(SECTORES[arg].nombre) +
-          '"><span style="font-size:11px;color:var(--ink-soft);min-width:118px">' +
-          esc(arg) +
-          "</span>" +
-          (OFFICIAL_CATS.has(arg)
-            ? ""
-            : '<span class="chk-del" data-action="set:del-sector" data-sec="' + arg + '" title="Borrar sector">✕</span>') +
-          "</div>",
+        (f) =>
+          '<div class="set-peso-row"><span class="set-peso-n">' +
+          f[1] +
+          ' kB</span><span><b>' +
+          esc(f[0]) +
+          "</b><br>" +
+          esc(f[2]) +
+          "</span></div>",
       )
-      .join(""),
-    txt2 = TEAM.map(
+      .join("") +
+    "</div>" +
+    '<div class="set-nota">En septiembre de 2026 el tablero llegó a pesar 1.350 kB y consumió 43,6 GB de la cuota mensual de 5. Mientras el <b>tablero</b> se mantenga en decenas de kB, el consumo del mes queda muy lejos del tope. Si lo ves crecer a cientos, avisá antes de que se restrinja el proyecto.</div>'
+  );
+}
+function setEquipoHTML() {
+  return (
+    '<div class="set-nota">El mail tiene que ser el mismo con el que cada persona entra a la app. Es lo que la reconoce: sin eso trabaja igual, pero sus tareas y su color no le aparecen.</div>' +
+    TEAM.map(
       (miembro) =>
-        '<div class="set-row" style="flex-wrap:wrap">' +
+        '<div class="set-row set-mem">' +
         avatarHTML(miembro.id, true) +
         '<input type="text" data-set="team:' +
         miembro.id +
@@ -11214,7 +11486,7 @@ function openSettings() {
         miembro.id +
         ':email" value="' +
         esc(miembro.email || "") +
-        '" placeholder="📧 email para alertas" style="flex:1 1 100%;min-width:0">' +
+        '" placeholder="📧 mail con el que entra">' +
         '<label class="set-admin" title="Puede entrar a Ajustes y datos"><input type="checkbox" data-set="team:' +
         miembro.id +
         ':admin"' +
@@ -11223,9 +11495,43 @@ function openSettings() {
         '<span class="chk-del" data-action="set:del-member" data-mem="' +
         miembro.id +
         '" title="Sacar del equipo">✕</span></div>',
-    ).join(""),
-    txt3 = Object.keys(state.customTpl).length
+    ).join("") +
+    '<div class="set-row set-add"><input type="text" id="newMemNombre" placeholder="Nombre"><input type="text" id="newMemRol" placeholder="Rol"><input type="color" id="newMemColor" value="#006EA0"><button class="btn btn-sm" data-action="set:add-member">+ Agregar</button></div>' +
+    '<div class="set-nota">Sacar a alguien de esta lista no le saca la cuenta con la que entra: eso se hace desde el panel de Supabase. Ver <b>Seguridad</b>.</div>'
+  );
+}
+function setSectoresHTML() {
+  return (
+    '<div class="set-grid">' +
+    Object.keys(SECTORES)
+      .map(
+        (arg) =>
+          '<div class="set-row"><input type="color" data-set="sec:' +
+          arg +
+          ':cat" value="' +
+          SECTORES[arg].cat +
+          '"><input type="text" data-set="sec:' +
+          arg +
+          ':nombre" value="' +
+          esc(SECTORES[arg].nombre) +
+          '"><span class="set-sec-key">' +
+          esc(arg) +
+          "</span>" +
+          (OFFICIAL_CATS.has(arg)
+            ? ""
+            : '<span class="chk-del" data-action="set:del-sector" data-sec="' + arg + '" title="Borrar sector">✕</span>') +
+          "</div>",
+      )
+      .join("") +
+    '</div><div class="set-row set-add"><input type="color" id="newSecCat" value="#3FA7D6"><input type="text" id="newSecNombre" placeholder="Nuevo sector (nombre)"><button class="btn btn-sm" data-action="set:add-sector">+ Agregar</button></div>'
+  );
+}
+function setPlantillasHTML() {
+  return (
+    '<div class="set-sub-h">Tipos de tarjeta propios</div>' +
+    (Object.keys(state.customTpl).filter((k) => k !== "__checklistOverrides").length
       ? Object.keys(state.customTpl)
+          .filter((k) => k !== "__checklistOverrides")
           .map(
             (arg) =>
               '<div class="tpl-row">🧩 ' +
@@ -11235,29 +11541,81 @@ function openSettings() {
               '">✕</span></div>',
           )
           .join("")
-      : '<div style="font-size:12.5px;color:var(--ink-soft)">Sin plantillas propias todavía.</div>';
+      : '<div class="set-nota">Sin plantillas propias todavía.</div>') +
+    '<div class="set-sub-h">Checklists por tipo</div>' +
+    '<div class="set-nota">El checklist que trae cada tipo al crear una tarjeta nueva — un ítem por línea. Lo que ya está cargado en tarjetas existentes no cambia.</div>' +
+    checklistTplHTML()
+  );
+}
+function setCopiasHTML() {
+  return (
+    setRespaldoHTML() +
+    '<div class="set-sub-h">Copias automáticas en este navegador</div>' +
+    backupListHTML()
+  );
+}
+function setDatosHTML() {
+  return (
+    '<div class="set-nota">Estas acciones tocan los datos de todo el equipo, no solo lo que ves vos. Antes de importar o reiniciar, bajá un respaldo.</div>' +
+    '<div class="set-data">\n      <button class="btn" data-action="data:export">⬇ Exportar JSON</button>\n      <button class="btn" data-action="data:csv">📄 Exportar CSV</button>\n      <button class="btn" data-action="data:import">⬆ Importar JSON</button>\n      <button class="btn" data-action="ingest:open">⤓ Ingestar catálogo</button>\n    </div>' +
+    '<div class="set-peligro"><div class="set-peligro-h">⚠ Zona de riesgo</div>' +
+    '<div>Vacía el Planner y vuelve a dejar el catálogo como vino de fábrica. No se puede deshacer desde la app: lo único que lo revierte es un respaldo o una copia del navegador.</div>' +
+    '<button class="btn btn-peligro" data-action="data:reset">🧹 Reiniciar (Planner vacío + catálogo)</button></div>'
+  );
+}
+// Reemplaza a la vieja sección de "clave grupal". Esa clave se guardaba y se
+// podía cambiar desde acá, pero desde que se entra con cuenta propia nadie la
+// verificaba nunca: el cartel "Clave activa ✓" prometía una protección que no
+// existía, que es peor que no decir nada.
+function setSeguridadHTML() {
+  const admins = TEAM.filter((m) => m.admin);
+  return (
+    '<div class="set-seg ok"><b>✅ Cada persona entra con su propia cuenta</b><div>La base solo le contesta a quien manda una sesión válida: a quien llegue con la clave pública que va escrita en la página —esa que cualquiera puede leer del código— le devuelve una lista vacía. Las cuentas se dan de alta y se dan de baja en el panel de Supabase, no acá.</div></div>' +
+    '<div class="set-seg"><b>🔑 Administran la app: ' +
+    esc(admins.map((m) => m.nombre).join(", ") || "nadie") +
+    "</b><div>Es lo que decide quién ve esta pantalla y quién puede importar, exportar o reiniciar. Se cambia en <b>Equipo</b>, y tiene que quedar siempre al menos una persona.</div></div>" +
+    '<div class="set-seg warn"><b>⚠ Lo que este permiso no protege</b><div>El permiso es de la app, no de la base: alguien con conocimientos lo saltea desde la consola del navegador. Sirve para que nadie toque sin querer algo que le cambia el tablero a todo el equipo, no para frenar a alguien decidido que ya tiene una cuenta válida. Tampoco hay un historial de cambios que no se pueda alterar.</div></div>' +
+    '<div class="set-seg warn"><b>⚠ El plan gratuito no hace copias</b><div>No hay backup automático ni forma de volver a un punto en el tiempo. El respaldo semanal del <b>Panel</b> no es una recomendación: es lo único que hay.</div></div>'
+  );
+}
+function setPaneHTML() {
+  if (setSec === "equipo") return setEquipoHTML();
+  if (setSec === "sectores") return setSectoresHTML();
+  if (setSec === "plantillas") return setPlantillasHTML();
+  if (setSec === "copias") return setCopiasHTML();
+  if (setSec === "datos") return setDatosHTML();
+  if (setSec === "seguridad") return setSeguridadHTML();
+  return setPanelHTML();
+}
+function openSettings(sec) {
+  if (sec && SET_SECS.some((x) => x.k === sec)) setSec = sec;
+  const actual = SET_SECS.find((x) => x.k === setSec) || SET_SECS[0];
   openModal(
-    '<h2>Ajustes</h2><div class="sub-t">Configurá el área. Los cambios se comparten con el equipo.</div>\n    <div class="set-sec"><h3>🎨 Sectores (data-cat) <span style="margin-left:auto;font-size:12px;color:var(--ink-soft)">' +
-      Object.keys(SECTORES).length +
-      '</span></h3>\n      <div class="set-grid">' +
-      txt +
-      '</div>\n      <div class="set-row" style="margin-top:10px"><input type="color" id="newSecCat" value="#3FA7D6"><input type="text" id="newSecNombre" placeholder="Nuevo sector (nombre)"><button class="btn btn-sm" data-action="set:add-sector">+ Agregar</button></div></div>\n    <div class="set-sec"><h3>👥 Equipo</h3>' +
-      txt2 +
-      '\n      <div class="set-row" style="margin-top:10px"><input type="text" id="newMemNombre" placeholder="Nombre"><input type="text" id="newMemRol" placeholder="Rol"><input type="color" id="newMemColor" value="#006EA0"><button class="btn btn-sm" data-action="set:add-member">+ Agregar</button></div></div>\n    <div class="set-sec"><h3>🔐 Ingreso del equipo</h3>\n      <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px">Clave grupal para entrar. ' +
-      (state.appPassHash ? '<b style="color:var(--ok)">Clave activa ✓</b>' : "Sin clave — ingreso abierto.") +
-      '</div>\n      <div class="set-row"><input type="password" id="setPass" placeholder="' +
-      (state.appPassHash ? "Nueva clave…" : "Definir clave grupal…") +
-      '"><button class="btn btn-sm" data-action="set:pass">Guardar</button>' +
-      (state.appPassHash
-        ? '<button class="btn btn-sm" data-action="set:pass-clear" style="color:var(--bad)">Quitar</button>'
-        : "") +
-      '</div>\n      <div style="font-size:11px;color:var(--ink-soft);margin-top:5px">Barrera para que no entre cualquiera con el link. No es seguridad fuerte (para eso haría falta login real).</div></div>\n    <div class="set-sec"><h3>🛟 Copias de resguardo</h3>' +
-      backupListHTML() +
-      '</div>\n    <div class="set-sec"><h3>🧩 Plantillas propias</h3>' +
-      txt3 +
-      '</div>\n    <div class="set-sec"><h3>✅ Checklists por tipo</h3><div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px">El checklist que trae cada tipo al crear una tarjeta nueva — un ítem por línea. Lo que ya está cargado en tarjetas existentes no cambia.</div>' +
-      checklistTplHTML() +
-      '</div>\n    <div class="set-sec"><h3>💾 Datos</h3><div class="set-data">\n      <button class="btn" data-action="ingest:open">⤓ Ingestar catálogo</button>\n      <button class="btn" data-action="data:export">⬇ Exportar JSON</button>\n      <button class="btn" data-action="data:import">⬆ Importar JSON</button>\n      <button class="btn" data-action="data:csv">📄 Exportar CSV</button>\n      <button class="btn" data-action="data:reset" style="color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,var(--line))">🧹 Reiniciar (Planner vacío + catálogo)</button>\n    </div></div>\n    <div class="modal-foot"><button class="btn btn-primary" data-action="modal:close">Listo</button></div>',
+    '<h2>Ajustes del área</h2><div class="sub-t">Los cambios se comparten con todo el equipo.</div>' +
+      '<div class="set-layout"><nav class="set-nav">' +
+      SET_SECS.map(
+        (x) =>
+          '<button class="set-nav-i' +
+          (x.k === setSec ? " on" : "") +
+          '" data-action="set:sec" data-sec="' +
+          x.k +
+          '"><span class="set-nav-ic">' +
+          x.icon +
+          "</span>" +
+          esc(x.label) +
+          "</button>",
+      ).join("") +
+      '</nav><div class="set-pane"><div class="set-pane-h"><h3>' +
+      actual.icon +
+      " " +
+      esc(actual.label) +
+      '</h3><span>' +
+      esc(actual.sub) +
+      "</span></div>" +
+      setPaneHTML() +
+      "</div></div>" +
+      '<div class="modal-foot"><button class="btn btn-primary" data-action="modal:close">Listo</button></div>',
+    "modal-set",
   );
 }
 function checklistTplHTML() {
