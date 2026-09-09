@@ -23,12 +23,6 @@ permissions:
   pages: write
   id-token: write
 
-# Si se empujan dos cambios seguidos, el segundo espera al primero en vez de
-# pisarlo a mitad de camino.
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
   pruebas:
     runs-on: ubuntu-latest
@@ -93,6 +87,14 @@ jobs:
     needs: pruebas
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    # El candado va SOLO acá. Puesto a nivel de todo el flujo, el push a una
+    # rama cancelaba la publicación de main que estaba en curso, porque
+    # compartían grupo: la primera corrida por este camino quedó cancelada
+    # justamente por eso. Publicar de a uno sí hace falta; probar en paralelo
+    # no molesta a nadie.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
