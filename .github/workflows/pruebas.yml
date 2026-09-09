@@ -43,17 +43,11 @@ jobs:
       - name: Instalar Chromium
         run: npx playwright install --with-deps chromium
 
-      # El index.html del repositorio es un archivo generado. Si alguien lo
-      # editó a mano, o se olvidó de regenerarlo, lo que se probaría acá no
-      # sería lo que está publicado.
-      - name: Verificar que index.html esté al día
-        run: |
-          node build.mjs
-          if ! git diff --quiet -- index.html; then
-            echo "::error::index.html no coincide con src/. Corré 'npm run build' y volvé a commitear."
-            git diff --stat -- index.html
-            exit 1
-          fi
+      # El index.html no se guarda en el repositorio: se arma acá, a partir de
+      # src/. Así lo que se prueba y lo que se publica son literalmente el
+      # mismo archivo, y no hay forma de que se desincronicen.
+      - name: Generar index.html
+        run: node build.mjs
 
       - name: Sincronización entre dos personas
         run: node test/sync.test.mjs

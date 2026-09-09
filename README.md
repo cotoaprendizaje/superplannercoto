@@ -23,7 +23,7 @@ src/styles.css    estilos, con las fuentes referenciadas desde assets/
 src/app.js        toda la lógica de la app
 assets/           fuentes, logos e íconos
 build.mjs         inlinea todo y escribe ./index.html
-index.html        ← generado, es lo que se despliega. No editar a mano.
+index.html        ← generado. NO está en el repositorio: lo arma el build.
 ```
 
 ## Trabajar en la app
@@ -37,8 +37,13 @@ npm test          # las 70 pruebas (build incluido)
 
 El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
 
-> `index.html` es un artefacto generado. Si lo editás directo, el siguiente
-> build te pisa los cambios.
+> `index.html` no se versiona: está en `.gitignore`. Lo genera `npm run build`
+> localmente, y al publicar lo arma GitHub Actions a partir de `src/`. Así lo
+> que se prueba y lo que sale a producción son el mismo archivo, y el
+> repositorio deja de engordar 2,3 MB en cada publicación.
+>
+> Si venís de un clon nuevo, corré `npm run build` (o `npm test`, que lo hace)
+> antes de abrir nada: hasta entonces el archivo no existe.
 
 ### Sobre los nombres de variables
 
