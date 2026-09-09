@@ -33,7 +33,7 @@ const page = await browser.newPage({ serviceWorkers: "block", viewport: { width:
 const erroresJS = [];
 page.on("pageerror", (e) => erroresJS.push(e.message));
 
-await page.route("**://*.supabase.co/rest/v1/**", async (r) => {
+await page.route("**://*.supabase.co/**", async (r) => {
   const q = r.request();
   const { pathname, search } = new URL(q.url());
   const up = await fetch(backend.url + pathname + search, {
@@ -49,12 +49,20 @@ async function filaDelBackend(id) {
   return j[0] ? j[0].data : null;
 }
 const kb = (n) => (n / 1024).toFixed(0) + " KB";
+// El tablero solo se baja después de entrar con una cuenta.
+async function entrar(pg) {
+  await pg.waitForSelector("#gateMail");
+  await pg.fill("#gateMail", "dami@coto.com.ar");
+  await pg.fill("#gatePassInput", "Cotonetes2026");
+  await pg.click('#gate button:has-text("Entrar")');
+  await pg.waitForFunction(() => state?.ready === true, { timeout: 60000 });
+}
 
 console.log("\ntamaño del documento sincronizado");
 
 // ── Primer arranque: la app siembra el catálogo contra un backend vacío ──
 await page.goto(backend.url + "/index.html");
-await page.waitForFunction(() => state?.ready === true, { timeout: 60000 });
+await entrar(page);
 await page.waitForTimeout(2500);
 
 let tablero = await filaDelBackend("coto");
@@ -77,6 +85,7 @@ console.log("         tablero: " + kb(json.length) + " · portadas aparte: " + k
 //    ya salieron, el relleno del catálogo se las volvía a meter y el guardado
 //    de arranque las devolvía a la fila del tablero. ──
 await page.reload();
+// La sesión queda guardada: al recargar no hay que volver a entrar.
 await page.waitForFunction(() => state?.ready === true, { timeout: 60000 });
 await page.waitForTimeout(2500);
 
