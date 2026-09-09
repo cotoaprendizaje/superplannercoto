@@ -2,98 +2,130 @@
 
 Estado honesto de la app, para poder decidir con la información a la vista.
 
-## Hoy los datos del planner son públicos
+## Cómo está protegido hoy
 
-La app habla directo con Supabase desde el navegador, con la clave
-`sb_publishable_...` que va escrita en `src/app.js` y termina embebida en el
-`index.html` que se despliega. Eso no es un error de configuración: una clave
-*publishable* está pensada para viajar en el cliente y cualquiera que abra la
-app puede leerla desde el código fuente de la página.
+Septiembre de 2026: se cerró el acceso anónimo a la base. Antes de eso los
+datos eran públicos —cualquiera con la URL de la app podía leer el inventario
+de capacitación entero, o vaciarlo, sin dejar rastro—. Hoy no.
 
-Lo que protege los datos, entonces, no es la clave: son las políticas **RLS**
-(Row Level Security) de la tabla `planner`. Y como la app necesita leer y
-escribir usando sólo esa clave, hoy esas políticas casi con seguridad permiten
-lectura y escritura anónimas.
+Lo que protege los datos son dos piezas que trabajan juntas:
 
-Si es así, cualquiera con la URL de la app puede:
+1. **Cada persona entra con su propia cuenta** de Supabase (mail y contraseña).
+   La app manda el token de esa sesión en cada pedido, en el `Authorization`.
+2. **La política de la tabla `planner` solo le contesta a `authenticated`.**
+   Con la clave publishable sola —la que va escrita en el `index.html` y que
+   cualquiera puede leer del código de la página— la base devuelve una lista
+   vacía.
 
-- leer todo el tablero (cursos, notas, responsables, fechas, agenda del equipo);
-- sobrescribirlo o vaciarlo por completo.
-
-### Cómo verificarlo
-
-En el navegador, con la app abierta, la consola:
-
-```js
-await (await fetch(BACKEND.supabaseUrl + "/rest/v1/planner?select=*", {
-  headers: { apikey: BACKEND.supabaseKey },
-})).json();
+```sql
+-- lo que está aplicado sobre la tabla
+create policy "solo con sesion"
+  on planner for all
+  to authenticated
+  using (true) with check (true);
 ```
 
-Si devuelve la fila con los datos, la lectura anónima está abierta. En el panel
-de Supabase se ve más claro en **Authentication → Policies**, sobre la tabla
-`planner`.
+La clave `sb_publishable_...` que viaja en el cliente **no es un secreto** y no
+hace falta esconderla: está pensada para eso. La que nunca puede salir del
+panel de Supabase es la `sb_secret_...`, que saltea las políticas.
 
-## La clave de ingreso no es un control de acceso
+### Cómo verificar que sigue cerrado
 
-La pantalla de entrada compara un hash de la clave contra `state.appPassHash`,
-del lado del cliente. Ese hash viaja en el mismo documento que cualquiera puede
-leer, y el chequeo se saltea desde la consola del navegador en una línea.
+En una ventana de incógnito, en la app, **sin entrar**, desde la consola del
+navegador:
 
-Sirve para lo que fue pensada — que el equipo se identifique y quede registrado
-quién carga qué — pero no impide que alguien de afuera vea o modifique los
-datos. Conviene tratarla como un cartel, no como una cerradura.
+```js
+await (await fetch(BACKEND.supabaseUrl + "/rest/v1/planner?select=id", {
+  headers: { apikey: BACKEND.supabaseKey },
+})).json()
+```
 
-`Minuevacontra5` estuvo escrita en `LEEME.txt` en este repositorio público:
-**cambiala desde Ajustes**, y no la reutilices en ningún otro lado.
+Tiene que devolver `[]`. Si devuelve filas, el acceso anónimo se reabrió y hay
+que revisar las políticas.
 
-## Qué se puede hacer
+Ojo con el código de estado: una lectura bloqueada por RLS devuelve **200 con
+lista vacía**, no 401. El 401 es para una clave inválida. Mirar el estado en
+vez del contenido lleva a creer que está abierto cuando no lo está, y al revés.
 
-### 1. Cambiar la clave de ingreso (un minuto)
+Para ver el estado desde el SQL Editor:
 
-Desde Ajustes, dentro de la app. Saca de circulación la que estuvo publicada en
-este repositorio.
+```sql
+select
+  (select relrowsecurity from pg_class where relname = 'planner') as rls_activo,
+  (select count(*) from pg_policies where tablename = 'planner') as politicas;
+```
 
-### 2. Copias de resguardo (ya está hecho)
+`rls_activo` tiene que ser `true` y `politicas` tiene que ser `1`. Si RLS
+quedara apagado, las políticas no se aplican y todo pasa.
 
-Cada guardado deja una copia en el navegador de quien está usando la app, hasta
-ocho, espaciadas al menos 15 minutos. Se restauran desde **Ajustes → Copias de
-resguardo**. Si alguien vacía el tablero, cualquiera del equipo que lo haya
-tenido abierto en los últimos días puede devolverlo a como estaba.
+## Lo que esto NO protege
 
-Son copias locales: viven en el navegador de cada uno, no en el servidor. Si
-todos limpian los datos del navegador el mismo día, no quedan. Para algo más
-duradero, un `Ajustes → Exportar JSON` cada tanto y guardarlo en el Drive del
-área.
+**El permiso de administrador es de la app, no de la base.** Quien administra
+es el único que ve Ajustes y datos —sectores, equipo, importar, reiniciar—,
+pero eso se decide en el navegador: alguien con conocimientos lo saltea desde
+la consola. Sirve para lo que realmente pasa, que es que alguien toque sin
+querer algo que le cambia el tablero a todo el equipo. No para frenar a alguien
+decidido que ya tiene una cuenta válida.
 
-### 3. Cerrar la escritura anónima
+Dicho de otro modo: **cualquiera de las seis cuentas puede, si se lo propone,
+hacer todo lo que hace la cuenta que administra.** El límite real es de acceso
+(tener cuenta o no tenerla), no de rol.
 
-Acá hay una trampa que conviene tener clara antes de tocar nada: **la app
-escribe usando la misma clave anónima con la que lee**. Si en Supabase se
-bloquean los `INSERT`/`UPDATE` anónimos y no se cambia nada más, la app deja de
-poder guardar. No alcanza con apretar un botón en el panel.
+**Tampoco hay registro de auditoría.** Cada tarjeta guarda quién la tocó
+último, pero no hay un historial de cambios que no se pueda alterar.
 
-Para cerrar la escritura de verdad hace falta que la app se autentique. La
-opción más corta, que además deja el ingreso actual casi igual:
+## Copias de resguardo
 
-1. En Supabase, **Authentication → Users**, crear un usuario para el equipo
-   (por ejemplo `elearning@coto.com.ar`) con una contraseña.
-2. En **Authentication → Policies**, sobre la tabla `planner`:
-   - `SELECT`: permitir a `authenticated` (y a `anon` sólo si les sirve que se
-     pueda leer sin entrar).
-   - `INSERT` / `UPDATE`: **sólo** `authenticated`.
-3. En la app, la pantalla de ingreso pasa a iniciar sesión de verdad contra
-   Supabase con esa cuenta, en vez de comparar un hash local. La clave grupal
-   que ya escriben pasa a ser la contraseña de esa cuenta.
+Dos niveles, y conviene entender qué cubre cada uno.
 
-El paso 3 es trabajo en `src/app.js` y hay que hacerlo **junto** con el 2, si no
-la app queda sin poder guardar. Los pasos 1 y 2 son del panel de Supabase.
+**Automático, en el navegador.** Cada guardado deja una copia en el navegador
+de quien está usando la app, hasta ocho, espaciadas al menos 15 minutos. Se
+restauran desde **Ajustes → Copias de resguardo**. Cubre el caso "alguien borró
+algo sin querer": si otra persona tuvo la app abierta hace poco, ahí está.
 
-Una cuenta por persona (en vez de una compartida) es mejor todavía —permite
-saber quién cambió qué y dar de baja a alguien sin cambiarle la clave al resto—
-pero implica manejar altas y bajas.
+No cubre nada más. Son copias locales: si todos limpian los datos del navegador
+el mismo día, o si el proyecto de Supabase desaparece, no queda nada.
 
-### Sobre hacer privado el repositorio
+**Manual, fuera del navegador.** `Ajustes → ⬇ Exportar JSON`, y el archivo al
+Drive del área. Es lo único que sobrevive a que la base se pierda. La app lo
+recuerda: pasados siete días sin bajar un respaldo, quien administra ve un
+aviso en Inicio.
 
-Ayuda poco por sí solo: la clave igual viaja en el `index.html` publicado.
-El problema se arregla del lado de Supabase, no escondiendo el código.
+El plan gratuito de Supabase **no hace copias de seguridad ni permite volver a
+un punto en el tiempo**. Mientras se siga en ese plan, ese respaldo semanal no
+es una recomendación: es lo único que hay.
+
+## Antecedente: la cuota agotada
+
+En septiembre de 2026 la app consumió 43,6 GB de salida sobre una cuota de 5, y
+Supabase restringió el proyecto por tres semanas. La causa: el tablero llevaba
+1,35 MB de portadas en base64 adentro del documento sincronizado, y el polling
+lo bajaba entero cada cinco segundos, mirara alguien o no.
+
+Está corregido —las portadas viven en su propia fila, el polling pregunta un
+sello de versión de 36 bytes antes de bajar nada, y se detiene con la pestaña
+de fondo— y hay una prueba automática (`test/tamano.test.mjs`) que se pone en
+rojo si una imagen vuelve a meterse en el documento del tablero.
+
+Vale la pena saberlo porque explica dos reglas que si no parecen manías:
+
+- **Nada que crezca sin límite va adentro del documento que se sincroniza.**
+- **Las alarmas de consumo se configuran antes del 100 %, no en el 100 %.**
+  Una vez restringido el proyecto, la espera es de semanas.
+
+## Qué falta
+
+**Una fila por tarjeta.** Hoy las 126 tarjetas, los sectores, el equipo y las
+plantillas son un único documento JSON. De ahí salen tres consecuencias: cada
+cambio obliga a las demás pantallas a bajarlo entero, una escritura equivocada
+reemplaza todo, y el guardado de emergencia al cerrar la pestaña no entra —el
+navegador rechaza envíos con `keepalive` de más de 64 KB y el documento pesa
+unos 170—. Está compensado (mezcla por tarjeta según cuál sea más nueva,
+lápidas para los borrados, copia local antes de intentar la red) pero es un
+parche sobre una forma de guardar que aprieta más a medida que el tablero
+crece.
+
+**Que las pruebas frenen la publicación.** Corren en cada cambio y avisan, pero
+GitHub Pages publica por su cuenta al fusionar a `main` sin mirar si quedaron
+en rojo. Para que un rojo frene la publicación hay que pasar Pages a desplegar
+desde Actions, en la configuración del repositorio.
