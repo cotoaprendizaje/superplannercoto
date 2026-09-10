@@ -5659,13 +5659,17 @@ const TEC_COLS = [
   { k: "publicacion", label: "Publicación", grupo: "Fechas", tit: "Cuándo se creó el curso en Moodle" },
   { k: "scorm", label: "SCORM actualizado", grupo: "Fechas", tit: "Última vez que se subió el paquete SCORM" },
   { k: "mail", label: "Mail publicado", grupo: "Fechas", tit: "Cuándo salió el mail avisando el curso" },
-  { k: "portada", label: "Portada", grupo: "Producción" },
-  { k: "mosaico", label: "Mosaico", grupo: "Producción" },
-  { k: "evaluacion", label: "Evaluación", grupo: "Producción" },
-  { k: "textos", label: "Textos", grupo: "Producción" },
-  { k: "diseno", label: "Diseño", grupo: "Producción" },
-  { k: "estado", label: "Estado / Comentario", grupo: "Producción" },
-  { k: "mapa", label: "Mapa", grupo: "Producción", tit: "Tarjeta del Mapa vinculada" },
+  // Los grupos son los que arman el encabezado de dos pisos de la grilla.
+  // "Producción" abarcaba siete columnas de naturaleza muy distinta —cuatro
+  // tildes, un desplegable, un comentario libre y un vínculo—, así que el
+  // piso de arriba decía tan poco como no estar.
+  { k: "portada", label: "Portada", grupo: "Piezas" },
+  { k: "mosaico", label: "Mosaico", grupo: "Piezas" },
+  { k: "evaluacion", label: "Evaluación", grupo: "Piezas" },
+  { k: "textos", label: "Textos", grupo: "Piezas" },
+  { k: "diseno", label: "Diseño", grupo: "Formato" },
+  { k: "estado", label: "Estado / Comentario", grupo: "Seguimiento" },
+  { k: "mapa", label: "Mapa", grupo: "Seguimiento", tit: "Tarjeta del Mapa vinculada" },
 ];
 const TEC_CHKS = ["portada", "mosaico", "evaluacion", "textos"];
 function tecColLabel(k) {
@@ -5977,9 +5981,38 @@ function tecTh(campo, label, tit) {
     "</span></th>"
   );
 }
+// Las columnas visibles partidas en tramos por grupo ("Fechas",
+// "Producción"), respetando el orden en que están. Con el selector de
+// columnas se puede esconder cualquiera, así que los tramos se calculan cada
+// vez en vez de darlos por fijos.
+function tecTramos() {
+  const out = [];
+  tecColsVisibles().forEach((col) => {
+    const ultimo = out[out.length - 1];
+    if (ultimo && ultimo.grupo === col.grupo) ultimo.n++;
+    else out.push({ grupo: col.grupo, n: 1 });
+  });
+  return out;
+}
+// Un encabezado de dos pisos: arriba de qué habla cada bloque de columnas y
+// abajo el nombre de cada una. Once encabezados iguales en una sola fila
+// —"Publicación, SCORM actualizado, Mail publicado, Portada, Mosaico…"— se
+// leen como una tira sin forma; en dos pisos se ve de entrada que hay tres
+// fechas de un lado y las piezas de producción del otro.
 function tecHeadHTML() {
+  // +1 por la ✕ del final, +1 más por la categoría cuando la tabla va plana.
+  const fijas = 1 + (tecPlano() ? 1 : 0);
   return (
-    "<thead><tr>" +
+    '<thead><tr class="tec-head-g"><th colspan="' +
+    fijas +
+    '"></th>' +
+    tecTramos()
+      .map(
+        (tramo) =>
+          '<th colspan="' + tramo.n + '"><span>' + esc(tramo.grupo || "") + "</span></th>",
+      )
+      .join("") +
+    '<th></th></tr><tr class="tec-head-c">' +
     (tecPlano() ? tecTh("categoria", "Categoría") : "") +
     tecTh("curso", "Curso") +
     tecColsVisibles()
@@ -6039,20 +6072,24 @@ function renderTecList() {
   const el = $("#tecList");
   if (el) ((el.innerHTML = tecListHTML()), tecTopSync());
 }
+// Eran cuatro cajas del alto de una tarjeta para cuatro números, ocupando la
+// primera pantalla entera antes de que empezara la grilla —que es a lo que se
+// viene a esta vista—. Ahora es una sola barra: los mismos cuatro números,
+// los mismos cuatro filtros, en un quinto del alto.
 function tecKpi(n, label, color, cual) {
   return (
-    '<button class="kpi tec-kpi tono-' +
+    '<button class="tec-stat tono-' +
     color +
     (state.tecPendiente === cual ? " on" : "") +
     '" data-action="tec:kpi" data-cual="' +
     cual +
     '" title="' +
     (cual ? "Ver solo estos" : "Ver todos") +
-    '"><div class="kpi-num">' +
+    '"><b>' +
     n +
-    '</div><div class="kpi-lbl">' +
+    "</b><span>" +
     esc(label) +
-    "</div></button>"
+    "</span></button>"
   );
 }
 function tecKpisHTML() {
@@ -6060,7 +6097,7 @@ function tecKpisHTML() {
     activas = lista.filter(tecFilaActiva),
     html = activas.filter((f) => (f.diseno || "").toLowerCase().includes("html")).length;
   return (
-    '<div class="res-grid">' +
+    '<div class="tec-stats">' +
     tecKpi(lista.length, "Cursos en la lista", "neutro", "") +
     // Los pendientes se cuentan solo sobre cursos vigentes: un curso dado de
     // baja sin portada no es trabajo que le quede a nadie.
@@ -6874,13 +6911,34 @@ function repHeroHTML() {
 // mismo armado de HTML dos veces.
 // "compacto" achica el gráfico: el del año vive adentro del bloque grande y
 // no necesita los 160 px del histórico.
+//
+// La línea punteada del promedio: con un mes que se lleva 78 de 79, todas las
+// demás barras quedan pegadas al piso y el gráfico no dice nada más que "hubo
+// un pico". La referencia te deja leer cada mes contra lo normal del año, que
+// es la pregunta real.
 function repBarsHTML(bars, vacioMsg, compacto) {
   const max = Math.max(1, ...bars.map((b) => b.n)),
-    total = bars.reduce((a, b) => a + b.n, 0);
+    total = bars.reduce((a, b) => a + b.n, 0),
+    prom = total / (bars.length || 1),
+    // Solo cuando hay de dónde promediar y la línea no se confunde con el
+    // piso ni con el techo del gráfico.
+    // Con el promedio pegado al piso o al techo la línea no dice nada: es el
+    // eje o es la barra más alta. Solo aparece cuando cae en el medio.
+    verProm = total > 0 && bars.length > 2 && prom / max > 0.14 && prom / max < 0.9;
   return (
     '<div class="rep-chart' +
     (compacto ? " compacto" : "") +
     '">' +
+    // La referencia va en su propia capa, del alto exacto de las barras: el
+    // gráfico también reserva lugar arriba para el número y abajo para el mes,
+    // así que medirla contra el alto total la dejaría fuera de lugar.
+    (verProm
+      ? '<div class="rep-prom-capa"><span class="rep-prom" style="bottom:' +
+        Math.round((prom / max) * 1000) / 10 +
+        '%" data-prom="prom. ' +
+        Math.round(prom * 10) / 10 +
+        '"></span></div>'
+      : "") +
     bars
       .map((b) => {
         // Solo se puede clickear una barra con algo adentro: una en 0 no
@@ -7079,60 +7137,64 @@ function repAbrirSector(sector) {
 // Mismo lenguaje visual que "Carga del equipo" (fila con barra proporcional):
 // una vez que alguien reconoce el patrón en una pantalla, lo lee gratis en
 // las demás.
-function repBarraRow(nombreHTML, n, max, color, avatar, accion, dataset) {
-  const clickeable = accion && n > 0,
-    attrs = clickeable
-      ? ' data-action="' +
-        accion +
-        '"' +
-        Object.keys(dataset || {})
-          .map((k) => ' data-' + k + '="' + esc(String(dataset[k])) + '"')
-          .join("") +
-        ' style="cursor:pointer"'
-      : ' style="cursor:default"';
-  return (
-    '<div class="carga-row"' +
-    attrs +
-    ">" +
-    (avatar || "") +
-    '<div class="carga-info"><div class="carga-name">' +
-    nombreHTML +
-    '</div><div class="carga-bar"><div class="carga-fill" style="width:' +
-    Math.round((n / max) * 100) +
-    "%;background:" +
-    color +
-    '"></div></div></div><div class="carga-num">' +
-    n +
-    "</div></div>"
-  );
-}
+// El catálogo por sector, como una sola barra partida en colores más su
+// referencia debajo. Antes eran veinte filas de nombre + barrita + número en
+// dos columnas: se leía cada sector por separado pero no se veía la mezcla,
+// que es justamente lo que se va a mirar en una reunión de fin de año ("de
+// qué está hecho el catálogo"). Es el mismo lenguaje que la distribución por
+// sector del Mapa.
 function repSectoresHTML() {
   const conteo = {};
   repCursosActivos().forEach((c) => {
-    (c.sectores || []).forEach((s) => (conteo[s] = (conteo[s] || 0) + 1));
+    (c.sectores || []).forEach((sec) => (conteo[sec] = (conteo[sec] || 0) + 1));
     if (!(c.sectores || []).length) conteo[""] = (conteo[""] || 0) + 1;
   });
   const entradas = Object.keys(conteo)
-    .map((s) => [s, conteo[s]])
+    .map((sec) => [sec, conteo[sec]])
     .sort((a, b) => b[1] - a[1]);
   if (!entradas.length) return '<div class="rep-empty">Sin cursos activos todavía.</div>';
-  const max = Math.max(...entradas.map((e) => e[1]));
+  const total = entradas.reduce((acc, e) => acc + e[1], 0),
+    nombre = (sec) => (sec ? sectorName(sec) || sec : "Sin sector"),
+    color = (sec) => (sec && SECTORES[sec] ? SECTORES[sec].cat : "var(--coto-chambray)"),
+    pct = (n) => Math.round((n / total) * 1000) / 10;
   return (
-    '<div class="carga-list rep-sect-grid">' +
+    '<div class="rep-mix"><div class="rep-mix-bar">' +
     entradas
-      .map((e) =>
-        repBarraRow(
-          esc(e[0] ? sectorName(e[0]) || e[0] : "Sin sector"),
-          e[1],
-          max,
-          e[0] && SECTORES[e[0]] ? SECTORES[e[0]].cat : "var(--ink-soft)",
-          null,
-          "rep:sector",
-          { sector: e[0] },
-        ),
+      .map(
+        (e) =>
+          '<span style="flex:' +
+          e[1] +
+          ";background:" +
+          color(e[0]) +
+          '" title="' +
+          esc(nombre(e[0])) +
+          " · " +
+          e[1] +
+          " curso" +
+          (e[1] === 1 ? "" : "s") +
+          " (" +
+          pct(e[1]) +
+          '%)"></span>',
       )
       .join("") +
-    "</div>"
+    '</div><div class="rep-mix-leg">' +
+    entradas
+      .map(
+        (e) =>
+          '<button class="rep-mix-i" data-action="rep:sector" data-sector="' +
+          esc(e[0]) +
+          '" title="Ver los cursos de ' +
+          esc(nombre(e[0])) +
+          '"><i style="background:' +
+          color(e[0]) +
+          '"></i><span>' +
+          esc(nombre(e[0])) +
+          "</span><b>" +
+          e[1] +
+          "</b></button>",
+      )
+      .join("") +
+    "</div></div>"
   );
 }
 // "Carga del equipo" mide lo que cada uno tiene ENCIMA ahora, no todo lo que
@@ -7160,34 +7222,45 @@ function repRevisionHTML() {
   // es lo único que esta sección agrega.
   return (
     '<div class="rep-espera">' +
-    '<div class="rep-espera-p"><b>' +
-    prom +
-    "</b><span>día" +
-    (prom === 1 ? "" : "s") +
-    " esperando, en promedio<i>" +
-    esc(
-      todas.length
-        ? dias.length
-          ? "Sobre " + dias.length + " con fecha de entrada" + (sinSello ? " · " + sinSello + " sin fecha" : "")
-          : "Ninguna tiene fecha de entrada"
-        : "Nada esperando revisión",
-    ) +
-    "</i></span></div>" +
+    // Un "0" en 34 px cuando lo que pasa es que no hay ninguna fecha cargada
+    // es un número inventado con cuerpo de titular: sin datos, va el texto.
+    (dias.length
+      ? '<div class="rep-espera-p"><b>' +
+        prom +
+        "</b><span>día" +
+        (prom === 1 ? "" : "s") +
+        " esperando, en promedio<i>Sobre " +
+        dias.length +
+        " con fecha de entrada" +
+        (sinSello ? " · " + sinSello + " sin fecha" : "") +
+        "</i></span></div>"
+      : "") +
     (peores.length
-      ? peores
-          .map(
-            (p) =>
-              '<div class="lnk"><span class="lnk-a" data-action="card:open" data-id="' +
+      ? '<div class="rep-espera-lista">' +
+        peores
+          .map((p) => {
+            // La barra dice cuánto espera ésta respecto de la que más espera,
+            // y el tono sube de neutro a rojo pasando el mes: un "45 días"
+            // suelto no dice si es mucho hasta que lo comparás con el resto.
+            const grave = p.d >= 30 ? "mal" : p.d >= 14 ? "medio" : "";
+            return (
+              '<div class="rep-espera-f" data-action="card:open" data-id="' +
               p.c.id +
-              '" style="cursor:pointer">' +
+              '"><span class="rep-espera-t">' +
               esc(p.c.titulo) +
-              '</span><span style="font-size:12px;color:var(--ink-soft);white-space:nowrap">' +
+              '</span><span class="rep-espera-b"><i style="width:' +
+              Math.round((p.d / Math.max(1, peores[0].d)) * 100) +
+              '%"></i></span><span class="rep-espera-d ' +
+              grave +
+              '">' +
               p.d +
-              " día" +
-              (p.d === 1 ? "" : "s") +
-              "</span></div>",
-          )
-          .join("")
+              " d</span>" +
+              (p.c.responsable ? avatarHTML(p.c.responsable, true) : '<span class="rep-espera-nadie">?</span>') +
+              "</div>"
+            );
+          })
+          .join("") +
+        "</div>"
       : '<div class="rep-empty">' +
         (todas.length
           ? "Ninguna tiene registrada la fecha en que entró a revisión, así que no se puede decir cuánto hace que esperan."
@@ -7236,7 +7309,9 @@ function renderReportes() {
     // "Carga y foco del equipo" se sacó de acá: era exactamente el mismo
     // bloque que ya está en Inicio, mirando los mismos datos. El CSV lo sigue
     // exportando, que es donde sí sirve tenerlo junto al resto.
+    '<div class="rep-cols rep-cols-1">' +
     repSeccion("Las que más esperan revisión", "Cuánto hace que están frenadas", repRevisionHTML()) +
+    "</div>" +
     repFuenteHTML()
   );
 }
@@ -8021,23 +8096,26 @@ function inicioProxHTML() {
   const lista = inicioProximas();
   if (!lista.length) return "";
   return (
-    '<section class="ini-bloque"><div class="ini-bloque-h"><h2>Lo que viene</h2>' +
+    '<section class="ini-card ini-card-prox"><div class="ini-card-h"><h2>Lo que viene</h2>' +
     '<button class="ini-vertodo" data-action="kpi:go" data-go="calendario">Ver el calendario →</button></div>' +
     '<div class="ini-prox-lista">' +
     lista
       .map((tarjeta) => {
-        const quien = (member(tarjeta.responsable) || {}).nombre || "";
+        const faltan = daysBetween(todayISO(), tarjeta.fin || tarjeta.inicio);
         return (
-          '<div class="ini-prox' +
-          (daysBetween(todayISO(), tarjeta.fin || tarjeta.inicio) <= 1 ? " ya" : "") +
-          '" data-action="card:open" data-id="' +
+          '<div class="ini-prox" data-action="card:open" data-id="' +
           tarjeta.id +
-          '"><span class="ini-prox-c">' +
+          '"><span class="ini-prox-c' +
+          (faltan <= 1 ? " ya" : "") +
+          '">' +
           esc(inicioCuando(tarjeta)) +
           '</span><span class="ini-prox-t">' +
           esc(tarjeta.titulo) +
           "</span>" +
-          (quien ? '<span class="ini-prox-q">' + esc(quien) + "</span>" : "") +
+          // La inicial de quien la tiene, en su color: se reconoce de un
+          // vistazo, ocupa un cuarto de lo que ocupaba el nombre escrito, y
+          // es el mismo avatar que usa el resto de la app.
+          (tarjeta.responsable ? avatarHTML(tarjeta.responsable, true) : '<span class="ini-prox-nadie">—</span>') +
           "</div>"
         );
       })
@@ -8045,9 +8123,8 @@ function inicioProxHTML() {
     "</div></section>"
   );
 }
-// El pulso: los cuatro estados en una línea de texto, sin cajas ni colores.
-// Son para mirar de reojo, y cada uno lleva al Planner ya filtrado por ese
-// estado.
+// El pulso: cuántas tareas hay en cada estado. Cada uno lleva al Planner ya
+// filtrado por ese estado.
 //
 // Cuentan exactamente lo mismo que las columnas del Planner: la misma lista
 // (boardCards) y el mismo campo. La primera idea era "terminadas este mes",
@@ -8055,31 +8132,46 @@ function inicioProxHTML() {
 // planificada—, así que ese número habría dicho una cosa y significado otra.
 // Un número que no se puede ir a contar a mano es un número que el equipo
 // deja de creer, y de eso ya tuvimos.
-// Los nombres van en minúscula porque acá se leen dentro de una frase ("8
-// pendientes"), no como título de columna. Y en singular cuando hay una sola:
-// "1 terminadas" es de las cosas que hacen que una app se vea descuidada.
+//
+// Empezó como cuatro números sueltos en una línea de texto. Se leían, pero al
+// lado de las ocho tarjetas de arriba parecían el pie de página de otra app.
+// Ahora es una tarjeta más, con la barra de cada estado proporcional a la más
+// alta: además del número se ve la forma del tablero.
 const INI_PULSO = {
-  pendiente: ["pendiente", "pendientes"],
-  "en-desarrollo": ["en desarrollo", "en desarrollo"],
-  "en-revision": ["en revisión", "en revisión"],
-  finalizado: ["terminada", "terminadas"],
+  pendiente: "Pendientes",
+  "en-desarrollo": "En desarrollo",
+  "en-revision": "En revisión",
+  finalizado: "Terminadas",
 };
 function inicioPulsoHTML() {
   const lista = boardCards(),
-    fn = (estado) => {
-      const n = lista.filter((tarjeta) => tarjeta.estado === estado.id).length,
-        nombres = INI_PULSO[estado.id] || [estado.nombre.toLowerCase(), estado.nombre.toLowerCase()];
-      return (
+    cuenta = ESTADOS.map((estado) => lista.filter((tarjeta) => tarjeta.estado === estado.id).length),
+    max = Math.max(1, ...cuenta);
+  return (
+    '<section class="ini-card ini-card-pulso"><div class="ini-card-h"><h2>El pulso del área</h2>' +
+    '<span class="ini-card-sub">' +
+    lista.length +
+    " en total</span></div><div class=\"ini-pulso\">" +
+    ESTADOS.map(
+      (estado, i) =>
         '<button class="ini-pulso-i" data-action="kpi:go" data-go="kanban" data-filt-estado="' +
         estado.id +
-        '"><b>' +
-        n +
-        "</b> " +
-        esc(nombres[n === 1 ? 0 : 1]) +
-        "</button>"
-      );
-    };
-  return '<div class="ini-pulso">' + ESTADOS.map(fn).join("") + "</div>";
+        '" style="--tono:' +
+        estado.dot +
+        '"><span class="ini-pulso-n">' +
+        esc(INI_PULSO[estado.id] || estado.nombre) +
+        '</span><span class="ini-pulso-b"><i style="width:' +
+        Math.round((cuenta[i] / max) * 100) +
+        '%"></i></span><span class="ini-pulso-c">' +
+        cuenta[i] +
+        "</span></button>",
+    ).join("") +
+    "</div></section>"
+  );
+}
+function inicioPieHTML() {
+  const prox = inicioProxHTML();
+  return '<div class="ini-pie' + (prox ? "" : " solo") + '">' + prox + inicioPulsoHTML() + "</div>";
 }
 function inicioAtajosHTML() {
   return (
@@ -8128,8 +8220,7 @@ function renderInicio() {
     '<div class="hub-grid">' +
     inicioTarjetas().map(inicioCardHTML).join("") +
     "</div>" +
-    inicioProxHTML() +
-    inicioPulsoHTML() +
+    inicioPieHTML() +
     inicioAtajosHTML() +
     "</div></div>"
   );
@@ -11749,11 +11840,24 @@ function notifAtraso(recurso) {
   const meses = Math.round(atraso / 30);
   return "hace " + meses + (meses === 1 ? " mes" : " meses");
 }
+// ===== El panel de alertas =====
+// Era una lista de filas separadas por una línea punteada, con el atraso y el
+// nombre de quien la tiene escritos como texto corrido en la sub-línea. Se
+// entendía, pero todo pesaba igual: no había forma de barrer la lista con el
+// ojo y quedarse con lo urgente. Ahora cada alerta es una tarjeta con una
+// franja del color de su tipo, el atraso en pastilla y la inicial de quien la
+// tiene; y arriba de todo, cuántas hay de cada tipo.
+const NOTIF_TIPOS = {
+  bad: { t: "Vencidas", ic: "⚑" },
+  warn: { t: "Vencen pronto", ic: "⏳" },
+  rec: { t: "Recurrentes por rearmar", ic: "↻" },
+};
 function notifItemHTML(recurso) {
-  const quien = recurso.c.responsable ? member(recurso.c.responsable) : null,
-    atraso = notifAtraso(recurso);
+  const atraso = notifAtraso(recurso);
   return (
-    '<div class="notif-item"><div class="notif-ic ' +
+    '<div class="notif-item ' +
+    recurso.kind +
+    '"><div class="notif-ic ' +
     recurso.kind +
     '" data-action="card:open" data-id="' +
     recurso.c.id +
@@ -11764,10 +11868,13 @@ function notifItemHTML(recurso) {
     '"><div class="notif-t">' +
     esc(recurso.c.titulo) +
     '</div><div class="notif-s">' +
+    (atraso ? '<span class="notif-atraso ' + recurso.kind + '">' + esc(atraso) + "</span>" : "") +
+    "<span>" +
     esc(recurso.sub) +
-    (atraso ? ' <span class="notif-atraso ' + recurso.kind + '">' + esc(atraso) + "</span>" : "") +
-    (quien ? " · " + esc(quien.nombre) : ' · <span class="notif-nadie">sin responsable</span>') +
-    "</div></div>" +
+    "</span></div></div>" +
+    (recurso.c.responsable
+      ? avatarHTML(recurso.c.responsable, true)
+      : '<span class="notif-nadie" title="Sin responsable">?</span>') +
     // Una por una, además del "marcar todas": mirar diez y querer sacar una
     // sola es lo normal, y hasta ahora había que sacarlas todas o ninguna.
     '<button class="notif-ok" data-action="notif:read-one" data-clave="' +
@@ -11775,15 +11882,43 @@ function notifItemHTML(recurso) {
     '" title="Marcar esta como leída">✓</button></div>'
   );
 }
-function notifGrupoHTML(titulo, items) {
+function notifGrupoHTML(kind, items) {
   if (!items.length) return "";
+  const meta = NOTIF_TIPOS[kind];
   return (
-    '<div class="notif-grupo">' +
-    esc(titulo) +
-    " <b>" +
+    '<section class="notif-grupo ' +
+    kind +
+    '"><h3><span class="notif-grupo-ic">' +
+    meta.ic +
+    "</span>" +
+    esc(meta.t) +
+    "<b>" +
     items.length +
-    "</b></div>" +
-    items.map(notifItemHTML).join("")
+    "</b></h3>" +
+    items.map(notifItemHTML).join("") +
+    "</section>"
+  );
+}
+// El encabezado: el total grande y, debajo, cuántas hay de cada tipo. Antes
+// solo decía "N pendientes", que no distingue una vencida hace tres meses de
+// algo que vence pasado mañana.
+function notifResumenHTML(lista) {
+  const cuenta = { bad: 0, warn: 0, rec: 0 };
+  lista.forEach((a) => cuenta[a.kind]++);
+  const chips = Object.keys(NOTIF_TIPOS)
+    .filter((k) => cuenta[k])
+    .map(
+      (k) =>
+        '<span class="notif-chip ' + k + '"><b>' + cuenta[k] + "</b>" + esc(NOTIF_TIPOS[k].t.toLowerCase()) + "</span>",
+    )
+    .join("");
+  return (
+    '<div class="notif-head-n"><b>' +
+    lista.length +
+    "</b><span>alerta" +
+    (lista.length !== 1 ? "s" : "") +
+    " sin leer</span></div>" +
+    (chips ? '<div class="notif-chips">' + chips + "</div>" : "")
   );
 }
 function openNotif() {
@@ -11791,9 +11926,9 @@ function openNotif() {
     lista = state.alertasMias ? lista0.filter((recurso) => mine(recurso.c)) : lista0;
   state.selectedId = null;
   const txt = lista.length
-    ? notifGrupoHTML("⚑ Vencidas", lista.filter((a) => a.kind === "bad")) +
-      notifGrupoHTML("⏳ Vencen en los próximos días", lista.filter((a) => a.kind === "warn")) +
-      notifGrupoHTML("↻ Recurrentes por rearmar", lista.filter((a) => a.kind === "rec"))
+    ? notifGrupoHTML("bad", lista.filter((a) => a.kind === "bad")) +
+      notifGrupoHTML("warn", lista.filter((a) => a.kind === "warn")) +
+      notifGrupoHTML("rec", lista.filter((a) => a.kind === "rec"))
     : state.alertasMias && lista0.length
       ? '<div class="empty"><div class="big">✅</div><div style="font-weight:700;color:var(--ink)">Nada tuyo pendiente</div><div style="margin-top:4px">Hay ' +
         lista0.length +
@@ -11802,20 +11937,27 @@ function openNotif() {
         " del equipo, pero ninguna es tuya.</div></div>"
       : '<div class="empty"><div class="big">✅</div><div style="font-weight:700;color:var(--ink)">Todo al día</div><div style="margin-top:4px">Sin vencidas ni alertas.</div></div>';
   (($("#panel").innerHTML =
-    '<div class="panel-head"><div style="flex:1"><div class="tipo-pill">🔔 Alertas</div><div style="font-family:var(--titulo);font-size:18px;font-weight:700;margin-top:4px">' +
-    lista.length +
-    " pendiente" +
-    (lista.length !== 1 ? "s" : "") +
-    '</div></div>' +
-    (state.userId
-      ? '<button class="btn btn-ghost btn-sm" data-action="notif:solomias" title="Ver solo las alertas de mis tarjetas">' +
-        (state.alertasMias ? "★ Solo lo mío" : "☆ Solo lo mío") +
-        "</button>"
+    '<div class="panel-head notif-head"><div class="notif-head-tx"><div class="tipo-pill">🔔 Alertas</div>' +
+    notifResumenHTML(lista) +
+    "</div>" +
+    '<button class="btn btn-icon btn-ghost notif-x" data-action="panel:close">✕</button></div>' +
+    // Los dos botones que operan sobre la lista van juntos en su propia
+    // barra, no apretados contra el título: son acciones, no encabezado.
+    ((state.userId || lista.length)
+      ? '<div class="notif-acciones">' +
+        (state.userId
+          ? '<button class="btn btn-ghost btn-sm' +
+            (state.alertasMias ? " on" : "") +
+            '" data-action="notif:solomias" title="Ver solo las alertas de mis tarjetas">' +
+            (state.alertasMias ? "★ Solo lo mío" : "☆ Solo lo mío") +
+            "</button>"
+          : "") +
+        (lista.length
+          ? '<button class="btn btn-ghost btn-sm" data-action="notif:markread">✓ Marcar todas como leídas</button>'
+          : "") +
+        "</div>"
       : "") +
-    (lista.length
-      ? '<button class="btn btn-ghost btn-sm" data-action="notif:markread">✓ Marcar todas como leídas</button>'
-      : "") +
-    '<button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div><div class="panel-body">' +
+    '<div class="panel-body notif-body">' +
     txt +
     "</div>"),
     $("#panel").classList.add("open"),
@@ -11830,15 +11972,15 @@ function openHelp() {
     ["☰ Filtros del Planner", "Agrupa persona, sector, tipo y estado en un solo botón — el contador muestra cuántos hay activos. También te deja guardar combinaciones de filtros frecuentes."],
     ["Acciones rápidas en las tarjetas", "Pasá el mouse sobre una tarjeta del Planner: aparecen accesos directos para edición rápida, duplicar, copiar el enlace y eliminar, sin tener que abrir el panel completo."],
     ["Exportar CSV / PDF", "En la barra del Planner, junto al orden. Exporta lo que estás viendo en pantalla — respeta los filtros activos."],
-    ["🔔 Alertas", "Vencidas primero (la más atrasada arriba), después lo que vence en los próximos días. Cada una dice hace cuánto y de quién es. El ✓ de cada fila la saca sola; \"Marcar todas como leídas\" las oculta todas, hasta que algo cambie en esa tarjeta (nueva fecha, otro estado). Una tarjeta finalizada nunca aparece acá."],
+    ["🔔 Alertas", "Arriba, cuántas hay de cada tipo. Después, vencidas primero (la más atrasada arriba), lo que vence en los próximos días, y las recurrentes por rearmar. Cada una dice hace cuánto y de quién es. El ✓ de cada fila la saca sola; \"Marcar todas como leídas\" las oculta todas, hasta que algo cambie en esa tarjeta (nueva fecha, otro estado). Una tarjeta finalizada nunca aparece acá."],
     ["Menú de usuario (▾)", "Mi semana (tu foco de los próximos días), Carga del equipo, e Imprimir/PDF están ahí."],
     ["🎲 ¿Qué curso me toca?", "Botoncito flotante a la derecha del Planner (🎡): tocalo para desplegar el sorteo entre los cursos que todavía no arrancaron."],
     ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
-    ["El pie de Inicio", "Debajo de las tarjetas: <b>Lo que viene</b> son las próximas cuatro fechas del área (clic para abrir esa tarjeta), y la línea de números de abajo es cuántas tareas hay en cada estado — cada una lleva al Planner ya filtrado por ese estado."],
+    ["El pie de Inicio", "Debajo de las tarjetas: <b>Lo que viene</b> son las próximas cuatro fechas del área, con la inicial de quien la tiene (clic para abrir la tarjeta), y <b>El pulso del área</b> es cuántas tareas hay en cada estado con la barra proporcional al estado más cargado — cada fila lleva al Planner ya filtrado por ese estado."],
     ["Tocá tu nombre", "En Inicio, arriba de todo. No hace nada útil. Es a propósito."],
     ["Mapa del área", "Todo lo publicado (cursos, Edu Points, contenido audiovisual). Cada sector es una tarjeta con sus portadas y su color; al tocarla se abre y muestra sus cursos, y podés tener varias abiertas a la vez. Cuáles dejaste abiertas se recuerda en tu computadora, no le cambia la vista al resto."],
-    ["🔧 Seguimiento técnico", "Reemplaza al Excel de Categorías y Cursos: publicación, subida del SCORM, mail, portada, mosaico, evaluación, textos y diseño de cada curso, editable ahí mismo. Con <b>▦ Columnas</b> elegís cuáles ver (queda guardado en tu computadora, no le cambia la vista al resto). \"🔗 Vincular\" une una fila con su tarjeta del Mapa. Debajo de los cursos de cada categoría cuelgan sus <b>Archivos Edu Point</b>, con el mismo tratamiento."],
-    ["📈 Reportes", "El bloque grande de arriba es cuánto se publicó en el año que elijas, con su gráfico por mes; al costado, tres números para mirar de reojo, cada uno con su lista a un clic. Abajo, el histórico por año y el catálogo por sector. \"⬇ CSV\" y \"🖨 PDF\" exportan lo mismo que se ve en pantalla, para el año que estés mirando."],
+    ["🔧 Seguimiento técnico", "Reemplaza al Excel de Categorías y Cursos. El encabezado va en dos pisos: arriba el bloque (Fechas, Piezas, Formato, Seguimiento) y abajo cada columna. Publicación, subida del SCORM, mail, portada, mosaico, evaluación, textos y diseño de cada curso, editable ahí mismo. Con <b>▦ Columnas</b> elegís cuáles ver (queda guardado en tu computadora, no le cambia la vista al resto). \"🔗 Vincular\" une una fila con su tarjeta del Mapa. Debajo de los cursos de cada categoría cuelgan sus <b>Archivos Edu Point</b>, con el mismo tratamiento."],
+    ["📈 Reportes", "El bloque grande de arriba es cuánto se publicó en el año que elijas, con su gráfico por mes y la línea punteada del promedio para leer cada mes contra lo normal del año; al costado, tres números para mirar de reojo, cada uno con su lista a un clic. Abajo, el histórico por año y el catálogo por sector como una sola barra de colores (clic en cualquier sector de la referencia para ver sus cursos). \"⬇ CSV\" y \"🖨 PDF\" exportan lo mismo que se ve en pantalla, para el año que estés mirando."],
   ];
   openModal(
     '<h2>❓ Ayuda</h2><div class="sub-t">Funciones que ya existen pero a veces cuestan de encontrar.</div>\n    <div style="margin-top:4px">' +
