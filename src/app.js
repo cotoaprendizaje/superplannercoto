@@ -11883,124 +11883,147 @@ function notifAtraso(recurso) {
   return "hace " + meses + (meses === 1 ? " mes" : " meses");
 }
 // ===== El panel de alertas =====
-// Era una lista de filas separadas por una línea punteada, con el atraso y el
-// nombre de quien la tiene escritos como texto corrido en la sub-línea. Se
-// entendía, pero todo pesaba igual: no había forma de barrer la lista con el
-// ojo y quedarse con lo urgente. Ahora cada alerta es una tarjeta con una
-// franja del color de su tipo, el atraso en pastilla y la inicial de quien la
-// tiene; y arriba de todo, cuántas hay de cada tipo.
-const NOTIF_TIPOS = {
-  bad: { t: "Vencidas", ic: "⚑" },
-  warn: { t: "Vencen pronto", ic: "⏳" },
-  rec: { t: "Recurrentes por rearmar", ic: "↻" },
-};
-function notifItemHTML(recurso) {
-  const atraso = notifAtraso(recurso);
+// Tercera forma. Primero fue una lista de filas separadas por línea punteada,
+// con el atraso y el responsable escritos como texto corrido: todo pesaba
+// igual. Después la convertí en tarjetas con una franja de color, que ordenó
+// pero seguía siendo una pila de cajas iguales, una abajo de la otra.
+//
+// El problema de fondo era otro: una alerta es una cosa que pasa EN EL
+// TIEMPO —venció hace seis días, vence mañana—, y las dos versiones anteriores
+// mostraban ese dato como una etiqueta más entre otras. Ahora el panel es una
+// línea de tiempo: un riel vertical con un punto por alerta, el cuándo a la
+// izquierda, y una marca de HOY cruzando donde termina lo atrasado y empieza
+// lo que viene. De un vistazo se ve qué quedó atrás y cuánto.
+const NOTIF_TONO = { bad: "var(--bad)", warn: "var(--warn)", rec: "var(--coto-blue)" };
+// El cuándo, corto, para que entre en una columna angosta y las cuatro filas
+// queden alineadas. La versión larga (notifAtraso) sigue viva en el title.
+function alertaCuando(recurso) {
+  const d = recurso.dias;
+  if (typeof d !== "number") return "";
+  if (d === 0) return "hoy";
+  if (d === 1) return "mañana";
+  if (d > 1) return "en " + d + " d";
+  const atraso = -d;
+  if (atraso === 1) return "ayer";
+  if (atraso < 31) return "hace " + atraso + " d";
+  // Abreviado: "hace 2 meses" no entra en la columna del cuándo y se parte en
+  // dos renglones, que es lo único que rompe el ritmo de la línea de tiempo.
+  // El texto completo sigue estando en el title de la fila.
+  return "hace " + Math.round(atraso / 30) + " m";
+}
+function alertaItemHTML(recurso) {
+  const sectores = (recurso.c.sectores || []).map((sec) => sectorName(sec) || sec).join(", "),
+    quien = recurso.c.responsable ? (member(recurso.c.responsable) || {}).nombre : "",
+    meta = [sectores, quien || "sin responsable"].filter(Boolean).join(" · ");
   return (
-    '<div class="notif-item ' +
+    '<li class="al-it ' +
     recurso.kind +
-    '"><div class="notif-ic ' +
-    recurso.kind +
-    '" data-action="card:open" data-id="' +
-    recurso.c.id +
+    '" style="--tono:' +
+    NOTIF_TONO[recurso.kind] +
+    '"><span class="al-cuando" title="' +
+    esc(recurso.label + " — " + notifAtraso(recurso)) +
     '">' +
-    recurso.ic +
-    '</div><div class="notif-main" data-action="card:open" data-id="' +
+    esc(alertaCuando(recurso)) +
+    '</span><span class="al-punto"></span>' +
+    '<button class="al-cuerpo" data-action="card:open" data-id="' +
     recurso.c.id +
-    '"><div class="notif-t">' +
+    '"><b>' +
     esc(recurso.c.titulo) +
-    '</div><div class="notif-s">' +
-    (atraso ? '<span class="notif-atraso ' + recurso.kind + '">' + esc(atraso) + "</span>" : "") +
-    "<span>" +
-    esc(recurso.sub) +
-    "</span></div></div>" +
-    (recurso.c.responsable
-      ? avatarHTML(recurso.c.responsable, true)
-      : '<span class="notif-nadie" title="Sin responsable">?</span>') +
+    '</b><i>' +
+    esc(recurso.sub + (meta ? " · " + meta : "")) +
+    "</i></button>" +
     // Una por una, además del "marcar todas": mirar diez y querer sacar una
-    // sola es lo normal, y hasta ahora había que sacarlas todas o ninguna.
-    '<button class="notif-ok" data-action="notif:read-one" data-clave="' +
+    // sola es lo normal.
+    '<button class="al-ok" data-action="notif:read-one" data-clave="' +
     esc(alertaKey(recurso)) +
-    '" title="Marcar esta como leída">✓</button></div>'
+    '" title="Marcar esta como leída">✓</button></li>'
   );
 }
-function notifGrupoHTML(kind, items) {
-  if (!items.length) return "";
-  const meta = NOTIF_TIPOS[kind];
+// La marca de HOY, cruzando el riel: es lo que convierte la lista en una
+// línea de tiempo. Solo aparece si hay algo de los dos lados.
+function alertaHoyHTML() {
+  return '<li class="al-hoy" aria-hidden="true"><span>hoy</span></li>';
+}
+function alertaTimelineHTML(lista) {
+  if (!lista.length) return "";
+  // De lo más atrasado a lo que falta más: el orden natural de una línea de
+  // tiempo, y también el orden en que hay que ocuparse.
+  const orden = lista.slice().sort((a, b) => (a.dias || 0) - (b.dias || 0)),
+    hayAtrasadas = orden.some((a) => a.dias < 0),
+    hayPorVenir = orden.some((a) => a.dias >= 0);
+  let puesta = !(hayAtrasadas && hayPorVenir);
   return (
-    '<section class="notif-grupo ' +
-    kind +
-    '"><h3><span class="notif-grupo-ic">' +
-    meta.ic +
-    "</span>" +
-    esc(meta.t) +
-    "<b>" +
-    items.length +
-    "</b></h3>" +
-    items.map(notifItemHTML).join("") +
-    "</section>"
+    '<ol class="al-tl">' +
+    orden
+      .map((recurso) => {
+        let antes = "";
+        if (!puesta && recurso.dias >= 0) ((antes = alertaHoyHTML()), (puesta = true));
+        return antes + alertaItemHTML(recurso);
+      })
+      .join("") +
+    "</ol>"
   );
 }
-// El encabezado: el total grande y, debajo, cuántas hay de cada tipo. Antes
-// solo decía "N pendientes", que no distingue una vencida hace tres meses de
-// algo que vence pasado mañana.
-function notifResumenHTML(lista) {
-  const cuenta = { bad: 0, warn: 0, rec: 0 };
-  lista.forEach((a) => cuenta[a.kind]++);
-  const chips = Object.keys(NOTIF_TIPOS)
-    .filter((k) => cuenta[k])
-    .map(
-      (k) =>
-        '<span class="notif-chip ' + k + '"><b>' + cuenta[k] + "</b>" + esc(NOTIF_TIPOS[k].t.toLowerCase()) + "</span>",
-    )
-    .join("");
+// Las recurrentes van aparte y abajo: no es "esto vence", es "esta tarea toca
+// otra vuelta". Mezcladas en la misma línea de tiempo confundían las dos cosas.
+function alertaRecurrentesHTML(lista) {
+  if (!lista.length) return "";
   return (
-    '<div class="notif-head-n"><b>' +
+    '<section class="al-grupo"><h3>↻ Recurrentes por rearmar<b>' +
     lista.length +
-    "</b><span>alerta" +
-    (lista.length !== 1 ? "s" : "") +
-    " sin leer</span></div>" +
-    (chips ? '<div class="notif-chips">' + chips + "</div>" : "")
+    "</b></h3>" +
+    '<ol class="al-tl">' +
+    lista.map(alertaItemHTML).join("") +
+    "</ol></section>"
+  );
+}
+function alertaVacioHTML(lista0) {
+  const mias = state.alertasMias && lista0.length;
+  return (
+    '<div class="al-vacio"><div class="al-vacio-ic">✓</div><b>' +
+    (mias ? "Nada tuyo pendiente" : "Todo al día") +
+    "</b><span>" +
+    (mias
+      ? "Hay " + lista0.length + " alerta" + (lista0.length !== 1 ? "s" : "") + " del equipo, pero ninguna es tuya."
+      : "Ni vencidas ni por vencer en los próximos días.") +
+    "</span></div>"
   );
 }
 function openNotif() {
   const lista0 = alertasSinLeer(),
     lista = state.alertasMias ? lista0.filter((recurso) => mine(recurso.c)) : lista0;
   state.selectedId = null;
-  const txt = lista.length
-    ? notifGrupoHTML("bad", lista.filter((a) => a.kind === "bad")) +
-      notifGrupoHTML("warn", lista.filter((a) => a.kind === "warn")) +
-      notifGrupoHTML("rec", lista.filter((a) => a.kind === "rec"))
-    : state.alertasMias && lista0.length
-      ? '<div class="empty"><div class="big">✅</div><div style="font-weight:700;color:var(--ink)">Nada tuyo pendiente</div><div style="margin-top:4px">Hay ' +
-        lista0.length +
-        " alerta" +
-        (lista0.length !== 1 ? "s" : "") +
-        " del equipo, pero ninguna es tuya.</div></div>"
-      : '<div class="empty"><div class="big">✅</div><div style="font-weight:700;color:var(--ink)">Todo al día</div><div style="margin-top:4px">Sin vencidas ni alertas.</div></div>';
+  const enTiempo = lista.filter((a) => a.kind !== "rec"),
+    recurrentes = lista.filter((a) => a.kind === "rec"),
+    vencidas = lista.filter((a) => a.kind === "bad").length,
+    // El resumen en una línea de texto, no en tres chips: lo único que hay que
+    // decidir mirando la campana es si hay algo atrasado o no.
+    bajada = lista.length
+      ? lista.length +
+        " sin leer" +
+        (vencidas ? " · <b>" + vencidas + " vencida" + (vencidas !== 1 ? "s" : "") + "</b>" : " · nada vencido")
+      : "Sin pendientes";
   (($("#panel").innerHTML =
-    '<div class="panel-head notif-head"><div class="notif-head-tx"><div class="tipo-pill">🔔 Alertas</div>' +
-    notifResumenHTML(lista) +
-    "</div>" +
-    '<button class="btn btn-icon btn-ghost notif-x" data-action="panel:close">✕</button></div>' +
-    // Los dos botones que operan sobre la lista van juntos en su propia
-    // barra, no apretados contra el título: son acciones, no encabezado.
-    ((state.userId || lista.length)
-      ? '<div class="notif-acciones">' +
-        (state.userId
-          ? '<button class="btn btn-ghost btn-sm' +
-            (state.alertasMias ? " on" : "") +
-            '" data-action="notif:solomias" title="Ver solo las alertas de mis tarjetas">' +
-            (state.alertasMias ? "★ Solo lo mío" : "☆ Solo lo mío") +
-            "</button>"
-          : "") +
-        (lista.length
-          ? '<button class="btn btn-ghost btn-sm" data-action="notif:markread">✓ Marcar todas como leídas</button>'
-          : "") +
-        "</div>"
+    '<div class="panel-head al-head"><div class="al-head-tx"><h2>Alertas</h2><p>' +
+    bajada +
+    "</p></div>" +
+    // Las acciones como iconos al costado del título: antes iban en una barra
+    // gris aparte que partía el panel en dos antes de que empezara la lista.
+    (state.userId
+      ? '<button class="al-acc' +
+        (state.alertasMias ? " on" : "") +
+        '" data-action="notif:solomias" title="' +
+        (state.alertasMias ? "Ver las de todo el equipo" : "Ver solo las de mis tarjetas") +
+        '">' +
+        (state.alertasMias ? "★" : "☆") +
+        "</button>"
       : "") +
-    '<div class="panel-body notif-body">' +
-    txt +
+    (lista.length
+      ? '<button class="al-acc" data-action="notif:markread" title="Marcar todas como leídas">✓</button>'
+      : "") +
+    '<button class="al-acc" data-action="panel:close" title="Cerrar">✕</button></div>' +
+    '<div class="panel-body al-body">' +
+    (lista.length ? alertaTimelineHTML(enTiempo) + alertaRecurrentesHTML(recurrentes) : alertaVacioHTML(lista0)) +
     "</div>"),
     $("#panel").classList.add("open"),
     $("#overlay").classList.remove("hidden"));

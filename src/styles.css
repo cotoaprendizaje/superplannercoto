@@ -539,7 +539,8 @@ p {
 .kcol-count,
 .rep-bar-n,
 .carga-num,
-.notif-grupo h3 b,
+.al-grupo h3 b,
+.al-cuando,
 .mapa-tarj-c,
 .tec-top-n,
 .badge b,
@@ -3314,279 +3315,289 @@ button {
   box-shadow: 0 0 0 2px var(--surface);
 }
 /* ===== Panel de alertas =====
-   Era una lista de filas separadas por una línea punteada, con el atraso y el
-   nombre escritos como texto corrido en la sub-línea: todo pesaba igual y no
-   había forma de barrer la lista con el ojo. Ahora cada alerta es una tarjeta
-   con una franja del color de su tipo, y el encabezado dice de entrada
-   cuántas hay de cada uno. */
-.notif-head {
+   Tercera forma. Primero fueron filas separadas por línea punteada, después
+   tarjetas con franja de color; las dos mostraban el atraso como una etiqueta
+   más entre otras. Pero una alerta es una cosa que pasa EN EL TIEMPO —venció
+   hace seis días, vence mañana—, así que ahora el panel ES una línea de
+   tiempo: un riel con un punto por alerta, el cuándo a la izquierda y una
+   marca de HOY donde termina lo atrasado y empieza lo que viene. */
+.al-head {
   flex-direction: row;
-  align-items: flex-start;
-  padding-bottom: var(--sp-4);
+  align-items: center;
+  gap: 6px;
+  padding: 16px 14px 14px 18px;
 }
-.notif-head-tx {
+.al-head-tx {
   flex: 1;
   min-width: 0;
 }
-.notif-x {
-  flex: none;
-}
-.notif-head-n {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-top: 8px;
-}
-.notif-head-n b {
+.al-head-tx h2 {
+  margin: 0;
   font-family: var(--titulo);
-  font-size: 34px;
+  font-size: 20px;
   font-weight: 900;
-  line-height: 1;
-  letter-spacing: -1px;
+  letter-spacing: -0.3px;
   color: var(--ink);
-  font-variant-numeric: tabular-nums;
 }
-.notif-head-n span {
-  font-size: 13px;
-  font-weight: 700;
+.al-head-tx p {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
   color: var(--ink-soft);
 }
-/* Cuántas de cada tipo, cada una en su color. "5 pendientes" no distingue una
-   vencida hace tres meses de algo que vence pasado mañana. */
-.notif-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-}
-.notif-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: var(--pill);
-  font-size: 11px;
-  font-weight: 700;
-}
-.notif-chip b {
-  font-size: 12.5px;
+.al-head-tx p b {
   font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-.notif-chip.bad {
-  background: var(--bad-soft);
   color: var(--bad);
 }
-.notif-chip.warn {
-  background: #fff3dc;
-  color: #b7791f;
+/* Las acciones como íconos al lado del título. Antes iban en una barra gris
+   aparte que partía el panel en dos antes de que empezara la lista. */
+.al-acc {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: 0 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.14s;
 }
-.notif-chip.rec {
-  background: color-mix(in srgb, var(--coto-blue) 12%, transparent);
-  color: var(--coto-blue);
-}
-[data-theme="dark"] .notif-chip.warn {
-  background: #3a2f12;
-  color: #e2a03f;
-}
-/* Los dos botones que operan sobre la lista, en su propia barra: son
-   acciones, no parte del encabezado. */
-.notif-acciones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 10px 18px;
-  border-bottom: 1px solid var(--line);
+.al-acc:hover {
   background: var(--surface-2);
+  border-color: var(--line);
+  color: var(--ink);
 }
-.notif-acciones .btn.on {
-  border-color: var(--coto-blue);
+.al-acc.on {
+  background: color-mix(in srgb, var(--coto-blue) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--coto-blue) 35%, transparent);
   color: var(--coto-blue);
-  background: color-mix(in srgb, var(--coto-blue) 10%, var(--surface));
 }
-.notif-body {
+.al-body {
+  padding: 14px 14px 20px;
   gap: var(--sp-5);
-  background: var(--bg);
 }
-.notif-grupo {
+/* El riel: una línea que recorre todo el grupo, con los puntos encima. */
+.al-tl {
+  position: relative;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.al-tl::before {
+  content: "";
+  position: absolute;
+  left: 82px;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--line-soft);
+}
+.al-it {
+  position: relative;
+  display: grid;
+  grid-template-columns: 70px 24px minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 0 2px;
+  border-radius: var(--r-sm);
+  transition: background 0.14s;
+}
+.al-it:hover {
+  background: color-mix(in srgb, var(--tono) 7%, transparent);
+}
+/* El cuándo, alineado a la derecha contra el riel: así las cuatro filas
+   forman una columna y se comparan de un vistazo. */
+.al-cuando {
+  text-align: right;
+  padding-right: 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.al-it.bad .al-cuando {
+  color: var(--bad);
+}
+.al-it.warn .al-cuando {
+  color: color-mix(in srgb, var(--warn) 78%, var(--ink));
+}
+.al-punto {
+  justify-self: center;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--tono);
+  /* El anillo del color del panel tapa el riel justo detrás del punto: sin
+     esto la línea se ve cruzando por adentro de cada punto. */
+  box-shadow: 0 0 0 4px var(--surface);
+  z-index: 1;
+}
+.al-it:hover .al-punto {
+  box-shadow:
+    0 0 0 4px var(--surface),
+    0 0 0 7px color-mix(in srgb, var(--tono) 22%, transparent);
+}
+.al-cuerpo {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-}
-.notif-grupo h3 {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin: 0;
-  font-family: var(--texto);
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
-.notif-grupo h3 b {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 1px 8px;
-  border-radius: var(--pill);
-  background: var(--surface-2);
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.notif-grupo-ic {
-  font-size: 12px;
-}
-.notif-grupo.bad h3 {
-  color: var(--bad);
-}
-.notif-grupo.warn h3 {
-  color: #b7791f;
-}
-[data-theme="dark"] .notif-grupo.warn h3 {
-  color: #e2a03f;
-}
-.notif-grupo.rec h3 {
-  color: var(--coto-blue);
-}
-/* Cada alerta, una tarjeta con la franja de su tipo a la izquierda. */
-.notif-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 11px 12px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--line);
-  border-radius: var(--r-sm);
-  transition:
-    border-color 0.14s,
-    box-shadow 0.14s,
-    transform 0.14s;
-}
-.notif-item:hover {
-  transform: translateX(2px);
-  box-shadow: var(--shadow-sm);
-}
-.notif-item.bad {
-  border-left-color: var(--bad);
-}
-.notif-item.warn {
-  border-left-color: var(--warn);
-}
-.notif-item.rec {
-  border-left-color: var(--coto-blue);
-}
-.notif-item:hover .notif-t {
-  color: var(--coto-blue);
-}
-.notif-ic {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 15px;
-  flex: none;
-  cursor: pointer;
-}
-.notif-ic.bad {
-  background: var(--bad-soft);
-  color: var(--bad);
-}
-.notif-ic.warn {
-  background: #fff3dc;
-  color: #b7791f;
-}
-.notif-ic.rec {
-  background: color-mix(in srgb, var(--coto-blue) 12%, transparent);
-  color: var(--coto-blue);
-}
-[data-theme="dark"] .notif-ic.warn {
-  background: #3a2f12;
-}
-.notif-main {
-  flex: 1;
+  gap: 2px;
   min-width: 0;
+  padding: 11px 8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
+  border-radius: var(--r-sm);
 }
-.notif-t {
+.al-cuerpo b {
   font-size: 13.5px;
   font-weight: 700;
   line-height: 1.3;
   color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.notif-s {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--ink-soft);
-  margin-top: 4px;
-}
-/* Cuánto hace que venció, en pastilla y no como texto suelto: una fecha sola
-   no dice si fue anteayer o en marzo, que es lo único que decide qué se mira
-   primero. */
-.notif-atraso {
-  padding: 1px 8px;
-  border-radius: var(--pill);
-  font-size: 10.5px;
-  font-weight: 800;
-}
-.notif-atraso.bad {
-  background: var(--bad-soft);
-  color: var(--bad);
-}
-.notif-atraso.warn {
-  background: #fff3dc;
-  color: #b7791f;
-}
-.notif-atraso.rec {
-  background: color-mix(in srgb, var(--coto-blue) 12%, transparent);
+.al-it:hover .al-cuerpo b {
   color: var(--coto-blue);
 }
-[data-theme="dark"] .notif-atraso.warn {
-  background: #3a2f12;
-  color: #e2a03f;
-}
-/* Sin responsable: el mismo círculo que los demás, pero vacío. Antes decía
-   "sin responsable" en cursiva y era el texto más largo de la fila. */
-.notif-nadie {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: grid;
-  place-content: center;
-  border: 1px dashed var(--line);
-  color: var(--ink-soft);
+.al-cuerpo i {
+  font-style: normal;
   font-size: 11px;
-  font-weight: 700;
-}
-.notif-ok {
-  flex: none;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: 0 0;
   color: var(--ink-soft);
-  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.al-ok {
+  justify-self: end;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 12px;
   cursor: pointer;
-  opacity: 0.55;
+  opacity: 0;
   transition: 0.14s;
 }
-.notif-item:hover .notif-ok {
+.al-it:hover .al-ok,
+.al-ok:focus-visible {
   opacity: 1;
 }
-.notif-ok:hover {
+/* Con dedo no hay hover que revele nada: el ✓ va siempre visible. */
+@media (pointer: coarse) {
+  .al-ok {
+    opacity: 1;
+  }
+}
+.al-ok:hover {
   border-color: var(--ok);
   background: color-mix(in srgb, var(--ok) 14%, var(--surface));
   color: var(--ok);
-  opacity: 1;
+}
+/* La marca de HOY cruzando el riel: es lo que convierte la lista en una línea
+   de tiempo. Arriba lo que quedó atrás, abajo lo que viene. */
+.al-hoy {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0 5px 70px;
+}
+.al-hoy::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--line) 0 4px,
+    transparent 4px 8px
+  );
+}
+.al-hoy span {
+  position: relative;
+  z-index: 1;
+  padding: 2px 9px;
+  border-radius: var(--pill);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+/* Las recurrentes, aparte y abajo: no es "esto vence", es "esta tarea toca
+   otra vuelta". Mezcladas en la misma línea confundían las dos cosas. */
+.al-grupo h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px 12px;
+  font-family: var(--texto);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.al-grupo h3 b {
+  margin-left: auto;
+  margin-right: 12px;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: var(--pill);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.al-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 44px 20px;
+}
+.al-vacio-ic {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  margin-bottom: 6px;
+  font-size: 24px;
+  font-weight: 900;
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.al-vacio b {
+  font-family: var(--titulo);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.al-vacio span {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  max-width: 260px;
+}
+@media (max-width: 520px) {
+  .al-tl::before {
+    left: 62px;
+  }
+  .al-it {
+    grid-template-columns: 50px 24px minmax(0, 1fr) 30px;
+  }
+  .al-hoy {
+    padding-left: 50px;
+  }
 }
 /* ===== Panel de Ajustes =====
    Navegación al costado y una sección por tarea, en vez del scroll único de
@@ -7656,7 +7667,7 @@ html {
   }
   .chk-del,
   .kq-btn,
-  .notif-ok,
+  .al-ok,
   .hub-aviso-x {
     min-width: 38px;
     min-height: 38px;
