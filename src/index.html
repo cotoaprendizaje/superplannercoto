@@ -92,13 +92,23 @@
       </div>
       <div class="menu-wrap">
         <div class="userchip" data-action="menu:toggle" id="userChip"></div>
+        <!--
+          Era una lista de cinco renglones planos con un emoji suelto adelante:
+          "Mi semana" (que es tu trabajo) y "Ajustes y datos" (que es la
+          administración del área) pesaban exactamente lo mismo. Ahora arriba
+          está quién sos, y abajo los dos grupos separados: lo tuyo primero,
+          las herramientas después, y Salir aparte al final.
+        -->
         <div class="menu hidden" id="userMenu" role="menu">
-          <button class="menu-item" data-action="misemana:open"><span>📅</span> Mi semana</button>
-          <button class="menu-item" data-action="carga:open"><span>👥</span> Carga del equipo</button>
-          <button class="menu-item" data-action="app:print"><span>🖨️</span> Imprimir / PDF</button>
-          <button class="menu-item" data-action="settings:open"><span>⚙</span> Ajustes y datos</button>
+          <div class="menu-yo" id="menuYo"></div>
+          <div class="menu-grupo">Tu trabajo</div>
+          <button class="menu-item" data-action="misemana:open"><span class="menu-ic">📅</span><span class="menu-tx">Mi semana<i>Tu foco de los próximos días</i></span></button>
+          <button class="menu-item" data-action="carga:open"><span class="menu-ic">👥</span><span class="menu-tx">Carga del equipo<i>Quién tiene qué encima</i></span></button>
+          <div class="menu-grupo">Herramientas</div>
+          <button class="menu-item" data-action="app:print"><span class="menu-ic">🖨️</span><span class="menu-tx">Imprimir / PDF<i>Lo que estás viendo en pantalla</i></span></button>
+          <button class="menu-item" data-action="settings:open"><span class="menu-ic">⚙</span><span class="menu-tx">Ajustes y datos<i>Equipo, sectores y respaldos</i></span></button>
           <div class="menu-sep"></div>
-          <button class="menu-item" data-action="user:logout"><span>⎋</span> Salir</button>
+          <button class="menu-item menu-salir" data-action="user:logout"><span class="menu-ic">🚪</span><span class="menu-tx">Salir</span></button>
         </div>
       </div>
     </div>
