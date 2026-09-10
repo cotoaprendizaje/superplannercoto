@@ -1337,7 +1337,7 @@ button {
   background: var(--surface);
   border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
-  padding: 13px 14px;
+  padding: 14px 15px;
   cursor: pointer;
   box-shadow: var(--shadow);
   transition:
@@ -1394,19 +1394,25 @@ button {
 .kcard.drag {
   opacity: 0.4;
 }
-.kcard-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 6px;
-}
+/* El título es lo primero y lo más grande: es lo único que hay que leer para
+   saber qué es la tarjeta. */
 .kcard-title {
   font-family: var(--texto);
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 700;
-  letter-spacing: -0.1px;
-  line-height: 1.32;
-  margin: 3px 0 9px;
+  letter-spacing: -0.15px;
+  line-height: 1.3;
+  color: var(--ink);
+  margin: 0;
+  text-wrap: pretty;
+}
+/* "Prioridad alta" era una píldora entera arriba del título; ahora es una
+   estrella pegada al título, que es lo que la prioridad califica. */
+.kcard-prio {
+  color: var(--warn);
+  font-size: 13px;
+  margin-right: 5px;
+  vertical-align: 1px;
 }
 .badges {
   display: flex;
@@ -1414,14 +1420,61 @@ button {
   gap: 5px;
   margin-bottom: 9px;
 }
-.kcard-meta {
+/* Un solo renglón de pie con todo lo secundario —de qué tipo es, para cuándo,
+   de qué sector, quién la tiene— en vez de cuatro renglones apilados. Envuelve
+   si no entra. */
+.kcard-pie {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 6px;
+  margin-top: 10px;
   font-size: 12px;
   color: var(--ink-soft);
-  margin-bottom: 8px;
+}
+/* El tipo era una píldora con ícono y nombre arriba de todo: el dato menos
+   importante en el lugar más visible. Queda el ícono, con el nombre en el
+   globito. */
+.kcard-tipo {
+  font-size: 13px;
+  line-height: 1;
+  flex: none;
+  opacity: 0.85;
+}
+.kcard-quien {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+/* El avance del checklist era una barra de ancho completo con el número al
+   costado. Al 0% esa barra es exactamente una raya gris cruzando la tarjeta
+   —justo lo que estamos sacando de todos lados—, así que pasa a ser una
+   pastilla corta al lado del número, en el pie. Se sigue viendo la proporción
+   y ya no hay ningún renglón dedicado a ella. */
+.avance {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.avance-t {
+  width: 34px;
+  height: 5px;
+  border-radius: var(--pill);
+  background: var(--surface-2);
+  overflow: hidden;
+  flex: none;
+}
+.avance-t i {
+  display: block;
+  height: 100%;
+  border-radius: var(--pill);
+  background: var(--coto-blue);
+  transition: width 0.3s;
 }
 .date {
   display: inline-flex;
@@ -1437,7 +1490,7 @@ button {
   font-weight: 600;
 }
 .progress {
-  height: 8px;
+  height: 6px;
   border-radius: var(--pill);
   background: var(--surface-2);
   overflow: hidden;
@@ -1454,7 +1507,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 10px;
 }
 .prog-num {
   font-size: 11px;
@@ -1462,21 +1515,16 @@ button {
   color: var(--ink-soft);
   white-space: nowrap;
 }
-.kcard-foot {
-  display: flex;
-  align-items: center;
-  margin-top: 9px;
-}
 .stack {
   display: flex;
 }
 .stack-empty {
-  border: 1px dashed var(--line);
-  background: var(--surface-2);
+  border: 1px dashed var(--line-soft);
+  background: 0 0;
   color: var(--ink-soft);
   border-radius: 50%;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   display: grid;
   place-content: center;
   font-size: 13px;
@@ -1954,14 +2002,26 @@ button {
   gap: 7px;
   flex: 1;
 }
-/* Si un título ocupa una línea y el de al lado dos, todo lo que viene abajo
-   se corre y una fila de cinco tarjetas se lee como cinco cosas sueltas. Dos
-   líneas fijas para el título y el pie anclado abajo: la fila vuelve a
-   leerse como una fila. */
+/* Si un título ocupa una línea y el de al lado dos, todo lo que viene abajo se
+   corre y una fila de cinco tarjetas se lee como cinco cosas sueltas. Antes eso
+   se peleaba con margin-top:auto, que solo alinea el ÚLTIMO bloque: la bajada y
+   la audiencia seguían empujando el pie a alturas distintas en cada tarjeta.
+   Ahora la tarjeta es una grilla de renglones fijos con un solo renglón
+   elástico —el texto—, que se come toda la diferencia. Resultado: en una fila,
+   los años, los links y los botones caen todos en la misma línea. */
 .curso-body {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  gap: var(--sp-2);
+  align-content: start;
+  flex: 1;
+}
+.curso-tx {
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  flex: 1;
+  gap: 5px;
 }
 .curso-bajada {
   display: -webkit-box;
@@ -1969,8 +2029,17 @@ button {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.curso-foot {
-  margin-top: auto;
+/* Para quién es el curso. Vivía mezclada con el año y la duración en el pie, y
+   como es la única de las tres que se va a tres renglones, era la que desalineaba
+   la fila entera. */
+.curso-quien {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .curso-body h4 {
   display: -webkit-box;
@@ -1990,10 +2059,10 @@ button {
 .curso-foot {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 11.5px;
   color: var(--ink-soft);
-  flex-wrap: wrap;
+  white-space: nowrap;
 }
 .curso-foot .moodle {
   margin-left: auto;
