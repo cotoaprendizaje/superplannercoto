@@ -1093,8 +1093,13 @@ button {
   gap: 6px;
 }
 .view {
-  padding: 14px 22px 60px;
+  --view-pad: 22px;
+  padding: 14px var(--view-pad) 60px;
   flex: 1;
+  /* Sin esto, un hijo ancho —la grilla de Técnico mide 1.517 px— estira la
+     vista entera y el documento scrollea en horizontal, en vez de scrollear
+     solo la tabla adentro de su caja. */
+  min-width: 0;
 }
 .kanban {
   display: grid;
@@ -1291,6 +1296,7 @@ button {
   align-items: center;
   gap: 10px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 .cal-title {
   font-family: var(--titulo);
@@ -2862,10 +2868,10 @@ button {
   flex-wrap: wrap;
 }
 .tl-full {
-  margin: 0 -22px;
+  margin: 0 calc(-1 * var(--view-pad, 22px));
 }
 .tl-full .tl-toolbar {
-  padding: 0 22px;
+  padding: 0 var(--view-pad, 22px);
 }
 .tl-full .tl-wrap {
   border-radius: 0;
@@ -4858,6 +4864,12 @@ html {
   flex-direction: column;
   gap: 2px;
 }
+/* "5 de 23": el buscador muestra los primeros y avisa cuántos hay, en vez de
+   cortar en silencio y hacer creer que eso es todo. */
+.cmdk-mas {
+  font-weight: 600;
+  opacity: 0.7;
+}
 .cmdk-group {
   font-size: 10.5px;
   font-weight: 800;
@@ -4994,7 +5006,7 @@ html {
     gap: 10px;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    background: color-mix(in srgb, var(--surface) 90%, transparent);
+    background: var(--chrome-bg);
   }
   .brand {
     gap: 9px;
@@ -5027,10 +5039,12 @@ html {
     gap: 0;
     padding: 6px;
     overflow-x: auto;
-    -webkit-backdrop-filter: var(--blur);
-    backdrop-filter: var(--blur);
-    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    background: var(--surface);
+    border: 1px solid var(--line);
     box-shadow: var(--shadow-lg);
+    /* Barra fija sobre el contenido: opaca. Con el 80% de opacidad y blur, en
+       el teléfono se leía el texto de la página por detrás de los íconos. */
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
   }
   .tabs::-webkit-scrollbar {
     display: none;
@@ -5054,14 +5068,15 @@ html {
     opacity: 1;
   }
   .view {
-    padding: 12px 14px 100px;
+    --view-pad: 14px;
+    padding: 12px var(--view-pad) 100px;
   }
   .filters {
-    padding: 12px 14px 4px;
+    padding: 0 0 10px;
   }
   .fab {
     right: 16px;
-    bottom: 92px;
+    bottom: calc(96px + env(safe-area-inset-bottom));
     width: 54px;
     height: 54px;
     font-size: 27px;
@@ -5259,13 +5274,28 @@ html {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
   margin-bottom: 16px;
 }
+.tec-top .filt {
+  min-width: 0;
+}
 .tec-top .filt input {
-  min-width: 260px;
+  min-width: 0;
+  width: 260px;
+  max-width: 100%;
+}
+@media (max-width: 560px) {
+  .tec-top .filt {
+    flex: 1 1 100%;
+  }
+  .tec-top .filt input {
+    width: 100%;
+  }
 }
 .tec-table-wrap {
   overflow-x: auto;
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: var(--r-l);
   background: var(--surface);
@@ -6310,5 +6340,82 @@ html {
   }
   .logo-lockup .logo-div {
     display: none;
+  }
+}
+
+
+/* ===== Pantallas táctiles =====
+   Medido a 390 px: los botones quedaban en 28 px de alto, los <select> en 26 y
+   los ✕ de las tarjetas en 19. Con el dedo eso se falla. En puntero fino
+   (mouse) no cambia nada: apuntar con el mouse es preciso y agrandar todo
+   sería regalar espacio en una pantalla donde sí sobra. */
+@media (pointer: coarse) {
+  /* Las barras del calendario no pueden crecer hasta 38px sin arruinar la
+     grilla del mes, pero 18 son muy pocos para el dedo: 26 es el punto donde
+     se puede tocar y siguen entrando tres o cuatro por semana. */
+  .cal-bar {
+    min-height: 26px;
+  }
+  .btn,
+  .btn-sm,
+  .tab,
+  .qchip,
+  .ini-seg,
+  .mapa-sec {
+    min-height: 38px;
+  }
+  select,
+  input[type="text"],
+  input[type="date"],
+  input[type="email"],
+  input[type="password"] {
+    min-height: 38px;
+  }
+  .tec-link,
+  .mapa-distseg {
+    min-height: 28px;
+  }
+  .tec-chk input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+  }
+  .chk-del,
+  .kq-btn,
+  .notif-ok,
+  .ini-listo,
+  .hub-aviso-x {
+    min-width: 38px;
+    min-height: 38px;
+  }
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+  /* La barra superior tiene siete pestañas: en un teléfono no entran, así que
+     scrollea de costado en vez de desbordar la página. */
+  .topbar .tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .topbar .tabs::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+
+@media (max-width: 640px) {
+  /* Con margin-left:auto, al envolver la fila el botón quedaba solo en su
+     renglón y pegado al borde derecho. En pantalla angosta ocupa el ancho. */
+  .ini-nueva {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+  }
+  .ini-head {
+    padding-bottom: 14px;
+  }
+  /* Las dos cajas de abajo de Inicio, una arriba de la otra. */
+  .ini-cols {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
