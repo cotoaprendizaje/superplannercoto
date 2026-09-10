@@ -3321,11 +3321,51 @@ button {
    hace seis días, vence mañana—, así que ahora el panel ES una línea de
    tiempo: un riel con un punto por alerta, el cuándo a la izquierda y una
    marca de HOY donde termina lo atrasado y empieza lo que viene. */
+/* La forma del panel de alertas.
+   Heredaba la del panel de tarjeta: 880 px de ancho —para una lista de cinco
+   renglones, con lo que cada fila quedaba nadando— y la franja de color de
+   4 px arriba, que no puede seguir una curva de 22 px y chocaba contra la
+   esquina redondeada. Acá es más angosto, más redondeado, y el color va en un
+   punto al lado del título en vez de una línea cruzando el borde. */
+.panel:has(.al-head) {
+  width: min(560px, 94vw);
+  border-radius: var(--r-xl);
+}
 .al-head {
   flex-direction: row;
   align-items: center;
-  gap: 6px;
-  padding: 16px 14px 14px 18px;
+  gap: 11px;
+  padding: 18px 16px 16px 20px;
+  border-bottom: 0;
+  /* Sin línea de corte: el tinte del encabezado se va apagando hacia el
+     cuerpo, así el panel se lee como una sola pieza. */
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--tono-al) 13%, var(--surface)),
+    var(--surface)
+  );
+}
+.al-head::before {
+  content: none;
+}
+.al-head.mal {
+  --tono-al: var(--bad);
+}
+.al-head.ojo {
+  --tono-al: var(--warn);
+}
+.al-head.bien {
+  --tono-al: var(--ok);
+}
+/* El punto que reemplaza a la franja: el mismo dato —cómo venimos— dicho en
+   un lugar donde no tiene que pelearse con la curva del panel. */
+.al-head-punto {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--tono-al);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tono-al) 18%, transparent);
 }
 .al-head-tx {
   flex: 1;
@@ -3387,7 +3427,7 @@ button {
 .al-tl::before {
   content: "";
   position: absolute;
-  left: 82px;
+  left: 74px;
   top: 14px;
   bottom: 14px;
   width: 2px;
@@ -3397,7 +3437,7 @@ button {
 .al-it {
   position: relative;
   display: grid;
-  grid-template-columns: 70px 24px minmax(0, 1fr) 30px;
+  grid-template-columns: 62px 24px minmax(0, 1fr) 30px;
   align-items: center;
   gap: 0 2px;
   border-radius: var(--r-sm);
@@ -3507,7 +3547,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 5px 0 5px 70px;
+  padding: 5px 0 5px 62px;
 }
 .al-hoy::after {
   content: "";
@@ -3597,6 +3637,9 @@ button {
   }
   .al-hoy {
     padding-left: 50px;
+  }
+  .panel:has(.al-head) {
+    border-radius: var(--r-l);
   }
 }
 /* ===== Panel de Ajustes =====

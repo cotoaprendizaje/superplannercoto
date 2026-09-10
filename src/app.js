@@ -12003,8 +12003,14 @@ function openNotif() {
         " sin leer" +
         (vencidas ? " · <b>" + vencidas + " vencida" + (vencidas !== 1 ? "s" : "") + "</b>" : " · nada vencido")
       : "Sin pendientes";
+  // El tono del encabezado sale del estado: rojo si hay algo vencido, ámbar si
+  // solo hay cosas por vencer, verde si está todo al día. Es lo primero que se
+  // ve al abrir la campana y lo único que hay que decidir de un vistazo.
+  const tono = vencidas ? "mal" : lista.length ? "ojo" : "bien";
   (($("#panel").innerHTML =
-    '<div class="panel-head al-head"><div class="al-head-tx"><h2>Alertas</h2><p>' +
+    '<div class="panel-head al-head ' +
+    tono +
+    '"><span class="al-head-punto"></span><div class="al-head-tx"><h2>Alertas</h2><p>' +
     bajada +
     "</p></div>" +
     // Las acciones como iconos al costado del título: antes iban en una barra
