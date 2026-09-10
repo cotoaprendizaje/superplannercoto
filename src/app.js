@@ -4853,7 +4853,7 @@ function cardKanban(tarjeta) {
     (tarjeta.prioridad === "alta" ? '<span class="kcard-prio" title="Prioridad alta">★</span>' : "") +
     esc(tarjeta.titulo) +
     "</h3>\n    " +
-    '\n    <div class="kcard-pie">\n      <span class="kcard-tipo" title="' +
+    '\n    <div class="kcard-pie">\n      <span class="kcard-datos"><span class="kcard-tipo" title="' +
     esc(tipo.nombre) +
     '">' +
     tipo.icon +
@@ -4869,15 +4869,14 @@ function cardKanban(tarjeta) {
         "d</span>"
       : "") +
     sectoresBadges(tarjeta.sectores) +
+    "</span>" +
     '<span class="kcard-quien">' +
     (avance.total
       ? '<span class="avance" title="' +
         avance.done +
         " de " +
         avance.total +
-        ' del checklist"><span class="avance-t"><i style="width:' +
-        avance.pct +
-        '%"></i></span>' +
+        ' del checklist">' +
         avance.done +
         "/" +
         avance.total +
