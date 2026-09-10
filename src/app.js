@@ -4140,7 +4140,9 @@ const state = {
   tecColsOcultas: null,
   // Qué segmento de la lista de Inicio se está mirando. De pantalla, como los
   // filtros de Técnico: no viaja al backend ni se guarda.
-  inicioSeg: "",
+  // Qué grupos del Mapa están abiertos. null = todavía no se leyó del
+  // navegador; lo resuelve mapaAbiertos() la primera vez que se dibuja.
+  mapaAbiertos: null,
 };
 // Si cambió el día desde la última visita, la ronda de frases arranca de
 // cero: nadie "ya tiró hoy" con una frase de ayer.
@@ -5096,7 +5098,9 @@ function weekRow(fecha3, lista3, fecha2) {
     }
   const txt4 = Math.max(1, val) + (lista2.length ? 1 : 0);
   return (
-    '<div class="cal-wk">\n    <div class="cal-wk-days">' +
+    '<div class="cal-wk" style="--lanes:' +
+    txt4 +
+    '">\n    <div class="cal-wk-days">' +
     txt +
     '</div>\n    <div class="cal-wk-bars" style="grid-template-rows:repeat(' +
     txt4 +
@@ -7279,6 +7283,74 @@ function desarrolloCard(tarjeta) {
     "</div>\n    </div>\n  </article>"
   );
 }
+// Los 83 elementos salían todos juntos, uno atrás del otro: la vista medía
+// 7.583 px, casi ocho pantallas de scroll para llegar al último. Ahora se
+// agrupan por sector y cada grupo se abre y se cierra, así el Mapa es una
+// tabla de contenidos que se despliega donde te interesa.
+//
+// Qué grupos quedaron abiertos vive en el navegador de cada uno, no en el
+// documento del área: es una preferencia de lectura, no un dato del equipo.
+const MAPA_ABIERTOS_KEY = "cf.mapaAbiertos.v1";
+function mapaAbiertos() {
+  if (!state.mapaAbiertos) {
+    let guardados = [];
+    try {
+      guardados = JSON.parse(localStorage.getItem(MAPA_ABIERTOS_KEY) || "[]");
+    } catch (e) {}
+    state.mapaAbiertos = Array.isArray(guardados) ? guardados : [];
+  }
+  return state.mapaAbiertos;
+}
+function mapaGrupoAbierto(clave) {
+  // Con un sector filtrado hay un solo grupo y cerrarlo no tendría sentido.
+  if (state.filters.sector) return true;
+  return mapaAbiertos().includes(clave);
+}
+function mapaGrupoToggle(clave) {
+  const abiertos = mapaAbiertos().slice(),
+    i = abiertos.indexOf(clave);
+  (i === -1 ? abiertos.push(clave) : abiertos.splice(i, 1), (state.mapaAbiertos = abiertos));
+  try {
+    localStorage.setItem(MAPA_ABIERTOS_KEY, JSON.stringify(abiertos));
+  } catch (e) {}
+}
+// Agrupa por sector principal, del grupo más grande al más chico. Un elemento
+// con varios sectores cuenta en el primero, que es el mismo criterio que usa
+// el color de su tarjeta (primaryCat).
+function mapaGrupos(lista) {
+  const grupos = {};
+  lista.forEach((tarjeta) => {
+    const clave = primaryCat(tarjeta);
+    (grupos[clave] || (grupos[clave] = [])).push(tarjeta);
+  });
+  return Object.keys(grupos)
+    .map((clave) => ({
+      clave,
+      nombre: clave === "tbd" ? "Sin sector" : sectorName(clave) || clave,
+      items: grupos[clave],
+    }))
+    .sort((a, b) => b.items.length - a.items.length || a.nombre.localeCompare(b.nombre));
+}
+function mapaGrupoHTML(grupo) {
+  const abierto = mapaGrupoAbierto(grupo.clave);
+  return (
+    '<section class="mapa-grupo' +
+    (abierto ? " abierto" : "") +
+    '" data-cat="' +
+    esc(grupo.clave) +
+    '"><button class="mapa-grupo-h" data-action="mapa:grupo" data-grupo="' +
+    esc(grupo.clave) +
+    '" aria-expanded="' +
+    abierto +
+    '"><span class="mapa-grupo-dot"></span><span class="mapa-grupo-n">' +
+    esc(grupo.nombre) +
+    '</span><span class="mapa-grupo-c">' +
+    grupo.items.length +
+    "</span><span class=\"mapa-grupo-ar\">▸</span></button>" +
+    (abierto ? '<div class="cursos-grid">' + grupo.items.map(invCard).join("") + "</div>" : "") +
+    "</section>"
+  );
+}
 function sectionTodos() {
   const lista = mapaFilter(state.cards.filter(inInventory));
   if (!lista.length)
@@ -7287,22 +7359,39 @@ function sectionTodos() {
       "Sin elementos activos",
       "Publicá cursos, Edu Points, apps o bases para verlos todos juntos acá.",
     );
-  const txt = state.filters.sector
-    ? " de <b>" +
-      esc(state.filters.sector === "__sin_sector__" ? "Sin sector" : sectorName(state.filters.sector) || state.filters.sector) +
-      "</b>"
-    : "";
+  const grupos = mapaGrupos(lista),
+    txt = state.filters.sector
+      ? " de <b>" +
+        esc(
+          state.filters.sector === "__sin_sector__"
+            ? "Sin sector"
+            : sectorName(state.filters.sector) || state.filters.sector,
+        ) +
+        "</b>"
+      : "",
+    algunoAbierto = grupos.some((g) => mapaGrupoAbierto(g.clave));
   return (
-    '<div style="font-size:12.5px;color:var(--ink-soft);margin:-6px 0 12px">' +
+    '<div class="mapa-todos-top"><span>' +
     lista.length +
     " elemento" +
     (lista.length !== 1 ? "s" : "") +
     " activo" +
     (lista.length !== 1 ? "s" : "") +
     txt +
-    ' — todo el inventario junto, filtrable por sector.</div><div class="cursos-grid">' +
-    lista.map(invCard).join("") +
-    "</div>"
+    " en " +
+    grupos.length +
+    " sector" +
+    (grupos.length !== 1 ? "es" : "") +
+    "</span>" +
+    (state.filters.sector
+      ? ""
+      : '<button class="btn btn-ghost btn-sm" data-action="mapa:todos-' +
+        (algunoAbierto ? "cerrar" : "abrir") +
+        '">' +
+        (algunoAbierto ? "Cerrar todos" : "Abrir todos") +
+        "</button>") +
+    "</div>" +
+    grupos.map(mapaGrupoHTML).join("")
   );
 }
 function eduFileRow(recurso) {
@@ -7711,180 +7800,52 @@ const ICONOS = {
   ),
 };
 // ===== Inicio =====
-// Antes esto era un tablero de informes: un saludo enorme, seis accesos —
-// cuatro de ellos repetían la barra de navegación—, cinco bloques de número
-// saturados y cuatro cajas de gráficos. Se leía, no se trabajaba: para tocar
-// una tarea había que irse a otra pestaña.
+// Un punto de partida y nada más: de acá salen los caminos. Tuvo dos vueltas
+// antes de quedar así. Primero era un tablero de informes —saludo enorme,
+// seis accesos, cinco bloques de número y cuatro cajas de gráficos— y eso se
+// leía, no se usaba. Después lo convertí en una lista de trabajo con filtros
+// y acciones, y quedó peor: Inicio se volvió una pantalla más para operar,
+// cuando lo que hace falta es una puerta.
 //
-// Ahora el centro de la pantalla es la lista de trabajo, y se puede operar
-// desde acá: los segmentos filtran sin salir de Inicio, cada fila se abre con
-// un clic y se cierra con el ✓. Los números del área quedan abajo, chicos y
-// neutros, que es el lugar que les corresponde cuando no piden nada.
-const INICIO_SEGS = [
-  { k: "mio", label: "Lo mío" },
-  { k: "venc", label: "Vencidas" },
-  { k: "semana", label: "Esta semana" },
-  { k: "todo", label: "Todo el equipo" },
-];
-function inicioSeg() {
-  // Sin nadie identificado, "lo mío" no puede filtrar nada: arranca en todo.
-  const val = state.inicioSeg || (state.userId ? "mio" : "todo");
-  return val === "mio" && !state.userId ? "todo" : val;
+// Ahora es lo que tiene que ser: el saludo en una línea con el estado del
+// día, los avisos que exigen algo, y tarjetas chicas hacia cada parte. Lo que
+// hay adentro de cada una vive en su propia vista, que es donde estaba bien.
+function inicioTarjetas() {
+  return [
+    { go: "kanban", hub: "planner", ic: ICONOS.kanban, t: "Planner", d: "Las tareas, por estado." },
+    { go: "calendario", hub: "calendario", ic: ICONOS.calendario, t: "Calendario", d: "Qué pasa y cuándo." },
+    { go: "timeline", hub: "timeline", ic: ICONOS.timeline, t: "Timeline", d: "El panorama del año." },
+    { go: "mapa", hub: "mapa", ic: ICONOS.mapa, t: "Mapa del área", d: "Todo lo publicado, por sector." },
+    { go: "tecnico", hub: "tecnico", ic: ICONOS.tecnico, t: "Técnico", d: "Cada curso y sus archivos." },
+    { go: "reportes", hub: "reportes", ic: ICONOS.reportes, t: "Reportes", d: "Los números del área." },
+    { action: "misemana:open", hub: "misemana", ic: ICONOS.misemana, t: "Mi semana", d: "Tu foco de los próximos días." },
+    { action: "carga:open", hub: "carga", ic: ICONOS.carga, t: "Carga del equipo", d: "Quién tiene qué." },
+  ];
 }
-function inicioCards(seg) {
-  const activas = boardCards().filter((c) => c.estado !== "finalizado");
-  if (seg === "venc") return activas.filter(isOverdue);
-  if (seg === "mio") return activas.filter(mine);
-  if (seg === "semana") {
-    const hasta = isoOf(addDays(new Date(), 7));
-    return activas.filter((c) => {
-      const val = c.fin || c.inicio;
-      return val && val <= hasta;
-    });
-  }
-  return activas;
-}
-// Lo más urgente arriba: primero lo que tiene fecha, de la más pasada a la
-// más lejana; lo que no tiene fecha, al final.
-function inicioOrden(lista) {
-  return lista.slice().sort((a, b) => {
-    const fa = a.fin || a.inicio || "",
-      fb = b.fin || b.inicio || "";
-    if (!fa && fb) return 1;
-    if (fa && !fb) return -1;
-    if (fa !== fb) return fa < fb ? -1 : 1;
-    return (a.titulo || "").localeCompare(b.titulo || "");
-  });
-}
-function inicioSegsHTML() {
-  const actual = inicioSeg();
+function inicioCardHTML(arg, i) {
   return (
-    '<div class="ini-segs">' +
-    INICIO_SEGS.filter((sg) => sg.k !== "mio" || state.userId)
-      .map((sg) => {
-        const n = inicioCards(sg.k).length;
-        return (
-          '<button class="ini-seg' +
-          (sg.k === actual ? " on" : "") +
-          '" data-action="inicio:seg" data-seg="' +
-          sg.k +
-          '">' +
-          esc(sg.label) +
-          '<span class="ini-seg-n' +
-          (sg.k === "venc" && n ? " mal" : "") +
-          '">' +
-          n +
-          "</span></button>"
-        );
-      })
-      .join("") +
-    "</div>"
-  );
-}
-// Cuándo vence, en una palabra. Una fecha sola no dice si eso fue anteayer o
-// en marzo, que es lo que decide qué se mira primero.
-function inicioCuando(tarjeta) {
-  const val = tarjeta.fin || tarjeta.inicio;
-  if (!val) return { txt: "sin fecha", tono: "" };
-  const d = daysBetween(todayISO(), val);
-  if (isOverdue(tarjeta))
-    return { txt: -d === 1 ? "1 día tarde" : Math.abs(d) + " días tarde", tono: "tarde" };
-  if (d === 0) return { txt: "hoy", tono: "pronto" };
-  if (d === 1) return { txt: "mañana", tono: "pronto" };
-  if (d <= 3) return { txt: "en " + d + " días", tono: "pronto" };
-  return { txt: fmtShort(val), tono: "" };
-}
-function inicioFilaHTML(tarjeta) {
-  const cuando = inicioCuando(tarjeta),
-    sec = primaryCat(tarjeta),
-    avance = progress(tarjeta);
-  return (
-    '<div class="ini-fila est-' +
-    (estadoTarjeta(tarjeta) || "neutro") +
-    '">' +
-    '<button class="ini-fila-main" data-action="card:open" data-id="' +
-    tarjeta.id +
-    '">' +
-    '<span class="ini-cuando ' +
-    cuando.tono +
-    '">' +
-    esc(cuando.txt) +
-    "</span>" +
-    '<span class="ini-tit">' +
-    esc(tarjeta.titulo) +
-    "</span>" +
-    (sec && sec !== "tbd"
-      ? '<span class="ini-sec" data-cat="' + sec + '"><i></i>' + esc(sectorName(sec) || sec) + "</span>"
-      : "") +
-    (avance.total ? '<span class="ini-prog">' + avance.done + "/" + avance.total + "</span>" : "") +
-    "</button>" +
-    stackHTML(tarjeta) +
-    '<button class="ini-listo" data-action="inicio:listo" data-id="' +
-    tarjeta.id +
-    '" title="Marcar como finalizada">✓</button>' +
-    "</div>"
-  );
-}
-function inicioListaHTML() {
-  const seg = inicioSeg(),
-    lista = inicioOrden(inicioCards(seg)),
-    tope = 12,
-    visibles = lista.slice(0, tope);
-  if (!lista.length)
-    return (
-      '<div class="ini-vacio">' +
-      (seg === "venc"
-        ? "✅ Nada vencido. Así se ve un equipo al día."
-        : seg === "mio"
-          ? "✅ No tenés nada activo asignado ahora mismo."
-          : seg === "semana"
-            ? "✅ Nada con fecha en los próximos siete días."
-            : "✅ No hay tareas activas en el tablero.") +
-      "</div>"
-    );
-  return (
-    '<div class="ini-lista">' +
-    visibles.map(inicioFilaHTML).join("") +
-    "</div>" +
-    (lista.length > tope
-      ? '<button class="btn btn-ghost btn-sm ini-mas" data-action="hub:go" data-go="kanban">Ver las ' +
-        lista.length +
-        " en el Planner →</button>"
-      : "")
-  );
-}
-// Los números del área: chicos y neutros, debajo del trabajo y no encima.
-// Solo "Vencidas" se pone en rojo, y solo cuando hay alguna.
-function inicioNumerosHTML() {
-  const lista = boardCards(),
-    activos = state.cards.filter((c) => c.tipo === "curso" && inInventory(c)).length,
-    revision = lista.filter((c) => c.estado === "en-revision").length,
-    vencidas = lista.filter(isOverdue).length,
-    tile = (n, label, tono, go, extra) =>
-      '<button class="ini-num tono-' +
-      tono +
-      '" data-action="kpi:go" data-go="' +
-      go +
-      '"' +
-      (extra || "") +
-      "><b>" +
-      n +
-      "</b><span>" +
-      esc(label) +
-      "</span></button>";
-  return (
-    '<div class="ini-nums">' +
-    tile(vencidas, "Vencidas", vencidas ? "bad" : "ok", "kanban", ' data-quick="venc"') +
-    tile(revision, "En revisión", revision ? "warn" : "neutro", "kanban", ' data-filt-estado="en-revision"') +
-    tile(lista.length, "En el tablero", "neutro", "kanban") +
-    tile(activos, "Cursos publicados", "neutro", "mapa", ' data-sec="cursos"') +
-    "</div>"
+    '<button class="hub-card" data-hub="' +
+    arg.hub +
+    '" data-action="' +
+    (arg.action || "hub:go") +
+    '" data-go="' +
+    (arg.go || "") +
+    '" style="animation-delay:' +
+    i * 40 +
+    'ms"><span class="hub-ic">' +
+    arg.ic +
+    '</span><span class="hub-tx"><span class="hub-t">' +
+    esc(arg.t) +
+    '</span><span class="hub-d">' +
+    esc(arg.d) +
+    '</span></span><span class="hub-arrow">→</span></button>'
   );
 }
 function renderInicio() {
-  // Solo la primera letra en mayúscula: capitalize del CSS ponía en alta cada
-  // palabra, incluidas las preposiciones ("Jueves, 10 De Septiembre").
-  const crudo = new Date()
+  const lista = boardCards(),
+    vencidas = lista.filter(isOverdue).length,
+    alertas = alertasSinLeer().length,
+    crudo = new Date()
       .toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })
       .replace(",", ""),
     hoy = crudo.charAt(0).toUpperCase() + crudo.slice(1);
@@ -7894,71 +7855,29 @@ function renderInicio() {
     esc(state.user || "equipo") +
     '</h1><span class="ini-fecha">' +
     esc(hoy) +
-    '</span><button class="btn btn-primary btn-sm ini-nueva" data-action="nuevo:open">+ Nueva tarea</button></div>' +
+    "</span>" +
+    // El estado del día en una línea, y clickeable: si hay algo vencido, de
+    // acá se salta derecho a verlo.
+    (vencidas
+      ? '<button class="ini-alerta mal" data-action="kpi:go" data-go="kanban" data-quick="venc">' +
+        vencidas +
+        " vencida" +
+        (vencidas !== 1 ? "s" : "") +
+        "</button>"
+      : '<span class="ini-alerta ok">Nada vencido</span>') +
+    (alertas
+      ? '<button class="ini-alerta" data-action="notif:open">' +
+        alertas +
+        " alerta" +
+        (alertas !== 1 ? "s" : "") +
+        "</button>"
+      : "") +
+    "</div>" +
     respaldoAvisoHTML() +
     agendaAvisoHTML() +
-    inicioSegsHTML() +
-    inicioListaHTML() +
-    '<div class="ini-sub-h">El área en números</div>' +
-    inicioNumerosHTML() +
-    '<div class="ini-cols">' +
-    '<div class="res-card"><h3>◷ Por estado <span class="mini">' +
-    boardCards().length +
-    " total</span></h3>" +
-    inicioEstadosHTML() +
-    "</div>" +
-    '<div class="res-card"><h3>👥 Carga del equipo <span class="mini">activas</span></h3>' +
-    inicioCargaHTML() +
-    "</div></div>" +
-    "</div></div>"
-  );
-}
-function inicioEstadosHTML() {
-  const lista = boardCards(),
-    total = lista.length || 1;
-  return ESTADOS.map((estado) => {
-    const n = lista.filter((c) => c.estado === estado.id).length;
-    return (
-      '<div class="bar-line"><span class="bl-lbl">' +
-      estado.nombre +
-      '</span><div class="bl-track"><div class="bl-fill" style="width:' +
-      Math.round((n / total) * 100) +
-      "%;background:" +
-      estado.dot +
-      '"></div></div><span class="bl-num">' +
-      n +
-      "</span></div>"
-    );
-  }).join("");
-}
-function inicioCargaHTML() {
-  const obj = {};
-  (TEAM.forEach((m) => (obj[m.id] = 0)),
-    cargaActivaCards().forEach((tarjeta) => {
-      [tarjeta.responsable, ...(tarjeta.asignados || [])]
-        .filter((v, i, arr) => v && arr.indexOf(v) === i)
-        .forEach((id) => {
-          if (obj[id] !== undefined) obj[id]++;
-        });
-    }));
-  const max = Math.max(1, ...TEAM.map((m) => obj[m.id]));
-  return (
-    '<div class="carga-list">' +
-    TEAM.map(
-      (m) =>
-        '<div class="carga-row" data-action="carga:go" data-id="' +
-        m.id +
-        '" style="cursor:pointer"><div class="carga-info"><div class="carga-name">' +
-        esc(m.nombre) +
-        '</div><div class="carga-bar"><div class="carga-fill" style="width:' +
-        Math.round((obj[m.id] / max) * 100) +
-        "%;background:" +
-        m.color +
-        '"></div></div></div><div class="carga-num">' +
-        obj[m.id] +
-        "</div></div>",
-    ).join("") +
-    "</div>"
+    '<div class="hub-grid">' +
+    inicioTarjetas().map(inicioCardHTML).join("") +
+    "</div></div></div>"
   );
 }
 // Aviso breve y descartable donde antes vivía la pestaña de Agenda, para
@@ -9209,6 +9128,19 @@ document.addEventListener("click", (ev) => {
       ((state.filters.sector = state.filters.sector === sec2 ? "" : sec2), (state.mapaSec = "todos"), render());
       break;
     }
+    case "mapa:grupo":
+      (mapaGrupoToggle(el.dataset.grupo), render());
+      break;
+    case "mapa:todos-abrir":
+    case "mapa:todos-cerrar": {
+      const todas = mapaGrupos(mapaFilter(state.cards.filter(inInventory))).map((g) => g.clave);
+      state.mapaAbiertos = val9 === "mapa:todos-abrir" ? todas : [];
+      try {
+        localStorage.setItem(MAPA_ABIERTOS_KEY, JSON.stringify(state.mapaAbiertos));
+      } catch (e) {}
+      render();
+      break;
+    }
     case "mapa:sector-clear":
       ((state.filters.sector = ""), render());
       break;
@@ -9359,20 +9291,6 @@ document.addEventListener("click", (ev) => {
     case "set:del-member":
       delMember(el.dataset.mem);
       break;
-    case "inicio:seg":
-      ((state.inicioSeg = el.dataset.seg), render());
-      break;
-    case "inicio:listo": {
-      const tarjetaFin = state.cards.find((c) => c.id === el.dataset.id);
-      if (tarjetaFin && tarjetaFin.estado !== "finalizado") {
-        (logAct(tarjetaFin, "pasó a Finalizados"),
-          (tarjetaFin.estado = "finalizado"),
-          touch(),
-          render(),
-          flash("✓ " + tarjetaFin.titulo + " — finalizada"));
-      }
-      break;
-    }
     case "carga:go":
       ((state.filters.persona = el.dataset.id), (state.view = "kanban"), closePanel(), pushNav(), render());
       break;
