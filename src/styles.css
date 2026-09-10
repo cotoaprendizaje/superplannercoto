@@ -642,10 +642,18 @@ button {
   line-height: 1.4;
 }
 .badge-cat {
-  background: var(--cat);
-  color: var(--on-cat);
-  border: none;
+  background: color-mix(in srgb, var(--cat) 13%, var(--surface));
+  color: color-mix(in srgb, var(--cat) 55%, var(--ink));
+  border: 1px solid color-mix(in srgb, var(--cat) 28%, var(--line));
   font-weight: 700;
+}
+.badge-cat::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cat);
+  flex: none;
 }
 .badge-tbd {
   background: var(--surface-2);
@@ -1145,7 +1153,23 @@ button {
   box-shadow: var(--shadow);
   transition: 0.15s;
   position: relative;
-  border-left: 6px solid var(--cat, var(--line));
+  /* El borde de la izquierda dice EN QUÉ ESTADO está la tarjeta. Antes
+     repetía el color del sector, que ya aparecía en la píldora y otra vez en
+     la barra de progreso: tres veces lo mismo, y con eso "vencida" terminaba
+     escrito en el mismo rojo que la píldora de Cajas. */
+  border-left: 6px solid var(--line);
+}
+.kcard.est-venc {
+  border-left-color: var(--bad);
+}
+.kcard.est-pronto {
+  border-left-color: var(--warn);
+}
+.kcard.est-fin {
+  border-left-color: var(--ok);
+}
+.kcard.est-fin .kcard-title {
+  color: var(--ink-soft);
 }
 .kcard:hover {
   box-shadow: var(--shadow-lg);
@@ -1206,11 +1230,7 @@ button {
 .progress-bar {
   height: 100%;
   border-radius: var(--pill);
-  background: linear-gradient(
-    90deg,
-    var(--cat, var(--coto-blue)),
-    color-mix(in srgb, var(--cat, var(--coto-blue)) 65%, white)
-  );
+  background: var(--coto-blue);
   transition: width 0.3s;
 }
 .prog-row {
@@ -1418,11 +1438,15 @@ button {
   position: relative;
   border-bottom: 1px solid var(--line);
 }
+/* Tres formas, no diez colores. Antes cada barra llevaba el color de su
+   sector: diez barras, diez colores, y las dos atrasadas se veían igual que
+   las ocho que iban bien — que es justo lo que un panorama tiene que
+   contestar. El sector sigue estando, en el punto de color de la izquierda. */
 .tl-bar {
   position: absolute;
   height: 22px;
   border-radius: var(--pill);
-  background: var(--cat, var(--coto-blue));
+  background: var(--coto-blue);
   box-shadow: var(--shadow);
   cursor: pointer;
   display: flex;
@@ -1433,12 +1457,41 @@ button {
 .tl-bar span {
   font-size: 11px;
   font-weight: 600;
-  color: var(--on-cat);
+  color: #fff;
   white-space: nowrap;
   pointer-events: none;
 }
-.tl-bar.overdue {
-  box-shadow: 0 0 0 2px var(--bad);
+/* Vencida: rojo y rayada, para que se note aun de reojo y aun en blanco y
+   negro — el color solo no alcanza para quien no lo distingue. */
+.tl-bar.est-venc {
+  background: var(--bad);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.22) 0 4px,
+    transparent 4px 9px
+  );
+}
+/* Terminada: apagada. Ocupa su lugar en el panorama pero no pide nada. */
+.tl-bar.est-fin {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+.tl-bar.est-fin span {
+  color: var(--ink-soft);
+}
+.tl-bar.est-fin::before {
+  content: "✓";
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ok);
+  margin-right: 5px;
+}
+.tl-bar.est-pronto {
+  background: var(--warn);
+}
+.tl-bar.est-pronto span {
+  color: #3d2c05;
 }
 .tl-today {
   position: absolute;
@@ -2591,29 +2644,62 @@ button {
 .kpi::after {
   content: none;
 }
-/* Antes: caja blanca con el número coloreado. Ahora el color manda la
-   tarjeta entera — de un vistazo se distingue el estado sin leer el
-   número. */
+/* El tono dice qué exige el número, no de qué sección viene. Rojo es
+   atraso, ámbar es riesgo, verde es que algo se completó; todo lo demás va
+   neutro. Antes había cinco bloques saturados en Inicio, cuatro en Reportes
+   y cuatro en Técnico, todos del mismo tamaño: con todo gritando, ninguno
+   destacaba, y el verde de "83 cursos activos" no significaba nada —un
+   inventario no es una buena noticia ni una mala—.
+
+   Un número neutro no es un número menos importante: es uno que no te está
+   pidiendo nada. */
 .kpi {
-  background: var(--kpi, var(--coto-blue));
-  border: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 13px 15px;
 }
 .kpi-num {
   font-family: var(--titulo);
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1;
-  color: #fff;
+  color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
 .kpi-lbl {
   font-size: 12.5px;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--ink);
 }
 .kpi-sub {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+/* Grande solo cuando el número exige una acción ahora. */
+.kpi.grande .kpi-num {
+  font-size: 38px;
+}
+.kpi.tono-bad {
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+  background: color-mix(in srgb, var(--bad) 9%, var(--surface));
+}
+.kpi.tono-bad .kpi-num {
+  color: var(--bad);
+}
+.kpi.tono-warn {
+  border-color: color-mix(in srgb, var(--warn) 48%, var(--line));
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+}
+.kpi.tono-warn .kpi-num {
+  color: color-mix(in srgb, var(--warn) 72%, var(--ink));
+}
+.kpi.tono-ok {
+  border-color: color-mix(in srgb, var(--ok) 42%, var(--line));
+  background: color-mix(in srgb, var(--ok) 9%, var(--surface));
+}
+.kpi.tono-ok .kpi-num {
+  color: var(--ok);
 }
 .res-cols {
   display: grid;
@@ -3732,6 +3818,267 @@ button {
 /* El saludo se llevaba unos 150 px centrados de la primera pantalla para no
    decir nada operativo, y encima estaba centrado mientras todo lo de abajo va
    al ras de la izquierda. Ahora es una línea, con el estado del día al lado. */
+/* ===== Inicio =====
+   Era un tablero de informes: saludo enorme, seis accesos, cinco bloques de
+   número saturados y cuatro cajas de gráficos. Se leía, no se trabajaba: para
+   tocar una tarea había que irse a otra pestaña. Ahora el centro es la lista
+   de trabajo y los números quedan abajo, chicos y neutros — el lugar que les
+   corresponde cuando no piden nada. */
+.ini-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 4px 0 20px;
+}
+.ini-fecha {
+  font-size: 13.5px;
+  color: var(--ink-soft);
+}
+.ini-nueva {
+  margin-left: auto;
+  align-self: center;
+}
+.ini-segs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.ini-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  border-radius: var(--pill);
+  padding: 7px 13px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.14s;
+}
+.ini-seg:hover {
+  border-color: var(--coto-blue);
+  color: var(--ink);
+}
+.ini-seg.on {
+  background: var(--coto-navy);
+  border-color: var(--coto-navy);
+  color: #fff;
+}
+.ini-seg-n {
+  font-size: 11.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+.ini-seg-n.mal {
+  color: var(--bad);
+  opacity: 1;
+}
+.ini-seg.on .ini-seg-n.mal {
+  color: #ff9d90;
+}
+/* Una fila por tarea, no una caja por tarea: la caja es la lista. */
+.ini-lista {
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.ini-fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 0 0;
+  border-left: 4px solid transparent;
+  border-bottom: 1px solid var(--line-soft);
+  transition: background 0.14s;
+}
+.ini-fila:last-child {
+  border-bottom: none;
+}
+.ini-fila:hover {
+  background: var(--surface-2);
+}
+.ini-fila.est-venc {
+  border-left-color: var(--bad);
+}
+.ini-fila.est-pronto {
+  border-left-color: var(--warn);
+}
+.ini-fila-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px 12px 14px;
+  border: 0;
+  background: 0 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+}
+.ini-cuando {
+  flex: none;
+  width: 92px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.ini-cuando.tarde {
+  color: var(--bad);
+}
+.ini-cuando.pronto {
+  color: color-mix(in srgb, var(--warn) 78%, var(--ink));
+}
+.ini-tit {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* El sector, una sola vez y en chico: un punto de color y el nombre. */
+.ini-sec {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.ini-sec i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cat, var(--line));
+  flex: none;
+}
+.ini-prog {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.ini-listo {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: 0 0;
+  color: var(--ink-soft);
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.14s;
+}
+.ini-listo:hover {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 15%, var(--surface));
+  color: var(--ok);
+}
+.ini-vacio {
+  border: 1px dashed var(--line);
+  border-radius: var(--r-l);
+  padding: 30px 18px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+.ini-mas {
+  margin-top: 10px;
+}
+.ini-sub-h {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin: 30px 0 10px;
+}
+.ini-nums {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.ini-num {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  padding: 11px 13px;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: 0.14s;
+}
+.ini-num:hover {
+  border-color: var(--coto-blue);
+}
+.ini-num b {
+  font-family: var(--titulo);
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.ini-num span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.ini-num.tono-bad {
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
+  background: color-mix(in srgb, var(--bad) 9%, var(--surface));
+}
+.ini-num.tono-bad b {
+  color: var(--bad);
+}
+.ini-num.tono-warn {
+  border-color: color-mix(in srgb, var(--warn) 48%, var(--line));
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+}
+.ini-num.tono-warn b {
+  color: color-mix(in srgb, var(--warn) 72%, var(--ink));
+}
+.ini-num.tono-ok b {
+  color: var(--ok);
+}
+.ini-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  align-items: start;
+  gap: 16px;
+  margin-top: 26px;
+}
+.ini-cols .res-card {
+  margin-bottom: 0;
+}
+@media (max-width: 700px) {
+  .ini-cuando {
+    width: 74px;
+  }
+  .ini-sec {
+    display: none;
+  }
+}
 .hub-hero {
   display: flex;
   align-items: baseline;
@@ -4077,7 +4424,7 @@ html {
   -webkit-backdrop-filter: var(--blur);
   backdrop-filter: var(--blur);
   border: 1px solid var(--glass-brd);
-  border-left: 6px solid var(--cat, var(--coto-blue));
+  border-left: 6px solid var(--line);
   box-shadow:
     var(--shadow),
     var(--ambient);
