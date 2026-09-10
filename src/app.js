@@ -9791,7 +9791,8 @@ document.addEventListener("click", (ev) => {
       const val20 = el.dataset.prun,
         val21 = el.dataset.arg;
       closeModal();
-      if (val20 === "view") (state.view !== val21 && ((state.view = val21), pushNav()), render());
+      if (val20 === "act") paletteAccion(val21, el.dataset.id);
+      else if (val20 === "view") (state.view !== val21 && ((state.view = val21), pushNav()), render());
       else {
         if (val20 === "card") openDetail(el.dataset.id);
         else {
@@ -11084,6 +11085,14 @@ function recurrar(val) {
     tarjeta
   );
 }
+// Sin tildes y en minúscula: nadie escribe "Salón" ni "Técnico" con el acento
+// cuando está buscando rápido, y hasta ahora eso no encontraba nada.
+function norm(txt) {
+  return String(txt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
 function paletteCommands() {
   const fn = (txt, txt2, txt3) => ({
     t: txt,
@@ -11099,6 +11108,8 @@ function paletteCommands() {
     fn("Calendario", "calendario", "fechas mes semana"),
     fn("Timeline", "timeline", "gantt cronograma"),
     fn("Mapa del área", "mapa", "cursos edu points apps bases inventario"),
+    fn("Seguimiento técnico", "tecnico", "tecnico grilla excel categorias cursos scorm moodle mail portada mosaico"),
+    fn("Reportes", "reportes", "reportes reporteria metricas publicaciones sector revision graficos"),
     {
       t: "Nueva tarjeta",
       d: "Crear una tarjeta",
@@ -11156,6 +11167,18 @@ function paletteCommands() {
       kw: "ajustes config sectores backup",
       soloAdmin: true,
     },
+    // Cada sección de Ajustes por su nombre: "sectores", "equipo" o "copias"
+    // llevan directo adentro en vez de dejarte en la puerta.
+    ...SET_SECS.map((sc) => ({
+      t: "Ajustes · " + sc.label,
+      d: sc.sub,
+      ic: sc.icon,
+      act: "act",
+      arg: "settings:sec",
+      id: sc.k,
+      kw: "ajustes configuracion " + sc.label + " " + sc.sub,
+      soloAdmin: true,
+    })),
     {
       t: "Ayuda",
       d: "Funciones que cuestan de encontrar",
@@ -11179,7 +11202,7 @@ function openPalette() {
   (openModal(
     '<div class="cmdk">\n    <div class="cmdk-top">' +
       ICONOS.buscar +
-      '<input id="cmdkInput" placeholder="Buscar tarjetas o saltar a una sección…" autocomplete="off"><span class="kbd">esc</span></div>\n    <div class="cmdk-list" id="cmdkList"></div>\n    <div class="cmdk-foot"><span><span class="kbd">↑</span><span class="kbd">↓</span> moverse</span><span><span class="kbd">↵</span> abrir</span><span><span class="kbd">⌘K</span> abrir comando</span></div>\n  </div>',
+      '<input id="cmdkInput" placeholder="Buscar en todo: tareas, cursos, archivos, personas, sectores…" autocomplete="off"><span class="kbd">esc</span></div>\n    <div class="cmdk-list" id="cmdkList"></div>\n    <div class="cmdk-foot"><span><span class="kbd">↑</span><span class="kbd">↓</span> moverse</span><span><span class="kbd">↵</span> abrir</span><span><span class="kbd">⌘K</span> abrir comando</span></div>\n  </div>',
   ),
     renderPalette(""),
     setTimeout(() => {
@@ -11202,23 +11225,60 @@ function paletteCardItem(tarjeta) {
     '</i></span><span class="cmdk-go">↵</span></button>'
   );
 }
+// Una fila del buscador, para todo lo que no es una tarjeta.
+function paletteItem(ic, titulo, detalle, prun, arg, id, cat) {
+  return (
+    '<button class="cmdk-item" data-action="palette:run" data-prun="' +
+    prun +
+    '" data-arg="' +
+    esc(arg || "") +
+    '" data-id="' +
+    esc(id || "") +
+    '"' +
+    (cat ? ' data-cat="' + esc(cat) + '"' : "") +
+    '><span class="cmdk-ic' +
+    (cat ? " ic-cat" : "") +
+    '">' +
+    ic +
+    '</span><span class="cmdk-tx"><b>' +
+    esc(titulo) +
+    "</b><i>" +
+    esc(detalle) +
+    '</i></span><span class="cmdk-go">↵</span></button>'
+  );
+}
+function paletteGrupo(titulo, items, total) {
+  if (!items.length) return "";
+  return (
+    '<div class="cmdk-group">' +
+    esc(titulo) +
+    (total > items.length ? ' <span class="cmdk-mas">' + items.length + " de " + total + "</span>" : "") +
+    "</div>" +
+    items.join("")
+  );
+}
 function renderPalette(value) {
   const el = $("#cmdkList");
   if (!el) return;
-  value = (value || "").trim().toLowerCase();
+  value = norm(value);
   const lista = paletteCommands().filter(
-      (arg) =>
-        (!arg.soloAdmin || esAdmin()) &&
-        (!value || (arg.t + " " + arg.kw).toLowerCase().includes(value)),
+      (arg) => (!arg.soloAdmin || esAdmin()) && (!value || norm(arg.t + " " + arg.kw).includes(value)),
     ),
+    // La tarjeta se encuentra por su título, su sector, quién la tiene y lo
+    // que diga la nota: antes solo por título y sector, así que buscar a una
+    // persona o una palabra de la descripción no traía nada.
     lista2 = value
-      ? state.cards
-          .filter(
-            (tarjeta) =>
-              tarjeta.titulo.toLowerCase().includes(value) ||
-              (tarjeta.sectores || []).some((arg) => (sectorName(arg) || arg).toLowerCase().includes(value)),
-          )
-          .slice(0, 6)
+      ? state.cards.filter((tarjeta) =>
+          norm(
+            tarjeta.titulo +
+              " " +
+              (tarjeta.sectores || []).map((arg) => sectorName(arg) || arg).join(" ") +
+              " " +
+              ((member(tarjeta.responsable) || {}).nombre || "") +
+              " " +
+              (tarjeta.notas || ""),
+          ).includes(value),
+        )
       : [],
     lista3 = value
       ? []
@@ -11226,6 +11286,17 @@ function renderPalette(value) {
           .map((arg) => state.cards.find((tarjeta) => tarjeta.id === arg))
           .filter(Boolean)
           .slice(0, 5);
+  // Todo lo demás que vive en la app y hasta ahora no se podía buscar.
+  const filasTec = value
+      ? state.tecnico.filter((f) => norm(f.curso + " " + f.categoria + " " + f.diseno + " " + f.estado).includes(value))
+      : [],
+    archivosEdu = value
+      ? state.eduArchivo.filter((r) => norm(r.nom + " " + r.sub + " " + eduCatDe(r)).includes(value))
+      : [],
+    gente = value ? TEAM.filter((m) => norm(m.nombre + " " + (m.email || "")).includes(value)) : [],
+    sectores = value
+      ? Object.keys(SECTORES).filter((k) => norm(SECTORES[k].nombre + " " + k).includes(value))
+      : [];
   let txt = "";
   lista3.length && (txt += '<div class="cmdk-group">Recientes</div>' + lista3.map(paletteCardItem).join(""));
   lista.length &&
@@ -11247,11 +11318,102 @@ function renderPalette(value) {
             '</i></span><span class="cmdk-go">↵</span></button>',
         )
         .join(""));
-  lista2.length && (txt += '<div class="cmdk-group">Tarjetas</div>' + lista2.map(paletteCardItem).join(""));
+  txt += paletteGrupo("Tarjetas", lista2.slice(0, 6).map(paletteCardItem), lista2.length);
+  txt += paletteGrupo(
+    "Seguimiento técnico",
+    filasTec
+      .slice(0, 5)
+      .map((f) =>
+        paletteItem(
+          "🔧",
+          f.curso || "(sin nombre)",
+          (f.categoria || "Sin categoría") + (f.diseno ? " · " + f.diseno : ""),
+          "act",
+          "tec:goto",
+          f.id,
+        ),
+      ),
+    filasTec.length,
+  );
+  txt += paletteGrupo(
+    "Archivos de Edu Point",
+    archivosEdu
+      .slice(0, 5)
+      .map((r) =>
+        paletteItem("📎", r.nom || "(sin nombre)", eduCatDe(r) + (r.sub ? " · " + r.sub : ""), "act", "edu:goto", r.id),
+      ),
+    archivosEdu.length,
+  );
+  txt += paletteGrupo(
+    "Equipo",
+    gente.map((m) => paletteItem("👤", m.nombre, "Ver sus tareas en el Planner", "act", "carga:go", m.id)),
+    gente.length,
+  );
+  txt += paletteGrupo(
+    "Sectores",
+    sectores.map((k) =>
+      paletteItem("🎨", SECTORES[k].nombre, "Ver el Mapa de este sector", "act", "sector:ir", k, k),
+    ),
+    sectores.length,
+  );
   if (!txt) txt = '<div class="cmdk-empty">Sin resultados para “' + esc(value) + "”</div>";
   el.innerHTML = txt;
   const el2 = el.querySelector(".cmdk-item");
   if (el2) el2.classList.add("sel");
+}
+// Lo que hace el buscador cuando el resultado no es una tarjeta ni una
+// sección: una fila de Técnico, un archivo de Edu Point, una persona, un
+// sector o una sección de Ajustes.
+function paletteAccion(accion, id) {
+  if (accion === "tec:goto") {
+    const fila = state.tecnico.find((f) => f.id === id);
+    if (!fila) return;
+    ((state.tecFiltro = fila.curso),
+      (state.tecSubView = "grilla"),
+      (state.view = "tecnico"),
+      closePanel(),
+      pushNav(),
+      render());
+    resaltarFila('tr[data-tec-row="' + id + '"]');
+    return;
+  }
+  if (accion === "edu:goto") {
+    const recurso = state.eduArchivo.find((r) => r.id === id);
+    if (!recurso) return;
+    ((state.tecFiltro = ""),
+      (state.tecCategoria = eduCatDe(recurso)),
+      (state.tecSubView = "grilla"),
+      (state.view = "tecnico"),
+      closePanel(),
+      pushNav(),
+      render());
+    resaltarFila('[data-edu-row="' + id + '"]', true);
+    return;
+  }
+  if (accion === "carga:go") {
+    ((state.filters.persona = id), (state.view = "kanban"), closePanel(), pushNav(), render());
+    return;
+  }
+  if (accion === "sector:ir") {
+    ((state.filters.sector = id), (state.mapaSec = "todos"), (state.view = "mapa"), closePanel(), pushNav(), render());
+    return;
+  }
+  if (accion === "settings:sec") openSettings(id);
+}
+// Lleva la vista hasta la fila y la marca un segundo, que si no aparece en
+// medio de una grilla de cien filas y hay que buscarla con el ojo.
+function resaltarFila(selector, abrirBloque) {
+  setTimeout(() => {
+    const fila = document.querySelector(selector);
+    if (!fila) return;
+    // Los archivos de Edu Point cuelgan de un bloque plegado por categoría.
+    if (abrirBloque) {
+      const det = fila.closest("details");
+      if (det) det.open = true;
+    }
+    (fila.scrollIntoView({ block: "center", behavior: "smooth" }), fila.classList.add("tec-flash"));
+    setTimeout(() => fila.classList.remove("tec-flash"), 1600);
+  }, 80);
 }
 function paletteMove(n) {
   const lista = [...document.querySelectorAll(".cmdk-item")];
