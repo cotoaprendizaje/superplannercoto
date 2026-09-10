@@ -192,6 +192,47 @@ else
     check("el chip del año queda marcado", anio.chipActivo === String(anio.elegido), anio),
     check("el gráfico por mes pasa a ser el de ese año", anio.mesesDelOtroAnio === anio.publicadosEseAnio, anio));
 
+// ── El pulso de Inicio contra las columnas del Planner ───────────────────
+// Los cuatro números del pie de Inicio y los contadores de las columnas del
+// Planner cuentan lo mismo. Son dos lugares distintos del código, así que
+// nada garantiza que sigan de acuerdo salvo esto.
+console.log("\nel pulso de Inicio");
+const pulso = await page.evaluate(async () => {
+  ((state.filters = { persona: "", tipo: "", sector: "", estado: "", texto: "", cursoEstado: "" }),
+    (state.quick = ""),
+    (state.mis = false),
+    (state.view = "inicio"),
+    render());
+  const enInicio = [...document.querySelectorAll(".ini-pulso-i")].map((b) => +b.querySelector("b").textContent);
+  ((state.view = "kanban"), render());
+  const enPlanner = [...document.querySelectorAll(".kcol-count")].map((el) => +el.textContent);
+  return { enInicio, enPlanner };
+});
+(check("el pulso tiene un número por estado", pulso.enInicio.length === 4, pulso),
+  check(
+    "cada número del pulso da lo mismo que su columna del Planner",
+    pulso.enInicio.length === pulso.enPlanner.length &&
+      pulso.enInicio.every((n, i) => n === pulso.enPlanner[i]),
+    pulso,
+  ));
+
+// Lo que viene: solo cosas con fecha de hoy en adelante y sin terminar, en
+// orden. Ordenadas al revés o con una terminada colada, la lista miente.
+const prox = await page.evaluate(() => {
+  const hoy = todayISO(),
+    fn = (c) => c.fin || c.inicio,
+    lista = inicioProximas();
+  return {
+    cuantas: lista.length,
+    todasFuturas: lista.every((c) => fn(c) >= hoy),
+    ningunaTerminada: lista.every((c) => c.estado !== "finalizado"),
+    ordenadas: lista.every((c, i) => i === 0 || fn(lista[i - 1]) <= fn(c)),
+  };
+});
+(check("lo que viene no muestra fechas pasadas", prox.todasFuturas, prox),
+  check("lo que viene no muestra tareas ya terminadas", prox.ningunaTerminada, prox),
+  check("lo que viene está ordenado por fecha", prox.ordenadas, prox));
+
 await browser.close();
 await backend.stop();
 

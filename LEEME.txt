@@ -16,7 +16,7 @@ IMPORTANTE
   `npm run build` a partir de la carpeta src/, y al publicar lo construye
   GitHub Actions. Si acabás de clonar y no lo ves, es eso: corré el build.
 - El código editable vive en src/. Ver README.md.
-- Antes de publicar, `npm test`. Son 85 pruebas y tardan un par de minutos.
+- Antes de publicar, `npm test`. Son 90 pruebas y tardan un par de minutos.
 
 Las contraseñas no se anotan acá: este repositorio es público. Cada persona
 entra a la app con su propia cuenta de Supabase. Ver SEGURIDAD.md.

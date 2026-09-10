@@ -747,13 +747,6 @@ button {
 .gate .logo-img {
   height: 34px;
 }
-.hub-hero .logo-lockup {
-  padding: 7px 16px;
-  gap: 11px;
-}
-.hub-hero .logo-img {
-  height: 28px;
-}
 .brand-t {
   font-family: var(--titulo);
   font-weight: 900;
@@ -1550,62 +1543,134 @@ button {
   flex: 1;
   min-width: 200px;
 }
-.mapa-grupo {
-  border: 1px solid var(--line);
-  border-radius: var(--r-l);
-  background: var(--surface);
-  margin-bottom: 10px;
-  overflow: hidden;
+/* Cada sector es una tarjeta de una grilla. Antes eran filas de ancho
+   completo, una abajo de la otra: veinte renglones con el mismo formato, el
+   mismo título y el mismo número al costado se leen como una planilla, y el
+   resto del sitio ya tiene listas de sobra. Como tarjetas, cada sector se
+   distingue por su pila de portadas y su color antes de leer el nombre.
+   La que está abierta pasa a ocupar la fila entera y muestra adentro su
+   grilla de cursos; las demás siguen chicas alrededor. */
+.mapa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(226px, 1fr));
+  gap: var(--sp-3);
+  align-items: start;
 }
-.mapa-grupo-h {
+.mapa-tarj {
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--surface);
+  overflow: hidden;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+.mapa-tarj.abierto {
+  grid-column: 1 / -1;
+  border-color: color-mix(in srgb, var(--cat, var(--coto-blue)) 40%, var(--line));
+  box-shadow: var(--shadow);
+}
+.mapa-tarj:not(.abierto):hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--cat, var(--coto-blue)) 45%, var(--line));
+  box-shadow: var(--shadow);
+}
+.mapa-tarj-b {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: var(--sp-3);
   width: 100%;
-  padding: 13px 16px;
+  padding: var(--sp-3) var(--sp-4);
   border: 0;
+  border-left: 4px solid var(--cat, var(--line));
   background: 0 0;
   font: inherit;
   cursor: pointer;
   text-align: left;
   color: var(--ink);
-  transition: background 0.14s;
 }
-.mapa-grupo-h:hover {
-  background: var(--surface-2);
+/* Cerrada la tarjeta va en columna —pila de portadas arriba, nombre abajo—
+   y abierta pasa a ser una barra de encabezado en una sola línea. */
+.mapa-tarj:not(.abierto) .mapa-tarj-b {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-left-width: 5px;
 }
-.mapa-grupo-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--cat, var(--line));
+.mapa-tarj.abierto .mapa-tarj-b {
+  background: color-mix(in srgb, var(--cat, var(--coto-blue)) 7%, var(--surface));
+}
+/* Las cuatro portadas, montadas una sobre otra. Sin foto queda el color del
+   sector, que igual distingue la tarjeta. */
+.mapa-tarj-minis {
+  display: flex;
   flex: none;
 }
-.mapa-grupo-n {
+.mapa-tarj-minis i {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  border: 2px solid var(--surface);
+  background: var(--cat, var(--line));
+  background-size: cover;
+  background-position: center;
+}
+.mapa-tarj-minis i + i {
+  margin-left: -14px;
+}
+.mapa-tarj.abierto .mapa-tarj-minis i {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+}
+.mapa-tarj.abierto .mapa-tarj-minis i + i {
+  margin-left: -10px;
+}
+.mapa-tarj-tx {
   flex: 1;
   min-width: 0;
-  font-size: 14.5px;
-  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
-.mapa-grupo-c {
+.mapa-tarj-n {
+  font-family: var(--titulo);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: break-word;
+}
+.mapa-tarj-c {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-soft);
-  background: var(--surface-2);
-  border-radius: var(--pill);
-  padding: 2px 10px;
   font-variant-numeric: tabular-nums;
 }
-.mapa-grupo-ar {
+.mapa-tarj-ar {
+  flex: none;
   color: var(--ink-soft);
-  transition: transform 0.18s;
   font-size: 13px;
 }
-.mapa-grupo.abierto .mapa-grupo-ar {
-  transform: rotate(90deg);
+/* Cerrada, la flecha va abajo a la derecha en vez de al costado del nombre. */
+.mapa-tarj:not(.abierto) .mapa-tarj-ar {
+  position: absolute;
+  right: 14px;
+  bottom: 11px;
+  opacity: 0.5;
+  transition: opacity 0.14s;
 }
-.mapa-grupo .cursos-grid {
-  padding: 0 16px 16px;
+.mapa-tarj:not(.abierto):hover .mapa-tarj-ar {
+  opacity: 1;
+  color: var(--coto-blue);
+}
+.mapa-tarj:not(.abierto) {
+  position: relative;
+}
+.mapa-tarj .cursos-grid {
+  padding: 0 var(--sp-4) var(--sp-4);
 }
 .cursos-grid {
   display: grid;
@@ -2771,10 +2836,6 @@ button {
   line-height: 1.4;
   color: var(--ink-soft);
 }
-/* Grande solo cuando el número exige una acción ahora. */
-.kpi.grande .kpi-num {
-  font-size: 38px;
-}
 .kpi.tono-bad {
   border-color: color-mix(in srgb, var(--bad) 45%, var(--line));
   background: color-mix(in srgb, var(--bad) 9%, var(--surface));
@@ -3859,8 +3920,17 @@ button {
 }
 @media (prefers-reduced-motion: reduce) {
   .hub-card,
-  .view-in {
+  .view-in,
+  .ini-nombre,
+  .ini-nombre:hover,
+  .ini-chispas i,
+  .mimo-capa i {
     animation: none !important;
+  }
+  /* Sin la animación el degradé se queda donde lo dejó background-position,
+     que es el extremo navy: el nombre se lee igual, sin el barrido. */
+  .ini-chispas {
+    display: none;
   }
 }
 .hub {
@@ -3905,30 +3975,165 @@ button {
     position: static;
     transform: none;
     width: 100%;
-    max-width: 300px;
-    margin: 36px auto 0;
+    max-width: 320px;
+    margin: var(--sp-5) auto 0;
     max-height: none;
   }
+  /* Acá el widget ya no flota a la derecha sino que va al final de Inicio: si
+     la CotoFrase se abriera por encima, con lo alto que es ahora quedaría
+     medio abajo del borde de la pantalla. Empuja el contenido y listo. */
+  .cotofrase-pop {
+    position: static;
+    width: 100%;
+    margin-top: var(--sp-3);
+  }
 }
-/* El saludo se llevaba unos 150 px centrados de la primera pantalla para no
-   decir nada operativo, y encima estaba centrado mientras todo lo de abajo va
-   al ras de la izquierda. Ahora es una línea, con el estado del día al lado. */
 /* ===== Inicio =====
-   Era un tablero de informes: saludo enorme, seis accesos, cinco bloques de
-   número saturados y cuatro cajas de gráficos. Se leía, no se trabajaba: para
-   tocar una tarea había que irse a otra pestaña. Ahora el centro es la lista
-   de trabajo y los números quedan abajo, chicos y neutros — el lugar que les
-   corresponde cuando no piden nada. */
+   El saludo pasó por tres formas. Primero era un bloque enorme y centrado que
+   se comía media pantalla sin decir nada. Después lo achiqué a una línea al
+   ras de la izquierda, que informaba pero no saludaba. Ahora vuelve al centro
+   —es lo único de la vista que habla de la persona, y el centro es donde eso
+   se lee— pero ocupa dos renglones, no diez: el nombre y, debajo, la fecha
+   con el estado del día. */
 .ini-head {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-2);
+  padding: var(--sp-5) 0 var(--sp-6);
+}
+/* Se ajusta al ancho del nombre para que las chispas, que van en porcentaje,
+   queden pegadas a las letras y no al ancho de la página. */
+.ini-saludo {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+.ini-linea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 4px 14px;
-  padding: 4px 0 20px;
+  gap: 4px 12px;
 }
 .ini-fecha {
   font-size: 13.5px;
   color: var(--ink-soft);
+}
+/* El nombre es un botón de verdad: tocarlo tira papelitos y nada más. Que sea
+   <button> y no un <span> con un click encima es lo que hace que también
+   funcione con Enter desde el teclado. */
+.ini-nombre {
+  font: inherit;
+  border: 0;
+  background: none;
+  margin: 0;
+  padding: 0 2px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-block;
+}
+/* Con la misma especificidad que .ini-nombre:hover y definido antes, el
+   brillo del hover le ganaba al rebote justo cuando el puntero está encima
+   —que es siempre, porque el rebote sale de un clic. */
+.ini-nombre.salta,
+.ini-nombre.salta:hover {
+  animation: ini-salto 0.6s var(--spring);
+}
+@keyframes ini-salto {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.08) rotate(-1.5deg);
+  }
+  58% {
+    transform: scale(0.98) rotate(1deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+/* Las chispas alrededor del nombre. Puro adorno: no informan nada, no se
+   pueden tocar y el lector de pantalla no las ve (aria-hidden en el HTML).
+   Titilan desacompasadas —cada una con su demora— para que parezcan chispas
+   y no una guirnalda de navidad. */
+.ini-chispas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ini-chispas i {
+  position: absolute;
+  line-height: 1;
+  opacity: 0;
+  color: var(--coto-blue);
+  animation: ini-chispa 3.8s var(--ease) infinite;
+}
+.ini-chispas i::before {
+  content: "✦";
+}
+.ini-chispas i:nth-child(2n)::before {
+  content: "✧";
+}
+.ini-chispas i:nth-child(3n) {
+  color: var(--ok);
+}
+.ini-chispas i:nth-child(4n) {
+  color: var(--warn);
+}
+@keyframes ini-chispa {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4) rotate(0deg);
+  }
+  10% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1) rotate(30deg);
+  }
+  26% {
+    opacity: 0.4;
+    transform: translate(-50%, -58%) scale(0.78) rotate(65deg);
+  }
+  44% {
+    opacity: 0;
+    transform: translate(-50%, -66%) scale(0.5) rotate(95deg);
+  }
+}
+/* Los papelitos. Se crean en el momento, viven un segundo y se borran solos;
+   la capa es fixed y sin eventos, así que nunca tapa un clic. */
+.mimo-capa {
+  position: fixed;
+  z-index: 90;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.mimo-capa i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: ini-papelito 1.15s var(--ease-out) forwards;
+}
+@keyframes ini-papelito {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 44px)) scale(1)
+      rotate(var(--giro));
+  }
 }
 /* El estado del día, en la misma línea del saludo. Lo que exige algo es un
    botón y lleva adonde hay que ir; lo que no, es solo texto. */
@@ -3961,6 +4166,137 @@ button {
   border-color: var(--line);
   color: var(--ink-soft);
 }
+/* ===== El pie de Inicio =====
+   Debajo de las ocho tarjetas quedaba media pantalla vacía. Va lo mínimo que
+   sirve para arrancar: qué se viene, cómo está el área en una línea de texto
+   y los tres atajos. Todo sin cajas ni gráficos —eso ya tiene su lugar en
+   Reportes— para que Inicio siga siendo una puerta y no un tablero. */
+.ini-bloque {
+  margin-top: var(--sp-6);
+}
+.ini-bloque-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.ini-bloque-h h2 {
+  margin: 0;
+  font-family: var(--texto);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.ini-vertodo {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--link);
+  cursor: pointer;
+}
+.ini-vertodo:hover {
+  text-decoration: underline;
+}
+.ini-prox-lista {
+  border-top: 1px solid var(--line-soft);
+}
+.ini-prox {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 9px 6px;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  transition: background 0.14s;
+}
+.ini-prox:hover {
+  background: var(--surface-2);
+}
+.ini-prox-c {
+  flex: 0 0 92px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+/* Hoy y mañana en ámbar: es lo único de la lista que pide algo ya. */
+.ini-prox.ya .ini-prox-c {
+  color: var(--warn);
+}
+.ini-prox-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ini-prox-q {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+/* El pulso: cuatro números en una línea de texto, sin recuadros ni color.
+   Son para mirar de reojo; el que quiere la lista, la abre de un clic. */
+.ini-pulso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-6);
+}
+.ini-pulso-i {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 4px 11px;
+  border-radius: var(--pill);
+  transition: 0.14s;
+}
+.ini-pulso-i b {
+  color: var(--ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.ini-pulso-i:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.ini-atajos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: var(--sp-4) 0 0;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.ini-atajos kbd {
+  font-family: var(--texto);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.ini-sep {
+  margin: 0 4px;
+  opacity: 0.5;
+}
 .ini-sub-h {
   font-size: 10.5px;
   font-weight: 800;
@@ -3969,25 +4305,14 @@ button {
   color: var(--ink-soft);
   margin: var(--sp-6) 0 var(--sp-3);
 }
-.hub-hero {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 2px 12px;
-  padding: 4px 0 18px;
-}
 .hub-title {
   font-family: var(--titulo);
   font-weight: 900;
-  font-size: 27px;
+  font-size: 34px;
   margin: 0;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.6px;
+  line-height: 1.15;
   color: var(--ink);
-}
-.hub-sub {
-  color: var(--ink-soft);
-  font-size: 14px;
-  margin: 0;
 }
 /* Quedaron dos tarjetas, no seis: auto-fit para que llenen el ancho en vez
    de dejar una columna vacía al final de la fila. */
@@ -4340,17 +4665,58 @@ html {
     0 10px 26px color-mix(in srgb, var(--cat) 55%, transparent),
     0 1px 0 rgba(255, 255, 255, 0.5) inset;
 }
-.hub-title {
-  background: linear-gradient(115deg, var(--coto-navy), #0096d2 95%);
+/* El degradé vive en el botón del nombre, no en el <h1>: así el brillo que
+   lo recorre al entrar arranca y termina en el mismo tono y no se nota de
+   dónde sale. La banda clara del medio es la que barre. */
+.ini-nombre {
+  background: linear-gradient(
+    100deg,
+    var(--coto-navy) 0%,
+    var(--coto-navy) 34%,
+    #35b6ea 46%,
+    #0096d2 58%,
+    var(--coto-navy) 100%
+  );
+  background-size: 260% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ini-brillo 2.2s var(--ease) 0.35s 1;
+}
+.ini-nombre:hover {
+  animation: ini-brillo-2 1.5s var(--ease) 1;
+}
+[data-theme="dark"] .ini-nombre {
+  background: linear-gradient(
+    100deg,
+    #e6f3ff 0%,
+    #e6f3ff 34%,
+    #ffffff 46%,
+    #8fd6f7 58%,
+    #e6f3ff 100%
+  );
+  background-size: 260% 100%;
+  background-position: 100% 0;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-[data-theme="dark"] .hub-title {
-  background: linear-gradient(120deg, #e6f3ff, var(--coto-blue));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+@keyframes ini-brillo {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
+}
+@keyframes ini-brillo-2 {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
 }
 .fab {
   border: 3px solid var(--bg);
@@ -4972,9 +5338,6 @@ html {
   .hub {
     padding-top: 4px;
   }
-  .hub-hero {
-    padding: 22px 0 18px;
-  }
   .hub-grid {
     grid-template-columns: 1fr;
   }
@@ -5196,7 +5559,7 @@ html {
   position: sticky;
   top: 0;
   z-index: 2;
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
   text-align: left;
   padding: 9px 10px;
   font-size: 10.5px;
@@ -5207,10 +5570,21 @@ html {
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
+/* La grilla se veía —y se siente— como una planilla de cálculo: renglones
+   pegados y una línea fuerte debajo de cada uno, cien veces seguidas. Con
+   una línea tenue y aire entre filas sigue siendo una tabla, que es lo que
+   tiene que ser, pero se lee como parte de la app y no como un Excel
+   incrustado. */
 .tec-table td {
-  padding: 4px 8px;
-  border-bottom: 1px solid var(--line);
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--line-soft);
   vertical-align: middle;
+}
+/* La fila entera se resalta al pasar por encima: con once columnas, saber en
+   cuál estás parado es la mitad del trabajo. El encabezado de categoría y el
+   "+ agregar" quedan afuera: no son filas de curso. */
+.tec-table tbody tr:not(.tec-cat-row):not(.tec-add-row):not(.tec-edu-row):hover td {
+  background: color-mix(in srgb, var(--coto-blue) 4%, var(--surface));
 }
 /* La grilla tiene 10-11 columnas y en mobile/tablet hay que scrollear
    horizontal sí o sí — pero "Curso" (con qué fila estás) se queda fijo a la
@@ -5229,9 +5603,10 @@ html {
 }
 .tec-cat-row td {
   background: var(--surface-2);
+  font-family: var(--titulo);
   font-weight: 800;
-  font-size: 12.5px;
-  padding: 8px 10px;
+  font-size: 13.5px;
+  padding: 11px 12px;
   border-top: 1px solid var(--line);
 }
 .tec-cat-n {
@@ -5350,6 +5725,49 @@ html {
 .tec-diseno-chips .qchip b {
   font-weight: 800;
 }
+/* Cada celda de fecha vacía mostraba "dd/mm/aaaa" con su iconito de
+   calendario. Con tres columnas de fecha y cien cursos son trescientos
+   "dd/mm/aaaa" en pantalla, todos iguales, y ahí no queda nada que leer: es
+   exactamente la textura de una planilla vacía. Ahora una fecha que falta es
+   un guión gris, y el formato aparece recién cuando entrás a escribirla. */
+.tec-pub {
+  position: relative;
+}
+.tec-date.vacia:not(:focus)::-webkit-datetime-edit {
+  color: transparent;
+}
+.tec-pub:has(.tec-date.vacia:not(:focus))::before {
+  content: "—";
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--ink-soft);
+  opacity: 0.55;
+  pointer-events: none;
+}
+/* El calendarito: en las celdas que ya tienen fecha queda tenue, y en las
+   vacías directamente no está hasta que apuntás la fila. Trescientos iconos
+   de calendario repetidos son tanto ruido como los trescientos "dd/mm/aaaa"
+   que acabamos de sacar. */
+.tec-date::-webkit-calendar-picker-indicator {
+  opacity: 0.28;
+  cursor: pointer;
+  transition: opacity 0.14s;
+}
+.tec-date.vacia::-webkit-calendar-picker-indicator {
+  opacity: 0;
+}
+.tec-table tbody tr:hover .tec-date.vacia::-webkit-calendar-picker-indicator {
+  opacity: 0.35;
+}
+.tec-date:hover::-webkit-calendar-picker-indicator,
+.tec-date:focus::-webkit-calendar-picker-indicator,
+.tec-date.vacia:hover::-webkit-calendar-picker-indicator,
+.tec-date.vacia:focus::-webkit-calendar-picker-indicator {
+  opacity: 0.8;
+}
 .tec-fecha-mala-txt {
   color: var(--bad);
   font-weight: 700;
@@ -5364,31 +5782,78 @@ html {
   text-align: center;
 }
 .tec-chk input {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   accent-color: var(--coto-blue);
   cursor: pointer;
 }
+/* Cien desplegables con su marco y su flechita del sistema, uno debajo del
+   otro, es la otra mitad de la sensación de planilla. Se lee como texto
+   hasta que lo tocás; ahí aparece el marco y se comporta como siempre. */
 .tec-diseno select {
   width: 100%;
   min-width: 118px;
-  border: 1px solid var(--line);
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid transparent;
   border-radius: 7px;
-  padding: 5px 6px;
+  padding: 5px 22px 5px 7px;
   font-size: 11.5px;
+  font-weight: 600;
   font-family: inherit;
-  background: var(--surface);
+  background: 0 0;
   color: var(--ink);
+  cursor: pointer;
+  transition:
+    border-color 0.14s,
+    background 0.14s;
 }
+/* La flecha, dibujada con dos bordes en vez de una imagen: el CSP de la app
+   no deja traer nada de afuera y un SVG en data: URI para esto es de más. */
+.tec-diseno {
+  position: relative;
+}
+.tec-diseno::after {
+  content: "";
+  position: absolute;
+  right: 13px;
+  top: calc(50% - 3px);
+  width: 6px;
+  height: 6px;
+  border-right: 1.6px solid var(--ink-soft);
+  border-bottom: 1.6px solid var(--ink-soft);
+  transform: rotate(45deg);
+  opacity: 0.45;
+  pointer-events: none;
+}
+.tec-diseno select:hover {
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+.tec-diseno select:focus {
+  border-color: var(--coto-blue);
+  background: var(--surface);
+  outline: 0;
+}
+/* Era un recuadro azul de borde entero por fila: cien marcos fuertes en la
+   última columna tiraban de todo el ojo hacia la derecha. Ahora es una
+   pastilla con un fondo apenas teñido — se ve que es un vínculo, sin
+   competirle al nombre del curso. */
 .tec-link,
 .tec-link.on {
-  border-style: solid;
-  border-color: var(--coto-blue);
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--coto-blue) 10%, var(--surface));
   color: var(--coto-blue);
   font-weight: 700;
+  border-radius: var(--pill);
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.tec-link:hover,
+.tec-link.on:hover {
+  border-color: color-mix(in srgb, var(--coto-blue) 45%, transparent);
+  background: color-mix(in srgb, var(--coto-blue) 16%, var(--surface));
 }
 .tec-link-wrap {
   display: flex;
@@ -5422,9 +5887,13 @@ html {
 .tec-kpi:hover {
   transform: translateY(-2px);
 }
+/* Un aro negro de 2,5 px alrededor de la tarjeta activa era lo más oscuro de
+   toda la vista, y solo decía "este filtro está puesto". Con el borde y el
+   fondo del propio azul de la app se entiende igual y no grita. */
 .tec-kpi.on {
-  outline: 2.5px solid var(--ink);
-  outline-offset: 2px;
+  border-color: var(--coto-blue);
+  background: color-mix(in srgb, var(--coto-blue) 9%, var(--surface));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--coto-blue) 16%, transparent);
 }
 .tec-top-n {
   font-size: 12px;
@@ -5478,17 +5947,166 @@ html {
   gap: 8px;
   margin-bottom: 16px;
 }
+/* ===== Reportes =====
+   La vista era una pila de bloques del mismo ancho y del mismo peso: cuatro
+   cajas de número, dos gráficos enormes y dos listas, más de 2.500 px. Con
+   todo igual de importante no hay por dónde empezar a mirar. Ahora manda un
+   solo bloque —lo publicado en el año que elijas, con su gráfico adentro— y
+   el resto entra de a dos por fila. */
+.rep-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: var(--sp-4);
+  align-items: start;
+  margin-bottom: var(--sp-5);
+}
+@media (max-width: 900px) {
+  .rep-hero {
+    grid-template-columns: 1fr;
+  }
+}
+/* Sin esto, el título del bloque —que va en una sola línea— le fija al ítem
+   de la grilla un ancho mínimo mayor que la pantalla del teléfono, y toda la
+   vista se desplaza de costado. */
+.rep-hero-main {
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  padding: var(--sp-4) var(--sp-5) var(--sp-3);
+  box-shadow: var(--shadow);
+}
+.rep-hero-main .rep-sec-h {
+  margin-bottom: var(--sp-3);
+}
+/* El número grande y, pegado, qué es y cómo viene contra el año anterior. */
+.rep-hero-num {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.rep-hero-num b {
+  font-family: var(--titulo);
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -1.5px;
+  color: var(--coto-blue);
+  font-variant-numeric: tabular-nums;
+}
+.rep-hero-num span {
+  display: flex;
+  flex-direction: column;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.rep-hero-num i {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.rep-hero-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+/* En la columna angosta el número va al costado de la etiqueta, no encima:
+   tres cajas apiladas con el número arriba son tres cajas altas y vacías. */
+.kpi.mini {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--sp-3);
+  row-gap: 0;
+  padding: var(--sp-3) var(--sp-4);
+}
+.kpi.mini .kpi-num {
+  grid-row: 1 / span 2;
+  font-size: 30px;
+}
+.kpi.mini .kpi-lbl {
+  align-self: end;
+  font-size: 12.5px;
+  line-height: 1.25;
+}
+.kpi.mini .kpi-sub {
+  align-self: start;
+}
+/* Un KPI sin sub-línea tiene una sola fila: que la etiqueta quede centrada
+   contra el número y no colgada del borde de abajo. */
+.kpi.mini .kpi-lbl:last-child {
+  align-self: center;
+}
+.rep-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: var(--sp-4);
+  align-items: start;
+}
+.rep-cols > .rep-sec {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
 .rep-sec {
   margin: var(--sp-5) 0;
+}
+/* El promedio de espera, con la misma forma que el número grande de arriba
+   pero en chico: es un dato de contexto, no el titular de la vista. */
+.rep-espera-p {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+.rep-espera-p b {
+  font-family: var(--titulo);
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.rep-espera-p span {
+  display: flex;
+  flex-direction: column;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.rep-espera-p i {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
 }
 /* Selector de año del gráfico por mes. Antes el año estaba clavado en el del
    calendario: el 2 de enero la vista quedaba vacía y no se podía mirar el año
    que se acababa de cerrar, que es justo cuando se mira. */
+/* Catorce años envueltos en dos renglones de pastillas ocupaban más alto que
+   el gráfico que gobiernan. En una sola línea que se desliza, el gráfico
+   arranca donde tiene que arrancar. */
 .rep-anios {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 10px;
+  gap: 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  margin-bottom: var(--sp-3);
+}
+.rep-anios::-webkit-scrollbar {
+  display: none;
+}
+.rep-anios .qchip {
+  flex: none;
+  font-size: 11.5px;
+  padding: 4px 11px;
 }
 /* Diecinueve sectores en una sola columna ocupaban novecientos píxeles para
    una lista ordenada. En dos columnas se lee de una sola pasada. */
@@ -5505,7 +6123,8 @@ html {
 .rep-sec-h {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 2px 8px;
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--line);
@@ -5544,9 +6163,15 @@ html {
   display: flex;
   gap: 6px;
   align-items: end;
-  height: 160px;
+  height: 148px;
   padding: 8px 2px 4px;
   overflow-x: auto;
+  /* Una línea de base tenue: sin ella las barras flotaban sobre nada y los
+     meses en cero no se leían como cero, se leían como un hueco. */
+  border-bottom: 1px solid var(--line-soft);
+}
+.rep-chart.compacto {
+  height: 124px;
 }
 .rep-bar-col {
   display: flex;
@@ -5574,9 +6199,16 @@ html {
   /* Piso en píxeles, no en porcentaje: una barra de 1 sobre 78 tiene que
      verse, pero sin dibujarse igual que una de 4 sobre 78. Los meses en cero
      directamente no dibujan barra (ver repBarsHTML). */
-  min-height: 5px;
-  border-radius: 4px 4px 0 0;
-  background: var(--coto-blue);
+  min-height: 6px;
+  /* Redondeadas arriba y con el color yéndose hacia abajo: eran rectángulos
+     planos de esquina viva, que es de donde venía buena parte de la sensación
+     de "planilla" de toda la vista. */
+  border-radius: 9px 9px 3px 3px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--coto-blue) 88%, #ffffff),
+    var(--coto-blue)
+  );
   transition: height 0.4s;
 }
 /* La barra "Sin fecha" del histórico: mismo alto que las demás, pero en un
@@ -5584,7 +6216,7 @@ html {
    los datos reales sería justo el problema que esta barra existe para
    evitar. */
 .rep-bar-otro {
-  background: var(--ink-soft);
+  background: var(--coto-chambray);
   background-image: repeating-linear-gradient(
     -45deg,
     transparent,
@@ -5878,7 +6510,7 @@ html {
    equipo debajo a modo de mini ranking. */
 .frase-card {
   width: 100%;
-  padding: 12px 14px 10px;
+  padding: 15px 16px 13px;
   border-radius: var(--r-l);
   background: var(--surface);
   border: 1px solid var(--line);
@@ -5887,22 +6519,22 @@ html {
 .frase-card-t {
   text-align: center;
   font-family: var(--titulo);
-  font-size: 11.5px;
+  font-size: 14px;
   font-weight: 800;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 .frase-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-height: 160px;
+  gap: 3px;
+  max-height: 300px;
   overflow-y: auto;
 }
 .frase-row {
   display: flex;
   align-items: flex-start;
-  gap: 7px;
-  padding: 5px 5px;
+  gap: 9px;
+  padding: 7px 7px;
   border-radius: var(--r-s);
 }
 .frase-avatar {
@@ -5915,21 +6547,21 @@ html {
 }
 .frase-avatar {
   flex: none;
-  width: 20px;
-  height: 20px;
+  width: 25px;
+  height: 25px;
   border-radius: 50%;
   display: grid;
   place-content: center;
   color: #fff;
   font-weight: 800;
-  font-size: 9.5px;
+  font-size: 11px;
 }
 .frase-row-n {
   flex: none;
   font-weight: 700;
-  font-size: 10.5px;
+  font-size: 12.5px;
   color: var(--ink);
-  max-width: 50px;
+  max-width: 72px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -5944,10 +6576,10 @@ html {
 .frase-row-f {
   flex: 1;
   min-width: 0;
-  font-size: 10.5px;
+  font-size: 12.5px;
   color: var(--ink-soft);
-  line-height: 1.35;
-  padding-top: 1px;
+  line-height: 1.4;
+  padding-top: 2px;
   overflow-wrap: break-word;
 }
 .frase-row.mine .frase-row-f {
@@ -5958,27 +6590,29 @@ html {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-align: center;
-  padding: 14px 12px 16px;
+  padding: 18px 16px 20px;
   border-radius: var(--r-l);
   background: var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--shadow-lg);
 }
 .slot-modal-t {
-  font-size: 14px;
+  font-family: var(--titulo);
+  font-size: 17px;
   font-weight: 800;
 }
 .slot-modal-d {
-  font-size: 10.5px;
+  font-size: 12px;
+  line-height: 1.4;
   color: var(--ink-soft);
-  margin-top: -6px;
+  margin-top: -8px;
 }
 .slot-reels {
   display: flex;
-  gap: 6px;
-  padding: 10px;
+  gap: 8px;
+  padding: 13px;
   border-radius: var(--r-l);
   background: linear-gradient(160deg, #1b1300, #2c1f00);
   border: 3px solid #e8a815;
@@ -5987,13 +6621,13 @@ html {
     0 8px 24px rgba(232, 168, 21, 0.25);
 }
 .slot-reel {
-  width: 40px;
-  height: 40px;
+  width: 58px;
+  height: 58px;
   background: linear-gradient(180deg, #fffdf5, #f3e9c9);
   border-radius: var(--r-sm);
   display: grid;
   place-content: center;
-  font-size: 20px;
+  font-size: 29px;
   box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.08);
 }
 .slot-reel.stop {
@@ -6011,8 +6645,9 @@ html {
   }
 }
 .slot-result {
-  min-height: 18px;
-  font-size: 12px;
+  min-height: 22px;
+  font-size: 14.5px;
+  line-height: 1.35;
   font-weight: 800;
   color: var(--ink);
   opacity: 0;
@@ -6031,8 +6666,8 @@ html {
   background: linear-gradient(180deg, #ff5a5a, #c81e1e);
   color: #fff;
   font-weight: 800;
-  font-size: 11px;
-  padding: 8px 16px;
+  font-size: 13.5px;
+  padding: 11px 24px;
   border-radius: var(--pill);
   cursor: pointer;
   box-shadow:
@@ -6070,6 +6705,13 @@ html {
   border-radius: 50%;
   border: none;
   font-size: 19px;
+}
+/* El de la CotoFrase un poco más grande que el de la ruleta: se usa todos
+   los días, la ruleta cada tanto. */
+.cotofrase-fab {
+  width: 52px;
+  height: 52px;
+  font-size: 24px;
   display: grid;
   place-content: center;
   cursor: pointer;
@@ -6099,11 +6741,15 @@ html {
 .cotofrase-fab:active {
   transform: scale(0.93);
 }
+/* Estaba dimensionada como un widget de barra lateral: 200 px de ancho,
+   rodillos de 40 y letra de 10,5. El equipo la usa todos los días y es de
+   las pocas cosas de la app que dan ganas de tocar, así que ocupa el lugar
+   de algo que importa, no el de un adorno al costado. */
 .cotofrase-pop {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
-  width: 200px;
+  width: 320px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -6111,6 +6757,12 @@ html {
 }
 .cotofrase-pop.hidden {
   display: none;
+}
+/* En un teléfono el contenedor mide menos que los 320 px del popup. */
+@media (max-width: 400px) {
+  .cotofrase-pop {
+    width: min(320px, calc(100vw - 32px));
+  }
 }
 .roulette-widget {
   position: absolute;
@@ -6290,6 +6942,20 @@ html {
   /* Con margin-left:auto, al envolver la fila el botón quedaba solo en su
      renglón y pegado al borde derecho. En pantalla angosta ocupa el ancho. */
   .ini-head {
-    padding-bottom: 14px;
+    padding: var(--sp-4) 0 var(--sp-5);
+  }
+  .hub-title {
+    font-size: 23px;
+  }
+  /* Las chispas de los costados quedan a −7% y 103% del ancho del nombre: en
+     un teléfono eso las manda contra el borde. Adentro del margen. */
+  .ini-chispas {
+    inset: 0 6px;
+  }
+  .ini-prox-c {
+    flex-basis: 74px;
+  }
+  .ini-prox-q {
+    display: none;
   }
 }
