@@ -12,35 +12,47 @@
   font-display: swap;
   src: url("../assets/fonts/Faible-Medium.woff2") format("woff2");
 }
+/* La tipografía de texto de la app.
+   Era Roboto: legible, sí, pero es la de Android de 2014 y le daba a todo un
+   aire de formulario viejo. Figtree es una grotesca contemporánea, se banca
+   mejor los tamaños chicos de una grilla y tiene números que alinean.
+
+   Es un solo archivo variable en vez de cuatro estáticos: pesa 51 KB contra
+   125 KB, y —lo que importa— cubre de verdad de 300 a 900. Con Roboto solo
+   estaban cargados el 400, el 500 y el 700; cada 600, 800 y 900 que pide el
+   CSS se lo inventaba el navegador engordando el trazo, que es de donde salía
+   buena parte de la sensación de "impreso con poca tinta" en los títulos.
+
+   Faible NO se toca: es la tipografía institucional de COTO y es la que hace
+   que la app se vea de COTO y no de cualquiera. */
 @font-face {
-  font-family: Roboto;
-  font-weight: 400;
+  font-family: Figtree;
+  font-weight: 300 900;
   font-style: normal;
   font-display: swap;
-  src: url("../assets/fonts/Roboto-Regular.woff2") format("woff2");
+  src: url("../assets/fonts/Figtree-Variable.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: Roboto;
-  font-weight: 500;
+  font-family: Figtree;
+  font-weight: 300 900;
   font-style: normal;
   font-display: swap;
-  src: url("../assets/fonts/Roboto-Medium.woff2") format("woff2");
+  src: url("../assets/fonts/Figtree-Variable-Ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: Roboto;
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-  src: url("../assets/fonts/Roboto-Bold.woff2") format("woff2");
-}
-@font-face {
-  font-family: Roboto;
-  font-weight: 400;
+  font-family: Figtree;
+  font-weight: 300 900;
   font-style: italic;
   font-display: swap;
-  src: url("../assets/fonts/Roboto-Italic.woff2") format("woff2");
+  src: url("../assets/fonts/Figtree-Variable-Italic.woff2") format("woff2");
 }
-[data-cat] {
+data-cat] {
   --cat: #8a97b4;
   --cat-strong: color-mix(in srgb, var(--cat) 74%, var(--coto-navy));
   --cat-soft: color-mix(in srgb, var(--cat) 16%, #ffffff);
@@ -403,8 +415,8 @@
   --on-cat: #ffffff;
 }
 :root {
-  --titulo: "Faible", "Roboto", system-ui, "Segoe UI", sans-serif;
-  --texto: "Roboto", system-ui, "Segoe UI", sans-serif;
+  --titulo: "Faible", "Figtree", system-ui, "Segoe UI", sans-serif;
+  --texto: "Figtree", "Roboto", system-ui, "Segoe UI", sans-serif;
   --coto-blue: #006ea0;
   --coto-navy: #1e2d46;
   /* El header es navy sólido siempre, prenda o no prenda el modo oscuro:
@@ -499,6 +511,42 @@
 }
 * {
   box-sizing: border-box;
+}
+/* ===== Tratamiento tipográfico =====
+   Tres cosas que no cambian ni una palabra de la app pero se notan en todas
+   las pantallas:
+
+   1. Los números alinean en columna. Sin esto, un 1 mide menos que un 8 y una
+      lista de cifras queda temblando; con tantas tablas y contadores como
+      tiene esta app, es de lo que más se nota.
+   2. Los títulos de dos renglones se parten por la mitad en vez de dejar una
+      palabra sola colgando abajo (text-wrap: balance), y los párrafos evitan
+      la línea huérfana al final (pretty).
+   3. Faible en tamaño grande necesita el interletrado un poco más cerrado:
+      una display puesta en 34 px con el tracking de un texto de 13 se ve
+      suelta. */
+h1,
+h2,
+h3,
+h4 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+/* Todo lo que es una cifra: contadores, KPIs, fechas, precios de columna. */
+.kpi-num,
+.kcol-count,
+.rep-bar-n,
+.carga-num,
+.notif-grupo h3 b,
+.mapa-tarj-c,
+.tec-top-n,
+.badge b,
+.qchip b,
+td.tec-pub,
+.tec-date {
+  font-variant-numeric: tabular-nums;
 }
 body,
 html {
@@ -3157,16 +3205,170 @@ button {
   padding: 0 4px;
   box-shadow: 0 0 0 2px var(--surface);
 }
+/* ===== Panel de alertas =====
+   Era una lista de filas separadas por una línea punteada, con el atraso y el
+   nombre escritos como texto corrido en la sub-línea: todo pesaba igual y no
+   había forma de barrer la lista con el ojo. Ahora cada alerta es una tarjeta
+   con una franja del color de su tipo, y el encabezado dice de entrada
+   cuántas hay de cada uno. */
+.notif-head {
+  flex-direction: row;
+  align-items: flex-start;
+  padding-bottom: var(--sp-4);
+}
+.notif-head-tx {
+  flex: 1;
+  min-width: 0;
+}
+.notif-x {
+  flex: none;
+}
+.notif-head-n {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+}
+.notif-head-n b {
+  font-family: var(--titulo);
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -1px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.notif-head-n span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+/* Cuántas de cada tipo, cada una en su color. "5 pendientes" no distingue una
+   vencida hace tres meses de algo que vence pasado mañana. */
+.notif-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.notif-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--pill);
+  font-size: 11px;
+  font-weight: 700;
+}
+.notif-chip b {
+  font-size: 12.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.notif-chip.bad {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+.notif-chip.warn {
+  background: #fff3dc;
+  color: #b7791f;
+}
+.notif-chip.rec {
+  background: color-mix(in srgb, var(--coto-blue) 12%, transparent);
+  color: var(--coto-blue);
+}
+[data-theme="dark"] .notif-chip.warn {
+  background: #3a2f12;
+  color: #e2a03f;
+}
+/* Los dos botones que operan sobre la lista, en su propia barra: son
+   acciones, no parte del encabezado. */
+.notif-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+.notif-acciones .btn.on {
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+  background: color-mix(in srgb, var(--coto-blue) 10%, var(--surface));
+}
+.notif-body {
+  gap: var(--sp-5);
+  background: var(--bg);
+}
+.notif-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.notif-grupo h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-family: var(--texto);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.notif-grupo h3 b {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 1px 8px;
+  border-radius: var(--pill);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.notif-grupo-ic {
+  font-size: 12px;
+}
+.notif-grupo.bad h3 {
+  color: var(--bad);
+}
+.notif-grupo.warn h3 {
+  color: #b7791f;
+}
+[data-theme="dark"] .notif-grupo.warn h3 {
+  color: #e2a03f;
+}
+.notif-grupo.rec h3 {
+  color: var(--coto-blue);
+}
+/* Cada alerta, una tarjeta con la franja de su tipo a la izquierda. */
 .notif-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 11px 0;
-  border-bottom: 1px dashed var(--line);
-  cursor: pointer;
+  padding: 11px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line);
+  border-radius: var(--r-sm);
+  transition:
+    border-color 0.14s,
+    box-shadow 0.14s,
+    transform 0.14s;
 }
-.notif-item {
-  cursor: default;
+.notif-item:hover {
+  transform: translateX(2px);
+  box-shadow: var(--shadow-sm);
+}
+.notif-item.bad {
+  border-left-color: var(--bad);
+}
+.notif-item.warn {
+  border-left-color: var(--warn);
+}
+.notif-item.rec {
+  border-left-color: var(--coto-blue);
 }
 .notif-item:hover .notif-t {
   color: var(--coto-blue);
@@ -3180,6 +3382,7 @@ button {
   justify-content: center;
   font-size: 15px;
   flex: none;
+  cursor: pointer;
 }
 .notif-ic.bad {
   background: var(--bad-soft);
@@ -3202,65 +3405,80 @@ button {
   cursor: pointer;
 }
 .notif-t {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.25;
-}
-.notif-s {
-  font-size: 11px;
-  color: var(--ink-soft);
-  margin-top: 2px;
-}
-/* Encabezado de cada grupo del panel de alertas. Antes las vencidas, las que
-   vencen pronto y las recurrentes iban todas en una misma lista sin orden:
-   lo de hace tres meses quedaba entre lo de mañana. */
-.notif-grupo {
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-  margin: 16px 0 2px;
-}
-.notif-grupo:first-child {
-  margin-top: 2px;
-}
-.notif-grupo b {
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.3;
   color: var(--ink);
 }
-/* Cuánto hace que venció, en palabras: una fecha sola no dice si fue
-   anteayer o en marzo, que es lo único que decide qué se mira primero. */
+.notif-s {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+/* Cuánto hace que venció, en pastilla y no como texto suelto: una fecha sola
+   no dice si fue anteayer o en marzo, que es lo único que decide qué se mira
+   primero. */
 .notif-atraso {
+  padding: 1px 8px;
+  border-radius: var(--pill);
+  font-size: 10.5px;
   font-weight: 800;
 }
 .notif-atraso.bad {
+  background: var(--bad-soft);
   color: var(--bad);
 }
 .notif-atraso.warn {
+  background: #fff3dc;
   color: #b7791f;
 }
+.notif-atraso.rec {
+  background: color-mix(in srgb, var(--coto-blue) 12%, transparent);
+  color: var(--coto-blue);
+}
 [data-theme="dark"] .notif-atraso.warn {
+  background: #3a2f12;
   color: #e2a03f;
 }
+/* Sin responsable: el mismo círculo que los demás, pero vacío. Antes decía
+   "sin responsable" en cursiva y era el texto más largo de la fila. */
 .notif-nadie {
-  font-style: italic;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  border: 1px dashed var(--line);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
 }
 .notif-ok {
   flex: none;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 9px;
   background: 0 0;
   color: var(--ink-soft);
   font-size: 13px;
   cursor: pointer;
+  opacity: 0.55;
   transition: 0.14s;
+}
+.notif-item:hover .notif-ok {
+  opacity: 1;
 }
 .notif-ok:hover {
   border-color: var(--ok);
   background: color-mix(in srgb, var(--ok) 14%, var(--surface));
   color: var(--ok);
+  opacity: 1;
 }
 /* ===== Panel de Ajustes =====
    Navegación al costado y una sección por tarea, en vez del scroll único de
@@ -4167,28 +4385,58 @@ button {
   color: var(--ink-soft);
 }
 /* ===== El pie de Inicio =====
-   Debajo de las ocho tarjetas quedaba media pantalla vacía. Va lo mínimo que
-   sirve para arrancar: qué se viene, cómo está el área en una línea de texto
-   y los tres atajos. Todo sin cajas ni gráficos —eso ya tiene su lugar en
-   Reportes— para que Inicio siga siendo una puerta y no un tablero. */
-.ini-bloque {
-  margin-top: var(--sp-6);
+   Debajo de las ocho tarjetas quedaba media pantalla vacía. Primero puse ahí
+   una lista con hairlines y una línea de cuatro números sueltos: informaba,
+   pero al lado de las tarjetas de arriba parecía el pie de página de otra
+   app. Ahora son dos tarjetas más, con el mismo material que el resto de la
+   vista — la de la izquierda dice qué se viene, la de la derecha cómo está
+   el tablero. */
+.ini-pie {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+  align-items: stretch;
 }
-.ini-bloque-h {
+/* Sin fechas próximas queda sola la del pulso: que no se estire a lo ancho
+   de toda la pantalla ella sola. */
+.ini-pie.solo {
+  grid-template-columns: minmax(0, 420px);
+  justify-content: center;
+}
+@media (max-width: 820px) {
+  .ini-pie,
+  .ini-pie.solo {
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+}
+.ini-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  padding: var(--sp-4);
+  box-shadow: var(--shadow-sm);
+}
+.ini-card-h {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--sp-3);
   margin-bottom: var(--sp-2);
 }
-.ini-bloque-h h2 {
+.ini-card-h h2 {
   margin: 0;
-  font-family: var(--texto);
-  font-size: 10.5px;
+  font-family: var(--titulo);
+  font-size: 14.5px;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  color: var(--ink);
+}
+.ini-card-sub {
+  font-size: 11.5px;
+  font-weight: 600;
   color: var(--ink-soft);
+  white-space: nowrap;
 }
 .ini-vertodo {
   border: 0;
@@ -4199,78 +4447,129 @@ button {
   font-weight: 700;
   color: var(--link);
   cursor: pointer;
+  white-space: nowrap;
 }
 .ini-vertodo:hover {
   text-decoration: underline;
 }
-.ini-prox-lista {
-  border-top: 1px solid var(--line-soft);
-}
+/* ── Lo que viene ─────────────────────────────────────────────────────── */
 .ini-prox {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: 9px 6px;
-  border-bottom: 1px solid var(--line-soft);
+  padding: 8px 8px;
+  margin: 0 -8px;
+  border-radius: var(--r-sm);
   cursor: pointer;
   transition: background 0.14s;
 }
-.ini-prox:hover {
-  background: var(--surface-2);
+.ini-prox + .ini-prox {
+  margin-top: 2px;
 }
+.ini-prox:hover {
+  background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
+}
+/* El cuándo va en pastilla, no en texto suelto: es la columna que se lee
+   primero y así se lee como una etiqueta y no como parte del título. */
 .ini-prox-c {
-  flex: 0 0 92px;
-  font-size: 12px;
+  flex: none;
+  min-width: 84px;
+  text-align: center;
+  padding: 3px 9px;
+  border-radius: var(--pill);
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  font-size: 11px;
   font-weight: 800;
   color: var(--ink-soft);
 }
 /* Hoy y mañana en ámbar: es lo único de la lista que pide algo ya. */
-.ini-prox.ya .ini-prox-c {
-  color: var(--warn);
+.ini-prox-c.ya {
+  background: color-mix(in srgb, var(--warn) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--warn) 45%, var(--line-soft));
+  color: color-mix(in srgb, var(--warn) 70%, var(--ink));
 }
 .ini-prox-t {
   flex: 1;
   min-width: 0;
   font-size: 13.5px;
+  font-weight: 600;
   color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.ini-prox-q {
-  flex: 0 0 auto;
-  font-size: 12px;
-  color: var(--ink-soft);
+.ini-prox:hover .ini-prox-t {
+  color: var(--coto-blue);
 }
-/* El pulso: cuatro números en una línea de texto, sin recuadros ni color.
-   Son para mirar de reojo; el que quiere la lista, la abre de un clic. */
+.ini-prox-nadie {
+  flex: none;
+  width: 22px;
+  text-align: center;
+  color: var(--ink-soft);
+  opacity: 0.5;
+}
+/* ── El pulso ─────────────────────────────────────────────────────────── */
 .ini-pulso {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-1);
-  margin-top: var(--sp-6);
+  flex-direction: column;
+  gap: 2px;
 }
+/* Tres columnas fijas —nombre, barra, número— para que las cuatro filas
+   queden alineadas entre sí y la barra empiece siempre en el mismo lugar. */
 .ini-pulso-i {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: 7px 8px;
+  margin: 0 -8px;
+  width: calc(100% + 16px);
   border: 0;
   background: none;
   font: inherit;
-  font-size: 12.5px;
-  color: var(--ink-soft);
+  border-radius: var(--r-sm);
   cursor: pointer;
-  padding: 4px 11px;
-  border-radius: var(--pill);
-  transition: 0.14s;
-}
-.ini-pulso-i b {
-  color: var(--ink);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
+  text-align: left;
+  transition: background 0.14s;
 }
 .ini-pulso-i:hover {
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--tono) 9%, var(--surface));
+}
+.ini-pulso-n {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ini-pulso-i:hover .ini-pulso-n {
   color: var(--ink);
+}
+/* La barra es proporcional al estado más cargado: además del número se ve
+   de qué forma está el tablero. */
+.ini-pulso-b {
+  height: 7px;
+  border-radius: var(--pill);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.ini-pulso-b i {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border-radius: var(--pill);
+  background: var(--tono, var(--coto-blue));
+  transition: width 0.4s var(--ease);
+}
+.ini-pulso-c {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
 .ini-atajos {
   display: flex;
@@ -4278,7 +4577,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  margin: var(--sp-4) 0 0;
+  margin: var(--sp-5) 0 0;
   font-size: 11.5px;
   color: var(--ink-soft);
 }
@@ -5555,20 +5854,47 @@ html {
   border-collapse: collapse;
   font-size: 12.5px;
 }
+/* Encabezado de dos pisos: arriba de qué habla cada bloque de columnas, abajo
+   el nombre de cada una. Once encabezados iguales en una sola fila se leen
+   como una tira sin forma. Los dos pisos quedan fijos al scrollear, así que
+   el de abajo arranca justo donde termina el de arriba (--tec-h-g). */
+.tec-table {
+  --tec-h-g: 26px;
+}
 .tec-table thead th {
   position: sticky;
-  top: 0;
   z-index: 2;
   background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
   text-align: left;
-  padding: 9px 10px;
+  white-space: nowrap;
+}
+.tec-head-g th {
+  top: 0;
+  height: var(--tec-h-g);
+  padding: 0 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--coto-blue) 14%, transparent);
+}
+/* La etiqueta del grupo, chiquita y con una línea de color debajo que abarca
+   sus columnas: es lo que hace que el bloque se lea como un bloque. */
+.tec-head-g th span {
+  display: block;
+  padding: 5px 0 4px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--coto-blue) 75%, var(--ink));
+  border-bottom: 2px solid color-mix(in srgb, var(--coto-blue) 35%, transparent);
+}
+.tec-head-c th {
+  top: var(--tec-h-g);
+  padding: 8px 10px;
   font-size: 10.5px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3px;
   color: var(--ink-soft);
   border-bottom: 1px solid var(--line);
-  white-space: nowrap;
 }
 /* La grilla se veía —y se siente— como una planilla de cálculo: renglones
    pegados y una línea fuerte debajo de cada uno, cien veces seguidas. Con
@@ -5599,7 +5925,15 @@ html {
 }
 .tec-table th[data-campo="curso"] {
   z-index: 3;
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
+}
+/* La primera celda del piso de arriba también se queda fija: si no, al
+   scrollear de costado el nombre del curso pasa por debajo de un hueco. */
+.tec-head-g th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
 }
 .tec-cat-row td {
   background: var(--surface-2);
@@ -5877,23 +6211,62 @@ html {
 .tec-pick-row:hover {
   background: var(--surface-2);
 }
-.tec-kpi {
-  border: 0;
+/* Eran cuatro cajas del alto de una tarjeta para cuatro números: se comían la
+   primera pantalla entera antes de que empezara la grilla, que es a lo que se
+   viene a esta vista. Ahora es una barra: los mismos cuatro números y los
+   mismos cuatro filtros, en un quinto del alto. */
+.tec-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+}
+.tec-stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  background: var(--surface);
   font-family: inherit;
-  text-align: left;
   cursor: pointer;
-  transition: transform 0.12s ease;
+  transition: 0.14s;
 }
-.tec-kpi:hover {
-  transform: translateY(-2px);
+.tec-stat b {
+  font-family: var(--titulo);
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
-/* Un aro negro de 2,5 px alrededor de la tarjeta activa era lo más oscuro de
-   toda la vista, y solo decía "este filtro está puesto". Con el borde y el
-   fondo del propio azul de la app se entiende igual y no grita. */
-.tec-kpi.on {
+.tec-stat span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.tec-stat:hover {
+  border-color: color-mix(in srgb, var(--coto-blue) 45%, var(--line));
+  background: var(--surface-2);
+}
+.tec-stat.tono-warn {
+  border-color: color-mix(in srgb, var(--warn) 48%, var(--line));
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+}
+.tec-stat.tono-warn b {
+  color: color-mix(in srgb, var(--warn) 72%, var(--ink));
+}
+/* El filtro puesto: el azul de la app, no el aro negro de 2,5 px que tenía
+   antes y que era lo más oscuro de toda la vista. */
+.tec-stat.on {
   border-color: var(--coto-blue);
-  background: color-mix(in srgb, var(--coto-blue) 9%, var(--surface));
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--coto-blue) 16%, transparent);
+  background: color-mix(in srgb, var(--coto-blue) 10%, var(--surface));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--coto-blue) 15%, transparent);
+}
+.tec-stat.on b,
+.tec-stat.on span {
+  color: var(--coto-blue);
 }
 .tec-top-n {
   font-size: 12px;
@@ -6045,6 +6418,12 @@ html {
   grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
   gap: var(--sp-4);
   align-items: start;
+  margin-bottom: var(--sp-4);
+}
+/* La última sección va sola y a lo ancho, pero con el mismo material que las
+   dos de arriba: suelta sobre el fondo se veía como el pie de otra página. */
+.rep-cols-1 {
+  grid-template-columns: minmax(0, 1fr);
 }
 .rep-cols > .rep-sec {
   margin: 0;
@@ -6108,17 +6487,158 @@ html {
   font-size: 11.5px;
   padding: 4px 11px;
 }
-/* Diecinueve sectores en una sola columna ocupaban novecientos píxeles para
-   una lista ordenada. En dos columnas se lee de una sola pasada. */
-.rep-sect-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 10px 26px;
+/* ── El catálogo por sector ───────────────────────────────────────────────
+   Una sola barra partida en colores, con su referencia debajo. Eran veinte
+   filas de nombre + barrita + número: se leía cada sector por separado pero
+   no se veía la mezcla, que es lo que se mira en una reunión de fin de año. */
+.rep-mix-bar {
+  display: flex;
+  height: 14px;
+  border-radius: var(--pill);
+  overflow: hidden;
+  background: var(--surface-2);
+  margin-bottom: var(--sp-4);
 }
-/* En columnas angostas los 74px reservados para el número dejaban un hueco
-   más ancho que la propia barra. */
-.rep-sect-grid .carga-num {
-  min-width: 26px;
+.rep-mix-bar span {
+  min-width: 3px;
+  transition: filter 0.14s;
+}
+.rep-mix-bar span:hover {
+  filter: brightness(1.15);
+}
+.rep-mix-leg {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 2px var(--sp-5);
+}
+.rep-mix-i {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  margin: 0 -8px;
+  border: 0;
+  background: none;
+  font: inherit;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.14s;
+}
+.rep-mix-i:hover {
+  background: var(--surface-2);
+}
+.rep-mix-i i {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+.rep-mix-i span {
+  flex: 1;
+  min-width: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rep-mix-i b {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.rep-mix-i:hover b {
+  color: var(--ink);
+}
+/* ── Las que más esperan revisión ─────────────────────────────────────── */
+.rep-espera-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rep-espera-f {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px 48px 22px;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 8px;
+  margin: 0 -8px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.14s;
+}
+.rep-espera-f:hover {
+  background: var(--surface-2);
+}
+.rep-espera-t {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rep-espera-f:hover .rep-espera-t {
+  color: var(--coto-blue);
+}
+/* Cuánto espera ésta respecto de la que más espera: un "45 días" suelto no
+   dice si es mucho hasta que lo comparás con el resto. */
+.rep-espera-b {
+  height: 6px;
+  border-radius: var(--pill);
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.rep-espera-b i {
+  display: block;
+  height: 100%;
+  min-width: 3px;
+  border-radius: var(--pill);
+  background: var(--coto-chambray);
+}
+.rep-espera-d {
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+  padding: 2px 0;
+  border-radius: var(--pill);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.rep-espera-d.medio {
+  background: #fff3dc;
+  color: #b7791f;
+}
+.rep-espera-d.mal {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+[data-theme="dark"] .rep-espera-d.medio {
+  background: #3a2f12;
+  color: #e2a03f;
+}
+.rep-espera-nadie {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-content: center;
+  border: 1px dashed var(--line);
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 700;
+}
+@media (max-width: 620px) {
+  .rep-espera-f {
+    grid-template-columns: minmax(0, 1fr) 44px 22px;
+  }
+  .rep-espera-b {
+    display: none;
+  }
 }
 .rep-sec-h {
   display: flex;
@@ -6172,6 +6692,47 @@ html {
 }
 .rep-chart.compacto {
   height: 124px;
+}
+/* La línea punteada del promedio del año, con su valor al costado. Con un mes
+   que se lleva 78 de 79 todas las demás barras quedan pegadas al piso; contra
+   esta referencia cada mes se lee por lo que fue.
+
+   Va dentro de una capa que ocupa exactamente el alto de las barras. El
+   gráfico reserva arriba el renglón del número y abajo el del mes, así que el
+   porcentaje que le pasa el JS —que es proporción de la barra más alta— tiene
+   que medirse contra esa caja y no contra el gráfico entero, o la línea cae
+   siempre unos píxeles más arriba de donde va. */
+.rep-chart {
+  --chart-num: 18px;
+  --chart-lbl: 18px;
+  position: relative;
+}
+.rep-prom-capa {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: calc(8px + var(--chart-num));
+  bottom: calc(4px + var(--chart-lbl));
+  pointer-events: none;
+}
+.rep-prom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--ink-soft) 60%, transparent);
+}
+.rep-prom::after {
+  content: attr(data-prom);
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  background: var(--surface);
+  padding: 0 4px;
+  border-radius: 4px;
 }
 .rep-bar-col {
   display: flex;
@@ -6952,10 +7513,10 @@ html {
   .ini-chispas {
     inset: 0 6px;
   }
+  /* El avatar ya reemplazó al nombre escrito, así que la fila entra igual en
+     un teléfono; lo único que se achica es la pastilla del cuándo. */
   .ini-prox-c {
-    flex-basis: 74px;
-  }
-  .ini-prox-q {
-    display: none;
+    min-width: 70px;
+    padding: 3px 6px;
   }
 }

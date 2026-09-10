@@ -203,7 +203,11 @@ const pulso = await page.evaluate(async () => {
     (state.mis = false),
     (state.view = "inicio"),
     render());
-  const enInicio = [...document.querySelectorAll(".ini-pulso-i")].map((b) => +b.querySelector("b").textContent);
+  // El número vive en su propia celda desde que el pulso pasó de cuatro
+  // números en una línea de texto a cuatro filas con barra.
+  const enInicio = [...document.querySelectorAll(".ini-pulso-i")].map(
+    (b) => +b.querySelector(".ini-pulso-c").textContent,
+  );
   ((state.view = "kanban"), render());
   const enPlanner = [...document.querySelectorAll(".kcol-count")].map((el) => +el.textContent);
   return { enInicio, enPlanner };
