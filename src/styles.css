@@ -440,6 +440,16 @@ data-cat] {
      del fondo. Ahora el borde hace el trabajo por sí solo. */
   --line: #c7d1e3;
   --line-soft: #dde4f0;
+  /* El borde de las tarjetas va aparte del resto de las líneas. Una tarjeta
+     ya se separa del fondo por su sombra y su fondo blanco; el marco marcado
+     encima era una raya más, y con veinte tarjetas en pantalla eso es lo que
+     hacía que el Planner se leyera como una grilla dibujada y no como cosas
+     apoyadas. Las líneas que SÍ estructuran algo —la grilla del Timeline, el
+     encabezado de una tabla— siguen usando --line. */
+  --brd-card: var(--line-soft);
+  /* Cuánto tiñe el fondo de la píldora de fecha. En oscuro hace falta más
+     para que se despegue del casi negro. */
+  --tinte: 13%;
   --coto-blue-deep: #00466e;
   --coto-chambray: #96a5be;
   --bg: #e7ecf6;
@@ -483,6 +493,10 @@ data-cat] {
   --ok: #2e9e8f;
   --ok-soft: #e3f3f0;
   --warn: #e2a03f;
+  /* El ámbar de marca sobre blanco da 2:1 de contraste: sirve para pintar una
+     barra, no para escribir una fecha. Esta es la versión legible. */
+  --warn-ink: #94620b;
+  --warn-soft: #fbf0dc;
   --bad: #d8553f;
   --bad-soft: #fbe7e1;
 }
@@ -496,6 +510,7 @@ data-cat] {
   --ink-soft: #a3b0c8;
   --line: #3c4b6c;
   --line-soft: #2b3752;
+  --tinte: 24%;
   --coto-white: #0e1521;
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.36);
   --shadow: 0 3px 10px rgba(0, 0, 0, 0.34), 0 14px 34px rgba(0, 0, 0, 0.42);
@@ -508,6 +523,8 @@ data-cat] {
   --blur: none;
   --ok-soft: #17332e;
   --bad-soft: #3a201b;
+  --warn-ink: #edb45f;
+  --warn-soft: #3a2d15;
 }
 * {
   box-sizing: border-box;
@@ -1318,33 +1335,61 @@ button {
 }
 .kcard {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
   padding: 13px 14px;
   cursor: pointer;
   box-shadow: var(--shadow);
-  transition: 0.15s;
+  transition:
+    transform 0.16s var(--ease-out),
+    box-shadow 0.16s,
+    border-color 0.16s,
+    background 0.16s;
   position: relative;
-  /* El borde de la izquierda dice EN QUÉ ESTADO está la tarjeta. Antes
-     repetía el color del sector, que ya aparecía en la píldora y otra vez en
-     la barra de progreso: tres veces lo mismo, y con eso "vencida" terminaba
-     escrito en el mismo rojo que la píldora de Cajas. */
-  border-left: 6px solid var(--line);
 }
+/* El estado de la tarjeta —vencida, por vencer, terminada— lo decía un riel
+   de 6px pegado al borde izquierdo. Era la línea más gruesa de la app, se
+   peleaba con el redondeo de la esquina y en una columna de diez tarjetas
+   dibujaba diez barras de color en fila.
+
+   Ahora lo dice la tarjeta entera, teñida apenas: el ojo la encuentra igual
+   de rápido de lejos y de cerca no hay ninguna raya. La fecha, que es el
+   dato que está en juego, se pinta del mismo tono para que la señal quede
+   sobre la información y no al costado de ella. */
 .kcard.est-venc {
-  border-left-color: var(--bad);
+  --tono: var(--bad);
 }
 .kcard.est-pronto {
-  border-left-color: var(--warn);
+  --tono: var(--warn);
 }
-.kcard.est-fin {
-  border-left-color: var(--ok);
+/* Del riel queda un tinte en el canto de la tarjeta —lo justo para encontrarla
+   de lejos— y nada más. El aviso en serio va sobre la fecha, que es el dato
+   que está en juego: una tarjeta no está "en rojo", está vencida el 8/9. */
+.kcard.est-venc,
+.kcard.est-pronto {
+  border-color: color-mix(in srgb, var(--tono) 34%, var(--brd-card));
 }
+.kcard.est-venc .date.overdue,
+.kcard.est-pronto .date {
+  background: color-mix(in srgb, var(--tono) var(--tinte), var(--surface));
+  color: var(--tono-ink, var(--tono));
+  font-weight: 700;
+  border-radius: var(--pill);
+  padding: 2px 9px 2px 7px;
+  margin: -2px 0;
+}
+.kcard.est-pronto {
+  --tono-ink: var(--warn-ink);
+}
+/* Terminada no se tiñe: la columna "Terminadas" es toda de terminadas, y
+   pintarlas todas de verde no distingue ninguna. Alcanza con bajarle la voz
+   al título. */
 .kcard.est-fin .kcard-title {
   color: var(--ink-soft);
 }
 .kcard:hover {
   box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
 }
 .kcard.drag {
   opacity: 0.4;
@@ -1713,8 +1758,12 @@ button {
   gap: var(--sp-3);
   align-items: start;
 }
+/* El sector se reconoce por la pila de portadas y, de refilón, por el tinte
+   del canto. Antes lo decía además un riel de 5px pegado al borde izquierdo:
+   veinte tarjetas eran veinte barras de color en fila, que es justo lo que
+   hacía que el Mapa se leyera como un listado pintado. */
 .mapa-tarj {
-  border: 1px solid var(--line);
+  border: 1px solid color-mix(in srgb, var(--cat, transparent) 22%, var(--brd-card));
   border-radius: var(--r-s);
   background: var(--surface);
   overflow: hidden;
@@ -1740,7 +1789,6 @@ button {
   width: 100%;
   padding: var(--sp-3) var(--sp-4);
   border: 0;
-  border-left: 4px solid var(--cat, var(--line));
   background: 0 0;
   font: inherit;
   cursor: pointer;
@@ -1754,7 +1802,6 @@ button {
   align-items: flex-start;
   gap: var(--sp-2);
   padding: var(--sp-4);
-  border-left-width: 5px;
 }
 .mapa-tarj.abierto .mapa-tarj-b {
   background: color-mix(in srgb, var(--cat, var(--coto-blue)) 7%, var(--surface));
@@ -1838,7 +1885,7 @@ button {
   display: flex;
   flex-direction: column;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
   overflow: hidden;
   box-shadow: var(--shadow);
@@ -2115,7 +2162,7 @@ button {
   max-height: 92vh;
   background: var(--surface);
   z-index: 50;
-  border: 1px solid var(--line);
+  border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
   box-shadow: var(--shadow-lg);
   /* La franja de color del encabezado dibujaba su propio redondeo, y un
@@ -2308,11 +2355,29 @@ button {
   color: var(--cat, var(--coto-blue));
 }
 .sec-acc {
-  border-top: 1px solid var(--line);
-  padding-top: 14px;
+  padding-top: 2px;
 }
 .sec-acc > summary {
   margin-top: 0;
+}
+/* Se nota que es tocable al pasar por encima, que es lo que reemplaza a la
+   línea: antes el encabezado era un renglón muerto con una raya al lado. */
+#panel .sec-acc > summary {
+  padding: 8px 10px;
+  margin: 0 -10px;
+  border-radius: var(--r-sm);
+  transition: background 0.14s;
+}
+#panel .sec-acc > summary:hover {
+  background: var(--surface-2);
+}
+#panel .sec-acc > summary:hover .sub {
+  color: var(--ink);
+}
+/* Lo que separa una sección de la siguiente es el aire, no una raya: la
+   abierta se despega de la que sigue, la cerrada respira lo justo. */
+#panel .sec-acc[open] {
+  padding-bottom: 10px;
 }
 .acc-body {
   display: flex;
@@ -2333,7 +2398,7 @@ button {
   padding: 18px 18px 16px;
   background: var(--surface);
   color: var(--ink);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-soft);
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -2446,6 +2511,9 @@ button {
   font-weight: 600;
   color: var(--ink-soft);
 }
+/* Diez campos con su marco marcado, uno abajo del otro, es la otra mitad de
+   la sensación de formulario. El marco se apaga hasta que pasás por encima;
+   al entrar a escribir aparece el azul con su halo. */
 .fld input,
 .fld select,
 .fld textarea {
@@ -2453,16 +2521,27 @@ button {
   font-size: 13.5px;
   color: var(--ink);
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid transparent;
   border-radius: var(--r-sm);
   padding: 9px 11px;
   outline: 0;
   width: 100%;
+  transition:
+    border-color 0.14s,
+    background 0.14s,
+    box-shadow 0.14s;
+}
+.fld input:hover,
+.fld select:hover,
+.fld textarea:hover {
+  border-color: var(--line);
 }
 .fld input:focus,
 .fld select:focus,
 .fld textarea:focus {
   border-color: var(--coto-blue);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--coto-blue) 14%, transparent);
 }
 .fld textarea {
   resize: vertical;
@@ -2634,20 +2713,34 @@ button {
   background: var(--bad);
   opacity: 1;
 }
+/* Los encabezados de sección del panel de la tarjeta.
+   Cada uno tenía DOS líneas: una que cruzaba desde el título hasta la flecha
+   (el .ring) y otra arriba separando de la sección anterior. Con cinco
+   secciones eran diez líneas horizontales en un panel de una pantalla, y eso
+   es lo que lo hacía ver como un formulario viejo. Las dos se fueron: ahora
+   la jerarquía la dan el tamaño de letra y el aire, que es lo que tiene que
+   hacerla. */
 .sub {
-  font-size: 11.5px;
+  font-size: 10.5px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.09em;
   color: var(--ink-soft);
   display: flex;
   align-items: center;
   gap: 8px;
 }
+/* Era la línea; queda como el empujador que manda la flecha a la derecha. */
 .sub .ring {
   flex: 1;
-  height: 1px;
-  background: var(--line);
+}
+/* El pie del panel: sin raya arriba, separado por espacio. */
+.panel-pie {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 18px;
 }
 .bridge {
   background: linear-gradient(
@@ -2942,7 +3035,7 @@ button {
 }
 .kpi {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
   padding: 16px;
   box-shadow: var(--shadow);
@@ -2972,7 +3065,7 @@ button {
    pidiendo nada. */
 .kpi {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--brd-card);
   padding: 13px 15px;
 }
 .kpi-num {
@@ -3027,7 +3120,7 @@ button {
 }
 .res-card {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
   padding: 16px;
   box-shadow: var(--shadow);
@@ -4575,7 +4668,7 @@ button {
 }
 .ini-card {
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
   padding: var(--sp-4);
   box-shadow: var(--shadow-sm);
@@ -4809,7 +4902,7 @@ button {
   cursor: pointer;
   font-family: inherit;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--brd-card);
   border-radius: var(--r-squircle);
   /* Chicas: de acá se sale a otro lado, no se trabaja acá adentro. */
   padding: 14px 16px;
@@ -5092,12 +5185,8 @@ html {
   box-shadow: 0 4px 14px color-mix(in srgb, var(--coto-blue) 55%, transparent);
 }
 .gate-card,
-.hub-card,
 .menu,
-.modal,
-.panel,
-.res-card,
-.tl-wrap {
+.modal {
   background: var(--glass);
   -webkit-backdrop-filter: var(--blur);
   backdrop-filter: var(--blur);
@@ -5106,12 +5195,21 @@ html {
     var(--shadow),
     var(--ambient);
 }
-.kcard {
-  background: var(--glass);
+/* Las superficies que son tarjetas van con el borde de tarjeta, no con el de
+   una ventana flotante: un menú o un modal se abren encima de todo y les sirve
+   el canto firme; una tarjeta convive con otras veinte y lo único que hace ese
+   canto es sumar rayas. */
+.hub-card,
+.kcard,
+.panel,
+.res-card,
+.tl-wrap {
+  /* background-color, no el atajo: el atajo borraría el teñido de estado del
+     kanban, que viaja como background-image. */
+  background-color: var(--glass);
   -webkit-backdrop-filter: var(--blur);
   backdrop-filter: var(--blur);
-  border: 1px solid var(--glass-brd);
-  border-left: 6px solid var(--line);
+  border: 1px solid var(--brd-card);
   box-shadow:
     var(--shadow),
     var(--ambient);
@@ -6641,7 +6739,7 @@ html {
 .rep-cols > .rep-sec {
   margin: 0;
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
   padding: var(--sp-4);
   box-shadow: var(--shadow-sm);
@@ -6856,14 +6954,16 @@ html {
     display: none;
   }
 }
+/* El encabezado de cada bloque de Reportes iba subrayado de lado a lado.
+   Adentro de una tarjeta que ya tiene su propio marco, ese subrayado es una
+   raya que no separa nada: lo que sigue abajo es justamente lo que el título
+   anuncia. Se va, y el aire hace el trabajo. */
 .rep-sec-h {
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 2px 8px;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--sp-4);
 }
 .rep-sec-h h3 {
   font-family: var(--titulo);
