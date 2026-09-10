@@ -7807,9 +7807,10 @@ const ICONOS = {
 // y acciones, y quedó peor: Inicio se volvió una pantalla más para operar,
 // cuando lo que hace falta es una puerta.
 //
-// Ahora es lo que tiene que ser: el saludo en una línea con el estado del
-// día, los avisos que exigen algo, y tarjetas chicas hacia cada parte. Lo que
-// hay adentro de cada una vive en su propia vista, que es donde estaba bien.
+// Ahora es lo que tiene que ser: el saludo al centro con la fecha y el estado
+// del día debajo, tarjetas chicas hacia cada parte, y un pie corto con lo que
+// se viene, el pulso del área y los atajos. Lo que hay adentro de cada
+// tarjeta vive en su propia vista, que es donde estaba bien.
 function inicioTarjetas() {
   return [
     { go: "kanban", hub: "planner", ic: ICONOS.kanban, t: "Planner", d: "Las tareas, por estado." },
@@ -7841,6 +7842,165 @@ function inicioCardHTML(arg, i) {
     '</span></span><span class="hub-arrow">→</span></button>'
   );
 }
+// Saludar según la hora en vez de un "Hola" fijo. Es un detalle chico y es
+// justamente por eso que se nota: la app sabe qué momento del día es.
+function inicioSaludo() {
+  const hora = new Date().getHours();
+  if (hora < 6) return "Buenas noches";
+  if (hora < 13) return "Buen día";
+  if (hora < 20) return "Buenas tardes";
+  return "Buenas noches";
+}
+// Chispas alrededor del nombre. Son adorno y nada más —por eso van con
+// aria-hidden, para que un lector de pantalla no las lea— pero son el adorno
+// que hace que entrar a la app se sienta un saludo y no un formulario.
+// Las posiciones están en porcentaje de la caja del nombre: dos a cada
+// costado, dos arriba y una abajo, con tamaños y demoras distintas para que
+// titilen desacompasadas y no parezcan una guirnalda.
+const INI_CHISPAS = [
+  { x: -7, y: 22, s: 13, d: 0 },
+  { x: -3, y: 74, s: 8, d: 1.1 },
+  { x: 103, y: 18, s: 11, d: 0.5 },
+  { x: 99, y: 76, s: 15, d: 1.7 },
+  { x: 22, y: -16, s: 9, d: 2.2 },
+  { x: 74, y: -12, s: 12, d: 0.8 },
+  { x: 52, y: 104, s: 8, d: 1.4 },
+];
+function inicioChispasHTML() {
+  return (
+    '<span class="ini-chispas" aria-hidden="true">' +
+    INI_CHISPAS.map(
+      (arg) =>
+        '<i style="left:' +
+        arg.x +
+        "%;top:" +
+        arg.y +
+        "%;font-size:" +
+        arg.s +
+        "px;animation-delay:" +
+        arg.d +
+        's"></i>',
+    ).join("") +
+    "</span>"
+  );
+}
+// El mimo: tocar el nombre tira papelitos. No hace nada más y no guarda nada,
+// es puro gusto. Si la persona pidió menos movimiento en su sistema, no pasa
+// nada —la misma regla que respetan las animaciones de las tarjetas.
+const MIMO_COLORES = ["#006ea0", "#2e9e8f", "#e2a03f", "#d8553f", "#7c4cae", "#1478b0"];
+function inicioMimo(el) {
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const caja = el.getBoundingClientRect(),
+    capa = document.createElement("div");
+  ((capa.className = "mimo-capa"),
+    (capa.style.left = caja.left + caja.width / 2 + "px"),
+    (capa.style.top = caja.top + caja.height / 2 + "px"));
+  for (let i = 0; i < 24; i++) {
+    const papel = document.createElement("i"),
+      angulo = Math.random() * Math.PI * 2,
+      lejos = 55 + Math.random() * 95;
+    (papel.style.setProperty("--dx", Math.round(Math.cos(angulo) * lejos) + "px"),
+      papel.style.setProperty("--dy", Math.round(Math.sin(angulo) * lejos - 26) + "px"),
+      papel.style.setProperty("--giro", Math.round(Math.random() * 720 - 360) + "deg"),
+      (papel.style.background = MIMO_COLORES[i % MIMO_COLORES.length]),
+      (papel.style.animationDelay = Math.round(Math.random() * 90) + "ms"),
+      capa.appendChild(papel));
+  }
+  (document.body.appendChild(capa), el.classList.add("salta"));
+  (setTimeout(() => el.classList.remove("salta"), 620), setTimeout(() => capa.remove(), 1500));
+}
+// ===== El pie de Inicio =====
+// Debajo de las tarjetas quedaba media pantalla en blanco. Va lo mínimo que
+// sirve de verdad para arrancar el día: qué se viene, cómo está el área en
+// una línea, y los tres atajos que ahorran clics. Nada de gráficos ni de
+// bloques grandes: eso ya tiene su lugar en Reportes.
+function inicioProximas() {
+  const iso = todayISO(),
+    fn = (tarjeta) => tarjeta.fin || tarjeta.inicio;
+  return boardCards()
+    .filter((tarjeta) => tarjeta.estado !== "finalizado" && fn(tarjeta) && fn(tarjeta) >= iso)
+    .sort((arg, arg2) => fn(arg).localeCompare(fn(arg2)))
+    .slice(0, 4);
+}
+function inicioCuando(tarjeta) {
+  const faltan = daysBetween(todayISO(), tarjeta.fin || tarjeta.inicio);
+  if (faltan === 0) return "hoy";
+  if (faltan === 1) return "mañana";
+  if (faltan < 7) return "en " + faltan + " días";
+  if (faltan < 14) return "en 1 semana";
+  return "en " + Math.round(faltan / 7) + " semanas";
+}
+function inicioProxHTML() {
+  const lista = inicioProximas();
+  if (!lista.length) return "";
+  return (
+    '<section class="ini-bloque"><div class="ini-bloque-h"><h2>Lo que viene</h2>' +
+    '<button class="ini-vertodo" data-action="kpi:go" data-go="calendario">Ver el calendario →</button></div>' +
+    '<div class="ini-prox-lista">' +
+    lista
+      .map((tarjeta) => {
+        const quien = (member(tarjeta.responsable) || {}).nombre || "";
+        return (
+          '<div class="ini-prox' +
+          (daysBetween(todayISO(), tarjeta.fin || tarjeta.inicio) <= 1 ? " ya" : "") +
+          '" data-action="card:open" data-id="' +
+          tarjeta.id +
+          '"><span class="ini-prox-c">' +
+          esc(inicioCuando(tarjeta)) +
+          '</span><span class="ini-prox-t">' +
+          esc(tarjeta.titulo) +
+          "</span>" +
+          (quien ? '<span class="ini-prox-q">' + esc(quien) + "</span>" : "") +
+          "</div>"
+        );
+      })
+      .join("") +
+    "</div></section>"
+  );
+}
+// El pulso: los cuatro estados en una línea de texto, sin cajas ni colores.
+// Son para mirar de reojo, y cada uno lleva al Planner ya filtrado por ese
+// estado.
+//
+// Cuentan exactamente lo mismo que las columnas del Planner: la misma lista
+// (boardCards) y el mismo campo. La primera idea era "terminadas este mes",
+// pero la app no guarda cuándo se terminó algo —solo la fecha de fin
+// planificada—, así que ese número habría dicho una cosa y significado otra.
+// Un número que no se puede ir a contar a mano es un número que el equipo
+// deja de creer, y de eso ya tuvimos.
+// Los nombres van en minúscula porque acá se leen dentro de una frase ("8
+// pendientes"), no como título de columna. Y en singular cuando hay una sola:
+// "1 terminadas" es de las cosas que hacen que una app se vea descuidada.
+const INI_PULSO = {
+  pendiente: ["pendiente", "pendientes"],
+  "en-desarrollo": ["en desarrollo", "en desarrollo"],
+  "en-revision": ["en revisión", "en revisión"],
+  finalizado: ["terminada", "terminadas"],
+};
+function inicioPulsoHTML() {
+  const lista = boardCards(),
+    fn = (estado) => {
+      const n = lista.filter((tarjeta) => tarjeta.estado === estado.id).length,
+        nombres = INI_PULSO[estado.id] || [estado.nombre.toLowerCase(), estado.nombre.toLowerCase()];
+      return (
+        '<button class="ini-pulso-i" data-action="kpi:go" data-go="kanban" data-filt-estado="' +
+        estado.id +
+        '"><b>' +
+        n +
+        "</b> " +
+        esc(nombres[n === 1 ? 0 : 1]) +
+        "</button>"
+      );
+    };
+  return '<div class="ini-pulso">' + ESTADOS.map(fn).join("") + "</div>";
+}
+function inicioAtajosHTML() {
+  return (
+    '<p class="ini-atajos"><kbd>Ctrl</kbd><kbd>K</kbd> buscar en todo' +
+    '<span class="ini-sep">·</span><kbd>N</kbd> tarea nueva' +
+    '<span class="ini-sep">·</span><kbd>1</kbd>…<kbd>5</kbd> saltar de vista</p>'
+  );
+}
 function renderInicio() {
   const lista = boardCards(),
     vencidas = lista.filter(isOverdue).length,
@@ -7851,9 +8011,12 @@ function renderInicio() {
     hoy = crudo.charAt(0).toUpperCase() + crudo.slice(1);
   return (
     '<div class="hub"><div class="hub-main">' +
-    '<div class="ini-head"><h1 class="hub-title">Hola, ' +
-    esc(state.user || "equipo") +
-    '</h1><span class="ini-fecha">' +
+    '<div class="ini-head"><div class="ini-saludo">' +
+    inicioChispasHTML() +
+    '<h1 class="hub-title"><button class="ini-nombre" data-action="ini:mimo" title="Tocá tu nombre">' +
+    esc(inicioSaludo() + ", " + (state.user || "equipo")) +
+    "</button></h1></div>" +
+    '<div class="ini-linea"><span class="ini-fecha">' +
     esc(hoy) +
     "</span>" +
     // El estado del día en una línea, y clickeable: si hay algo vencido, de
@@ -7872,12 +8035,16 @@ function renderInicio() {
         (alertas !== 1 ? "s" : "") +
         "</button>"
       : "") +
-    "</div>" +
+    "</div></div>" +
     respaldoAvisoHTML() +
     agendaAvisoHTML() +
     '<div class="hub-grid">' +
     inicioTarjetas().map(inicioCardHTML).join("") +
-    "</div></div></div>"
+    "</div>" +
+    inicioProxHTML() +
+    inicioPulsoHTML() +
+    inicioAtajosHTML() +
+    "</div></div>"
   );
 }
 // Aviso breve y descartable donde antes vivía la pestaña de Agenda, para
@@ -9189,6 +9356,9 @@ document.addEventListener("click", (ev) => {
         renderTecList());
       break;
     }
+    case "ini:mimo":
+      inicioMimo(el);
+      break;
     case "kpi:go":
       state.view = el.dataset.go;
       if (el.dataset.sec) state.mapaSec = el.dataset.sec;
@@ -11575,6 +11745,8 @@ function openHelp() {
     ["Menú de usuario (▾)", "Mi semana (tu foco de los próximos días), Carga del equipo, e Imprimir/PDF están ahí."],
     ["🎲 ¿Qué curso me toca?", "Botoncito flotante a la derecha del Planner (🎡): tocalo para desplegar el sorteo entre los cursos que todavía no arrancaron."],
     ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
+    ["El pie de Inicio", "Debajo de las tarjetas: <b>Lo que viene</b> son las próximas cuatro fechas del área (clic para abrir esa tarjeta), y la línea de números de abajo es cuántas tareas hay en cada estado — cada una lleva al Planner ya filtrado por ese estado."],
+    ["Tocá tu nombre", "En Inicio, arriba de todo. No hace nada útil. Es a propósito."],
     ["Mapa del área", "Todo lo publicado (cursos, Edu Points, contenido audiovisual), organizado por sector y filtrable con un clic."],
     ["🔧 Seguimiento técnico", "Reemplaza al Excel de Categorías y Cursos: publicación, subida del SCORM, mail, portada, mosaico, evaluación, textos y diseño de cada curso, editable ahí mismo. Con <b>▦ Columnas</b> elegís cuáles ver (queda guardado en tu computadora, no le cambia la vista al resto). \"🔗 Vincular\" une una fila con su tarjeta del Mapa. Debajo de los cursos de cada categoría cuelgan sus <b>Archivos Edu Point</b>, con el mismo tratamiento."],
     ["📈 Reportes", "Métricas para gestionar el área: publicaciones por mes (elegís el año), catálogo por sector y qué está esperando revisión. \"⬇ CSV\" y \"🖨 PDF\" exportan lo mismo que se ve en pantalla, para el año que estés mirando."],

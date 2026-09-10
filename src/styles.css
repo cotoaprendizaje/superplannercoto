@@ -747,13 +747,6 @@ button {
 .gate .logo-img {
   height: 34px;
 }
-.hub-hero .logo-lockup {
-  padding: 7px 16px;
-  gap: 11px;
-}
-.hub-hero .logo-img {
-  height: 28px;
-}
 .brand-t {
   font-family: var(--titulo);
   font-weight: 900;
@@ -3859,8 +3852,17 @@ button {
 }
 @media (prefers-reduced-motion: reduce) {
   .hub-card,
-  .view-in {
+  .view-in,
+  .ini-nombre,
+  .ini-nombre:hover,
+  .ini-chispas i,
+  .mimo-capa i {
     animation: none !important;
+  }
+  /* Sin la animación el degradé se queda donde lo dejó background-position,
+     que es el extremo navy: el nombre se lee igual, sin el barrido. */
+  .ini-chispas {
+    display: none;
   }
 }
 .hub {
@@ -3910,25 +3912,152 @@ button {
     max-height: none;
   }
 }
-/* El saludo se llevaba unos 150 px centrados de la primera pantalla para no
-   decir nada operativo, y encima estaba centrado mientras todo lo de abajo va
-   al ras de la izquierda. Ahora es una línea, con el estado del día al lado. */
 /* ===== Inicio =====
-   Era un tablero de informes: saludo enorme, seis accesos, cinco bloques de
-   número saturados y cuatro cajas de gráficos. Se leía, no se trabajaba: para
-   tocar una tarea había que irse a otra pestaña. Ahora el centro es la lista
-   de trabajo y los números quedan abajo, chicos y neutros — el lugar que les
-   corresponde cuando no piden nada. */
+   El saludo pasó por tres formas. Primero era un bloque enorme y centrado que
+   se comía media pantalla sin decir nada. Después lo achiqué a una línea al
+   ras de la izquierda, que informaba pero no saludaba. Ahora vuelve al centro
+   —es lo único de la vista que habla de la persona, y el centro es donde eso
+   se lee— pero ocupa dos renglones, no diez: el nombre y, debajo, la fecha
+   con el estado del día. */
 .ini-head {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-2);
+  padding: var(--sp-5) 0 var(--sp-6);
+}
+/* Se ajusta al ancho del nombre para que las chispas, que van en porcentaje,
+   queden pegadas a las letras y no al ancho de la página. */
+.ini-saludo {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+}
+.ini-linea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 4px 14px;
-  padding: 4px 0 20px;
+  gap: 4px 12px;
 }
 .ini-fecha {
   font-size: 13.5px;
   color: var(--ink-soft);
+}
+/* El nombre es un botón de verdad: tocarlo tira papelitos y nada más. Que sea
+   <button> y no un <span> con un click encima es lo que hace que también
+   funcione con Enter desde el teclado. */
+.ini-nombre {
+  font: inherit;
+  border: 0;
+  background: none;
+  margin: 0;
+  padding: 0 2px;
+  color: inherit;
+  cursor: pointer;
+  display: inline-block;
+}
+/* Con la misma especificidad que .ini-nombre:hover y definido antes, el
+   brillo del hover le ganaba al rebote justo cuando el puntero está encima
+   —que es siempre, porque el rebote sale de un clic. */
+.ini-nombre.salta,
+.ini-nombre.salta:hover {
+  animation: ini-salto 0.6s var(--spring);
+}
+@keyframes ini-salto {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.08) rotate(-1.5deg);
+  }
+  58% {
+    transform: scale(0.98) rotate(1deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+/* Las chispas alrededor del nombre. Puro adorno: no informan nada, no se
+   pueden tocar y el lector de pantalla no las ve (aria-hidden en el HTML).
+   Titilan desacompasadas —cada una con su demora— para que parezcan chispas
+   y no una guirnalda de navidad. */
+.ini-chispas {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ini-chispas i {
+  position: absolute;
+  line-height: 1;
+  opacity: 0;
+  color: var(--coto-blue);
+  animation: ini-chispa 3.8s var(--ease) infinite;
+}
+.ini-chispas i::before {
+  content: "✦";
+}
+.ini-chispas i:nth-child(2n)::before {
+  content: "✧";
+}
+.ini-chispas i:nth-child(3n) {
+  color: var(--ok);
+}
+.ini-chispas i:nth-child(4n) {
+  color: var(--warn);
+}
+@keyframes ini-chispa {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4) rotate(0deg);
+  }
+  10% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1) rotate(30deg);
+  }
+  26% {
+    opacity: 0.4;
+    transform: translate(-50%, -58%) scale(0.78) rotate(65deg);
+  }
+  44% {
+    opacity: 0;
+    transform: translate(-50%, -66%) scale(0.5) rotate(95deg);
+  }
+}
+/* Los papelitos. Se crean en el momento, viven un segundo y se borran solos;
+   la capa es fixed y sin eventos, así que nunca tapa un clic. */
+.mimo-capa {
+  position: fixed;
+  z-index: 90;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+.mimo-capa i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: ini-papelito 1.15s var(--ease-out) forwards;
+}
+@keyframes ini-papelito {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.5) rotate(0deg);
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 44px)) scale(1)
+      rotate(var(--giro));
+  }
 }
 /* El estado del día, en la misma línea del saludo. Lo que exige algo es un
    botón y lleva adonde hay que ir; lo que no, es solo texto. */
@@ -3961,6 +4090,137 @@ button {
   border-color: var(--line);
   color: var(--ink-soft);
 }
+/* ===== El pie de Inicio =====
+   Debajo de las ocho tarjetas quedaba media pantalla vacía. Va lo mínimo que
+   sirve para arrancar: qué se viene, cómo está el área en una línea de texto
+   y los tres atajos. Todo sin cajas ni gráficos —eso ya tiene su lugar en
+   Reportes— para que Inicio siga siendo una puerta y no un tablero. */
+.ini-bloque {
+  margin-top: var(--sp-6);
+}
+.ini-bloque-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-2);
+}
+.ini-bloque-h h2 {
+  margin: 0;
+  font-family: var(--texto);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.ini-vertodo {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--link);
+  cursor: pointer;
+}
+.ini-vertodo:hover {
+  text-decoration: underline;
+}
+.ini-prox-lista {
+  border-top: 1px solid var(--line-soft);
+}
+.ini-prox {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 9px 6px;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  transition: background 0.14s;
+}
+.ini-prox:hover {
+  background: var(--surface-2);
+}
+.ini-prox-c {
+  flex: 0 0 92px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+/* Hoy y mañana en ámbar: es lo único de la lista que pide algo ya. */
+.ini-prox.ya .ini-prox-c {
+  color: var(--warn);
+}
+.ini-prox-t {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ini-prox-q {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+/* El pulso: cuatro números en una línea de texto, sin recuadros ni color.
+   Son para mirar de reojo; el que quiere la lista, la abre de un clic. */
+.ini-pulso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-6);
+}
+.ini-pulso-i {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 4px 11px;
+  border-radius: var(--pill);
+  transition: 0.14s;
+}
+.ini-pulso-i b {
+  color: var(--ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.ini-pulso-i:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.ini-atajos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: var(--sp-4) 0 0;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.ini-atajos kbd {
+  font-family: var(--texto);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.ini-sep {
+  margin: 0 4px;
+  opacity: 0.5;
+}
 .ini-sub-h {
   font-size: 10.5px;
   font-weight: 800;
@@ -3969,25 +4229,14 @@ button {
   color: var(--ink-soft);
   margin: var(--sp-6) 0 var(--sp-3);
 }
-.hub-hero {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 2px 12px;
-  padding: 4px 0 18px;
-}
 .hub-title {
   font-family: var(--titulo);
   font-weight: 900;
-  font-size: 27px;
+  font-size: 34px;
   margin: 0;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.6px;
+  line-height: 1.15;
   color: var(--ink);
-}
-.hub-sub {
-  color: var(--ink-soft);
-  font-size: 14px;
-  margin: 0;
 }
 /* Quedaron dos tarjetas, no seis: auto-fit para que llenen el ancho en vez
    de dejar una columna vacía al final de la fila. */
@@ -4340,17 +4589,58 @@ html {
     0 10px 26px color-mix(in srgb, var(--cat) 55%, transparent),
     0 1px 0 rgba(255, 255, 255, 0.5) inset;
 }
-.hub-title {
-  background: linear-gradient(115deg, var(--coto-navy), #0096d2 95%);
+/* El degradé vive en el botón del nombre, no en el <h1>: así el brillo que
+   lo recorre al entrar arranca y termina en el mismo tono y no se nota de
+   dónde sale. La banda clara del medio es la que barre. */
+.ini-nombre {
+  background: linear-gradient(
+    100deg,
+    var(--coto-navy) 0%,
+    var(--coto-navy) 34%,
+    #35b6ea 46%,
+    #0096d2 58%,
+    var(--coto-navy) 100%
+  );
+  background-size: 260% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: ini-brillo 2.2s var(--ease) 0.35s 1;
+}
+.ini-nombre:hover {
+  animation: ini-brillo-2 1.5s var(--ease) 1;
+}
+[data-theme="dark"] .ini-nombre {
+  background: linear-gradient(
+    100deg,
+    #e6f3ff 0%,
+    #e6f3ff 34%,
+    #ffffff 46%,
+    #8fd6f7 58%,
+    #e6f3ff 100%
+  );
+  background-size: 260% 100%;
+  background-position: 100% 0;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-[data-theme="dark"] .hub-title {
-  background: linear-gradient(120deg, #e6f3ff, var(--coto-blue));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+@keyframes ini-brillo {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
+}
+@keyframes ini-brillo-2 {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
 }
 .fab {
   border: 3px solid var(--bg);
@@ -4971,9 +5261,6 @@ html {
   }
   .hub {
     padding-top: 4px;
-  }
-  .hub-hero {
-    padding: 22px 0 18px;
   }
   .hub-grid {
     grid-template-columns: 1fr;
@@ -6290,6 +6577,20 @@ html {
   /* Con margin-left:auto, al envolver la fila el botón quedaba solo en su
      renglón y pegado al borde derecho. En pantalla angosta ocupa el ancho. */
   .ini-head {
-    padding-bottom: 14px;
+    padding: var(--sp-4) 0 var(--sp-5);
+  }
+  .hub-title {
+    font-size: 23px;
+  }
+  /* Las chispas de los costados quedan a −7% y 103% del ancho del nombre: en
+     un teléfono eso las manda contra el borde. Adentro del margen. */
+  .ini-chispas {
+    inset: 0 6px;
+  }
+  .ini-prox-c {
+    flex-basis: 74px;
+  }
+  .ini-prox-q {
+    display: none;
   }
 }
