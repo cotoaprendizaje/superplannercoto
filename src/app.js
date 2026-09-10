@@ -4138,6 +4138,9 @@ const state = {
   // Columnas escondidas de la grilla. null = todavía no se leyó del
   // navegador; lo resuelve tecColsOcultas() la primera vez que se dibuja.
   tecColsOcultas: null,
+  // Qué segmento de la lista de Inicio se está mirando. De pantalla, como los
+  // filtros de Técnico: no viaja al backend ni se guarda.
+  inicioSeg: "",
 };
 // Si cambió el día desde la última visita, la ronda de frases arranca de
 // cero: nadie "ya tiró hoy" con una frase de ayer.
@@ -4793,6 +4796,18 @@ function renderView() {
     }
   }
 }
+// En qué estado está la tarjeta, para que lo diga el color: vencida,
+// por vencer en los próximos tres días, terminada, o nada de eso.
+function estadoTarjeta(tarjeta) {
+  if (tarjeta.estado === "finalizado") return "fin";
+  if (isOverdue(tarjeta)) return "venc";
+  const val = tarjeta.fin || tarjeta.inicio;
+  if (val && !isInventory(tarjeta)) {
+    const faltan = daysBetween(todayISO(), val);
+    if (faltan >= 0 && faltan <= 3) return "pronto";
+  }
+  return "";
+}
 function cardKanban(tarjeta) {
   const avance = progress(tarjeta),
     tipo = allTipos()[tarjeta.tipo] || {
@@ -4801,7 +4816,9 @@ function cardKanban(tarjeta) {
     },
     vencida = isOverdue(tarjeta);
   return (
-    '<article class="kcard" draggable="true" data-id="' +
+    '<article class="kcard est-' +
+    (estadoTarjeta(tarjeta) || "neutro") +
+    '" draggable="true" data-id="' +
     tarjeta.id +
     '" data-cat="' +
     primaryCat(tarjeta) +
@@ -5360,12 +5377,16 @@ function renderTimeline() {
             (gente.length ? " · " + esc(gente.join(", ")) : ' · <i>sin asignar</i>') +
             "</div></div></div>";
           const val = fn3(tarjeta.inicio, tarjeta.fin),
-            vencida = isOverdue(tarjeta);
+            // Diez barras de diez colores de sector no dejaban ver cuáles dos
+            // estaban atrasadas, que es lo único que se le pide a un panorama.
+            // Ahora la forma dice el estado y el sector queda en el punto de
+            // color de la izquierda, que ya estaba.
+            est = estadoTarjeta(tarjeta);
           txt6 +=
             '<div class="tl-track" style="height:' +
             fn4() +
-            'px">\n        <div class="tl-bar ' +
-            (vencida ? "overdue" : "") +
+            'px">\n        <div class="tl-bar est-' +
+            (est || "neutro") +
             '" draggable="true" data-drag="tl" data-cat="' +
             primaryCat(tarjeta) +
             '" data-id="' +
@@ -6011,10 +6032,9 @@ function renderTecList() {
 }
 function tecKpi(n, label, color, cual) {
   return (
-    '<button class="kpi tec-kpi' +
-    (state.tecPendiente === cual ? " on" : "") +
-    '" style="--kpi:' +
+    '<button class="kpi tec-kpi tono-' +
     color +
+    (state.tecPendiente === cual ? " on" : "") +
     '" data-action="tec:kpi" data-cual="' +
     cual +
     '" title="' +
@@ -6032,14 +6052,14 @@ function tecKpisHTML() {
     html = activas.filter((f) => (f.diseno || "").toLowerCase().includes("html")).length;
   return (
     '<div class="res-grid">' +
-    tecKpi(lista.length, "Cursos en la lista", "var(--coto-blue)", "") +
+    tecKpi(lista.length, "Cursos en la lista", "neutro", "") +
     // Los pendientes se cuentan solo sobre cursos vigentes: un curso dado de
     // baja sin portada no es trabajo que le quede a nadie.
-    tecKpi(activas.filter((f) => !f.portada).length, "Sin portada", "var(--bad)", "sin-portada") +
+    tecKpi(activas.filter((f) => !f.portada).length, "Sin portada", "warn", "sin-portada") +
     // La pregunta real del área no es cuántos mosaicos faltan sino cuánto
     // catálogo quedó en HTML, que es lo que hay que rediseñar.
-    tecKpi(html, "En HTML · a rediseñar", "var(--warn)", "html") +
-    tecKpi(lista.filter((f) => f.cardId).length, "Vinculados al Mapa", "var(--ok)", "vinculados") +
+    tecKpi(html, "En HTML · a rediseñar", "neutro", "html") +
+    tecKpi(lista.filter((f) => f.cardId).length, "Vinculados al Mapa", "neutro", "vinculados") +
     "</div>" +
     tecDisenoChipsHTML()
   );
@@ -6735,6 +6755,8 @@ function repPublicaciones() {
 // KPI quede realmente clickeable, no solo algo que SE VE así: .kpi ya traía
 // el hover con levante desde que se usa en Inicio, así que dejar el número
 // quieto abajo era prometer una interacción que no estaba.
+// "color" pasó a ser un tono con significado (neutro/ok/warn/bad, más
+// "grande" si el número exige una acción), no un color suelto.
 function repKpi(n, label, color, sub, accion, dataset) {
   const attrs = accion
     ? ' data-action="' +
@@ -6745,7 +6767,7 @@ function repKpi(n, label, color, sub, accion, dataset) {
         .join("")
     : "";
   return (
-    '<div class="kpi" style="--kpi:' +
+    '<div class="kpi tono-' +
     color +
     '"' +
     attrs +
@@ -6785,19 +6807,19 @@ function repResumenHTML() {
     repKpi(
       activos.length,
       "Cursos activos",
-      "var(--coto-blue)",
+      "neutro",
       sinFecha ? sinFecha + " sin fecha registrada" : "",
       "rep:activos",
     ) +
-    repKpi(esteAnio, "Publicados en " + anio, "var(--ok)", variacion, "rep:anio", { anio }) +
-    repKpi(anioPasado, "Publicados en " + (anio - 1), "var(--coto-navy)", "", "rep:anio", { anio: anio - 1 }) +
+    repKpi(esteAnio, "Publicados en " + anio, "neutro", variacion, "rep:anio", { anio }) +
+    repKpi(anioPasado, "Publicados en " + (anio - 1), "neutro", "", "rep:anio", { anio: anio - 1 }) +
     // Solo cursos vigentes, igual que los KPI de Técnico. Contando también
     // los dados de baja, Reportería daba un número más alto que Técnico para
     // exactamente lo mismo, y no había forma de saber a cuál creerle.
     repKpi(
       state.tecnico.filter(tecFilaActiva).filter((f) => !f.portada || !f.mosaico).length,
       "Con portada o mosaico pendiente",
-      "var(--warn)",
+      "warn",
       "Sobre los cursos vigentes de Técnico",
       "hub:go",
       { go: "tecnico" },
@@ -7092,7 +7114,7 @@ function repRevisionHTML() {
     repKpi(
       todas.length,
       "Esperando revisión",
-      "var(--warn)",
+      todas.length ? "warn" : "neutro",
       sinSello ? sinSello + " sin fecha de entrada" : "",
       "hub:go",
       { go: "kanban" },
@@ -7100,7 +7122,7 @@ function repRevisionHTML() {
     repKpi(
       prom,
       "Días esperando, en promedio",
-      "var(--coto-navy)",
+      "neutro",
       todas.length
         ? dias.length
           ? "Sobre " + dias.length + " con fecha de entrada"
@@ -7688,66 +7710,255 @@ const ICONOS = {
     '<path d="M3.4 20.6h17.2"/><path d="M4 15.6 9 10.4l4 3.4 6.6-7.4"/><path d="M16 5.7h3.6v3.6"/>',
   ),
 };
-function renderInicio() {
-  const lista2 = boardCards(),
-    cantidad = lista2.filter(isOverdue).length,
-    cantidad2 = alertasSinLeer().length,
-    // Acá había seis tarjetas, y cuatro —Planner, Calendario, Timeline y
-    // Mapa— llevaban justo a donde llevan las pestañas de la barra de arriba,
-    // en la misma pantalla y tres centímetros más arriba. Quedan las dos que
-    // no están en ningún otro lado; con eso "Próximos vencimientos" entra en
-    // la primera pantalla, que es lo que uno viene a ver a la mañana.
-    lista = [
-      {
-        action: "misemana:open",
-        hub: "misemana",
-        ic: ICONOS.misemana,
-        t: "Mi semana",
-        d: "Tu foco de los próximos días.",
-      },
-      {
-        action: "carga:open",
-        hub: "carga",
-        ic: ICONOS.carga,
-        t: "Carga del equipo",
-        d: "Quién tiene qué, para repartir mejor.",
-      },
-    ],
-    fn = (arg, arg2) =>
-      '<button class="hub-card" data-hub="' +
-      arg.hub +
-      '" data-action="' +
-      (arg.action || "hub:go") +
-      '" data-go="' +
-      (arg.go || "") +
-      '" style="animation-delay:' +
-      arg2 * 55 +
-      'ms">\n    ' +
-      // El globito con el número de "en revisión" se sacó: justo abajo, en el
-      // Resumen, el mismo número está en grande y con su etiqueta. Repetirlo
-      // acá arriba sin decir de qué es solo hacía preguntarse qué contaba.
-      '<span class="hub-ic">' +
-      arg.ic +
-      '</span>\n    <span class="hub-tx"><span class="hub-t">' +
-      arg.t +
-      '</span><span class="hub-d">' +
-      esc(arg.d) +
-      '</span></span>\n    <span class="hub-arrow">→</span></button>';
+// ===== Inicio =====
+// Antes esto era un tablero de informes: un saludo enorme, seis accesos —
+// cuatro de ellos repetían la barra de navegación—, cinco bloques de número
+// saturados y cuatro cajas de gráficos. Se leía, no se trabajaba: para tocar
+// una tarea había que irse a otra pestaña.
+//
+// Ahora el centro de la pantalla es la lista de trabajo, y se puede operar
+// desde acá: los segmentos filtran sin salir de Inicio, cada fila se abre con
+// un clic y se cierra con el ✓. Los números del área quedan abajo, chicos y
+// neutros, que es el lugar que les corresponde cuando no piden nada.
+const INICIO_SEGS = [
+  { k: "mio", label: "Lo mío" },
+  { k: "venc", label: "Vencidas" },
+  { k: "semana", label: "Esta semana" },
+  { k: "todo", label: "Todo el equipo" },
+];
+function inicioSeg() {
+  // Sin nadie identificado, "lo mío" no puede filtrar nada: arranca en todo.
+  const val = state.inicioSeg || (state.userId ? "mio" : "todo");
+  return val === "mio" && !state.userId ? "todo" : val;
+}
+function inicioCards(seg) {
+  const activas = boardCards().filter((c) => c.estado !== "finalizado");
+  if (seg === "venc") return activas.filter(isOverdue);
+  if (seg === "mio") return activas.filter(mine);
+  if (seg === "semana") {
+    const hasta = isoOf(addDays(new Date(), 7));
+    return activas.filter((c) => {
+      const val = c.fin || c.inicio;
+      return val && val <= hasta;
+    });
+  }
+  return activas;
+}
+// Lo más urgente arriba: primero lo que tiene fecha, de la más pasada a la
+// más lejana; lo que no tiene fecha, al final.
+function inicioOrden(lista) {
+  return lista.slice().sort((a, b) => {
+    const fa = a.fin || a.inicio || "",
+      fb = b.fin || b.inicio || "";
+    if (!fa && fb) return 1;
+    if (fa && !fb) return -1;
+    if (fa !== fb) return fa < fb ? -1 : 1;
+    return (a.titulo || "").localeCompare(b.titulo || "");
+  });
+}
+function inicioSegsHTML() {
+  const actual = inicioSeg();
   return (
-    '<div class="hub">\n    <div class="hub-main">\n    <div class="hub-hero">\n      <h1 class="hub-title">Hola, ' +
+    '<div class="ini-segs">' +
+    INICIO_SEGS.filter((sg) => sg.k !== "mio" || state.userId)
+      .map((sg) => {
+        const n = inicioCards(sg.k).length;
+        return (
+          '<button class="ini-seg' +
+          (sg.k === actual ? " on" : "") +
+          '" data-action="inicio:seg" data-seg="' +
+          sg.k +
+          '">' +
+          esc(sg.label) +
+          '<span class="ini-seg-n' +
+          (sg.k === "venc" && n ? " mal" : "") +
+          '">' +
+          n +
+          "</span></button>"
+        );
+      })
+      .join("") +
+    "</div>"
+  );
+}
+// Cuándo vence, en una palabra. Una fecha sola no dice si eso fue anteayer o
+// en marzo, que es lo que decide qué se mira primero.
+function inicioCuando(tarjeta) {
+  const val = tarjeta.fin || tarjeta.inicio;
+  if (!val) return { txt: "sin fecha", tono: "" };
+  const d = daysBetween(todayISO(), val);
+  if (isOverdue(tarjeta))
+    return { txt: -d === 1 ? "1 día tarde" : Math.abs(d) + " días tarde", tono: "tarde" };
+  if (d === 0) return { txt: "hoy", tono: "pronto" };
+  if (d === 1) return { txt: "mañana", tono: "pronto" };
+  if (d <= 3) return { txt: "en " + d + " días", tono: "pronto" };
+  return { txt: fmtShort(val), tono: "" };
+}
+function inicioFilaHTML(tarjeta) {
+  const cuando = inicioCuando(tarjeta),
+    sec = primaryCat(tarjeta),
+    avance = progress(tarjeta);
+  return (
+    '<div class="ini-fila est-' +
+    (estadoTarjeta(tarjeta) || "neutro") +
+    '">' +
+    '<button class="ini-fila-main" data-action="card:open" data-id="' +
+    tarjeta.id +
+    '">' +
+    '<span class="ini-cuando ' +
+    cuando.tono +
+    '">' +
+    esc(cuando.txt) +
+    "</span>" +
+    '<span class="ini-tit">' +
+    esc(tarjeta.titulo) +
+    "</span>" +
+    (sec && sec !== "tbd"
+      ? '<span class="ini-sec" data-cat="' + sec + '"><i></i>' + esc(sectorName(sec) || sec) + "</span>"
+      : "") +
+    (avance.total ? '<span class="ini-prog">' + avance.done + "/" + avance.total + "</span>" : "") +
+    "</button>" +
+    stackHTML(tarjeta) +
+    '<button class="ini-listo" data-action="inicio:listo" data-id="' +
+    tarjeta.id +
+    '" title="Marcar como finalizada">✓</button>' +
+    "</div>"
+  );
+}
+function inicioListaHTML() {
+  const seg = inicioSeg(),
+    lista = inicioOrden(inicioCards(seg)),
+    tope = 12,
+    visibles = lista.slice(0, tope);
+  if (!lista.length)
+    return (
+      '<div class="ini-vacio">' +
+      (seg === "venc"
+        ? "✅ Nada vencido. Así se ve un equipo al día."
+        : seg === "mio"
+          ? "✅ No tenés nada activo asignado ahora mismo."
+          : seg === "semana"
+            ? "✅ Nada con fecha en los próximos siete días."
+            : "✅ No hay tareas activas en el tablero.") +
+      "</div>"
+    );
+  return (
+    '<div class="ini-lista">' +
+    visibles.map(inicioFilaHTML).join("") +
+    "</div>" +
+    (lista.length > tope
+      ? '<button class="btn btn-ghost btn-sm ini-mas" data-action="hub:go" data-go="kanban">Ver las ' +
+        lista.length +
+        " en el Planner →</button>"
+      : "")
+  );
+}
+// Los números del área: chicos y neutros, debajo del trabajo y no encima.
+// Solo "Vencidas" se pone en rojo, y solo cuando hay alguna.
+function inicioNumerosHTML() {
+  const lista = boardCards(),
+    activos = state.cards.filter((c) => c.tipo === "curso" && inInventory(c)).length,
+    revision = lista.filter((c) => c.estado === "en-revision").length,
+    vencidas = lista.filter(isOverdue).length,
+    tile = (n, label, tono, go, extra) =>
+      '<button class="ini-num tono-' +
+      tono +
+      '" data-action="kpi:go" data-go="' +
+      go +
+      '"' +
+      (extra || "") +
+      "><b>" +
+      n +
+      "</b><span>" +
+      esc(label) +
+      "</span></button>";
+  return (
+    '<div class="ini-nums">' +
+    tile(vencidas, "Vencidas", vencidas ? "bad" : "ok", "kanban", ' data-quick="venc"') +
+    tile(revision, "En revisión", revision ? "warn" : "neutro", "kanban", ' data-filt-estado="en-revision"') +
+    tile(lista.length, "En el tablero", "neutro", "kanban") +
+    tile(activos, "Cursos publicados", "neutro", "mapa", ' data-sec="cursos"') +
+    "</div>"
+  );
+}
+function renderInicio() {
+  // Solo la primera letra en mayúscula: capitalize del CSS ponía en alta cada
+  // palabra, incluidas las preposiciones ("Jueves, 10 De Septiembre").
+  const crudo = new Date()
+      .toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })
+      .replace(",", ""),
+    hoy = crudo.charAt(0).toUpperCase() + crudo.slice(1);
+  return (
+    '<div class="hub"><div class="hub-main">' +
+    '<div class="ini-head"><h1 class="hub-title">Hola, ' +
     esc(state.user || "equipo") +
-    '</h1>\n      <p class="hub-sub">' +
-    (cantidad
-      ? '<b style="color:var(--bad)">' + cantidad + " vencida" + (cantidad !== 1 ? "s" : "") + "</b>"
-      : "Nada vencido") +
-    (cantidad2 ? " · <b>" + cantidad2 + "</b> alerta" + (cantidad2 !== 1 ? "s" : "") : "") +
-    '</p>\n    </div>\n    <div class="hub-grid">' +
-    lista.map(fn).join("") +
-    "</div>\n    " +
+    '</h1><span class="ini-fecha">' +
+    esc(hoy) +
+    '</span><button class="btn btn-primary btn-sm ini-nueva" data-action="nuevo:open">+ Nueva tarea</button></div>' +
     respaldoAvisoHTML() +
     agendaAvisoHTML() +
-    renderResumen() +
-    "\n    </div>\n  </div>"
+    inicioSegsHTML() +
+    inicioListaHTML() +
+    '<div class="ini-sub-h">El área en números</div>' +
+    inicioNumerosHTML() +
+    '<div class="ini-cols">' +
+    '<div class="res-card"><h3>◷ Por estado <span class="mini">' +
+    boardCards().length +
+    " total</span></h3>" +
+    inicioEstadosHTML() +
+    "</div>" +
+    '<div class="res-card"><h3>👥 Carga del equipo <span class="mini">activas</span></h3>' +
+    inicioCargaHTML() +
+    "</div></div>" +
+    "</div></div>"
+  );
+}
+function inicioEstadosHTML() {
+  const lista = boardCards(),
+    total = lista.length || 1;
+  return ESTADOS.map((estado) => {
+    const n = lista.filter((c) => c.estado === estado.id).length;
+    return (
+      '<div class="bar-line"><span class="bl-lbl">' +
+      estado.nombre +
+      '</span><div class="bl-track"><div class="bl-fill" style="width:' +
+      Math.round((n / total) * 100) +
+      "%;background:" +
+      estado.dot +
+      '"></div></div><span class="bl-num">' +
+      n +
+      "</span></div>"
+    );
+  }).join("");
+}
+function inicioCargaHTML() {
+  const obj = {};
+  (TEAM.forEach((m) => (obj[m.id] = 0)),
+    cargaActivaCards().forEach((tarjeta) => {
+      [tarjeta.responsable, ...(tarjeta.asignados || [])]
+        .filter((v, i, arr) => v && arr.indexOf(v) === i)
+        .forEach((id) => {
+          if (obj[id] !== undefined) obj[id]++;
+        });
+    }));
+  const max = Math.max(1, ...TEAM.map((m) => obj[m.id]));
+  return (
+    '<div class="carga-list">' +
+    TEAM.map(
+      (m) =>
+        '<div class="carga-row" data-action="carga:go" data-id="' +
+        m.id +
+        '" style="cursor:pointer"><div class="carga-info"><div class="carga-name">' +
+        esc(m.nombre) +
+        '</div><div class="carga-bar"><div class="carga-fill" style="width:' +
+        Math.round((obj[m.id] / max) * 100) +
+        "%;background:" +
+        m.color +
+        '"></div></div></div><div class="carga-num">' +
+        obj[m.id] +
+        "</div></div>",
+    ).join("") +
+    "</div>"
   );
 }
 // Aviso breve y descartable donde antes vivía la pestaña de Agenda, para
@@ -7987,191 +8198,6 @@ function tirarRuleta() {
           '">Abrir tarjeta</button>')),
       boton && (boton.disabled = false));
   }, 1300);
-}
-function renderResumen() {
-  const lista = boardCards(),
-    cantidad = state.cards.filter((tarjeta) => tarjeta.tipo === "curso" && inInventory(tarjeta)).length,
-    cantidad2 = state.cards.filter((tarjeta) => tarjeta.tipo === "edu-point" && inInventory(tarjeta)).length,
-    cantidad3 = lista.filter((arg) => arg.estado === "en-revision").length,
-    cantidad4 = lista.filter(isOverdue).length,
-    fn = (cantidad5, txt, txt2, txt3, txt4, txt5, filtEstado, quick) =>
-      '<div class="kpi' +
-      (txt4 ? " kpi-go" : "") +
-      '" style="--kpi:' +
-      txt3 +
-      '" ' +
-      (txt4
-        ? 'data-action="kpi:go" data-go="' +
-          txt4 +
-          '" ' +
-          (txt5 ? 'data-sec="' + txt5 + '" ' : "") +
-          (filtEstado ? 'data-filt-estado="' + filtEstado + '" ' : "") +
-          (quick ? 'data-quick="' + quick + '" ' : "")
-        : "") +
-      '>\n    <div class="kpi-num">' +
-      cantidad5 +
-      '</div><div class="kpi-lbl">' +
-      txt +
-      "</div>" +
-      (txt2 ? '<div class="kpi-sub">' + txt2 + "</div>" : "") +
-      "</div>",
-    cantidad6 = lista.length || 1,
-    txt6 = ESTADOS.map((estado) => {
-      const cantidad5 = lista.filter((arg) => arg.estado === estado.id).length;
-      return (
-        '<div class="bar-line"><span class="bl-lbl">' +
-        estado.nombre +
-        '</span><div class="bl-track"><div class="bl-fill" style="width:' +
-        Math.round((cantidad5 / cantidad6) * 100) +
-        "%;background:" +
-        estado.dot +
-        '"></div></div><span class="bl-num">' +
-        cantidad5 +
-        "</span></div>"
-      );
-    }).join(""),
-    iso = todayISO(),
-    iso2 = isoOf(addDays(new Date(), 45)),
-    lista2 = lista
-      .filter((arg) => {
-        const val = arg.fin || arg.inicio;
-        return val && val <= iso2;
-      })
-      .sort((arg, arg2) => (arg.fin || arg.inicio).localeCompare(arg2.fin || arg2.inicio))
-      .slice(0, 8),
-    txt7 = lista2.length
-      ? lista2
-          .map((tarjeta) => {
-            const val = tarjeta.fin || tarjeta.inicio,
-              flag = val < iso,
-              val2 = daysBetween(iso, val),
-              txt = flag ? "−" + Math.abs(val2) + "d" : val2 === 0 ? "hoy" : val2 + "d";
-            return (
-              '<div class="venc" data-id="' +
-              tarjeta.id +
-              '" data-action="card:open"><span class="venc-d ' +
-              (flag ? "over" : "") +
-              '">' +
-              txt +
-              '</span><span class="venc-t">' +
-              esc(tarjeta.titulo) +
-              "</span>" +
-              stackHTML(tarjeta) +
-              "</div>"
-            );
-          })
-          .join("")
-      : '<div style="color:var(--ink-soft);font-size:13px;padding:6px 0">Nada en los próximos 45 días 🎉</div>',
-    obj = {};
-  // Carga = lo que cada uno tiene ENCIMA, no todo lo que le tocó alguna vez:
-  // las finalizadas ya no pesan. Mismo criterio que el panel "Carga del
-  // equipo" y que Reportería, que ya usaban cargaActivaCards().
-  (TEAM.forEach((miembro) => (obj[miembro.id] = 0)),
-    cargaActivaCards().forEach((tarjeta) => {
-      [tarjeta.responsable, ...(tarjeta.asignados || [])]
-        .filter((arg2, arg3, arg) => arg2 && arg.indexOf(arg2) === arg3)
-        .forEach((arg) => {
-          if (obj[arg] != null) obj[arg]++;
-        });
-    }));
-  const val3 = Math.max(1, ...Object.values(obj)),
-    txt8 = TEAM.map((miembro) => {
-      const overload = obj[miembro.id] === val3 && val3 > 1;
-      return (
-        '<div class="bar-line' +
-        (overload ? " overload" : "") +
-        '"><span class="bl-lbl">' +
-        avatarHTML(miembro.id, true) +
-        " " +
-        miembro.nombre +
-        (overload ? ' <span class="badge prio" style="margin-left:4px;font-size:10px">⚠ sobrecargado</span>' : "") +
-        '</span><div class="bl-track"><div class="bl-fill" style="width:' +
-        Math.round((obj[miembro.id] / val3) * 100) +
-        "%;background:" +
-        miembro.color +
-        '"></div></div><span class="bl-num">' +
-        obj[miembro.id] +
-        "</span></div>"
-      );
-    }).join(""),
-    objSec = {};
-  lista.forEach((tarjeta) => {
-    (tarjeta.sectores || []).forEach((s) => {
-      objSec[s] = (objSec[s] || 0) + 1;
-    });
-  });
-  const secMax = Math.max(1, ...Object.values(objSec)),
-    txt10 = Object.keys(objSec)
-      .sort((a, b) => objSec[b] - objSec[a])
-      .slice(0, 8)
-      .map(
-        (s) =>
-          '<button class="bar-line bar-line-btn" data-action="sec:go" data-sector="' +
-          s +
-          '" data-cat="' +
-          s +
-          '"><span class="bl-lbl">' +
-          esc(sectorName(s) || s) +
-          '</span><div class="bl-track"><div class="bl-fill" style="width:' +
-          Math.round((objSec[s] / secMax) * 100) +
-          '%;background:var(--cat)"></div></div><span class="bl-num">' +
-          objSec[s] +
-          "</span></button>",
-      )
-      .join("");
-  const obj2 = {};
-  lista.forEach((arg) => (obj2[arg.tipo] = (obj2[arg.tipo] || 0) + 1));
-  const txt9 = Object.keys(obj2)
-    .sort((arg, arg2) => obj2[arg2] - obj2[arg])
-    .map(
-      (arg) =>
-        '<span class="chipcount">' +
-        ((allTipos()[arg] || {}).icon || "•") +
-        " " +
-        ((allTipos()[arg] || {}).nombre || arg) +
-        " · " +
-        obj2[arg] +
-        "</span>",
-    )
-    .join("");
-  const desc = (txt) => '<div class="res-desc">' + txt + "</div>";
-  return (
-    // Los cinco números van en una sola fila y sin explicación al costado: la
-    // etiqueta de cada uno ya dice de qué habla, y el párrafo de arriba más
-    // los subtítulos de cada tarjeta hacían leer cuatro renglones de texto
-    // para entender cinco cifras.
-    '<div style="margin:40px 0 14px;padding-top:32px;border-top:1px solid var(--line)"><h2 style="font-size:21px">Resumen del área</h2></div>\n    <div class="res-grid res-grid-5">\n      ' +
-    fn(lista.length, "Proyectos en el tablero", "", "var(--coto-blue)", "kanban") +
-    "\n      " +
-    fn(cantidad3, "En revisión", "", "var(--warn)", "kanban", null, "en-revision") +
-    "\n      " +
-    fn(cantidad4, "Vencidas", "", cantidad4 ? "var(--bad)" : "var(--ok)", "kanban", null, null, "venc") +
-    "\n      " +
-    fn(cantidad, "Cursos activos", "", "var(--ok)", "mapa", "cursos") +
-    "\n      " +
-    fn(cantidad2, "Edu Points", "", "#546E7A", "mapa", "edu-points") +
-    '\n    </div>\n    <div class="res-cols">\n      <div>\n        <div class="res-card"><h3>⚑ Próximos vencimientos <span class="mini">' +
-    lista2.length +
-    "</span></h3>" +
-    desc("Tareas del Planner con fecha en los próximos 45 días.") +
-    txt7 +
-    '</div>\n        <div class="res-card"><h3>🧩 Mezcla por tipo</h3>' +
-    desc("Cómo se reparten las tareas activas del Planner según su tipo.") +
-    "<div>" +
-    (txt9 || '<span style="color:var(--ink-soft)">—</span>') +
-    '</div></div>\n        <div class="res-card"><h3>🎨 Mezcla por sector</h3>' +
-    desc("En qué sector hay más tareas cargadas ahora mismo (Planner).") +
-    (txt10 || '<span style="color:var(--ink-soft)">—</span>') +
-    '</div>\n      </div>\n      <div>\n        <div class="res-card"><h3>◷ Por estado <span class="mini">' +
-    lista.length +
-    " total</span></h3>" +
-    desc("Tareas activas del Planner agrupadas por su estado actual.") +
-    txt6 +
-    '</div>\n        <div class="res-card"><h3>👥 Carga del equipo <span class="mini">activas</span></h3>' +
-    desc("Cuántas tareas activas del Planner tiene asignadas cada persona (no cuenta las finalizadas).") +
-    txt8 +
-    "</div>\n      </div>\n    </div>"
-  );
 }
 function emptyState(txt, txt2, txt3) {
   return (
@@ -9333,6 +9359,20 @@ document.addEventListener("click", (ev) => {
     case "set:del-member":
       delMember(el.dataset.mem);
       break;
+    case "inicio:seg":
+      ((state.inicioSeg = el.dataset.seg), render());
+      break;
+    case "inicio:listo": {
+      const tarjetaFin = state.cards.find((c) => c.id === el.dataset.id);
+      if (tarjetaFin && tarjetaFin.estado !== "finalizado") {
+        (logAct(tarjetaFin, "pasó a Finalizados"),
+          (tarjetaFin.estado = "finalizado"),
+          touch(),
+          render(),
+          flash("✓ " + tarjetaFin.titulo + " — finalizada"));
+      }
+      break;
+    }
     case "carga:go":
       ((state.filters.persona = el.dataset.id), (state.view = "kanban"), closePanel(), pushNav(), render());
       break;
