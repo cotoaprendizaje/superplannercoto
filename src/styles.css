@@ -1337,7 +1337,7 @@ button {
   background: var(--surface);
   border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
-  padding: 14px 15px;
+  padding: 16px 17px;
   cursor: pointer;
   box-shadow: var(--shadow);
   transition:
@@ -1398,10 +1398,10 @@ button {
    saber qué es la tarjeta. */
 .kcard-title {
   font-family: var(--texto);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.15px;
-  line-height: 1.3;
+  line-height: 1.35;
   color: var(--ink);
   margin: 0;
   text-wrap: pretty;
@@ -1423,14 +1423,43 @@ button {
 /* Un solo renglón de pie con todo lo secundario —de qué tipo es, para cuándo,
    de qué sector, quién la tiene— en vez de cuatro renglones apilados. Envuelve
    si no entra. */
+/* Dos columnas y no una fila que envuelve: los datos a la izquierda, quién la
+   tiene siempre a la derecha. Con una sola fila envolviendo, en una columna
+   angosta el avatar caía solo a un segundo renglón pegado a la derecha y
+   parecía un error de armado. */
 .kcard-pie {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.kcard-datos {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 4px 9px;
+  min-width: 0;
+}
+/* El pie tenía cinco objetos con forma y color propios —el ícono, la fecha en
+   pastilla, el sector en pastilla llena, una barrita de avance con su número y
+   el avatar— y en un tablero de cuarenta tarjetas eso son doscientas cositas
+   de colores peleándose. Acá abajo todo eso baja a texto: el sector queda como
+   punto de color y nombre, sin relleno ni marco, y el avance como número solo.
+   La única forma que sobrevive es la de la fecha, y solo cuando hay algo que
+   avisar. */
+.kcard-pie .badge {
+  background: 0 0;
+  border: 0;
+  padding: 0;
   font-size: 12px;
+  font-weight: 600;
   color: var(--ink-soft);
+}
+.kcard-pie .badge-tbd {
+  opacity: 0.75;
 }
 /* El tipo era una píldora con ícono y nombre arriba de todo: el dato menos
    importante en el lugar más visible. Queda el ícono, con el nombre en el
@@ -1442,39 +1471,20 @@ button {
   opacity: 0.85;
 }
 .kcard-quien {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: none;
 }
 /* El avance del checklist era una barra de ancho completo con el número al
-   costado. Al 0% esa barra es exactamente una raya gris cruzando la tarjeta
-   —justo lo que estamos sacando de todos lados—, así que pasa a ser una
-   pastilla corta al lado del número, en el pie. Se sigue viendo la proporción
-   y ya no hay ningún renglón dedicado a ella. */
+   costado. Al 0% esa barra es una raya gris cruzando la tarjeta, y en versión
+   corta eran igual treinta y ocho barritas más en pantalla. Queda el número
+   solo: 2/13 ya ES la proporción, y no ocupa ninguna forma. */
 .avance {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
-}
-.avance-t {
-  width: 34px;
-  height: 5px;
-  border-radius: var(--pill);
-  background: var(--surface-2);
-  overflow: hidden;
-  flex: none;
-}
-.avance-t i {
-  display: block;
-  height: 100%;
-  border-radius: var(--pill);
-  background: var(--coto-blue);
-  transition: width 0.3s;
 }
 .date {
   display: inline-flex;
