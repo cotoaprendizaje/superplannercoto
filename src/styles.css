@@ -907,6 +907,114 @@ button {
   text-align: center;
   opacity: 0.85;
 }
+/* ===== El menú de usuario =====
+   Eran cinco renglones planos con un emoji suelto adelante: "Mi semana" (que
+   es tu trabajo) y "Ajustes y datos" (que es la administración del área)
+   pesaban exactamente lo mismo, y en ningún lado decía con qué cuenta estabas
+   trabajando. */
+#userMenu {
+  min-width: 268px;
+  padding: 8px;
+}
+.menu-yo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 9px 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.menu-yo-tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.menu-yo-tx b {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-yo-tx i {
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-yo-rol {
+  flex: none;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--pill);
+  background: color-mix(in srgb, var(--coto-blue) 12%, transparent);
+  color: var(--coto-blue);
+}
+.menu-grupo {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding: 8px 11px 4px;
+}
+/* El emoji suelto pasa a vivir en un cuadradito, como los íconos de las
+   tarjetas de Inicio: le da un lugar y alinea las tres filas entre sí. */
+.menu-ic {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-content: center;
+  font-size: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+}
+.menu-item:hover .menu-ic {
+  background: color-mix(in srgb, var(--coto-blue) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--coto-blue) 30%, var(--line-soft));
+}
+.menu-tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+.menu-tx i {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.menu-salir {
+  color: var(--bad);
+}
+.menu-salir .menu-ic {
+  background: var(--bad-soft);
+  border-color: color-mix(in srgb, var(--bad) 22%, transparent);
+}
+.menu-salir:hover {
+  background: var(--bad-soft);
+}
+.menu-salir:hover .menu-ic {
+  background: color-mix(in srgb, var(--bad) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--bad) 40%, transparent);
+}
+/* Un botón dentro del menú que aplicarPermisos() esconde: sin esto el
+   display:flex de .menu-item le gana al [hidden] y sigue apareciendo. */
+.menu-item.hidden {
+  display: none;
+}
 .menu-sep {
   height: 1px;
   background: var(--line);
@@ -4437,6 +4545,16 @@ button {
   font-weight: 600;
   color: var(--ink-soft);
   white-space: nowrap;
+  border: 0;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.ini-card-sub:hover {
+  color: var(--coto-blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 .ini-vertodo {
   border: 0;
@@ -5943,10 +6061,36 @@ html {
   padding: 11px 12px;
   border-top: 1px solid var(--line);
 }
+/* El encabezado de cada categoría filtra la grilla por ella; el mismo clic
+   otra vez la vuelve a mostrar entera. */
+.tec-cat-b {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 0;
+  background: none;
+  padding: 2px 8px;
+  margin-left: -8px;
+  border-radius: var(--r-sm);
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.14s;
+}
+.tec-cat-b:hover {
+  background: color-mix(in srgb, var(--coto-blue) 10%, transparent);
+  color: var(--coto-blue);
+}
 .tec-cat-n {
-  font-weight: 600;
+  font-family: var(--texto);
+  font-weight: 700;
   font-size: 11px;
+  padding: 1px 8px;
+  border-radius: var(--pill);
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
   color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
 }
 .tec-add-row td {
   padding: 6px 10px;
@@ -6352,12 +6496,27 @@ html {
 .rep-hero-main .rep-sec-h {
   margin-bottom: var(--sp-3);
 }
-/* El número grande y, pegado, qué es y cómo viene contra el año anterior. */
+/* El número grande y, pegado, qué es y cómo viene contra el año anterior.
+   Es un botón: era el número más grande de la vista y lo único que no se
+   podía tocar, así que para ver los cursos de un año había que ir barra por
+   barra, mes a mes. */
 .rep-hero-num {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
   margin-bottom: var(--sp-2);
+  padding: 4px 10px 6px;
+  margin-left: -10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.14s;
+}
+.rep-hero-num:hover {
+  background: color-mix(in srgb, var(--coto-blue) 7%, var(--surface));
 }
 .rep-hero-num b {
   font-family: var(--titulo);
@@ -6499,12 +6658,15 @@ html {
   background: var(--surface-2);
   margin-bottom: var(--sp-4);
 }
-.rep-mix-bar span {
+.rep-mix-bar button {
   min-width: 3px;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
   transition: filter 0.14s;
 }
-.rep-mix-bar span:hover {
-  filter: brightness(1.15);
+.rep-mix-bar button:hover {
+  filter: brightness(1.18);
 }
 .rep-mix-leg {
   display: grid;
@@ -6659,6 +6821,22 @@ html {
 .rep-sec-sub {
   font-size: 12px;
   color: var(--ink-soft);
+}
+.rep-sec-lnk {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: var(--line);
+  text-underline-offset: 3px;
+}
+.rep-sec-lnk:hover {
+  color: var(--coto-blue);
+  text-decoration-color: currentColor;
 }
 .rep-empty {
   font-size: 12.5px;

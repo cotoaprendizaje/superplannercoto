@@ -5946,13 +5946,17 @@ function tecGroupHTML(grupo) {
   return (
     '<tbody class="tec-group"><tr class="tec-cat-row"><td colspan="' +
     cols +
+    '"><button class="tec-cat-b" data-action="tec:cat-solo" data-cat="' +
+    esc(grupo.categoria) +
+    '" title="Ver solo los cursos de ' +
+    esc(grupo.categoria) +
     '">' +
     esc(grupo.categoria) +
-    ' <span class="tec-cat-n">' +
+    '<span class="tec-cat-n">' +
     grupo.filas.length +
     " curso" +
     (grupo.filas.length === 1 ? "" : "s") +
-    "</span></td></tr>" +
+    "</span></button></td></tr>" +
     grupo.filas.map(tecRowHTML).join("") +
     '<tr class="tec-add-row"><td colspan="' +
     cols +
@@ -6864,7 +6868,14 @@ function repHeroHTML() {
     '<section class="rep-hero-main"><div class="rep-sec-h"><h3>Publicaciones por mes · ' +
     anio +
     '</h3><span class="rep-sec-sub">Cursos con fecha registrada</span></div>' +
-    '<div class="rep-hero-num"><b>' +
+    // El número más grande de toda la vista era lo único que no se podía
+    // tocar: para ver los cursos de un año había que ir barra por barra mes a
+    // mes. Ahora abre la lista del año entero, como el resto de los números.
+    '<button class="rep-hero-num" data-action="rep:anio" data-anio="' +
+    anio +
+    '" title="Ver los cursos publicados en ' +
+    anio +
+    '"><b>' +
     delAnio +
     "</b><span>publicado" +
     (delAnio === 1 ? "" : "s") +
@@ -6872,7 +6883,7 @@ function repHeroHTML() {
     anio +
     "<i>" +
     esc(repVariacion(anio, delAnio, anterior)) +
-    "</i></span></div>" +
+    "</i></span></button>" +
     repChartHTML() +
     "</section>" +
     // La columna de al lado: los tres números que se miran de reojo.
@@ -7162,7 +7173,11 @@ function repSectoresHTML() {
     entradas
       .map(
         (e) =>
-          '<span style="flex:' +
+          // El tramo de la barra lleva a lo mismo que su renglón de la
+          // referencia: el ojo va primero a la barra, no a la lista.
+          '<button data-action="rep:sector" data-sector="' +
+          esc(e[0]) +
+          '" style="flex:' +
           e[1] +
           ";background:" +
           color(e[0]) +
@@ -7174,7 +7189,7 @@ function repSectoresHTML() {
           (e[1] === 1 ? "" : "s") +
           " (" +
           pct(e[1]) +
-          '%)"></span>',
+          '%)"></button>',
       )
       .join("") +
     '</div><div class="rep-mix-leg">' +
@@ -7304,7 +7319,13 @@ function renderReportes() {
       "Todo el historial, incluidos los sin fecha",
       repChartAnualHTML(),
     ) +
-    repSeccion("Cursos activos por sector", repCursosActivos().length + " en total", repSectoresHTML()) +
+    repSeccion(
+      "Cursos activos por sector",
+      '<button class="rep-sec-lnk" data-action="rep:activos" title="Ver todos los cursos activos">' +
+        repCursosActivos().length +
+        " en total</button>",
+      repSectoresHTML(),
+    ) +
     "</div>" +
     // "Carga y foco del equipo" se sacó de acá: era exactamente el mismo
     // bloque que ya está en Inicio, mirando los mismos datos. El CSV lo sigue
@@ -8149,9 +8170,10 @@ function inicioPulsoHTML() {
     max = Math.max(1, ...cuenta);
   return (
     '<section class="ini-card ini-card-pulso"><div class="ini-card-h"><h2>El pulso del área</h2>' +
-    '<span class="ini-card-sub">' +
+    // El total va al Planner sin ningún filtro puesto: es el "ver todas".
+    '<button class="ini-card-sub" data-action="kpi:go" data-go="kanban" data-filt-estado="" title="Ver el tablero completo">' +
     lista.length +
-    " en total</span></div><div class=\"ini-pulso\">" +
+    " en total</button></div><div class=\"ini-pulso\">" +
     ESTADOS.map(
       (estado, i) =>
         '<button class="ini-pulso-i" data-action="kpi:go" data-go="kanban" data-filt-estado="' +
@@ -9540,7 +9562,11 @@ document.addEventListener("click", (ev) => {
     case "kpi:go":
       state.view = el.dataset.go;
       if (el.dataset.sec) state.mapaSec = el.dataset.sec;
-      if (el.dataset.filtEstado) ((state.filters = Object.assign({}, state.filters, { estado: el.dataset.filtEstado })), (state.quick = ""));
+      // != null y no truthy: data-filt-estado="" es un valor deliberado —"el
+      // tablero completo, sin filtrar por estado"—, y con el chequeo truthy
+      // caía en el else y dejaba puesto el filtro que hubiera de antes.
+      if (el.dataset.filtEstado != null)
+        ((state.filters = Object.assign({}, state.filters, { estado: el.dataset.filtEstado })), (state.quick = ""));
       else if (el.dataset.quick) state.quick = el.dataset.quick;
       (pushNav(), render());
       break;
@@ -9681,6 +9707,11 @@ document.addEventListener("click", (ev) => {
         render());
       break;
     }
+    case "tec:cat-solo":
+      // Desde el encabezado de la categoría, ver solo esa. Si ya estaba
+      // filtrada por ella, el mismo clic vuelve a mostrarlas todas.
+      ((state.tecCategoria = state.tecCategoria === el.dataset.cat ? "" : el.dataset.cat), render());
+      break;
     case "tec:kpi":
       // Tocar el KPI activo lo apaga: es el camino de vuelta más corto y evita
       // quedar filtrado sin darse cuenta de por qué faltan filas.
@@ -11203,17 +11234,28 @@ function enterAs(value) {
   }
   ((state.user = value), $("#gate").classList.add("hidden"));
   const hallado = TEAM.find((miembro) => miembro.nombre.toLowerCase() === value.toLowerCase());
+  const avatarChip = hallado
+    ? avatarHTML(hallado.id)
+    : '<span class="avatar" style="background:var(--coto-blue)">' + value.slice(0, 1).toUpperCase() + "</span>";
   ((state.userId = hallado ? hallado.id : null),
     aplicarPermisos(),
     ($("#userChip").innerHTML =
-      (hallado
-        ? avatarHTML(hallado.id)
-        : '<span class="avatar" style="background:var(--coto-blue)">' +
-          value.slice(0, 1).toUpperCase() +
-          "</span>") +
-      "<span>" +
+      avatarChip + "<span>" + esc(value) + '</span><span style="opacity:.45;font-size:11px">▾</span>'));
+  // Quién sos, arriba del menú: el nombre, tu rol en el equipo (o el mail con
+  // el que entraste, si no figurás) y el distintivo de admin cuando
+  // corresponde. Antes el menú no decía en ningún lado con qué cuenta estabas
+  // trabajando.
+  const elYo = $("#menuYo"),
+    bajada = (hallado && (hallado.rol || hallado.email)) || state.mailSinEquipo || "";
+  if (elYo)
+    elYo.innerHTML =
+      avatarChip +
+      '<span class="menu-yo-tx"><b>' +
       esc(value) +
-      '</span><span style="opacity:.45;font-size:11px">▾</span>'));
+      "</b>" +
+      (bajada ? "<i>" + esc(bajada) + "</i>" : "") +
+      "</span>" +
+      (esAdmin() ? '<span class="menu-yo-rol">admin</span>' : "");
   try {
     const val = (location.hash || "").match(/card=([^&]+)/);
     if (val) {
@@ -11973,7 +12015,8 @@ function openHelp() {
     ["Acciones rápidas en las tarjetas", "Pasá el mouse sobre una tarjeta del Planner: aparecen accesos directos para edición rápida, duplicar, copiar el enlace y eliminar, sin tener que abrir el panel completo."],
     ["Exportar CSV / PDF", "En la barra del Planner, junto al orden. Exporta lo que estás viendo en pantalla — respeta los filtros activos."],
     ["🔔 Alertas", "Arriba, cuántas hay de cada tipo. Después, vencidas primero (la más atrasada arriba), lo que vence en los próximos días, y las recurrentes por rearmar. Cada una dice hace cuánto y de quién es. El ✓ de cada fila la saca sola; \"Marcar todas como leídas\" las oculta todas, hasta que algo cambie en esa tarjeta (nueva fecha, otro estado). Una tarjeta finalizada nunca aparece acá."],
-    ["Menú de usuario (▾)", "Mi semana (tu foco de los próximos días), Carga del equipo, e Imprimir/PDF están ahí."],
+    ["Menú de usuario (▾)", "Arriba dice con qué cuenta estás trabajando y si sos admin. Debajo, <b>Tu trabajo</b> (Mi semana y Carga del equipo) y <b>Herramientas</b> (Imprimir/PDF y, si administrás, Ajustes y datos)."],
+    ["Todo número lleva a su lista", "En Reportes: el número grande abre los cursos publicados de ese año, cada barra del mes abre los de ese mes, cada tramo de la barra de sectores lleva al Mapa de ese sector y \"N en total\" abre el catálogo activo. En Técnico, el nombre de una categoría filtra la grilla por ella (y el mismo clic la suelta). En Inicio, cada fila del pulso abre el Planner por ese estado y \"N en total\" lo abre entero."],
     ["🎲 ¿Qué curso me toca?", "Botoncito flotante a la derecha del Planner (🎡): tocalo para desplegar el sorteo entre los cursos que todavía no arrancaron."],
     ["🎰 CotoFrase", "En Inicio, a la derecha: una tirada por día, con el historial del equipo debajo."],
     ["El pie de Inicio", "Debajo de las tarjetas: <b>Lo que viene</b> son las próximas cuatro fechas del área, con la inicial de quien la tiene (clic para abrir la tarjeta), y <b>El pulso del área</b> es cuántas tareas hay en cada estado con la barra proporcional al estado más cargado — cada fila lleva al Planner ya filtrado por ese estado."],
