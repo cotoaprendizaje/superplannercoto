@@ -4810,6 +4810,15 @@ function estadoTarjeta(tarjeta) {
   }
   return "";
 }
+// La tarjeta del kanban, de arriba abajo: el título, el avance si hay
+// checklist, y un solo renglón de pie con todo lo demás.
+//
+// Antes eran cinco renglones apilados —una píldora con el tipo, el título,
+// una píldora con el sector, un renglón con la fecha, otro con el avance y
+// otro con los avatares—, todos del mismo tamaño y alineados a la izquierda:
+// el título, que es lo único que se lee para saber qué es la tarjeta, quedaba
+// perdido entre etiquetas, y una tarjeta de un renglón de texto ocupaba 140px.
+// Ahora manda el título y el resto es pie.
 function cardKanban(tarjeta) {
   const avance = progress(tarjeta),
     tipo = allTipos()[tarjeta.tipo] || {
@@ -4840,40 +4849,42 @@ function cardKanban(tarjeta) {
       : inInventory(tarjeta)
         ? '<span class="tag-flag">◎ activo</span>'
         : "") +
-    '\n    <div class="kcard-top">\n      <span class="tipo-pill">' +
-    tipo.icon +
-    " " +
-    esc(tipo.nombre) +
-    "</span>\n      " +
-    (tarjeta.prioridad === "alta" ? '<span class="badge prio">★ Alta</span>' : "") +
-    '\n    </div>\n    <div class="kcard-title">' +
+    '\n    <h3 class="kcard-title">' +
+    (tarjeta.prioridad === "alta" ? '<span class="kcard-prio" title="Prioridad alta">★</span>' : "") +
     esc(tarjeta.titulo) +
-    '</div>\n    <div class="badges">' +
-    sectoresBadges(tarjeta.sectores) +
-    '</div>\n    <div class="kcard-meta">\n      <span class="date ' +
+    "</h3>\n    " +
+    '\n    <div class="kcard-pie">\n      <span class="kcard-tipo" title="' +
+    esc(tipo.nombre) +
+    '">' +
+    tipo.icon +
+    '</span>\n      <span class="date ' +
     (vencida ? "overdue" : "") +
-    '">📅 ' +
+    '">' +
     dateLabel(tarjeta) +
     (vencida ? " · vencida" : "") +
     "</span>" +
     (tarjeta.estado === "en-revision" && tarjeta.revisionDesde
       ? '<span class="date rev-age" title="Esperando revisión de otros sectores">🕓 ' +
         Math.max(0, daysBetween(tarjeta.revisionDesde, isoOf(new Date()))) +
-        "d en revisión</span>"
+        "d</span>"
       : "") +
-    "\n    </div>\n    " +
+    sectoresBadges(tarjeta.sectores) +
+    '<span class="kcard-quien">' +
     (avance.total
-      ? '<div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
+      ? '<span class="avance" title="' +
+        avance.done +
+        " de " +
+        avance.total +
+        ' del checklist"><span class="avance-t"><i style="width:' +
         avance.pct +
-        '%"></div></div><span class="prog-num">' +
+        '%"></i></span>' +
         avance.done +
         "/" +
         avance.total +
-        "</span></div>"
+        "</span>"
       : "") +
-    '\n    <div class="kcard-foot">' +
     stackHTML(tarjeta) +
-    "</div>\n  </article>"
+    "</span>\n    </div>\n  </article>"
   );
 }
 function dateLabel(tarjeta) {
@@ -7812,12 +7823,13 @@ function cursoCard(tarjeta) {
     esc(tarjeta.titulo) +
     '</h4>\n      <div class="badges">' +
     sectoresBadges(tarjeta.sectores) +
-    '</div>\n      <div class="curso-bajada">' +
+    '</div>\n      <div class="curso-tx">\n        <div class="curso-bajada">' +
     esc(obj.bajada || obj.descripcion || "") +
-    '</div>\n      <div class="curso-foot">\n        ' +
+    "</div>" +
+    (obj.personas ? '<div class="curso-quien">👥 ' + esc(obj.personas) + "</div>" : "") +
+    '\n      </div>\n      <div class="curso-foot">\n        ' +
     (obj.anio ? "<span>📅 " + esc(obj.anio) + "</span>" : "") +
     (obj.duracion ? "<span>⏱ " + esc(obj.duracion) + "</span>" : "") +
-    (obj.personas ? "<span>👥 " + esc(obj.personas) + "</span>" : "") +
     "\n        " +
     (tarjeta.linkMoodle
       ? '<a class="moodle" href="' +
@@ -8996,7 +9008,7 @@ function renderPanel() {
     vinculosHTML(tarjeta) +
     "\n      " +
     htmlActividad +
-    '\n\n      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:14px">\n        <button class="btn btn-primary btn-sm" data-action="card:save" title="Guardar ahora">💾 Guardar</button>\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
+    '\n\n      <div class="panel-pie">\n        <button class="btn btn-primary btn-sm" data-action="card:save" title="Guardar ahora">💾 Guardar</button>\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
   document.querySelectorAll("#panel details[data-acc]").forEach((d) => {
     const guardado = accAbiertos[d.dataset.acc];
     if (guardado !== undefined) d.open = guardado;
