@@ -465,6 +465,125 @@ async function pruebaBackendCaido(browser, backend) {
   await page.close();
 }
 
+// --- la CotoFrase no se repite entre compañeras --------------------------
+//
+// Que a dos personas les toque la misma frase el mismo día le saca la gracia:
+// lo divertido del widget es juntarse a la tarde a leer las cinco distintas.
+// Elegir entre las libres alcanza para el caso normal, pero no para el que
+// importa: dos personas tirando en el mismo momento eligen mirando lo que
+// saben, y lo que saben tiene hasta 12 s de atraso. Ahí las dos pueden sacar
+// la misma, y ahí entra el desempate.
+async function pruebaFrasesSinRepetir(browser, base) {
+  console.log("\nla CotoFrase no se repite en el día");
+  const page = await browser.newPage(CONTEXTO);
+  await attachBackend(page, base);
+  await page.goto(base + "/index.html");
+  await page.waitForFunction(() => typeof fraseLibre === "function");
+
+  // Turnándose, a nadie le toca una repetida.
+  const ronda = await page.evaluate(() => {
+    ((state.cotofrase = { day: "hoy", v: 999, porUsuario: {} }), ensureFraseDay());
+    const gente = ["Ana", "Beto", "Cami", "Dami", "Eve", "Flor"];
+    gente.forEach((quien) => {
+      state.user = quien;
+      state.cotofrase.porUsuario[quien] = fraseLibre(quien);
+    });
+    const salieron = gente.map((g) => state.cotofrase.porUsuario[g]);
+    return { salieron, distintas: new Set(salieron).size };
+  });
+  (check("tirando de a una, a nadie le toca la de otra", ronda.distintas === 6, ronda),
+    check("y a todas les tocó alguna", ronda.salieron.every(Boolean), ronda));
+
+  // Dos al mismo tiempo: cede una sola, y la misma en las dos pantallas.
+  const empate = await page.evaluate(() => {
+    const laMisma = SLOT_FRASES[0];
+    // La pantalla de Beto: Ana ya tiene la misma frase.
+    ((state.cotofrase = { day: "hoy", v: 999, porUsuario: { Ana: laMisma, Beto: laMisma } }),
+      ensureFraseDay(),
+      (state.cotofrase.porUsuario = { Ana: laMisma, Beto: laMisma }),
+      (state.user = "Beto"));
+    const cedioBeto = desempatarFrase(),
+      frasedeBeto = state.cotofrase.porUsuario.Beto;
+    // La pantalla de Ana, con exactamente los mismos datos de partida.
+    ((state.cotofrase.porUsuario = { Ana: laMisma, Beto: laMisma }), (state.user = "Ana"));
+    const cedioAna = desempatarFrase();
+    return { cedioBeto, cedioAna, frasedeBeto, laMisma };
+  });
+  (check("cuando dos sacan la misma, cede una", empate.cedioBeto === true, empate),
+    check("y cede la que va después por nombre, no las dos", empate.cedioAna === false, empate),
+    check("la que cede se queda con otra frase", empate.frasedeBeto !== empate.laMisma, empate));
+
+  // Con más gente que frases no se rompe: se vuelve a permitir repetir.
+  const desborde = await page.evaluate(() => {
+    const porUsuario = {};
+    SLOT_FRASES.forEach((f, i) => (porUsuario["p" + i] = f));
+    ((state.cotofrase = { day: "hoy", v: 999, porUsuario }), ensureFraseDay());
+    state.cotofrase.porUsuario = porUsuario;
+    state.user = "ultima";
+    return { frase: fraseLibre("ultima") };
+  });
+  check("con más gente que frases igual toca una", !!desborde.frase, desborde);
+  await page.close();
+}
+
+// --- dos tirando de la palanca en el mismo instante ----------------------
+//
+// Este es el caso que las pruebas no veían y que rompía de verdad. Las dos
+// pantallas preguntan el sello antes de guardar; como ninguna había escrito
+// todavía, las dos ven "nada nuevo" y las dos escriben el mapa de frases
+// entero. La segunda tapa a la primera. La tapada después se entera por el
+// polling, pero como nada la marcaba pendiente, su frase no volvía nunca a la
+// base: le quedaba en la pantalla, las demás no la veían —y por lo tanto les
+// podía tocar la misma—.
+async function pruebaDosTirandoALaVez(browser, backend) {
+  console.log("\ndos tirando de la palanca en el mismo instante");
+  await backend.reset();
+  const vivi = await openClient(browser, backend.url, "Vivi"),
+    dami = await openClient(browser, backend.url, "Dami");
+
+  const tirar = (pg, quien) =>
+    pg.evaluate((n) => {
+      ((state.user = n), ensureFraseDay());
+      state.cotofrase.porUsuario[n] = fraseLibre(n);
+      touch();
+    }, quien);
+
+  // Las dos eligen antes de que ninguna haya guardado: nadie ve a la otra.
+  await Promise.all([tirar(vivi, "Vivi"), tirar(dami, "Dami")]);
+  // Y de acá en adelante NO se fuerza ningún guardado: los que salgan tienen
+  // que salir solos. Forzarlos es lo que hacía que esta prueba pasara igual
+  // con el arreglo sacado —guardarAhora() mezcla antes de escribir, así que
+  // reponía la frase tapada sin que nadie la marcara pendiente—, y una prueba
+  // que pasa con el bug adentro no prueba nada.
+  await vivi.waitForTimeout(2200);
+  // El polling de cada pantalla, que es lo único que corre en este punto. La
+  // primera vuelta la usa la tapada para darse cuenta y reponer su frase; la
+  // segunda es la que le lleva esa frase a la otra. En la app son dos pasadas
+  // del polling, o sea hasta 24 s: para una frase del día alcanza y sobra.
+  for (const p of [vivi, dami]) await p.evaluate(() => mergeRemoteIntoState());
+  await vivi.waitForTimeout(2500);
+  for (const p of [vivi, dami]) await p.evaluate(() => mergeRemoteIntoState());
+  await vivi.waitForTimeout(600);
+
+  const enLaBase = await (await fetch(backend.url + "/rest/v1/planner?id=eq.coto&select=data")).json(),
+    guardadas = ((enLaBase[0] || {}).data || {}).cotofrase || { porUsuario: {} },
+    pantallas = await Promise.all([vivi, dami].map((p) => p.evaluate(() => state.cotofrase.porUsuario)));
+
+  (check("no se pierde la frase de la que guardó primero", !!guardadas.porUsuario.Vivi, guardadas),
+    check("ni la de la que guardó después", !!guardadas.porUsuario.Dami, guardadas),
+    check(
+      "las dos pantallas terminan viendo lo mismo",
+      JSON.stringify(pantallas[0]) === JSON.stringify(pantallas[1]),
+      pantallas,
+    ),
+    check(
+      "y no les tocó la misma frase",
+      guardadas.porUsuario.Vivi !== guardadas.porUsuario.Dami,
+      guardadas,
+    ));
+  (await vivi.close(), await dami.close());
+}
+
 // --- corrida ------------------------------------------------------------
 
 const backend = await startFakeBackend();
@@ -476,7 +595,9 @@ try {
     await pruebaCierre(browser, backend),
     await pruebaAvisoAlSalir(browser, backend),
     await pruebaBackups(browser, backend),
-    await pruebaBackendCaido(browser, backend));
+    await pruebaBackendCaido(browser, backend),
+    await pruebaFrasesSinRepetir(browser, backend.url),
+    await pruebaDosTirandoALaVez(browser, backend));
 } finally {
   (await browser.close(), await backend.stop());
 }

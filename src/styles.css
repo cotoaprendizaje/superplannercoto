@@ -1337,7 +1337,7 @@ button {
   background: var(--surface);
   border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
-  padding: 16px 17px;
+  padding: 13px 14px;
   cursor: pointer;
   box-shadow: var(--shadow);
   transition:
@@ -1394,25 +1394,19 @@ button {
 .kcard.drag {
   opacity: 0.4;
 }
-/* El título es lo primero y lo más grande: es lo único que hay que leer para
-   saber qué es la tarjeta. */
+.kcard-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
 .kcard-title {
   font-family: var(--texto);
-  font-size: 16px;
+  font-size: 14.5px;
   font-weight: 700;
-  letter-spacing: -0.15px;
-  line-height: 1.35;
-  color: var(--ink);
-  margin: 0;
-  text-wrap: pretty;
-}
-/* "Prioridad alta" era una píldora entera arriba del título; ahora es una
-   estrella pegada al título, que es lo que la prioridad califica. */
-.kcard-prio {
-  color: var(--warn);
-  font-size: 13px;
-  margin-right: 5px;
-  vertical-align: 1px;
+  letter-spacing: -0.1px;
+  line-height: 1.32;
+  margin: 3px 0 9px;
 }
 .badges {
   display: flex;
@@ -1420,71 +1414,14 @@ button {
   gap: 5px;
   margin-bottom: 9px;
 }
-/* Un solo renglón de pie con todo lo secundario —de qué tipo es, para cuándo,
-   de qué sector, quién la tiene— en vez de cuatro renglones apilados. Envuelve
-   si no entra. */
-/* Dos columnas y no una fila que envuelve: los datos a la izquierda, quién la
-   tiene siempre a la derecha. Con una sola fila envolviendo, en una columna
-   angosta el avatar caía solo a un segundo renglón pegado a la derecha y
-   parecía un error de armado. */
-.kcard-pie {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  margin-top: 12px;
-  font-size: 12px;
-  color: var(--ink-soft);
-}
-.kcard-datos {
+.kcard-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4px 9px;
-  min-width: 0;
-}
-/* El pie tenía cinco objetos con forma y color propios —el ícono, la fecha en
-   pastilla, el sector en pastilla llena, una barrita de avance con su número y
-   el avatar— y en un tablero de cuarenta tarjetas eso son doscientas cositas
-   de colores peleándose. Acá abajo todo eso baja a texto: el sector queda como
-   punto de color y nombre, sin relleno ni marco, y el avance como número solo.
-   La única forma que sobrevive es la de la fecha, y solo cuando hay algo que
-   avisar. */
-.kcard-pie .badge {
-  background: 0 0;
-  border: 0;
-  padding: 0;
+  gap: 6px 10px;
   font-size: 12px;
-  font-weight: 600;
   color: var(--ink-soft);
-}
-.kcard-pie .badge-tbd {
-  opacity: 0.75;
-}
-/* El tipo era una píldora con ícono y nombre arriba de todo: el dato menos
-   importante en el lugar más visible. Queda el ícono, con el nombre en el
-   globito. */
-.kcard-tipo {
-  font-size: 13px;
-  line-height: 1;
-  flex: none;
-  opacity: 0.85;
-}
-.kcard-quien {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: none;
-}
-/* El avance del checklist era una barra de ancho completo con el número al
-   costado. Al 0% esa barra es una raya gris cruzando la tarjeta, y en versión
-   corta eran igual treinta y ocho barritas más en pantalla. Queda el número
-   solo: 2/13 ya ES la proporción, y no ocupa ninguna forma. */
-.avance {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ink-soft);
-  font-variant-numeric: tabular-nums;
+  margin-bottom: 8px;
 }
 .date {
   display: inline-flex;
@@ -1500,7 +1437,7 @@ button {
   font-weight: 600;
 }
 .progress {
-  height: 6px;
+  height: 8px;
   border-radius: var(--pill);
   background: var(--surface-2);
   overflow: hidden;
@@ -1517,7 +1454,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 2px;
 }
 .prog-num {
   font-size: 11px;
@@ -1525,16 +1462,21 @@ button {
   color: var(--ink-soft);
   white-space: nowrap;
 }
+.kcard-foot {
+  display: flex;
+  align-items: center;
+  margin-top: 9px;
+}
 .stack {
   display: flex;
 }
 .stack-empty {
-  border: 1px dashed var(--line-soft);
-  background: 0 0;
+  border: 1px dashed var(--line);
+  background: var(--surface-2);
   color: var(--ink-soft);
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   display: grid;
   place-content: center;
   font-size: 13px;

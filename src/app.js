@@ -3928,8 +3928,17 @@ async function mergeRemoteIntoState() {
   ensureFraseDay();
   // Mismo día Y misma lista: si alguien todavía no recargó y sigue con las
   // frases viejas, su ronda no vuelve a cerrarle la de hoy a los demás.
-  if (remote.cotofrase && remote.cotofrase.day === isoOf(new Date()) && remote.cotofrase.v === FRASES_V)
+  if (remote.cotofrase && remote.cotofrase.day === isoOf(new Date()) && remote.cotofrase.v === FRASES_V) {
+    const miaAntes = state.cotofrase.porUsuario[state.user];
     state.cotofrase.porUsuario = Object.assign({}, remote.cotofrase.porUsuario, state.cotofrase.porUsuario);
+    // Si el documento no me tiene, es que alguien guardó en el mismo instante
+    // que yo y su escritura tapó la mía. Sin esto la frase se perdía en
+    // silencio: seguía en mi pantalla, no volvía nunca a la base, y las demás
+    // nunca se enteraban —con lo cual les podía tocar la misma—. Marcarlo
+    // pendiente hace que se vuelva a escribir en el guardado que sigue.
+    if (miaAntes && remote.cotofrase.porUsuario[state.user] !== miaAntes) touch();
+    desempatarFrase();
+  }
   return state.cards.filter((c) => before.get(c.id) !== cardFingerprint(c));
 }
 let saveTimer = null;
@@ -4838,15 +4847,15 @@ function estadoTarjeta(tarjeta) {
   }
   return "";
 }
-// La tarjeta del kanban, de arriba abajo: el título, el avance si hay
-// checklist, y un solo renglón de pie con todo lo demás.
+// La tarjeta del kanban: el tipo, el título, el sector, la fecha, el avance y
+// quién la tiene, uno abajo del otro.
 //
-// Antes eran cinco renglones apilados —una píldora con el tipo, el título,
-// una píldora con el sector, un renglón con la fecha, otro con el avance y
-// otro con los avatares—, todos del mismo tamaño y alineados a la izquierda:
-// el título, que es lo único que se lee para saber qué es la tarjeta, quedaba
-// perdido entre etiquetas, y una tarjeta de un renglón de texto ocupaba 140px.
-// Ahora manda el título y el resto es pie.
+// Hubo una versión compacta —título arriba y todo lo demás en un solo renglón
+// de pie— que ganaba la mitad del alto. El área la probó con el tablero de
+// verdad y prefirió esta: con cuarenta tarjetas, el renglón único obligaba a
+// leer de a una para encontrar el dato que se buscaba, mientras que apilado
+// cada cosa cae siempre en la misma altura y la vista la barre de un saque.
+// Si alguna vez se vuelve a intentar, que sea sabiendo eso.
 function cardKanban(tarjeta) {
   const avance = progress(tarjeta),
     tipo = allTipos()[tarjeta.tipo] || {
@@ -4877,41 +4886,40 @@ function cardKanban(tarjeta) {
       : inInventory(tarjeta)
         ? '<span class="tag-flag">◎ activo</span>'
         : "") +
-    '\n    <h3 class="kcard-title">' +
-    (tarjeta.prioridad === "alta" ? '<span class="kcard-prio" title="Prioridad alta">★</span>' : "") +
-    esc(tarjeta.titulo) +
-    "</h3>\n    " +
-    '\n    <div class="kcard-pie">\n      <span class="kcard-datos"><span class="kcard-tipo" title="' +
-    esc(tipo.nombre) +
-    '">' +
+    '\n    <div class="kcard-top">\n      <span class="tipo-pill">' +
     tipo.icon +
-    '</span>\n      <span class="date ' +
+    " " +
+    esc(tipo.nombre) +
+    "</span>\n      " +
+    (tarjeta.prioridad === "alta" ? '<span class="badge prio">★ Alta</span>' : "") +
+    '\n    </div>\n    <div class="kcard-title">' +
+    esc(tarjeta.titulo) +
+    '</div>\n    <div class="badges">' +
+    sectoresBadges(tarjeta.sectores) +
+    '</div>\n    <div class="kcard-meta">\n      <span class="date ' +
     (vencida ? "overdue" : "") +
-    '">' +
+    '">📅 ' +
     dateLabel(tarjeta) +
     (vencida ? " · vencida" : "") +
     "</span>" +
     (tarjeta.estado === "en-revision" && tarjeta.revisionDesde
       ? '<span class="date rev-age" title="Esperando revisión de otros sectores">🕓 ' +
         Math.max(0, daysBetween(tarjeta.revisionDesde, isoOf(new Date()))) +
-        "d</span>"
+        "d en revisión</span>"
       : "") +
-    sectoresBadges(tarjeta.sectores) +
-    "</span>" +
-    '<span class="kcard-quien">' +
+    "\n    </div>\n    " +
     (avance.total
-      ? '<span class="avance" title="' +
-        avance.done +
-        " de " +
-        avance.total +
-        ' del checklist">' +
+      ? '<div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
+        avance.pct +
+        '%"></div></div><span class="prog-num">' +
         avance.done +
         "/" +
         avance.total +
-        "</span>"
+        "</span></div>"
       : "") +
+    '\n    <div class="kcard-foot">' +
     stackHTML(tarjeta) +
-    "</span>\n    </div>\n  </article>"
+    "</div>\n  </article>"
   );
 }
 function dateLabel(tarjeta) {
@@ -8333,7 +8341,7 @@ const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣",
   // Suben cuando cambia la lista. Sirve para dos cosas: que nadie se quede con
   // la ronda de hoy jugada y las frases viejas, y que el equipo pueda volver a
   // tirar el mismo día en que estrenamos frases nuevas.
-  FRASES_V = 2,
+  FRASES_V = 3,
   // El chiste es de la oficina, nunca de una persona. Nos reímos del SCORM,
   // del PDF de 80 megas, del archivo "final_v2_ahora_si" y de este mismo
   // Planner —de nadie del equipo—: una frase que caiga mal la lee todo el
@@ -8372,6 +8380,49 @@ const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣",
   "Tildá una tarjeta y sentite alguien 🏆",
   "El Planner te mira. No dice nada, pero mira.",
 ];
+// Las frases que ya salieron hoy, sin contar la propia. Dos personas con la
+// misma frase el mismo día le saca la gracia: lo divertido del widget es
+// juntarse a la tarde a leer las cinco distintas que tocaron.
+function frasesTomadas(menos) {
+  const porUsuario = state.cotofrase.porUsuario || {};
+  return new Set(
+    Object.keys(porUsuario)
+      .filter((quien) => quien !== menos)
+      .map((quien) => porUsuario[quien]),
+  );
+}
+// Una frase de las que quedan libres. Si el equipo llegara a ser más grande
+// que la lista no se rompe nada: se vuelve a permitir repetir, que es mejor
+// que quedarse sin tirar.
+function fraseLibre(menos) {
+  const tomadas = frasesTomadas(menos),
+    libres = SLOT_FRASES.filter((f) => !tomadas.has(f)),
+    donde = libres.length ? libres : SLOT_FRASES;
+  return donde[Math.floor(Math.random() * donde.length)];
+}
+// Dos personas pueden tirar en el mismo momento: cada una elige mirando lo que
+// sabe, y lo que sabe puede tener hasta 12 segundos de atraso (lo que tarda el
+// polling). Cuando eso pasa, las dos terminan con la misma frase.
+//
+// El desempate no se negocia, se calcula: de las dos empatadas cede siempre la
+// que va después por nombre. Como las dos pantallas hacen la misma cuenta con
+// los mismos datos, llegan a la misma conclusión sin hablarse — cede una sola,
+// nunca las dos ni ninguna.
+function desempatarFrase() {
+  const yo = state.user,
+    porUsuario = state.cotofrase.porUsuario || {},
+    mia = porUsuario[yo];
+  if (!yo || !mia) return false;
+  const empatada = Object.keys(porUsuario).some(
+    (quien) => quien !== yo && porUsuario[quien] === mia && String(quien).localeCompare(String(yo)) < 0,
+  );
+  if (!empatada) return false;
+  const tomadas = frasesTomadas(yo);
+  // Si no queda ninguna libre, mejor repetida que sin frase.
+  if (!SLOT_FRASES.some((f) => !tomadas.has(f))) return false;
+  ((porUsuario[yo] = fraseLibre(yo)), touch());
+  return true;
+}
 // La máquina vive fija en la barra lateral de Inicio (no en un modal): se
 // juega ahí mismo, y el historial de abajo se actualiza al toque.
 function slotWidgetHTML() {
@@ -8396,6 +8447,10 @@ function tirarSlot() {
     resultado = $("#slotResult"),
     boton = $("#slotLever");
   if (!reels[0] || reels[0].dataset.spinning) return;
+  // Se pregunta por las frases de las demás MIENTRAS giran los rodillos: hay
+  // 1,15 s de animación y así la elección se hace con lo último que hay, no
+  // con lo que quedó de la última pasada del polling.
+  const refresco = (useSupabase() ? mergeRemoteIntoState() : Promise.resolve()).catch(() => null);
   (reels.forEach((r) => (r.dataset.spinning = "1")),
     boton && (boton.disabled = true),
     resultado && (resultado.classList.remove("show"), (resultado.textContent = "")));
@@ -8404,15 +8459,16 @@ function tirarSlot() {
     const timer = setInterval(() => {
       reel.textContent = SLOT_SIMBOLOS[Math.floor(Math.random() * SLOT_SIMBOLOS.length)];
     }, 60);
-    setTimeout(() => {
+    setTimeout(async () => {
       (clearInterval(timer),
         (reel.textContent = SLOT_SIMBOLOS[Math.floor(Math.random() * SLOT_SIMBOLOS.length)]),
         delete reel.dataset.spinning,
         reel.classList.add("stop"),
         setTimeout(() => reel.classList.remove("stop"), 300));
       if (i === reels.length - 1) {
+        await refresco;
         ensureFraseDay();
-        const frase = SLOT_FRASES[Math.floor(Math.random() * SLOT_FRASES.length)],
+        const frase = fraseLibre(state.user),
           desc = $("#slotLever") && $("#slotLever").closest(".slot-widget").querySelector(".slot-modal-d");
         ((state.cotofrase.porUsuario[state.user] = frase), touch());
         (resultado && ((resultado.textContent = frase), resultado.classList.add("show")),
