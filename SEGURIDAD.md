@@ -29,6 +29,28 @@ La clave `sb_publishable_...` que viaja en el cliente **no es un secreto** y no
 hace falta esconderla: está pensada para eso. La que nunca puede salir del
 panel de Supabase es la `sb_secret_...`, que saltea las políticas.
 
+### Cuánto dura un ingreso
+
+Entrar deja guardado en esa computadora un permiso (no la contraseña: la
+contraseña no se guarda en ningún lado, ni siquiera un momento). Ese permiso:
+
+- **Dura 12 horas como máximo**, contadas desde que se tipeó la contraseña. Se
+  renueva solo mientras la persona trabaja —para que recargar la página no sea
+  un trámite—, pero el tope no se reinicia con las renovaciones. A la mañana
+  siguiente la contraseña se vuelve a pedir aunque la pestaña haya quedado
+  abierta toda la noche.
+- **No abre la app solo.** Al entrar a la página aparece siempre la pantalla de
+  ingreso; el tablero carga recién cuando alguien aprieta Entrar. Con el
+  permiso vigente el botón alcanza; sin permiso se pide la contraseña.
+- **Se suelta con "🚪 Salir"** (menú de usuario) o con "Entrar con otra cuenta"
+  en la propia pantalla de ingreso.
+
+Una aclaración que importa: si el navegador tiene guardada la contraseña, va a
+autocompletarla igual cuando se la pidan. El clic y el tope de 12 horas
+protegen contra que la página quede abierta sola; **no** contra alguien sentado
+en esa misma computadora con el navegador desbloqueado. Para eso hay que sacar
+la contraseña del gestor del navegador, o bloquear la sesión de Windows.
+
 ### Cómo verificar que sigue cerrado
 
 En una ventana de incógnito, en la app, **sin entrar**, desde la consola del

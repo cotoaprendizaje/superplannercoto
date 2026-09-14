@@ -57,6 +57,14 @@ async function entrar(pg) {
   await pg.click('#gate button:has-text("Entrar")');
   await pg.waitForFunction(() => state?.ready === true, { timeout: 60000 });
 }
+// Al recargar, la app ya no se abre sola: la pantalla de ingreso aparece
+// siempre. Con la sesión todavía vigente no se pide la contraseña —alcanza el
+// clic—, pero el clic hay que darlo.
+async function volver(pg) {
+  await pg.waitForSelector("#gateMail", { timeout: 15000 });
+  await pg.click('#gate button:has-text("Entrar")');
+  await pg.waitForFunction(() => state?.ready === true, { timeout: 60000 });
+}
 
 console.log("\ntamaño del documento sincronizado");
 
@@ -85,8 +93,7 @@ console.log("         tablero: " + kb(json.length) + " · portadas aparte: " + k
 //    ya salieron, el relleno del catálogo se las volvía a meter y el guardado
 //    de arranque las devolvía a la fila del tablero. ──
 await page.reload();
-// La sesión queda guardada: al recargar no hay que volver a entrar.
-await page.waitForFunction(() => state?.ready === true, { timeout: 60000 });
+await volver(page);
 await page.waitForTimeout(2500);
 
 tablero = await filaDelBackend("coto");

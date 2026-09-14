@@ -108,10 +108,59 @@ const auth = await page.evaluate(async () => {
 (check("los pedidos viajan con el token de la sesión", /^Bearer acc-/.test(auth || ""), auth),
   check("ya no viaja la clave pública como identidad", !/sb_publishable/.test(auth || ""), auth));
 
-// ── La sesión sobrevive a recargar ────────────────────────────────────────
+// ── Al recargar espera en el ingreso, pero sin pedir la contraseña ────────
+//
+// Dami avisó que abría la página y el tablero se abría solo, sin apretar nada.
+// No era una falla —el permiso guardado seguía vigente— pero el efecto era que
+// en una computadora compartida la página quedaba abierta con todo adentro
+// para cualquiera que la abriera. Ahora la pantalla de ingreso aparece siempre
+// y el tablero carga recién cuando alguien aprieta Entrar.
+console.log("\nal recargar");
 await page.reload();
+await page.waitForSelector("#gateMail", { timeout: 15000 });
+await page.waitForTimeout(900);
+const alVolver = await page.evaluate(() => ({
+  abrioSola: !!(window.state && state.ready),
+  appVisible: !document.querySelector("#app").classList.contains("hidden"),
+  pidePass: !document.querySelector("#gatePassInput").hidden,
+  mail: document.querySelector("#gateMail").value,
+}));
+(check("al recargar NO se abre sola: queda esperando en el ingreso", alVolver.abrioSola === false, alVolver),
+  check("y el tablero ni siquiera se muestra detrás", alVolver.appVisible === false, alVolver),
+  check("con la sesión vigente no vuelve a pedir la contraseña", alVolver.pidePass === false, alVolver),
+  check("deja a la vista con qué cuenta se vuelve", alVolver.mail === "dami@coto.com.ar", alVolver));
+await page.click('#gate button:has-text("Entrar")');
 await listo(page);
-check("al recargar no vuelve a pedir la contraseña", true);
+check("apretando Entrar abre el tablero sin tipear nada", await page.evaluate(() => state.ready === true));
+
+// ── El tope de 12 horas ───────────────────────────────────────────────────
+//
+// El permiso se renueva solo mientras se trabaja. Sin un tope duro eso
+// significa que no vence nunca: la sesión de un viernes seguiría abierta el
+// lunes. El tope se cuenta desde que se tipeó la contraseña y sobrevive a las
+// renovaciones, así que a la mañana siguiente la contraseña se vuelve a pedir.
+console.log("\nel tope de 12 horas");
+await page.evaluate(() => {
+  // Como si la contraseña se hubiera tipeado ayer.
+  ((sesion.nacida = Date.now() - 13 * 60 * 60 * 1000), guardarSesion(sesion));
+});
+await page.reload();
+await page.waitForSelector("#gateMail", { timeout: 15000 });
+await page.waitForTimeout(900);
+const vencidaPorTope = await page.evaluate(() => ({
+  abrioSola: !!(window.state && state.ready),
+  pidePass: !document.querySelector("#gatePassInput").hidden,
+  guardada: !!localStorage.getItem("cf.sesion.v1"),
+}));
+(check("pasadas las 12 h la sesión no sirve más", vencidaPorTope.abrioSola === false, vencidaPorTope),
+  check("y vuelve a pedir la contraseña, no solo el clic", vencidaPorTope.pidePass === true, vencidaPorTope),
+  check("el permiso viejo queda borrado de la computadora", vencidaPorTope.guardada === false, vencidaPorTope));
+// Y con la contraseña se entra igual que siempre.
+await page.fill("#gateMail", "dami@coto.com.ar");
+await page.fill("#gatePassInput", CLAVE);
+await page.click('#gate button:has-text("Entrar")');
+await listo(page);
+check("con la contraseña vuelve a entrar", await page.evaluate(() => state.ready === true));
 
 // ── Salir cierra de verdad ────────────────────────────────────────────────
 await page.evaluate(() => cerrarSesion());
@@ -161,6 +210,8 @@ await page.evaluate(async () => {
 });
 await page.waitForTimeout(1200);
 await page.reload();
+await page.waitForSelector("#gateMail", { timeout: 15000 });
+await page.click('#gate button:has-text("Entrar")');
 await listo(page);
 await page.waitForTimeout(1200);
 const reconocida = await page.evaluate(() => ({ user: state.user, id: state.userId, sinEquipo: state.mailSinEquipo }));
