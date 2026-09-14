@@ -4767,14 +4767,55 @@ function render() {
   }
   // renderView() primero: el contenedor de los filtros lo dibuja el
   // encabezado de la vista, así que antes de eso todavía no existe.
-  (renderView(), renderFilters(), updateBell(), aplicarPermisos());
+  //
+  // Y el foco se devuelve acá al final, no adentro de renderView(): la barra
+  // —donde vive el buscador— la arma renderFilters(), o sea después. Si se
+  // devolviera antes, se lo estaría devolviendo a un <input> que renderFilters
+  // reemplaza un renglón más abajo.
+  const foco = focoDeLaVista();
+  (renderView(), renderFilters(), updateBell(), aplicarPermisos(), devolverFoco(foco));
 }
 // Si el re-render es de la MISMA vista (por ej. editar una tarjeta del
 // Planner sin cambiar de pestaña), el documento entero se vuelve a armar
 // desde cero y el scroll se pierde. Cambiar de pestaña sí debe arrancar
 // arriba de todo; quedarse en la misma vista no debería moverte del lugar.
 let ultimaVistaRenderizada = null;
+// Quién tenía el foco y dónde estaba el cursor, para devolvérselo después de
+// reemplazar el HTML de la vista.
+//
+// El buscador del tablero re-renderiza la vista entera en cada tecla. El
+// <input> en el que estabas escribiendo deja de existir y nace uno nuevo, así
+// que el foco se pierde: había que volver a hacer clic para escribir la
+// segunda letra. Escribir "seguridad" eran nueve clics.
+function focoDeLaVista() {
+  const el = document.activeElement;
+  if (!el || !el.dataset) return null;
+  const sel = el.dataset.filter
+    ? '[data-filter="' + el.dataset.filter + '"]'
+    : el.dataset.quickadd
+      ? '[data-quickadd="' + el.dataset.quickadd + '"]'
+      : "";
+  if (!sel || !$("#view").contains(el)) return null;
+  let ini = null,
+    fin = null;
+  // selectionStart tira en los inputs que no la soportan (date, number…).
+  try {
+    ((ini = el.selectionStart), (fin = el.selectionEnd));
+  } catch (e) {}
+  return { sel, ini, fin };
+}
+function devolverFoco(guardado) {
+  if (!guardado) return;
+  const el = $("#view").querySelector(guardado.sel);
+  if (!el) return;
+  el.focus();
+  if (guardado.ini === null) return;
+  try {
+    el.setSelectionRange(guardado.ini, guardado.fin);
+  } catch (e) {}
+}
 function renderView() {
+  const foco = focoDeLaVista();
   document
     .querySelectorAll(".tab")
     .forEach((el) => el.classList.toggle("active", el.dataset.view === state.view));
@@ -4802,6 +4843,7 @@ function renderView() {
     scrollY = window.scrollY;
   ($("#view").innerHTML = '<div class="view-in">' + viewHeader() + txt + "</div>"),
     (ultimaVistaRenderizada = state.view);
+  devolverFoco(foco);
   window.scrollTo(0, mismaVista ? scrollY : 0);
   // Vive fuera de .view-in a propósito: esa capa tiene una animación de
   // entrada por transform, y mientras esté activa cualquier descendiente
@@ -9763,6 +9805,18 @@ document.addEventListener("click", (ev) => {
     case "data:reset":
       resetSeed();
       break;
+    case "data:frases-reset":
+      confirmar("Se borran las CotoFrases de hoy y todo el equipo vuelve a tirar.", () => {
+        // Se deja la ronda del día vacía en vez de borrar el objeto: así lo que
+        // viaja al resto de las pantallas es "hoy no tiró nadie" y no "no sé
+        // nada de hoy", que la mezcla trataría como una ronda vieja.
+        ((state.cotofrase = { day: isoOf(new Date()), v: FRASES_V, porUsuario: {} }),
+          touch(),
+          render(),
+          openSettings("datos"),
+          flash("🎰 Listo: todo el equipo puede volver a tirar."));
+      });
+      break;
     case "data:reset-confirmar":
       resetSeedConfirmar();
       break;
@@ -10508,7 +10562,11 @@ document.addEventListener("click", (ev) => {
   const val = ev.target.dataset.filter;
   if (val) {
     state.filters[val] = ev.target.value;
-    val === "texto" && renderView();
+    // render() y no renderView(): el contenedor de la barra lo dibuja la vista
+    // pero lo LLENA renderFilters(), que corre después. Con renderView() solo,
+    // el <div id="filters"> nace vacío y el buscador desaparece de la pantalla
+    // apenas escribís la primera letra.
+    val === "texto" && render();
     return;
   }
   const val2 = ev.target.dataset.field;
@@ -10593,6 +10651,17 @@ document.addEventListener("click", (ev) => {
     }
     const val2 = ev.target.dataset.filter;
     if (val2) {
+      // El buscador del tablero NO se atiende acá: ya lo atiende "input", que
+      // es lo que corresponde para escribir. Atenderlo también en "change" es
+      // lo que lo rompía, y de una forma que no se adivina leyendo:
+      //
+      // al re-renderizar la vista, el <input> enfocado se va del documento con
+      // un valor sin confirmar; el navegador le dispara "change" justo al
+      // sacarlo; ese change llamaba a render() EN EL MEDIO del innerHTML que lo
+      // estaba borrando, y el reemplazo se caía a la mitad con NotFoundError.
+      // La vista quedaba a medio dibujar y el foco en el body: por eso se podía
+      // escribir una sola letra por vez.
+      if (val2 === "texto") return;
       ((state.filters[val2] = ev.target.value), render());
       return;
     }
@@ -10910,7 +10979,7 @@ function pushRecent(id2) {
       const val = ev.target.dataset.quickadd,
         txt = (ev.target.value || "").trim();
       if (txt) {
-        const tarjeta = newCard("libre", txt);
+        const tarjeta = crearTarjetaUI("libre", txt);
         ((tarjeta.estado = val), logAct(tarjeta, "creada"), state.cards.push(tarjeta), touch(), render());
         const el3 = document.querySelector('[data-quickadd="' + val + '"]');
         if (el3) el3.focus();
@@ -10960,9 +11029,22 @@ function calShift(n) {
     state.calMode === "mes" ? new Date(fecha.getFullYear(), fecha.getMonth() + n, 1) : addDays(fecha, 7 * n)),
     render());
 }
+// Crear una tarjeta desde la pantalla. Es aparte de newCard(), que también usan
+// la importación y las plantillas: acá se aplica lo que la persona tiene puesto
+// delante.
+//
+// Si está viendo "Mis tareas" y crea una, la tarjeta es suya. Antes nacía sin
+// responsable, o sea que el propio filtro que tenía puesto la escondía: se
+// creaba bien, se guardaba bien, y no aparecía por ningún lado. Parecía que no
+// se había creado.
+function crearTarjetaUI(tipo, titulo, extra) {
+  const tarjeta = newCard(tipo, titulo, extra);
+  if (state.mis && state.userId && !tarjeta.responsable) tarjeta.responsable = state.userId;
+  return tarjeta;
+}
 function doCreate() {
   const txt = ($("#nuevoTitulo").value || "").trim() || "Sin título",
-    tarjeta = newCard(state.draftTipo, txt);
+    tarjeta = crearTarjetaUI(state.draftTipo, txt);
   (logAct(tarjeta, "creada"), state.cards.push(tarjeta), touch(), closeModal());
   if (state.view === "mapa") state.view = "kanban";
   (render(), openDetail(tarjeta.id));
@@ -12445,7 +12527,24 @@ function setDatosHTML() {
     '<div class="set-data">\n      <button class="btn" data-action="data:export">⬇ Exportar JSON</button>\n      <button class="btn" data-action="data:csv">📄 Exportar CSV</button>\n      <button class="btn" data-action="data:import">⬆ Importar JSON</button>\n      <button class="btn" data-action="ingest:open">⤓ Ingestar catálogo</button>\n    </div>' +
     '<div class="set-peligro"><div class="set-peligro-h">⚠ Zona de riesgo</div>' +
     '<div>Vacía el Planner y vuelve a dejar el catálogo como vino de fábrica. No se puede deshacer desde la app: lo único que lo revierte es un respaldo o una copia del navegador.</div>' +
-    '<button class="btn btn-peligro" data-action="data:reset">🧹 Reiniciar (Planner vacío + catálogo)</button></div>'
+    '<button class="btn btn-peligro" data-action="data:reset">🧹 Reiniciar (Planner vacío + catálogo)</button></div>' +
+    setFrasesHTML()
+  );
+}
+// La ronda de CotoFrases se reinicia sola cada día, y también cuando cambian
+// las frases. Este botón es para el resto de las veces: el área quiso volver a
+// tirar tres veces en un mismo día y cada una fue un deploy de dos minutos.
+function setFrasesHTML() {
+  const cuantas = Object.keys((state.cotofrase || {}).porUsuario || {}).length;
+  return (
+    '<div class="set-seg"><b>🎰 CotoFrases de hoy</b><div>' +
+    (cuantas
+      ? "Tiraron de la palanca " + cuantas + (cuantas === 1 ? " persona." : " personas.")
+      : "Todavía no tiró nadie hoy.") +
+    " Reiniciar borra las frases de hoy y deja que todo el equipo vuelva a tirar. No toca ninguna otra cosa." +
+    '</div><button class="btn btn-sm" data-action="data:frases-reset"' +
+    (cuantas ? "" : " disabled") +
+    ">🎰 Reiniciar las frases de hoy</button></div>"
   );
 }
 // Reemplaza a la vieja sección de "clave grupal". Esa clave se guardaba y se
