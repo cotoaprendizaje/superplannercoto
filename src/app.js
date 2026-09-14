@@ -3926,7 +3926,9 @@ async function mergeRemoteIntoState() {
   if (remote.agenda && typeof remote.agenda === "object")
     state.agenda = Object.assign({}, remote.agenda, state.agenda);
   ensureFraseDay();
-  if (remote.cotofrase && remote.cotofrase.day === isoOf(new Date()))
+  // Mismo día Y misma lista: si alguien todavía no recargó y sigue con las
+  // frases viejas, su ronda no vuelve a cerrarle la de hoy a los demás.
+  if (remote.cotofrase && remote.cotofrase.day === isoOf(new Date()) && remote.cotofrase.v === FRASES_V)
     state.cotofrase.porUsuario = Object.assign({}, remote.cotofrase.porUsuario, state.cotofrase.porUsuario);
   return state.cards.filter((c) => before.get(c.id) !== cardFingerprint(c));
 }
@@ -4135,7 +4137,7 @@ const state = {
   // solo para no romperle el documento a una pestaña con la versión vieja.
   appPassHash: "1waoja",
   agenda: {},
-  cotofrase: { day: "", porUsuario: {} },
+  cotofrase: { day: "", v: 0, porUsuario: {} },
   deleted: {},
   tecnico: [],
   deletedTecnico: {},
@@ -4167,9 +4169,14 @@ const state = {
 };
 // Si cambió el día desde la última visita, la ronda de frases arranca de
 // cero: nadie "ya tiró hoy" con una frase de ayer.
+//
+// Y también arranca de cero si cambió la lista de frases (FRASES_V). Estrenar
+// frases nuevas y que medio equipo no las pueda ver hasta mañana —porque ya
+// había tirado con las viejas— no tiene ninguna gracia.
 function ensureFraseDay() {
   const hoy = isoOf(new Date());
-  if (state.cotofrase.day !== hoy) state.cotofrase = { day: hoy, porUsuario: {} };
+  if (state.cotofrase.day !== hoy || state.cotofrase.v !== FRASES_V)
+    state.cotofrase = { day: hoy, v: FRASES_V, porUsuario: {} };
 }
 const allTipos = () => Object.assign({}, TIPOS, mapCustom());
 // "__checklistOverrides" vive DENTRO de customTpl (con ese prefijo para no
@@ -8323,32 +8330,47 @@ function agendaAvisoHTML() {
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
+  // Suben cuando cambia la lista. Sirve para dos cosas: que nadie se quede con
+  // la ronda de hoy jugada y las frases viejas, y que el equipo pueda volver a
+  // tirar el mismo día en que estrenamos frases nuevas.
+  FRASES_V = 2,
+  // El chiste es de la oficina, nunca de una persona. Nos reímos del SCORM,
+  // del PDF de 80 megas, del archivo "final_v2_ahora_si" y de este mismo
+  // Planner —de nadie del equipo—: una frase que caiga mal la lee todo el
+  // mundo y no se puede desleer.
   SLOT_FRASES = [
   "Ponete a laburar 😤",
-  "Vas bien, dale que va 💪",
-  "Te merecés un cafecito ☕",
-  "Hora del mate 🧉",
-  "Tomate 5 minutos y volvés",
-  "Hoy es buen día para tildar una tarea",
-  "Menos scroll, más checklist 👀",
-  "Sos un crack, seguí así 🌟",
+  "Esa reunión podía ser un mail. Esta frase también.",
+  "El mate está frío desde las 10. Asumilo 🧉",
+  "Que el SCORM te sea leve 🙏",
+  "Tu checklist tiene 14 ítems y 11 dicen «revisar»",
+  "Ese curso no está atrasado, está madurando",
+  "El video quedó bárbaro. Ahora hay que cambiar el logo.",
+  "Alguien renombró la carpeta. Que Dios nos ampare.",
+  "La locución quedó perfecta. Cambiaron el guion.",
+  "«final_v2_corregido_ahora_si_ESTA.pptx»",
+  "El PDF pesa 80 megas y nadie sabe por qué",
+  "El curso funciona. No sabemos por qué, pero funciona.",
+  "Llegó el feedback: 40 comentarios y uno dice «ok»",
+  "Hoy es un gran día para no tocar lo que anda",
+  "Ese Edu Point te está mirando desde agosto",
+  "Tenés 47 pestañas abiertas. Ninguna es esta. Ah, pará.",
+  "Alguien va a decir «lo vemos la semana que viene». Alguien siempre dice.",
+  "Tenés razón. El sistema no.",
+  "Si lo guardaste existe. Si no, fue un sueño.",
+  "Nadie lee el instructivo. Vos tampoco. Está bien.",
+  "Hay 83 cursos. Tres los conocés bien. Los otros 80 confían en vos.",
+  "Tocá algo y decí que fue mejora continua",
+  "Moodle te quiere a su manera",
+  "«¿Esto ya está subido?» — alguien, siempre, en algún lado",
+  "Hoy: cero reuniones. Mentira, pero disfrutalo tres segundos.",
+  "El Excel del que escapaste te está buscando",
   "La productividad no se mide en pestañas abiertas",
-  "Andá a estirar las piernas un toque",
   "Tomate el laburo con soda 🥤",
-  "El Planner no se llena solo, dale una mano",
-  "Respirá hondo y arrancá de nuevo",
-  "Una cosa a la vez, tranqui",
-  "Los grandes proyectos se arman de a poquito",
-  "Che, ¿ya hidrataste? 💧",
-  "Metele con toda, el equipo cuenta con vos",
-  "Una tarjeta completada es una victoria",
-  "Descanso corto, foco largo",
-  "Sonreí, hoy también suma",
-  "Guardá lo que hiciste y date una vuelta",
-  "El café se enfría, andá a tomarlo",
-  "Vos podés con esto y más",
-  "Un aplauso interno para vos 👏",
-  "Todo bien por acá, seguí no más",
+  "Andá por el café. Te lo ganaste, o no, da igual. ☕",
+  "Estás a un clic de acordarte de algo que te olvidaste",
+  "Tildá una tarjeta y sentite alguien 🏆",
+  "El Planner te mira. No dice nada, pero mira.",
 ];
 // La máquina vive fija en la barra lateral de Inicio (no en un modal): se
 // juega ahí mismo, y el historial de abajo se actualiza al toque.
