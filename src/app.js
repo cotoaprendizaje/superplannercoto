@@ -8341,7 +8341,7 @@ const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣",
   // Suben cuando cambia la lista. Sirve para dos cosas: que nadie se quede con
   // la ronda de hoy jugada y las frases viejas, y que el equipo pueda volver a
   // tirar el mismo día en que estrenamos frases nuevas.
-  FRASES_V = 3,
+  FRASES_V = 4,
   // El chiste es de la oficina, nunca de una persona. Nos reímos del SCORM,
   // del PDF de 80 megas, del archivo "final_v2_ahora_si" y de este mismo
   // Planner —de nadie del equipo—: una frase que caiga mal la lee todo el
