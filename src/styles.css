@@ -1339,6 +1339,14 @@ button {
   border-radius: var(--r-l);
   padding: 13px 14px;
   cursor: pointer;
+  /* El canto izquierdo dice DE QUÉ SECTOR es la tarjeta: es lo que deja barrer
+     una columna de veinte y encontrar las de Cajas sin leer ninguna.
+     Hubo una versión en la que este riel decía el ESTADO (vencida, por vencer)
+     en vez del sector. Se hizo así porque el estado no se veía en ningún lado
+     y el sector ya estaba en la píldora. Hoy el estado lo dice la fecha, que
+     se pinta de rojo o de ámbar cuando hay algo que avisar, así que el riel
+     queda libre para lo que el área quiere que diga. */
+  border-left: 6px solid var(--cat, var(--brd-card));
   box-shadow: var(--shadow);
   transition:
     transform 0.16s var(--ease-out),
@@ -1368,6 +1376,8 @@ button {
 .kcard.est-venc,
 .kcard.est-pronto {
   border-color: color-mix(in srgb, var(--tono) 34%, var(--brd-card));
+  /* menos el de la izquierda, que es del sector y no se negocia */
+  border-left-color: var(--cat, var(--brd-card));
 }
 .kcard.est-venc .date.overdue,
 .kcard.est-pronto .date {
@@ -5261,6 +5271,11 @@ html {
   box-shadow:
     var(--shadow),
     var(--ambient);
+}
+/* Este bloque va después y usa el atajo `border`, que le borraría el riel del
+   sector al kanban. Se vuelve a poner acá. */
+.kcard {
+  border-left: 6px solid var(--cat, var(--brd-card));
 }
 .kcol {
   background: var(--glass-2);
