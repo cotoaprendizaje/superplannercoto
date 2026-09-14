@@ -32,7 +32,7 @@ index.html        ← generado. NO está en el repositorio: lo arma el build.
 npm install       # una sola vez (Playwright, para los tests)
 npm run build     # regenera index.html desde src/
 npm start         # sirve la carpeta en http://localhost:8080
-npm test          # las 90 pruebas (build incluido)
+npm test          # las 98 pruebas (build incluido)
 ```
 
 El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
@@ -80,7 +80,7 @@ guardado escriba la copia local entera, esas pruebas se ponen en rojo.
 
 ## Pruebas
 
-Son 90, en cuatro baterías, y corren solas en cada cambio (ver
+Son 98, en cuatro baterías, y corren solas en cada cambio (ver
 `.github/workflows/pruebas.yml`). Todas abren la app de verdad en un navegador
 contra `test/fake-backend.mjs`, que imita las filas de Supabase y su endpoint
 de ingreso.
@@ -89,7 +89,7 @@ de ingreso.
 |---|---|
 | `test/sync.test.mjs` | Que dos personas editando a la vez no se pisen. |
 | `test/tamano.test.mjs` | Que el documento sincronizado no engorde ni se lleve las imágenes adentro. Es la prueba que faltaba el día que se agotó la cuota. |
-| `test/ingreso.test.mjs` | Que sin sesión no se baje nada, y que con sesión se trabaje normal aunque el token venza en el medio. |
+| `test/ingreso.test.mjs` | Que sin sesión no se baje nada; que con sesión se trabaje normal aunque el token venza en el medio; que al recargar la app espere en el ingreso en vez de abrirse sola, y que pasadas las 12 h vuelva a pedir la contraseña. |
 | `test/numeros.test.mjs` | Que los números que el equipo lee sean los mismos en todas las vistas: que la campana no marque como pendiente algo terminado, que Reportería coincida con el Planner y con Técnico, y que el pulso de Inicio dé lo mismo que las columnas del Planner. |
 
 El flujo genera `index.html` desde `src/` antes de correr las pruebas y
@@ -111,6 +111,16 @@ Dos consecuencias en el código, que si no sorprenden:
 - **El tablero se carga después de entrar, no antes.** `boot()` decide si hay
   sesión y recién entonces llama a `arrancarApp()`, que es lo que baja los
   datos. Antes era al revés porque cualquiera podía leer.
+- **Y no se carga solo.** Aunque el permiso guardado siga vigente, `boot()`
+  muestra la pantalla de ingreso y `arrancarApp()` corre recién cuando alguien
+  aprieta Entrar. Con el permiso vigente no se pide la contraseña —`gateModo()`
+  esconde el campo y deja solo el botón—, pero el clic hay que darlo: que la
+  página se abriera sola con el tablero adentro, en una computadora compartida,
+  es lo que queríamos evitar.
+- **El permiso dura 12 horas como máximo** (`TOPE_SESION_MS`), contadas desde
+  que se tipeó la contraseña. Se renueva solo mientras se trabaja, pero el tope
+  sobrevive a las renovaciones (`sesion.nacida` se copia de la sesión vieja a
+  la nueva): sin eso, un permiso que se renueva solo no vence nunca.
 - **Quién es quién se resuelve por el mail**, cruzado contra el que se carga en
   Ajustes → Equipo. Si no coincide con nadie NO se bloquea el paso: entrar ya
   requirió una cuenta válida, y hacerlo obligatorio dejaría al equipo afuera

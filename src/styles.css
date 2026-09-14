@@ -3031,6 +3031,33 @@ button {
   border-color: var(--coto-blue);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--coto-blue) 18%, transparent);
 }
+/* En modo "volver a entrar" el mail no se edita: es el de la sesión que ya
+   está abierta en esta computadora, no un campo para completar. */
+.gate-form input.fijo {
+  background: 0 0;
+  border-color: transparent;
+  color: var(--ink-soft);
+  font-weight: 600;
+  text-align: center;
+  cursor: default;
+}
+.gate-otra {
+  margin-top: 12px;
+  border: 0;
+  background: 0 0;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+}
+.gate-otra:hover {
+  color: var(--coto-blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .gate-form button {
   width: 100%;
   justify-content: center;

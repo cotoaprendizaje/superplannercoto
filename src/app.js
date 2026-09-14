@@ -3353,11 +3353,22 @@ function primaryCat(tarjeta) {
 // Antes, con la política abierta, cualquiera con el link podía leer y borrar
 // todo el inventario de capacitación.
 const SESION_KEY = "cf.sesion.v1";
+// Cuánto vale un ingreso, contado desde que la persona tipeó su contraseña.
+// El permiso se renueva solo mientras trabaja —para que recargar la página no
+// sea un trámite—, pero no más allá de este tope: a la mañana siguiente la
+// contraseña se vuelve a pedir aunque la pestaña haya quedado abierta toda la
+// noche. Sin el tope, un permiso que se renueva solo no vence nunca.
+const TOPE_SESION_MS = 12 * 60 * 60 * 1000;
 let sesion = null;
 function leerSesionGuardada() {
   try {
     const raw = localStorage.getItem(SESION_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const val = raw ? JSON.parse(raw) : null;
+    // Los permisos guardados antes de que existiera el tope no traen "nacida".
+    // Se les empieza a contar desde ahora en vez de darlos por vencidos: nadie
+    // se queda afuera de golpe por una actualización.
+    if (val && !val.nacida) val.nacida = Date.now();
+    return val;
   } catch (e) {
     return null;
   }
@@ -3369,10 +3380,14 @@ function guardarSesion(valor) {
     else localStorage.removeItem(SESION_KEY);
   } catch (e) {}
 }
-function sesionDesde(datos) {
+function sesionDesde(datos, nacida) {
   return {
     access: datos.access_token,
     refresh: datos.refresh_token,
+    // Cuándo se tipeó la contraseña. Sobrevive a las renovaciones —por eso se
+    // pasa de la sesión vieja a la nueva—: si se reiniciara en cada renovación,
+    // el tope de 12 h nunca se alcanzaría.
+    nacida: nacida || Date.now(),
     // Un minuto de margen: si el token vence justo mientras viaja un pedido,
     // la respuesta es un 401 confuso en vez de una renovación limpia.
     expira: Date.now() + ((datos.expires_in || 3600) * 1000 - 60000),
@@ -3403,7 +3418,7 @@ async function renovarSesion() {
       body: JSON.stringify({ refresh_token: sesion.refresh }),
     });
     if (!resp.ok) return false;
-    return (guardarSesion(sesionDesde(await resp.json())), true);
+    return (guardarSesion(sesionDesde(await resp.json(), sesion.nacida)), true);
   } catch (e) {
     return false;
   }
@@ -3413,6 +3428,12 @@ async function sesionValida() {
   if (!useSupabase()) return true;
   if (!sesion) sesion = leerSesionGuardada();
   if (!sesion) return false;
+  // El tope se mira antes que el vencimiento del token: pasadas las 12 h no
+  // alcanza con renovar, hay que volver a entrar con la contraseña.
+  if (Date.now() - sesion.nacida > TOPE_SESION_MS) {
+    guardarSesion(null);
+    return false;
+  }
   if (Date.now() < sesion.expira) return true;
   return await renovarSesion();
 }
@@ -11202,6 +11223,9 @@ const MAIL_KEY = "cf.ultimoMail";
 document.addEventListener("submit", (ev) => {
   if (ev.target && ev.target.id === "gateForm") (ev.preventDefault(), gateTry());
 });
+document.addEventListener("click", (ev) => {
+  if (ev.target && ev.target.closest && ev.target.closest("#gateOtra")) (ev.preventDefault(), gateOtraCuenta());
+});
 function prepararGate() {
   const elMail = $("#gateMail");
   if (!elMail) return;
@@ -11214,6 +11238,44 @@ function prepararGate() {
 }
 function previoVacio(el) {
   return !el.value;
+}
+// La pantalla de ingreso tiene dos caras. Con el permiso de esta computadora
+// todavía vigente alcanza el clic —no tiene sentido pedir de nuevo una
+// contraseña que el navegador va a autocompletar igual—; sin permiso, o
+// pasadas las 12 h, se pide completa.
+let gateVuelta = false;
+function gateModo(viva) {
+  gateVuelta = !!(viva && sesion && sesion.email);
+  const elMail = $("#gateMail"),
+    elPass = $("#gatePassInput"),
+    elOtra = $("#gateOtra"),
+    elSub = $("#gateSub");
+  if (elPass) {
+    ((elPass.hidden = gateVuelta), (elPass.disabled = gateVuelta));
+    if (gateVuelta) elPass.value = "";
+  }
+  if (elMail) {
+    ((elMail.readOnly = gateVuelta), elMail.classList.toggle("fijo", gateVuelta));
+    if (gateVuelta) elMail.value = sesion.email;
+  }
+  if (elOtra) elOtra.hidden = !gateVuelta;
+  if (elSub)
+    elSub.textContent = gateVuelta
+      ? "Ya entraste en esta computadora. Tocá Entrar para abrir el tablero."
+      : "COTO Aprendizaje e-Learning. Entrá con tu cuenta.";
+  const foco = gateVuelta ? $("#gateForm button[type=submit]") : previoVacio(elMail) ? elMail : elPass;
+  if (foco) foco.focus();
+}
+// "Entrar con otra cuenta": suelta el permiso de esta computadora y vuelve a
+// pedir mail y contraseña. Es además la forma de sacar de acá a quien haya
+// quedado conectado en una máquina que no es suya.
+function gateOtraCuenta() {
+  (guardarSesion(null), gateAviso(""));
+  // El campo se vacía: si alguien viene a entrar con OTRA cuenta, dejarle el
+  // mail de la anterior escrito es hacerle borrarlo a mano.
+  const elMail = $("#gateMail");
+  if (elMail) elMail.value = "";
+  gateModo(false);
 }
 function gateAviso(txt, tipo) {
   const el = $("#gateMsg");
@@ -11277,6 +11339,22 @@ function enterAs(value) {
 }
 
 async function gateTry() {
+  if (gateVuelta) {
+    // Se revalida igual antes de abrir: entre que apareció la pantalla y se
+    // apretó el botón pudieron pasar horas, y el permiso puede haber vencido.
+    gateOcupado(true);
+    if (await sesionValida()) {
+      try {
+        await arrancarApp();
+      } catch (err) {
+        (console.error(err), gateAviso("Entraste bien, pero no pude cargar el tablero. Probá recargar la página."));
+      }
+      gateOcupado(false);
+      return;
+    }
+    (gateOcupado(false), gateModo(false), gateAviso("Tu sesión venció. Poné tu contraseña para volver a entrar."));
+    return;
+  }
   const elMail = $("#gateMail"),
     elPass = $("#gatePassInput"),
     email = ((elMail && elMail.value) || "").trim().toLowerCase(),
@@ -12783,15 +12861,14 @@ async function boot() {
   // recién después se carga el tablero. Antes era al revés —se cargaba todo y
   // la pantalla de ingreso se ponía encima— porque cualquiera con el link
   // podía leer.
-  if (!(await sesionValida())) {
-    (gateOcupado(false), $("#gate").classList.remove("hidden"));
-    return;
-  }
-  try {
-    await arrancarApp();
-  } catch (err) {
-    (console.error(err), $("#gate").classList.remove("hidden"), gateAviso("No pude cargar el tablero. Probá recargar la página."));
-  }
+  //
+  // Y el tablero no se abre solo. Aunque el permiso de esta computadora siga
+  // vigente, la pantalla de ingreso aparece siempre y la app carga recién
+  // cuando alguien aprieta Entrar. Que la página se abriera sola con todo el
+  // tablero adentro —en una computadora compartida, o con alguien sentado al
+  // lado— es justamente lo que no queremos: abrir el link tiene que ser una
+  // decisión, no un accidente.
+  (gateModo(await sesionValida()), gateOcupado(false), $("#gate").classList.remove("hidden"));
 }
 async function arrancarApp() {
   $("#app").classList.remove("hidden");
