@@ -8650,6 +8650,9 @@ function emptyState(txt, txt2, txt3) {
 }
 function openDetail(id2) {
   (closeModal(),
+    // Cada tarjeta arranca mostrando solo los últimos mensajes: si no, el
+    // "ver los anteriores" de una tarjeta quedaba puesto al abrir la siguiente.
+    (msgTodos = false),
     (state.selectedId = id2),
     pushRecent(id2),
     renderPanel(),
@@ -9029,44 +9032,29 @@ function renderPanel() {
             .join("") +
           "</select></div></div></div></details>"
         : "",
-    // Comentarios y Actividad eran dos acordeones seguidos contando la misma
-    // historia en dos mitades: "qué dijo el equipo" y "qué le pasó a la
-    // tarjeta". Van en una sola línea de tiempo, con el campo para comentar
-    // arriba de todo — que es lo único que se hace acá adentro.
-    comentarios = (tarjeta.comentarios || []).map((e) =>
-      Object.assign({ __tipo: "cmt" }, e),
-    ),
-    eventos = (tarjeta.actividad || []).map((e) => Object.assign({ __tipo: "act" }, e)),
-    linea = comentarios
-      .concat(eventos)
-      .sort((a, b) => (b.ts || 0) - (a.ts || 0))
-      .slice(0, 40),
+    // Los mensajes del equipo tienen su propia sección, arriba (ver
+    // mensajesHTML). Acá abajo queda lo que escribe el sistema —"creada",
+    // "movida a En revisión"—, que es para consultar de vez en cuando y no
+    // para leer todos los días. Mezclados, el mensaje de una compañera
+    // quedaba entre veinte líneas de registro automático.
+    eventos = (tarjeta.actividad || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 40),
     htmlActividad =
-      '<details class="acc sec-acc" data-acc="actividad" ' +
-      (comentarios.length ? "open" : "") +
-      '><summary class="sub">Actividad · ' +
-      linea.length +
-      '<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">\n    <div class="cmt-add"><textarea id="cmtInput" placeholder="Comentá… usá @nombre para mencionar a alguien"></textarea><button class="btn btn-sm btn-primary" data-action="cmt:add" style="align-self:flex-start">Comentar</button></div>\n    ' +
-      (linea
-        .map((entrada) =>
-          entrada.__tipo === "cmt"
-            ? '<div class="cmt"><div class="cmt-h"><b>' +
-              esc(entrada.autor) +
-              "</b><span>" +
-              relTime(entrada.ts) +
-              '</span></div><div class="cmt-b">' +
-              mentionize(entrada.texto) +
-              "</div></div>"
-            : '<div class="act"><span class="act-d">' +
-              relTime(entrada.ts) +
-              "</span> <b>" +
-              esc(entrada.autor) +
-              "</b> " +
-              esc(entrada.texto) +
-              "</div>",
+      '<details class="acc sec-acc" data-acc="actividad"><summary class="sub">Actividad · ' +
+      eventos.length +
+      '<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">' +
+      (eventos
+        .map(
+          (entrada) =>
+            '<div class="act"><span class="act-d">' +
+            relTime(entrada.ts) +
+            "</span> <b>" +
+            esc(entrada.autor) +
+            "</b> " +
+            esc(entrada.texto) +
+            "</div>",
         )
         .join("") ||
-        '<div style="font-size:12px;color:var(--ink-soft);padding:4px 0">Todavía no pasó nada acá.</div>') +
+        '<div class="acc-vacio">Todavía no pasó nada acá.</div>') +
       "\n  </div></details>";
   $("#panel").innerHTML =
     '\n    <div class="panel-head" data-cat="' +
@@ -9126,6 +9114,11 @@ function renderPanel() {
     '</div><span class="fld-hint">Todos los que trabajan en ella (los que quieras).</span></div>\n      ' +
     sectorPicker(tarjeta) +
     '\n        </div></details>\n\n      ' +
+    // Los mensajes van pegados a Datos, antes del checklist: el equipo pidió
+    // que fuera de las primeras cosas que se ven al abrir una tarjeta, porque
+    // es donde se avisan las cosas entre ellas.
+    mensajesHTML(tarjeta) +
+    "\n\n      " +
     // El checklist queda inmediatamente después de Datos: es el corazón del
     // trabajo del día a día. Arranca abierto salvo que esté vacío.
     '<details class="acc sec-acc" data-acc="checklist" ' +
@@ -9757,6 +9750,12 @@ document.addEventListener("click", (ev) => {
       break;
     case "settings:open":
       openSettings();
+      break;
+    case "msg:todos":
+      ((msgTodos = true), renderPanel());
+      break;
+    case "msg:menos":
+      ((msgTodos = false), renderPanel());
       break;
     case "cmt:add":
       addComment();
@@ -10970,6 +10969,10 @@ function pushRecent(id2) {
         if ($("#panel").classList.contains("open")) closePanel();
       }
     }
+    if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey) && ev.target.id === "cmtInput") {
+      (ev.preventDefault(), addComment());
+      return;
+    }
     if (ev.key === "Enter" && (ev.target.id === "gateMail" || ev.target.id === "gatePassInput")) {
       (ev.preventDefault(), gateTry());
       return;
@@ -11584,6 +11587,66 @@ function logAct(val, txt) {
     }));
   if (val.actividad.length > 60) val.actividad = val.actividad.slice(-60);
 }
+// Cuántos mensajes se muestran sin desplegar. La sección tiene que ser fácil
+// de encontrar y de usar, pero no puede comerse el panel: con tres alcanza
+// para ver de qué se está hablando, y el resto está a un clic.
+const MSG_A_LA_VISTA = 3;
+let msgTodos = false;
+// El autor se guarda por NOMBRE (es lo que se ve), así que para pintarle su
+// color hay que ir a buscarlo al equipo. Si no está —alguien que ya no
+// trabaja acá—, el mensaje igual se muestra: borrarle la cara a un mensaje
+// viejo no lo hace más claro.
+function miembroPorNombre(nombre) {
+  return TEAM.find((m) => (m.nombre || "").toLowerCase() === String(nombre || "").toLowerCase());
+}
+function mensajeHTML(msg) {
+  const quien = miembroPorNombre(msg.autor),
+    inicial = String(msg.autor || "?").slice(0, 1).toUpperCase(),
+    color = quien ? quien.color : "var(--line)",
+    tinta = quien ? contrasteSobre(quien.color) : "var(--ink-soft)";
+  return (
+    '<div class="msg"><span class="avatar sm" style="background:' +
+    esc(color) +
+    ";color:" +
+    esc(tinta) +
+    '" title="' +
+    esc(msg.autor) +
+    '">' +
+    esc(inicial) +
+    '</span><div class="msg-c"><div class="msg-h"><b>' +
+    esc(msg.autor) +
+    "</b><span>" +
+    relTime(msg.ts) +
+    '</span></div><div class="msg-t">' +
+    mentionize(msg.texto) +
+    "</div></div></div>"
+  );
+}
+function mensajesHTML(tarjeta) {
+  const todos = (tarjeta.comentarios || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)),
+    ocultos = Math.max(0, todos.length - MSG_A_LA_VISTA),
+    visibles = msgTodos ? todos : todos.slice(0, MSG_A_LA_VISTA);
+  return (
+    '<details class="acc sec-acc" data-acc="mensajes" open><summary class="sub">Mensajes' +
+    (todos.length ? " · " + todos.length : "") +
+    '<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">' +
+    // El campo para escribir va ARRIBA: es lo que se viene a hacer acá.
+    '<div class="msg-nuevo"><textarea id="cmtInput" rows="1" placeholder="Dejale un mensaje al equipo… @nombre para mencionar"></textarea>' +
+    '<button class="btn btn-sm btn-primary" data-action="cmt:add">Enviar</button></div>' +
+    '<div class="msg-tip">Ctrl + Enter para enviar</div>' +
+    (todos.length
+      ? '<div class="msg-lista">' +
+        visibles.map(mensajeHTML).join("") +
+        "</div>" +
+        (ocultos && !msgTodos
+          ? '<button class="msg-mas" data-action="msg:todos">Ver los ' + ocultos + " anteriores</button>"
+          : todos.length > MSG_A_LA_VISTA
+            ? '<button class="msg-mas" data-action="msg:menos">Ver solo los últimos ' + MSG_A_LA_VISTA + "</button>"
+            : "")
+      : '<div class="acc-vacio">Todavía nadie dejó un mensaje en esta tarjeta.</div>') +
+    "\n  </div></details>"
+  );
+}
 function addComment() {
   const val = current();
   if (!val) return;
@@ -11597,9 +11660,14 @@ function addComment() {
       texto: txt,
       ts: Date.now(),
     }),
-    logAct(val, "comentó"),
+    // Ya no se anota "comentó" en Actividad: el mensaje ES el registro, con su
+    // autor y su hora. Anotarlo dos veces llenaba el historial del sistema de
+    // líneas que no decían nada.
     touch(),
+    (msgTodos = false),
     renderPanel());
+  const campo2 = $("#cmtInput");
+  if (campo2) campo2.focus();
 }
 function shiftISO(inicio, arg) {
   if (!inicio) return inicio;
