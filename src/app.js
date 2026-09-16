@@ -12921,26 +12921,70 @@ function runImport() {
     flash("JSON inválido", true);
     return;
   }
-  if (!tarjeta || !Array.isArray(tarjeta.cards)) {
-    flash('Backup sin "cards"', true);
+  // Un archivo puede traer SOLO la parte que hay que corregir. Antes se exigía
+  // "cards" siempre, así que arreglar una fila del Seguimiento técnico obligaba
+  // a mandar el tablero entero encima — y con él, a revertir cualquier tarjeta
+  // que alguien hubiera tocado desde que se bajó el respaldo. Ahora cada
+  // sección se aplica solo si viene.
+  const traeCards = Array.isArray(tarjeta.cards),
+    traeTec = Array.isArray(tarjeta.tecnico) && tarjeta.tecnico.length,
+    traeEdu = Array.isArray(tarjeta.eduArchivo) && tarjeta.eduArchivo.length;
+  if (!tarjeta || !(traeCards || traeTec || traeEdu)) {
+    flash("El archivo no trae ni tablero, ni Seguimiento técnico, ni Edu Point", true);
     return;
   }
-  confirmar("Esto reemplaza todos los datos actuales. ¿Seguir?", () => {
-    const restoredIds = new Set(tarjeta.cards.map((c) => c.id));
-    (dropCards(state.cards.filter((c) => !restoredIds.has(c.id)).map((c) => c.id)),
-      (state.cards = tarjeta.cards),
-      (state.customTpl = tarjeta.templates || {}));
+  // Cuántas filas de las grillas se van a ir. Se cuenta ANTES de preguntar:
+  // "reemplaza todos los datos" no dice lo mismo que "se borran 13 filas del
+  // Seguimiento técnico", y esto último es lo que hace falta saber para
+  // contestar que sí.
+  const cuantasSeVan = (actual, entra) =>
+    Array.isArray(entra) && entra.length
+      ? actual.filter((f) => !new Set(entra.map((x) => x.id)).has(f.id)).length
+      : 0,
+    bajasTec = cuantasSeVan(state.tecnico, tarjeta.tecnico),
+    bajasEdu = cuantasSeVan(state.eduArchivo, tarjeta.eduArchivo),
+    // Qué se toca y qué no: si el archivo no trae el tablero, el tablero ni se
+    // roza, y conviene que la pregunta lo diga.
+    toca = [traeCards && "el tablero", traeTec && "Seguimiento técnico", traeEdu && "Edu Point"]
+      .filter(Boolean)
+      .join(", "),
+    detalle =
+      (bajasTec ? " Se borran " + bajasTec + " fila" + (bajasTec === 1 ? "" : "s") + " de Seguimiento técnico." : "") +
+      (bajasEdu ? " Y " + bajasEdu + " de Edu Point." : "");
+  confirmar("Se reemplaza: " + toca + "." + detalle + " ¿Seguir?", () => {
+    if (traeCards) {
+      const restoredIds = new Set(tarjeta.cards.map((c) => c.id));
+      (dropCards(state.cards.filter((c) => !restoredIds.has(c.id)).map((c) => c.id)),
+        (state.cards = tarjeta.cards),
+        (state.customTpl = tarjeta.templates || {}));
+    }
     if (tarjeta.fotos && typeof tarjeta.fotos === "object")
       ((state.fotos = Object.assign({}, state.fotos, tarjeta.fotos)), (fotosPendientes = true));
     // Seguimiento técnico y Archivos Edu Point viven en filas propias del
     // backend: sin esto, importar un respaldo devolvía el tablero pero dejaba
     // las dos grillas como estaban — que es justo lo que hace falta al mudar
     // los datos a otro proyecto.
-    if (Array.isArray(tarjeta.tecnico) && tarjeta.tecnico.length)
-      ((state.tecnico = tarjeta.tecnico), touchTecnico());
-    if (Array.isArray(tarjeta.eduArchivo) && tarjeta.eduArchivo.length)
-      ((state.eduArchivo = tarjeta.eduArchivo), touchEduArchivo());
-    ((localManda = true), aplicarSectores(tarjeta.sectores));
+    // Las filas que el archivo NO trae se dan de baja de verdad, con su lápida.
+    //
+    // Sin esto, importar no podía SACAR ninguna fila de estas dos grillas. Se
+    // reemplazaba la lista en memoria, sí, pero al guardar se mezcla con la del
+    // servidor y todo lo ausente volvía solo: importar un archivo de 95 filas
+    // sobre un Técnico de 108 terminaba dejando 203. dropTecnico() es el mismo
+    // camino que usa la ✕ de cada fila, que es el único que deja constancia de
+    // que se borró.
+    if (traeTec) {
+      const vienen = new Set(tarjeta.tecnico.map((f) => f.id));
+      (state.tecnico.filter((f) => !vienen.has(f.id)).forEach((f) => dropTecnico(f.id)),
+        (state.tecnico = tarjeta.tecnico),
+        touchTecnico());
+    }
+    if (traeEdu) {
+      const vienen = new Set(tarjeta.eduArchivo.map((r) => r.id));
+      (state.eduArchivo.filter((r) => !vienen.has(r.id)).forEach((r) => dropEduArchivo(r.id)),
+        (state.eduArchivo = tarjeta.eduArchivo),
+        touchEduArchivo());
+    }
+    ((localManda = true), tarjeta.sectores && aplicarSectores(tarjeta.sectores));
     (Array.isArray(tarjeta.team) &&
       tarjeta.team.length &&
       ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro))),
