@@ -142,13 +142,20 @@ console.log("\nlos mensajes de la tarjeta");
 const idTarjeta = await page.evaluate(() => {
   const c = newCard("libre", "TARJETA CON CONVERSACIÓN", {});
   const hs = (n) => Date.now() - n * 3600000;
+  // Con 15 mensajes se pasa el tope de los que se ven de una (12) y aparece el
+  // "ver los anteriores". Dos seguidos de la misma persona con un minuto de
+  // diferencia para probar el agrupado, y uno de hace dos días para el
+  // separador de día.
   c.comentarios = [
-    { id: "m1", autor: TEAM[0].nombre, texto: "uno", ts: hs(50) },
-    { id: "m2", autor: (TEAM[1] || TEAM[0]).nombre, texto: "dos", ts: hs(30) },
-    { id: "m3", autor: (TEAM[2] || TEAM[0]).nombre, texto: "tres", ts: hs(20) },
-    { id: "m4", autor: (TEAM[1] || TEAM[0]).nombre, texto: "cuatro", ts: hs(3) },
-    { id: "m5", autor: TEAM[0].nombre, texto: "cinco", ts: hs(1) },
+    { id: "m0", autor: (TEAM[1] || TEAM[0]).nombre, texto: "viejo de hace dos días", ts: hs(50) },
   ];
+  for (let i = 1; i <= 11; i++)
+    c.comentarios.push({ id: "r" + i, autor: (TEAM[2] || TEAM[0]).nombre, texto: "relleno " + i, ts: hs(20) + i * 60000 });
+  c.comentarios.push(
+    { id: "m2", autor: (TEAM[1] || TEAM[0]).nombre, texto: "dos", ts: hs(3) },
+    { id: "m3", autor: (TEAM[1] || TEAM[0]).nombre, texto: "tres, pegadito al anterior", ts: hs(3) + 60000 },
+    { id: "m4", autor: TEAM[0].nombre, texto: "cuatro, este es mío", ts: hs(1) },
+  );
   ((c.actividad = [{ ts: hs(60), autor: "Vivi", texto: "creada" }]), state.cards.push(c), render());
   return c.id;
 });
@@ -156,31 +163,51 @@ await page.evaluate((i) => openDetail(i), idTarjeta);
 await page.waitForTimeout(700);
 const sec = await page.evaluate(() => {
   const s = document.querySelector('[data-acc="mensajes"]'),
-    orden = [...document.querySelectorAll("#panel details[data-acc]")].map((d) => d.dataset.acc);
+    orden = [...document.querySelectorAll("#panel details[data-acc]")].map((d) => d.dataset.acc),
+    hilo = document.querySelector("#msgHilo"),
+    globos = [...document.querySelectorAll("#panel .msg")];
   return {
     existe: !!s,
     abierta: !!(s && s.open),
     justoDespuesDeDatos: orden[0] === "datos" && orden[1] === "mensajes",
     titulo: s ? s.querySelector("summary").textContent.replace(/\s+/g, " ").trim() : "",
-    aLaVista: document.querySelectorAll("#panel .msg").length,
-    conAvatar: document.querySelectorAll("#panel .msg .avatar").length,
-    autores: [...document.querySelectorAll("#panel .msg-h b")].map((b) => b.textContent),
+    aLaVista: globos.length,
+    mios: document.querySelectorAll("#panel .msg.mio").length,
+    pegados: document.querySelectorAll("#panel .msg.pegado").length,
+    dias: [...document.querySelectorAll("#panel .msg-dia span")].map((d) => d.textContent),
+    horas: [...document.querySelectorAll("#panel .msg-hora")].map((h) => h.textContent),
+    conAvatar: document.querySelectorAll("#panel .msg .avatar:not(.hueco)").length,
+    autores: [...document.querySelectorAll("#panel .msg-quien")].map((b) => b.textContent),
     botonMas: (document.querySelector(".msg-mas") || {}).textContent || "",
+    // El hilo tiene alto propio y scrollea: los mensajes no se comen la
+    // tarjeta entera aunque sean cien.
+    scrollea: !!hilo && hilo.scrollHeight > hilo.clientHeight,
+    arrancaAbajo: !!hilo && hilo.scrollTop + hilo.clientHeight >= hilo.scrollHeight - 2,
+    // Del más viejo al más nuevo, como se lee una conversación.
+    primero: (globos[0].querySelector(".msg-t") || {}).textContent.trim(),
+    ultimo: (globos[globos.length - 1].querySelector(".msg-t") || {}).textContent.trim(),
   };
 });
 (check("hay una sección de mensajes propia y abierta", sec.existe && sec.abierta, sec),
   check("y está arriba, pegada a Datos", sec.justoDespuesDeDatos === true, sec),
-  check("el título dice cuántos hay", /Mensajes · 5/.test(sec.titulo), sec),
-  check("muestra solo los 3 últimos, no los 5", sec.aLaVista === 3, sec),
-  check("y ofrece ver los anteriores", /Ver los 2 anteriores/.test(sec.botonMas), sec),
-  check("cada mensaje dice quién lo escribió", sec.autores.length === 3 && sec.autores.every(Boolean), sec),
-  check("con la cara de esa persona al lado", sec.conAvatar === 3, sec));
+  check("el título dice cuántos hay", /Mensajes · 15/.test(sec.titulo), sec),
+  check("muestra los últimos 12, no los 15", sec.aLaVista === 12, sec),
+  check("y ofrece ver los anteriores", /Ver los 3 anteriores/.test(sec.botonMas), sec),
+  check("se leen del más viejo al más nuevo, como un chat", sec.ultimo === "cuatro, este es mío", sec),
+  check("el mío va de mi lado", sec.mios === 1, sec),
+  check("dos seguidos de la misma persona se agrupan", sec.pegados >= 1, sec),
+  check("el nombre no se repite en los agrupados", sec.autores.length < sec.aLaVista, sec),
+  check("cada globo lleva la hora adentro, en 24 h", sec.horas.length === sec.aLaVista && /^\d{2}:\d{2}$/.test(sec.horas[0]), sec),
+  check("hay separadores de día", sec.dias.length >= 1 && sec.dias.includes("Hoy"), sec),
+  check("con la cara de quien escribió al lado", sec.conAvatar > 0, sec),
+  check("el hilo tiene alto propio y scrollea", sec.scrollea === true, sec),
+  check("y arranca abajo, en el último mensaje", sec.arrancaAbajo === true, sec));
 
 await page.click(".msg-mas");
 await page.waitForTimeout(400);
 check(
-  "al desplegar aparecen los cinco",
-  (await page.evaluate(() => document.querySelectorAll("#panel .msg").length)) === 5,
+  "al desplegar aparecen los quince",
+  (await page.evaluate(() => document.querySelectorAll("#panel .msg").length)) === 15,
 );
 
 // Escribir uno, con el atajo.
@@ -189,20 +216,24 @@ await page.keyboard.type("MENSAJE DE PRUEBA");
 await page.keyboard.press("Control+Enter");
 await page.waitForTimeout(700);
 const tras = await page.evaluate(() => {
-  const c = state.cards.find((x) => x.titulo === "TARJETA CON CONVERSACIÓN");
+  const c = state.cards.find((x) => x.titulo === "TARJETA CON CONVERSACIÓN"),
+    globos = [...document.querySelectorAll("#panel .msg")],
+    hilo = document.querySelector("#msgHilo");
   return {
     guardados: c.comentarios.length,
     autorDelUltimo: c.comentarios[c.comentarios.length - 1].autor,
     yo: state.user,
-    primeroEnPantalla: (document.querySelector("#panel .msg-t") || {}).textContent.trim(),
-    aLaVista: document.querySelectorAll("#panel .msg").length,
+    ultimoEnPantalla: (globos[globos.length - 1].querySelector(".msg-t") || {}).textContent.trim(),
+    esMio: globos[globos.length - 1].classList.contains("mio"),
+    alFinal: !!hilo && hilo.scrollTop + hilo.clientHeight >= hilo.scrollHeight - 2,
     actividad: (document.querySelector('[data-acc="actividad"]') || {}).textContent || "",
   };
 });
-(check("Ctrl+Enter envía el mensaje", tras.guardados === 6, tras),
+(check("Ctrl+Enter envía el mensaje", tras.guardados === 16, tras),
   check("queda firmado con quien lo escribió", tras.autorDelUltimo === tras.yo, tras),
-  check("y aparece primero, sin tener que buscarlo", tras.primeroEnPantalla === "MENSAJE DE PRUEBA", tras),
-  check("al enviar vuelve a mostrar solo los últimos 3", tras.aLaVista === 3, tras),
+  check("aparece último, que es donde mira el hilo", tras.ultimoEnPantalla === "MENSAJE DE PRUEBA", tras),
+  check("y de mi lado", tras.esMio === true, tras),
+  check("el hilo baja solo al mensaje recién escrito", tras.alFinal === true, tras),
   check("y no ensucia Actividad con un «comentó»", !/comentó/i.test(tras.actividad), tras));
 
 // Abrir otra tarjeta no arrastra el «ver anteriores» de la anterior.
@@ -215,8 +246,78 @@ await page.evaluate((i) => openDetail(i), idTarjeta);
 await page.waitForTimeout(500);
 check(
   "cambiar de tarjeta reinicia el desplegado",
-  (await page.evaluate(() => document.querySelectorAll("#panel .msg").length)) === 3,
+  (await page.evaluate(() => document.querySelectorAll("#panel .msg").length)) === 12,
 );
+
+// ── El panel: escala, encabezados y lo que faltaba ────────────────────────
+console.log("\nel panel de la tarjeta");
+const panel = await page.evaluate(() => {
+  const px = (sel, prop) => {
+    const el = document.querySelector(sel);
+    return el ? Math.round(parseFloat(getComputedStyle(el)[prop])) : 0;
+  };
+  return {
+    // El encabezado de sección era el texto MÁS chico del panel (10.5px).
+    encabezado: px("#panel .sub", "fontSize"),
+    campo: px("#panel .fld input", "fontSize"),
+    chipFecha: px("#panel .dp-btn", "height"),
+    flecha: px("#panel .acc-ar", "width"),
+    // Los presets salen del recorrido del Tab: un campo de fecha ya tiene tres
+    // paradas propias y con los presets hacían falta diez Tab para cruzar Datos.
+    presetsFueraDelTab: [...document.querySelectorAll("#panel .dp-btn")].every((b) => b.tabIndex === -1),
+    hayResponsable: !!document.querySelector('#panel [data-field="responsable"]'),
+    // El panel guarda solo y lo dice arriba: el botón era una promesa de que
+    // sin tocarlo se perdía algo.
+    sinBotonGuardar: !document.querySelector('#panel [data-action="card:save"]'),
+    // Estado, fecha y responsable pegados arriba mientras se scrollea.
+    contextoFijo: getComputedStyle(document.querySelector("#panel .panel-ctx")).position === "sticky",
+    avisoSinFecha: !!document.querySelector("#panel .aviso-sinfecha"),
+  };
+});
+(check("el encabezado de sección dejó de ser el texto más chico", panel.encabezado >= 12, panel),
+  check("los campos se leen de lejos", panel.campo >= 14, panel),
+  check("«Hoy / Mañana / +1 semana» se pueden tocar", panel.chipFecha >= 30, panel),
+  check("y la flecha de abrir/cerrar también", panel.flecha >= 32, panel),
+  check("los presets no se meten en el camino del Tab", panel.presetsFueraDelTab === true, panel),
+  check("se puede poner responsable sin ser una misma", panel.hayResponsable === true, panel),
+  check("no está más el botón Guardar", panel.sinBotonGuardar === true, panel),
+  check("estado, fecha y responsable quedan fijos al scrollear", panel.contextoFijo === true, panel),
+  check("y avisa que sin fecha de fin no se ve en Calendario ni Timeline", panel.avisoSinFecha === true, panel));
+
+// Tocar el encabezado de una sección cerrada la abre; tocarlo con la sección
+// abierta NO la cierra (eso es tarea de la flechita).
+await page.evaluate(() => (document.querySelector('#panel details[data-acc="checklist"]').open = false));
+await page.click('#panel details[data-acc="checklist"] > summary');
+await page.waitForTimeout(300);
+check(
+  "tocar «Checklist» abre el checklist",
+  await page.evaluate(() => document.querySelector('#panel details[data-acc="checklist"]').open === true),
+);
+await page.click('#panel details[data-acc="checklist"] > summary');
+await page.waitForTimeout(300);
+check(
+  "y un segundo clic no lo cierra de casualidad",
+  await page.evaluate(() => document.querySelector('#panel details[data-acc="checklist"]').open === true),
+);
+await page.click('#panel details[data-acc="checklist"] > summary .acc-ar');
+await page.waitForTimeout(300);
+check(
+  "para cerrarlo está la flechita",
+  await page.evaluate(() => document.querySelector('#panel details[data-acc="checklist"]').open === false),
+);
+
+// Anterior / siguiente sin cerrar el panel.
+const nav = await page.evaluate(() => {
+  ((state.view = "kanban"), (state.filters.texto = ""), (state.mis = false), render());
+  const lista = filteredBoard();
+  openDetail(lista[0].id);
+  const antes = state.selectedId;
+  panelMover(1);
+  const despues = state.selectedId;
+  return { lista: lista.length, antes, despues, hayFlechas: !!document.querySelector(".panel-nav") };
+});
+(check("el panel tiene anterior/siguiente", nav.hayFlechas === true, nav),
+  check("y pasa a la tarjeta de al lado sin cerrarse", nav.antes !== nav.despues, nav));
 await page.keyboard.press("Escape");
 await page.waitForTimeout(400);
 
@@ -255,6 +356,79 @@ const despues = await page.evaluate(() => ({
 // Y no se llevó puesto el tablero.
 const tablero = await page.evaluate(() => state.cards.length);
 check("reiniciar las frases no toca las tarjetas", tablero > 3, { tarjetas: tablero });
+
+// ── Técnico: las pestañas y los filtros por columna ───────────────────────
+console.log("\nSeguimiento técnico");
+await page.evaluate(() => {
+  (closeModal(), (state.view = "tecnico"), (state.tecSubView = "grilla"), (state.tecColFiltros = {}), (state.tecFiltro = ""), render());
+});
+await page.waitForTimeout(500);
+const pestanas = await page.evaluate(() => [...document.querySelectorAll(".mapa-sec")].map((s) => s.textContent.trim()));
+(check("la pestaña Validación ya no está en la navegación", !pestanas.some((t) => /Validaci/i.test(t)), pestanas),
+  check("y está la de Métodos de matriculación", pestanas.some((t) => /matriculaci/i.test(t)), pestanas));
+
+// El embudo de una columna: se abre, lista los valores reales con cuántas
+// filas tiene cada uno, y al marcar uno la tabla queda con esas filas.
+const antesFilas = await page.evaluate(() => tecRows().length);
+await page.click('[data-action="tec:filtcol"][data-campo="diseno"]');
+await page.waitForTimeout(400);
+const embudo = await page.evaluate(() => ({
+  abierto: !!document.querySelector("#tecFiltPop"),
+  opciones: [...document.querySelectorAll("#tecFiltPop [data-tec-fv]")].map((c) => c.dataset.tecFv),
+  cuentaHTML: +(document.querySelector('#tecFiltPop [data-tec-fv="HTML"]')?.closest(".tec-col-opt")?.querySelector(".tec-filt-n")?.textContent || 0),
+}));
+(check("el embudo de una columna se abre sin que lo cierre el scroll", embudo.abierto === true, embudo),
+  check("y lista los valores que esa columna tiene de verdad", embudo.opciones.includes("HTML"), embudo),
+  check("con cuántas filas tiene cada uno", embudo.cuentaHTML > 0, embudo));
+await page.click('#tecFiltPop [data-tec-fv="HTML"]');
+await page.waitForTimeout(400);
+const filtrado = await page.evaluate(() => ({
+  filas: tecRows().length,
+  soloHTML: tecRows().every((f) => (f.diseno || "") === "HTML"),
+  contador: document.querySelector("#tecTopN").textContent,
+  sigueAbierto: !!document.querySelector("#tecFiltPop"),
+}));
+(check("marcar un valor filtra la tabla de verdad", filtrado.soloHTML === true && filtrado.filas < antesFilas, filtrado),
+  check("el contador de arriba lo acompaña", filtrado.contador.startsWith(String(filtrado.filas)), filtrado),
+  check("y el embudo no se cierra al marcar, para poder marcar varios", filtrado.sigueAbierto === true, filtrado));
+await page.click('[data-action="tec:limpiar"]');
+await page.waitForTimeout(400);
+check(
+  "«Limpiar filtros» también saca los de columna",
+  await page.evaluate(() => Object.keys(state.tecColFiltros).length === 0 && tecRows().length === state.tecnico.length),
+);
+
+// ── Métodos de matriculación ──────────────────────────────────────────────
+console.log("\nmétodos de matriculación");
+await page.evaluate(() => {
+  ((state.tecSubView = "matri"), (state.matVista = "reglas"), (state.matAbiertas = {}), render());
+});
+await page.waitForTimeout(500);
+const matri = await page.evaluate(() => ({
+  tarjetas: document.querySelectorAll(".mat-card").length,
+  reglas: MATRI_SEED.length,
+  cursos: matCursosTodos().length,
+  // El cruce con el Técnico es por nombre: si se rompiera, no engancharía casi
+  // ninguno y los chips dejarían de llevar a la fila.
+  cruzados: matCursosTodos().filter((c) => matTecFila(c.n)).length,
+}));
+(check("se ven las 63 reglas", matri.tarjetas === matri.reglas && matri.reglas === 63, matri),
+  check("que alcanzan 80 cursos", matri.cursos === 80, matri),
+  check("y casi todos enganchan con una fila del Técnico", matri.cruzados >= 70, matri));
+await page.click(".mat-card .mat-h");
+await page.waitForTimeout(400);
+const abierta = await page.evaluate(() => ({
+  cursos: document.querySelectorAll(".mat-card.open .mat-curso").length,
+  condiciones: document.querySelectorAll(".mat-card.open .mat-cond").length,
+}));
+(check("una regla se abre y muestra los cursos que otorga", abierta.cursos > 0, abierta),
+  check("y las condiciones, leídas una por renglón", abierta.condiciones > 0, abierta));
+await page.click('[data-action="mat:vista"][data-v="cursos"]');
+await page.waitForTimeout(400);
+check(
+  "«Por curso» da vuelta la información: cada curso con sus reglas",
+  await page.evaluate(() => document.querySelectorAll(".mat-ccard").length > 0 && document.querySelectorAll(".mat-rchip").length > 0),
+);
 
 await browser.close();
 await backend.stop();

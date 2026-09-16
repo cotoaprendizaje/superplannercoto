@@ -2344,19 +2344,23 @@ button {
   transform: rotate(90deg);
   color: var(--cat, var(--coto-blue));
 }
-/* En el panel de la tarjeta las secciones se abren y cierran SOLO con la
-   flecha: el encabezado es una barra ancha y cualquier clic cerca de él
-   plegaba la sección en la que se estaba trabajando (ver el guard de click en
-   app.js, con el mismo alcance). Por eso ahí la flecha deja de ser un ::after
-   y pasa a ser un elemento real, con un blanco cómodo de tocar. Fuera del
-   panel —la Ayuda, por ejemplo— el <details> sigue funcionando como siempre. */
+/* En el panel, una sección cerrada se abre tocando cualquier parte del
+   encabezado; una abierta se cierra solo con la flecha (ver el guard de click
+   en app.js, con el mismo alcance). Por eso ahí la flecha deja de ser un
+   ::after y pasa a ser un elemento real, con un blanco cómodo de tocar. Fuera
+   del panel —la Ayuda, por ejemplo— el <details> funciona como siempre. */
 .acc-ar {
   display: none;
 }
 #panel .acc > summary {
+  cursor: pointer;
+}
+/* Abierta, el encabezado ya no promete nada: el cuerpo está a la vista y lo
+   único que queda por hacer es cerrarla, que es tarea de la flecha. */
+#panel .acc[open] > summary {
   cursor: default;
 }
-#panel .acc > summary:hover {
+#panel .acc[open] > summary:hover {
   background: 0 0;
 }
 #panel .acc > summary::after {
@@ -2366,9 +2370,10 @@ button {
   flex: none;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  margin: -4px -6px -4px 4px;
+  width: 34px;
+  height: 34px;
+  font-size: 14px;
+  margin: -6px -8px -6px 4px;
   border-radius: 50%;
   color: var(--ink-soft);
   cursor: pointer;
@@ -2399,10 +2404,10 @@ button {
   border-radius: var(--r-sm);
   transition: background 0.14s;
 }
-#panel .sec-acc > summary:hover {
+#panel .sec-acc:not([open]) > summary:hover {
   background: var(--surface-2);
 }
-#panel .sec-acc > summary:hover .sub {
+#panel .sec-acc:not([open]) > summary:hover .sub {
   color: var(--ink);
 }
 /* Lo que separa una sección de la siguiente es el aire, no una raya: la
@@ -2417,7 +2422,7 @@ button {
   margin-top: 10px;
 }
 .fld-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-soft);
   margin-top: 1px;
 }
@@ -2480,6 +2485,45 @@ button {
   align-items: center;
   gap: 10px;
 }
+/* Pasar a la tarjeta de al lado sin cerrar el panel: revisar veinte tarjetas
+   era abrir, mirar, cerrar, buscar la siguiente y volver a abrir. */
+.panel-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  padding: 2px;
+}
+.panel-nav .btn-icon {
+  width: 26px;
+  height: 26px;
+  font-size: 15px;
+  line-height: 1;
+}
+.panel-nav .btn-icon[disabled] {
+  opacity: 0.3;
+  cursor: default;
+}
+.panel-nav-n {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  padding: 0 2px;
+}
+/* Una tarjeta sin fecha de fin no aparece en Calendario ni en Timeline. No es
+   un error, pero desaparecía en silencio: se la buscaba en el Calendario y no
+   estaba, sin ninguna pista de por qué. */
+.aviso-sinfecha {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--warn-ink);
+  background: var(--warn-soft);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  margin: -2px 0 2px;
+}
 .savestate {
   display: inline-flex;
   align-items: center;
@@ -2532,13 +2576,66 @@ button {
   flex-direction: column;
   gap: 16px;
 }
+/* Estado, fecha de fin y quién la tiene: los tres datos que se van de pantalla
+   apenas bajás a Checklist o a Mensajes, y justo los que hacen falta tener a
+   mano mientras trabajás abajo. Se queda pegada arriba al scrollear. */
+.panel-ctx {
+  position: sticky;
+  top: -16px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: -16px -18px 0;
+  padding: 10px 18px;
+  background: color-mix(in srgb, var(--surface) 94%, var(--coto-blue));
+  border-bottom: 1px solid var(--line);
+}
+.pctx {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  padding: 4px 11px;
+  white-space: nowrap;
+}
+.pctx[style*="--dot"]::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dot);
+  flex: none;
+}
+.pctx.fecha.vencida {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 35%, transparent);
+  background: var(--bad-soft);
+}
+.pctx.quien {
+  padding-left: 4px;
+}
+.pctx.quien .avatar {
+  margin-right: 1px;
+}
+.pctx.quien.vacio {
+  color: var(--ink-soft);
+  font-weight: 600;
+  padding-left: 11px;
+}
 .fld {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 .fld label {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--ink-soft);
 }
@@ -2549,12 +2646,12 @@ button {
 .fld select,
 .fld textarea {
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 14.5px;
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid transparent;
   border-radius: var(--r-sm);
-  padding: 9px 11px;
+  padding: 10px 12px;
   outline: 0;
   width: 100%;
   transition:
@@ -2583,6 +2680,18 @@ button {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+/* En el teléfono el panel mide lo que mide la pantalla: dos campos de fecha
+   con sus tres botones al lado no entran, y el de la derecha quedaba cortado
+   contra el borde. Uno abajo del otro entran los dos enteros. */
+@media (max-width: 620px) {
+  .fld-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+.datepresets {
+  flex-wrap: wrap;
+}
 .chiplist {
   display: flex;
   flex-wrap: wrap;
@@ -2590,9 +2699,9 @@ button {
 }
 .chip-toggle {
   cursor: pointer;
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: var(--pill);
   border: 1px solid var(--line);
   background: var(--surface-2);
@@ -2751,11 +2860,14 @@ button {
    es lo que lo hacía ver como un formulario viejo. Las dos se fueron: ahora
    la jerarquía la dan el tamaño de letra y el aire, que es lo que tiene que
    hacerla. */
+/* El encabezado de sección era el texto más chico de todo el panel (10.5px)
+   siendo justo lo que lo organiza: se leía como una etiqueta al margen y no
+   como el título de lo que hay abajo. */
 .sub {
-  font-size: 10.5px;
+  font-size: 12.5px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.06em;
   color: var(--ink-soft);
   display: flex;
   align-items: center;
@@ -3445,48 +3557,119 @@ button {
   opacity: 0.75;
   margin: 4px 0 2px;
 }
-.msg-lista {
+/* ===== El hilo de mensajes =====
+   El equipo lo pidió "con la onda de un grupo de wasap": del más viejo al más
+   nuevo, globos, los míos de un lado y los del resto del otro, separadores de
+   día y la hora adentro del globo. El hilo tiene alto propio y scrollea —con
+   el campo para escribir abajo, como cualquier chat— porque la otra mitad del
+   pedido era que los mensajes no se coman la tarjeta entera. */
+.msg-hilo {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 10px;
+  gap: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px 10px 4px;
+  margin: 2px -4px 10px;
+  background: var(--surface-2);
+  border-radius: var(--r-s);
+  scrollbar-width: thin;
+}
+.msg-dia {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 6px;
+}
+.msg-dia:first-child {
+  margin-top: 0;
+}
+.msg-dia span {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border-radius: var(--pill);
+  padding: 3px 11px;
 }
 .msg {
   display: flex;
-  gap: 9px;
-  align-items: flex-start;
+  gap: 8px;
+  align-items: flex-end;
+  max-width: 88%;
+}
+/* Los míos van a la derecha, con el orden dado vuelta: la carita queda del
+   lado de afuera igual que del otro lado. */
+.msg.mio {
+  flex-direction: row-reverse;
+  align-self: flex-end;
 }
 .msg .avatar.sm {
   flex: none;
-  margin-top: 1px;
 }
-.msg-c {
+/* Dos mensajes seguidos de la misma persona en el mismo rato se pegan: la
+   carita se reserva el lugar pero no se repite, que es lo que hace que una
+   charla se lea como una charla. */
+.msg .avatar.sm.hueco {
+  background: 0 0;
+  border: 0;
+  box-shadow: none;
+}
+.msg.pegado {
+  margin-top: -2px;
+}
+.burbuja {
+  position: relative;
   min-width: 0;
-  flex: 1;
+  background: var(--surface);
+  border-radius: 14px 14px 14px 4px;
+  padding: 7px 50px 7px 11px;
+  box-shadow: var(--shadow-sm);
 }
-.msg-h {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-  line-height: 1.2;
+.msg.pegado .burbuja {
+  border-top-left-radius: 6px;
 }
-.msg-h b {
-  font-size: 12.5px;
-  color: var(--ink);
+.msg.mio .burbuja {
+  background: var(--coto-blue);
+  border-radius: 14px 14px 4px 14px;
 }
-.msg-h span {
-  font-size: 11px;
-  color: var(--ink-soft);
+.msg.mio.pegado .burbuja {
+  border-top-right-radius: 6px;
+}
+.msg-quien {
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  margin-bottom: 1px;
 }
 .msg-t {
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.45;
   color: var(--ink);
-  margin-top: 2px;
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.msg.mio .msg-t {
+  color: #fff;
+}
+/* La hora va adentro del globo, abajo a la derecha, con el texto reservándole
+   el lugar (el padding-right del globo) para que no se le monte encima. */
+.msg-hora {
+  position: absolute;
+  right: 11px;
+  bottom: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.msg.mio .msg-hora {
+  color: rgba(255, 255, 255, 0.72);
 }
 .msg-mas {
-  margin-top: 10px;
+  align-self: center;
+  margin-bottom: 4px;
   border: 0;
   background: 0 0;
   font-family: inherit;
@@ -6151,6 +6334,12 @@ html {
   border-radius: 5px;
   padding: 0 3px;
 }
+/* Adentro de un globo propio el fondo es azul COTO: la mención quedaba azul
+   sobre azul, o sea invisible. */
+.msg.mio .mention {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
+}
 .qchips {
   display: flex;
   gap: 6px;
@@ -6360,14 +6549,14 @@ html {
    horizontal sí o sí — pero "Curso" (con qué fila estás) se queda fijo a la
    izquierda para no perder el contexto a mitad de scroll. */
 .tec-table td.tec-curso,
-.tec-table th[data-campo="curso"] {
+.tec-table th[data-col="curso"] {
   position: sticky;
   left: 0;
   z-index: 1;
   background: var(--surface);
   box-shadow: 1px 0 0 var(--line);
 }
-.tec-table th[data-campo="curso"] {
+.tec-table th[data-col="curso"] {
   z-index: 3;
   background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
 }
@@ -6744,13 +6933,36 @@ html {
   font-weight: 600;
   white-space: nowrap;
 }
-.tec-th-sort {
-  cursor: pointer;
+/* El encabezado de una columna hace dos cosas: el nombre ordena y el ▾ filtra.
+   Son dos botones separados dentro del mismo <th> porque un solo clic no puede
+   adivinar cuál de las dos querías. */
+.tec-th {
+  padding: 4px 6px !important;
+}
+.tec-th > * {
+  vertical-align: middle;
+}
+.tec-th-sort,
+.tec-th-lbl {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: none;
+  padding: 5px 6px;
+  border-radius: var(--r-sm);
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
   user-select: none;
   white-space: nowrap;
 }
+.tec-th-sort {
+  cursor: pointer;
+}
 .tec-th-sort:hover {
   color: var(--coto-blue);
+  background: color-mix(in srgb, var(--coto-blue) 10%, transparent);
 }
 .tec-th-sort.on {
   color: var(--coto-blue);
@@ -6762,6 +6974,75 @@ html {
 }
 .tec-th-sort.on .tec-th-ar {
   opacity: 1;
+}
+/* El embudito: chiquito y apagado hasta que filtra algo, y ahí se enciende con
+   el número de valores elegidos, para que nunca queden filas escondidas sin
+   que se vea desde dónde. */
+.tec-th-filt {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  line-height: 1;
+}
+.tec-th-filt:hover {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--coto-blue);
+}
+.tec-th-filt.on {
+  background: var(--coto-blue);
+  border-color: var(--coto-blue);
+  color: #fff;
+}
+.tec-th-filt-n {
+  font-size: 10px;
+  font-weight: 800;
+}
+.tec-th.filt {
+  background: color-mix(in srgb, var(--coto-blue) 13%, var(--surface)) !important;
+}
+/* Cuelga del <body> y se ubica a mano contra el botón: el encabezado de la
+   tabla es sticky adentro de un contenedor con scroll, así que un popover
+   colgado del <th> se recortaría contra el borde de la grilla. */
+.tec-filt-pop {
+  position: fixed;
+  left: 0;
+  top: 0;
+  min-width: 210px;
+  max-width: 280px;
+  z-index: 80;
+}
+.tec-filt-lista {
+  display: flex;
+  flex-direction: column;
+  max-height: 46vh;
+  overflow-y: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+.tec-filt-lista .tec-col-opt {
+  gap: 8px;
+  padding: 5px 4px;
+}
+.tec-filt-lista .tec-col-opt.cero {
+  opacity: 0.4;
+}
+.tec-filt-n {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.tec-filt-vacio {
+  color: var(--ink-soft);
 }
 .tec-cat {
   max-width: 160px;
@@ -7485,17 +7766,24 @@ html {
   border-color: transparent;
   color: #fff;
 }
+/* "Hoy / Mañana / +1 semana" medían 21px de alto: la mitad de lo que se
+   puede tocar cómodo, y son de los botones que más se usan del panel. */
 .datepresets {
   display: flex;
-  gap: 4px;
-  margin-top: 6px;
+  gap: 6px;
+  margin-top: 8px;
 }
 .dp-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
   border: 1px solid var(--line);
   background: var(--surface);
   border-radius: 999px;
-  padding: 3px 9px;
-  font-size: 11px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
   color: var(--ink-soft);
 }
@@ -8025,4 +8313,343 @@ html {
     min-width: 70px;
     padding: 3px 6px;
   }
+}
+
+/* ===== Métodos de matriculación =====
+   Las 63 reglas del administrador de matriculaciones. En el Excel de origen
+   cada regla es una fila con las condiciones apelotonadas en una celda; acá
+   cada una es una tarjeta que se abre, con los cursos que otorga de un lado y
+   las condiciones —leídas como una frase— del otro. */
+.mat-intro {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  padding: 10px 14px;
+  margin-bottom: var(--sp-3);
+}
+.mat-vistas {
+  display: inline-flex;
+  gap: 4px;
+}
+.mat-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.mat-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--surface);
+  overflow: hidden;
+}
+.mat-card.open {
+  border-color: color-mix(in srgb, var(--coto-blue) 40%, var(--line));
+  box-shadow: var(--shadow-sm);
+}
+/* Una regla dada de baja sigue a la vista pero apagada: saberlas es parte del
+   trabajo, confundirlas con las que están corriendo no. */
+.mat-card.baja .mat-h-t b {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}
+.mat-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.mat-h:hover {
+  background: color-mix(in srgb, var(--coto-blue) 5%, transparent);
+}
+.mat-ar {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-soft);
+  transition: transform 0.15s;
+}
+.mat-card.open .mat-ar {
+  transform: rotate(90deg);
+  color: var(--coto-blue);
+}
+.mat-h-t {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.mat-h-t b {
+  font-family: var(--titulo);
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.mat-meta {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.mat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: none;
+}
+.mat-chip {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: var(--pill);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.mat-chip.on {
+  color: var(--ok);
+  background: var(--ok-soft);
+  border-color: transparent;
+}
+.mat-chip.off {
+  color: var(--warn-ink);
+  background: var(--warn-soft);
+  border-color: transparent;
+}
+.mat-chip.auto {
+  color: var(--coto-blue);
+  background: color-mix(in srgb, var(--coto-blue) 12%, transparent);
+  border-color: transparent;
+}
+.mat-body {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--sp-3);
+  padding: 0 14px 14px 36px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 14px;
+}
+@media (max-width: 760px) {
+  .mat-body {
+    grid-template-columns: 1fr;
+    padding-left: 14px;
+  }
+}
+/* En el teléfono el nombre de la regla se come el renglón: los dos chips
+   (Activa / Automática) bajan a una línea propia en vez de quedar apretados
+   contra el borde. */
+@media (max-width: 620px) {
+  .mat-h {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    align-items: flex-start;
+  }
+  .mat-h-t {
+    flex: 1 1 70%;
+  }
+  .mat-chips {
+    flex: 1 1 100%;
+    padding-left: 22px;
+  }
+}
+.mat-sub {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+.mat-cursos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+/* Un curso que está en el Seguimiento técnico lleva a su fila; uno que no
+   está se ve apagado, que es justo lo que conviene notar: se matricula solo y
+   no lo estamos siguiendo. */
+.mat-curso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: var(--pill);
+  border: 1px dashed var(--line);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-family: inherit;
+  text-align: left;
+}
+button.mat-curso.ok {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--coto-blue) 28%, var(--line));
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+button.mat-curso.ok:hover {
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+}
+.mat-mid {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: var(--r-sm);
+  padding: 1px 5px;
+  font-variant-numeric: tabular-nums;
+}
+/* Las condiciones como una lista leíble, con el conector (Y / O) suelto entre
+   renglones: es lo que cambia el sentido de toda la regla y en el Excel se
+   perdía en el medio del texto. */
+.mat-conds {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.mat-cond {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border-left: 3px solid color-mix(in srgb, var(--coto-blue) 45%, transparent);
+}
+.mat-cond.neg {
+  border-left-color: color-mix(in srgb, var(--warn-ink) 55%, transparent);
+}
+.mat-cond b {
+  font-weight: 800;
+}
+.mat-cond i {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--coto-blue);
+}
+.mat-cond.neg i {
+  color: var(--warn-ink);
+}
+/* El conector entre condiciones: en el Excel se perdía en el medio del texto
+   y es justo lo que cambia el sentido de la regla entera ("Y" acumula, "O"
+   abre otra puerta). Acá va suelto, entre renglones y con una línea al lado. */
+.mat-une {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0 2px 10px;
+}
+/* Va en una pastilla y no suelto: una "O" de diez píxeles al lado de una
+   línea se lee como un punto, no como la palabra que decide si la regla suma
+   condiciones o abre otra puerta. */
+.mat-une span {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  color: var(--coto-blue);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--coto-blue) 30%, var(--line));
+  border-radius: var(--pill);
+  padding: 2px 10px;
+  line-height: 1.2;
+}
+.mat-une::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.mat-pie {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line-soft);
+  padding-top: 9px;
+}
+.mat-vacio,
+.mat-nada {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.mat-nada {
+  padding: 28px 14px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-s);
+}
+/* Vista "por curso": la misma información dada vuelta, para contestar por qué
+   a alguien le apareció un curso. */
+.mat-ccard {
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--surface);
+  padding: 11px 14px;
+}
+.mat-ch {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mat-ct {
+  font-family: var(--titulo);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: left;
+}
+button.mat-ct {
+  cursor: pointer;
+}
+button.mat-ct:hover {
+  color: var(--coto-blue);
+  text-decoration: underline;
+}
+.mat-ch .mat-meta {
+  margin-left: auto;
+}
+.mat-creglas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mat-rchip {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--pill);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.mat-rchip:hover {
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+}
+.mat-rchip.baja {
+  color: var(--ink-soft);
+  text-decoration: line-through;
 }

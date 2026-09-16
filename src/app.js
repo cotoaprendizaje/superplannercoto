@@ -3036,6 +3036,84 @@ const TEMPLATES = {
 // el Excel de Categorías y Cursos que armó el equipo. Campos cortos (c/t/p/
 // po/mo/ev/tx/d/e) a propósito, para no repetir 108 veces nombres largos de
 // propiedad — seedTecnico() los expande a la forma completa de cada fila.
+// ===== Métodos de matriculación =====
+// Las reglas del administrador de matriculaciones: quién queda inscripto
+// automáticamente a qué curso. No se editan acá —el sistema de origen es el
+// administrador de reglas— así que viajan con la app, no con el documento
+// sincronizado, y llevan la fecha del export a la vista para que nadie las
+// lea como si fueran de hoy.
+// id/f/n/e/t = ID, fecha de creación, nombre, estado, tipo.
+// cs = cursos que otorga: n (nombre) + m (id de Moodle, el mismo con el que
+//      cruzan contra el Seguimiento técnico).
+// cd = condiciones: c (campo), o (operador: = ≠ ~ !~), v (valor),
+//      u (cómo se une con la anterior: "Y" / "O").
+const MATRI_EXPORT = "2026-09-16";
+const MATRI_SEED = [
+  {"id":"67","f":"2026-09-09","n":"Cursos para colaboradores de Frescos: Quesos y Fiambres","e":"Activa","t":"Manual","cs":[{"n":"Curso de Corte de Quesos","m":"1613"},{"n":"Curso de Armado de Picadas","m":"1621"}],"cd":[{"c":"Legajo","o":"=","v":"209449","u":""},{"c":"Legajo","o":"=","v":"209507","u":"O"}],"u":"2026-09-14"},
+  {"id":"66","f":"2026-09-09","n":"Especialistas de NOA","e":"Activa","t":"Automática","cs":[{"n":"Curso Básico de Coto Hogar","m":"410"},{"n":"Curso Básico de Ventas","m":"623"},{"n":"Curso de Análisis de Archivos de Auditoría Textil/Bazar","m":"1597"},{"n":"Curso de Carpeta Compartida Textil/Bazar","m":"1601"},{"n":"Curso de GDM Pedido de Repuestos Textil/Bazar","m":"1605"},{"n":"Curso de Prioridad de Reposición de NOA","m":"2130"},{"n":"Relevamiento de clases de NOA","m":"2184"},{"n":"Uso de Sucursales 3 - NOA","m":"2208"}],"cd":[{"c":"Función","o":"=","v":"AUDITOR","u":""},{"c":"Unidad Organizativa","o":"=","v":"ELECTRO","u":"Y"},{"c":"Función","o":"=","v":"AUDITOR","u":"O"},{"c":"Unidad Organizativa","o":"=","v":"BAZAR","u":"Y"},{"c":"Función","o":"=","v":"AUDITOR","u":"O"},{"c":"Unidad Organizativa","o":"=","v":"TEXTIL","u":"Y"},{"c":"Función","o":"=","v":"AUDITOR","u":"O"},{"c":"Unidad Organizativa","o":"=","v":"COTO HOGAR","u":"Y"}],"u":"2026-09-16"},
+  {"id":"65","f":"2026-09-02","n":"Cursos para Especialistas de Alimentos","e":"Activa","t":"Automática","cs":[{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Empresa","o":"=","v":"COTO C.I.C.S.A.","u":""},{"c":"Función","o":"=","v":"AUDITOR","u":"Y"},{"c":"Unidad Organizativa","o":"!~","v":"BAZAR","u":"Y"},{"c":"Unidad Organizativa","o":"!~","v":"CALL CENTER","u":"Y"},{"c":"Unidad Organizativa","o":"!~","v":"EFLUENTES","u":"Y"},{"c":"Unidad Organizativa","o":"!~","v":"ELECTRO","u":"Y"},{"c":"Unidad Organizativa","o":"!~","v":"COTO HOGAR","u":"Y"},{"c":"Unidad Organizativa","o":"!~","v":"TEXTIL","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"CALIDAD SUCURSALES","u":"O"},{"c":"Función","o":"=","v":"JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"64","f":"2026-08-27","n":"Cursos para colaboradores de EP-Centralizado 75-Frac, Q/F(543) Pastas suc 63","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Uso Seguro del Montacargas","m":"1285"},{"n":"Prevención Cardiovascular - Servicio Médico","m":"2064"},{"n":"Seguridad de la Información","m":"2109"},{"n":"Introductorio de toma de inventario","m":"2173"},{"n":"Inducción en Prevención de Riesgos Laborales","m":"2206"}],"cd":[{"c":"Gerencia","o":"=","v":"PASTAS SUC 63","u":""},{"c":"Gerencia","o":"=","v":"EP-CENTRALIZ 75","u":"O"},{"c":"Gerencia","o":"=","v":"FRAC. Q/F (543)","u":"O"}],"u":"2026-09-16"},
+  {"id":"63","f":"2026-08-24","n":"Cursos para Cotonetes","e":"Activa","t":"Automática","cs":[{"n":"Inducción en Prevención de Riesgos Laborales","m":"2206"}],"cd":[{"c":"Unidad Organizativa","o":"=","v":"EDUCACION VIRTUAL","u":""}],"u":"2026-09-16"},
+  {"id":"62","f":"2026-08-21","n":"Armador y Cobrador de Digital","e":"Activa","t":"Manual","cs":[{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Medios de pago","m":"2178"},{"n":"Cobradores de Coto Digital","m":"2198"}],"cd":[{"c":"Legajo","o":"=","v":"194220","u":""},{"c":"Legajo","o":"=","v":"191751","u":"O"},{"c":"Legajo","o":"=","v":"194105","u":"O"},{"c":"Legajo","o":"=","v":"201718","u":"O"},{"c":"Legajo","o":"=","v":"193228","u":"O"},{"c":"Legajo","o":"=","v":"193894","u":"O"},{"c":"Legajo","o":"=","v":"205843","u":"O"}],"u":"2026-09-08"},
+  {"id":"61","f":"2026-07-29","n":"Anfitecnico Zona E","e":"Activa","t":"Manual","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso Básico de Electricidad","m":"517"},{"n":"Curso de Anfitriones","m":"548"},{"n":"Curso de Seguridad Eléctrica","m":"606"},{"n":"Curso de Circuito de Service","m":"1089"}],"cd":[{"c":"Legajo","o":"=","v":"208904","u":""}],"u":"2026-08-07"},
+  {"id":"60","f":"2026-07-16","n":"Curso de cajas para colaboradores","e":"Activa","t":"Manual","cs":[{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Curso de Reconocimiento de Dólares","m":"1392"},{"n":"Medios de pago","m":"2178"}],"cd":[{"c":"Legajo","o":"=","v":"208617","u":""},{"c":"Legajo","o":"=","v":"208579","u":"O"},{"c":"Legajo","o":"=","v":"208290","u":"O"},{"c":"Legajo","o":"=","v":"208464","u":"O"},{"c":"Legajo","o":"=","v":"204893","u":"O"},{"c":"Legajo","o":"=","v":"208653","u":"O"},{"c":"Legajo","o":"=","v":"175820","u":"O"},{"c":"Legajo","o":"=","v":"204052","u":"O"},{"c":"Legajo","o":"=","v":"208473","u":"O"},{"c":"Legajo","o":"=","v":"208671","u":"O"},{"c":"Legajo","o":"=","v":"208718","u":"O"},{"c":"Legajo","o":"=","v":"208848","u":"O"},{"c":"Legajo","o":"=","v":"208653","u":"O"},{"c":"Legajo","o":"=","v":"208479","u":"O"},{"c":"Legajo","o":"=","v":"208721","u":"O"},{"c":"Legajo","o":"=","v":"207923","u":"O"},{"c":"Legajo","o":"=","v":"208469","u":"O"},{"c":"Legajo","o":"=","v":"191126","u":"O"},{"c":"Legajo","o":"=","v":"201931","u":"O"},{"c":"Legajo","o":"=","v":"206998","u":"O"},{"c":"Legajo","o":"=","v":"202293","u":"O"},{"c":"Legajo","o":"=","v":"202294","u":"O"},{"c":"Legajo","o":"=","v":"204837","u":"O"}],"u":"2026-09-08"},
+  {"id":"59","f":"2026-07-14","n":"Colaborador en capacitación - Verdulería","e":"Activa","t":"Automática","cs":[{"n":"Curso de Frutas y Verduras","m":"930"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Armados de frutas y verduras","m":"2187"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Unidad Organizativa","o":"=","v":"COLABORADORES EN CAPACITA","u":""},{"c":"Función","o":"=","v":"REPOSITOR","u":"Y"}],"u":"2026-09-16"},
+  {"id":"58","f":"2026-07-08","n":"Coto Digital - Central","e":"Activa","t":"Automática","cs":[{"n":"Curso Básico de Coto Digital","m":"1628"},{"n":"Curso de Coto Digital Picking","m":"1780"},{"n":"Curso de Armadores de Coto Digital","m":"2050"},{"n":"Auxiliares administrativos de Coto Digital - Parte 1","m":"2179"},{"n":"Auxiliares administrativos de Coto Digital - Parte 2","m":"2180"},{"n":"Cobradores de Coto Digital","m":"2198"}],"cd":[{"c":"Gerencia","o":"=","v":"DIREC.SISTEMAS","u":""},{"c":"Unidad Organizativa","o":"=","v":"COTO DIGITAL","u":"Y"}],"u":"2026-09-16"},
+  {"id":"57","f":"2026-06-24","n":"Candidatos a Gerentes 2026","e":"Activa","t":"Manual","cs":[{"n":"Curso de Recepciones del Centro de Distribución","m":"496"},{"n":"Curso de Recepción de Proveedores","m":"654"},{"n":"Curso de Panel de Control","m":"1207"},{"n":"Curso de la Aplicación \"Sucursales 3\"","m":"1433"},{"n":"Curso de Puestos de Operaciones en Sucursal","m":"1959"},{"n":"Curso de Traspasos de Sucursal a 126 de Salón","m":"2020"},{"n":"Curso de Modalidades de Hurto y Controles","m":"2096"},{"n":"Cortes de media res - Cuarto delantero","m":"2105"},{"n":"Cortes de media res - Cuarto trasero","m":"2167"},{"n":"Curso de Exhibición de Productos de Pescadería","m":"2168"},{"n":"Medios de pago","m":"2178"},{"n":"Cortes de media res - Pecho","m":"2181"},{"n":"Toma de inventario - Electro","m":"2186"},{"n":"Armados de frutas y verduras","m":"2187"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Legajo","o":"=","v":"143950","u":""},{"c":"Legajo","o":"=","v":"35133","u":"O"}],"u":"2026-09-02"},
+  {"id":"56","f":"2026-05-27","n":"Cursos para Equipo de Inventario","e":"Inactiva","t":"Automática","cs":[{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Introducción al Sector Carniceria","m":"629"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Uso Seguro del Montacargas","m":"1285"},{"n":"Curso de Balanzas","m":"1480"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso de Corte de Quesos","m":"1613"},{"n":"Curso de Elaboración de Facturas","m":"1615"},{"n":"Curso de Armado de Picadas","m":"1621"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Prevención Cardiovascular - Servicio Médico","m":"2064"},{"n":"Seguridad de la Información","m":"2109"},{"n":"Curso de Exhibición de Productos de Pescadería","m":"2168"},{"n":"Introductorio de toma de inventario","m":"2173"},{"n":"Toma de inventario - Electro","m":"2186"},{"n":"Inducción en Prevención de Riesgos Laborales","m":"2206"}],"cd":[{"c":"Unidad Organizativa","o":"=","v":"EQUIPO DE VENTAS 6","u":""},{"c":"Unidad Organizativa","o":"=","v":"GERENCIA GENERAL - EQUIPO","u":"O"}],"u":""},
+  {"id":"55","f":"2026-05-20","n":"Cursos para Legales","e":"Activa","t":"Automática","cs":[{"n":"Prevención de LA/FT/FP","m":"2177"}],"cd":[{"c":"Gerencia","o":"=","v":"LEGALES","u":""}],"u":"2026-09-16"},
+  {"id":"54","f":"2026-05-08","n":"50 - Cursos para colaboradores de Frigoríficos","e":"Activa","t":"Automática","cs":[{"n":"Prevención Cardiovascular - Servicio Médico","m":"2064"},{"n":"Seguridad de la Información","m":"2109"},{"n":"Inducción en Prevención de Riesgos Laborales","m":"2206"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Centros","o":"=","v":"FRIGORIFICOS","u":""}],"u":"2026-09-16"},
+  {"id":"53","f":"2026-05-08","n":"49 - Cursos para colaboradores del Centro de Distribución","e":"Activa","t":"Automática","cs":[{"n":"Prevención Cardiovascular - Servicio Médico","m":"2064"},{"n":"Seguridad de la Información","m":"2109"},{"n":"Inducción en Prevención de Riesgos Laborales","m":"2206"}],"cd":[{"c":"Centros","o":"=","v":"CENTRO DE DISTRIBUCION","u":""}],"u":"2026-09-16"},
+  {"id":"52","f":"2026-04-28","n":"46 - Cocineros de Zona Gourmet","e":"Activa","t":"Automática","cs":[{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Curso de Camareros de Zona Gourmet","m":"2081"},{"n":"Productos VICTORY","m":"2131"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"ZONA","u":""},{"c":"Función","o":"=","v":"COCINERO","u":"Y"},{"c":"Sector Genérico","o":"=","v":"ZONA","u":"O"},{"c":"Función","o":"=","v":"COCINERO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"51","f":"2026-03-01","n":"Matriculación a evaluaciones presenciales","e":"Activa","t":"Manual","cs":[],"cd":[],"u":""},
+  {"id":"50","f":"2026-03-25","n":"Cursos para Jefes de RRHH","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Manual de Administración de Recursos Humanos Capítulo 1","m":"2068"},{"n":"Manual de Administración de Recursos Humanos Capítulo 2","m":"2142"}],"cd":[{"c":"Unidad Organizativa","o":"=","v":"ADM. DE PERSONAL SUC.","u":""},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"RRHH SUCURSALES - EQUIPO","u":"O"},{"c":"Función","o":"=","v":"JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"49","f":"2026-03-20","n":"48 - Cursos para Repositores de Zona","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"ZONA","u":""},{"c":"Función","o":"=","v":"REPOSITOR","u":"Y"}],"u":"2026-09-16"},
+  {"id":"46","f":"2026-03-19","n":"45 - Cursos para Control de Calidad","e":"Activa","t":"Automática","cs":[{"n":"Inspecciones - Control de Calidad","m":"331"},{"n":"Manual POES","m":"925"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"CONTROL DE CALIDAD","u":""}],"u":"2026-09-16"},
+  {"id":"45","f":"2026-03-19","n":"44 - Cursos para Cajeros de Zona Gourmet","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Curso de Reconocimiento de Dólares","m":"1392"},{"n":"Curso de Reconocimiento de Euros","m":"1396"},{"n":"Curso de Camareros de Zona Gourmet","m":"2081"},{"n":"Medios de pago","m":"2178"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"ZONA","u":""},{"c":"Función","o":"=","v":"CAJERO","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"PATIO DE JUEGOS","u":"O"},{"c":"Función","o":"=","v":"CAJERO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"44","f":"2026-03-19","n":"43 - Cursos para Camareros de Zona Gourmet","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Curso de Camareros de Zona Gourmet","m":"2081"},{"n":"Productos VICTORY","m":"2131"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"ZONA","u":""},{"c":"Función","o":"=","v":"MOZO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"43","f":"2026-03-19","n":"42 - Cursos para Anfitriones de Zona","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Anfitriones","m":"548"},{"n":"Cumples de Zona","m":"2185"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"ZONA","u":""},{"c":"Función","o":"=","v":"ANFITRION","u":"Y"}],"u":"2026-09-16"},
+  {"id":"42","f":"2026-03-19","n":"41 - Cursos para Jefes de Zona Gourmet","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Curso de Camareros de Zona Gourmet","m":"2081"},{"n":"Productos VICTORY","m":"2131"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Centros","o":"=","v":"SUCURSALES","u":""},{"c":"Unidad Organizativa","o":"=","v":"ZONA CAFE COMIDAS JUEGOS","u":"Y"},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"ZONA CAFE COMIDAS JUEGOS","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"AREA ZONA CAFE COMIDAS JU","u":"O"}],"u":"2026-09-16"},
+  {"id":"41","f":"2026-03-19","n":"40 - Cursos para Jefes de Zona E!","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Anfitriones","m":"548"},{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de Circuito de Service","m":"1089"},{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Curso de Reconocimiento de Dólares","m":"1392"},{"n":"Curso de Reconocimiento de Euros","m":"1396"},{"n":"Medios de pago","m":"2178"},{"n":"Cumples de Zona","m":"2185"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Centros","o":"=","v":"SUCURSALES","u":""},{"c":"Unidad Organizativa","o":"=","v":"AREA ZONA E - ENTRETENIMI","u":"Y"},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"AREA ZONA E - ENTRETENIMI","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"40","f":"2026-03-19","n":"39 - Cursos para Recepcionistas de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Recepciones del Centro de Distribución","m":"496"},{"n":"Curso de Recepción de Proveedores","m":"654"},{"n":"Curso de Puestos de Operaciones en Sucursal","m":"1959"},{"n":"Curso de Modalidades de Hurto y Controles","m":"2096"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"SEGURIDAD","u":""},{"c":"Función","o":"=","v":"RECEPCIONISTA","u":"Y"}],"u":"2026-09-16"},
+  {"id":"39","f":"2026-03-19","n":"38 - Cursos para Maestranza de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"SEGURIDAD","u":""},{"c":"Función","o":"=","v":"MAESTRANZA","u":"Y"},{"c":"Sector Genérico","o":"=","v":"ZONA","u":"O"},{"c":"Función","o":"=","v":"MAESTRANZA","u":"Y"}],"u":"2026-09-16"},
+  {"id":"38","f":"2026-03-19","n":"37 - Cursos para Prevención de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Recepciones del Centro de Distribución","m":"496"},{"n":"Curso de Recepción de Proveedores","m":"654"},{"n":"Curso de Puestos de Operaciones en Sucursal","m":"1959"},{"n":"Curso de Modalidades de Hurto y Controles","m":"2096"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"SEGURIDAD","u":""},{"c":"Función","o":"=","v":"MAESTRANZA CCTV","u":"Y"},{"c":"Sector Genérico","o":"=","v":"SEGURIDAD","u":"O"},{"c":"Función","o":"=","v":"MAESTRANZA PREVENCION","u":"Y"},{"c":"Sector Genérico","o":"=","v":"ZONA","u":"O"},{"c":"Función","o":"=","v":"MAESTRANZA PREVENCION","u":"Y"}],"u":"2026-09-16"},
+  {"id":"37","f":"2026-03-13","n":"36 - Cursos para Jefes de Seguridad y Recepción de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Recepciones del Centro de Distribución","m":"496"},{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Recepción de Proveedores","m":"654"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de Circuito de Service","m":"1089"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Curso de Puestos de Operaciones en Sucursal","m":"1959"},{"n":"Curso de Modalidades de Hurto y Controles","m":"2096"}],"cd":[{"c":"Sector Genérico","o":"=","v":"SEGURIDAD","u":""},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"SEGURIDAD","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"36","f":"2026-03-13","n":"35 - Cursos para Auxiliares de RRHH de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Manual de Administración de Recursos Humanos Capítulo 1","m":"2068"},{"n":"Manual de Administración de Recursos Humanos Capítulo 2","m":"2142"}],"cd":[{"c":"Sector Genérico","o":"=","v":"RRHH","u":""},{"c":"Función","o":"=","v":"AUXILIAR","u":"Y"}],"u":"2026-09-16"},
+  {"id":"35","f":"2026-03-13","n":"34 - Cursos para Auxiliares de Administración de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Curso de Reconocimiento de Dólares","m":"1392"},{"n":"Curso de Reconocimiento de Euros","m":"1396"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Manual de Administración de Recursos Humanos Capítulo 1","m":"2068"},{"n":"Manual de Administración de Recursos Humanos Capítulo 2","m":"2142"},{"n":"Toma de inventario - Electro","m":"2186"},{"n":"Introducción al STS","m":"2205"}],"cd":[{"c":"Sector Genérico","o":"=","v":"ADMINISTRACION","u":""},{"c":"Función","o":"=","v":"ADMINISTRATIVO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"34","f":"2026-03-13","n":"33 - Cursos para Jefes de Administración de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Estudio de Casos \"Clavos\"","m":"777"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de Circuito de Service","m":"1089"},{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Curso de Reconocimiento de Dólares","m":"1392"},{"n":"Curso de Reconocimiento de Euros","m":"1396"},{"n":"Curso de la Aplicación \"Sucursales 3\"","m":"1433"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Manual de Administración de Recursos Humanos Capítulo 1","m":"2068"},{"n":"Manual de Administración de Recursos Humanos Capítulo 2","m":"2142"},{"n":"Toma de inventario - Electro","m":"2186"},{"n":"Introducción al STS","m":"2205"}],"cd":[{"c":"Sector Genérico","o":"=","v":"ADMINISTRACION","u":""},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"ADMINISTRACION","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"33","f":"2026-03-13","n":"32 - Cursos para Jefes de NOA de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Curso Básico de Coto Hogar","m":"410"},{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso Básico de Ventas","m":"623"},{"n":"Curso de Estudio de Casos \"Clavos\"","m":"777"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de la Aplicación \"Sucursales 3\"","m":"1433"},{"n":"Curso de Análisis de Archivos de Auditoría Textil/Bazar","m":"1597"},{"n":"Curso de Carpeta Compartida Textil/Bazar","m":"1601"},{"n":"Curso de GDM Pedido de Repuestos Textil/Bazar","m":"1605"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Curso de Prioridad de Reposición de NOA","m":"2130"},{"n":"Relevamiento de clases de NOA","m":"2184"},{"n":"Toma de inventario - Electro","m":"2186"},{"n":"Uso de Sucursales 3 - NOA","m":"2208"}],"cd":[{"c":"Sector Genérico","o":"=","v":"NO ALIMENTOS","u":""},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"NO ALIMENTOS","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"32","f":"2026-03-13","n":"31 - Cursos para Colaboradores de Textil","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Análisis de Archivos de Auditoría Textil/Bazar","m":"1597"},{"n":"Curso de Carpeta Compartida Textil/Bazar","m":"1601"},{"n":"Curso de GDM Pedido de Repuestos Textil/Bazar","m":"1605"},{"n":"Curso de Prioridad de Reposición de NOA","m":"2130"},{"n":"Relevamiento de clases de NOA","m":"2184"}],"cd":[{"c":"Unidad Organizativa","o":"=","v":"TEXTIL","u":""},{"c":"Función","o":"=","v":"REPOSITOR","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"TEXTIL","u":"O"},{"c":"Función","o":"=","v":"ESTIBADOR","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"TEXTIL","u":"O"},{"c":"Función","o":"=","v":"VENDEDOR ELECTRO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"31","f":"2026-03-12","n":"30 - Curso para Colaboradores de Coto Hogar","e":"Activa","t":"Automática","cs":[{"n":"Curso Básico de Coto Hogar","m":"410"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Prioridad de Reposición de NOA","m":"2130"},{"n":"Relevamiento de clases de NOA","m":"2184"}],"cd":[{"c":"Unidad Organizativa","o":"=","v":"COTO HOGAR","u":""},{"c":"Función","o":"=","v":"REPOSITOR","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"COTO HOGAR","u":"O"},{"c":"Función","o":"=","v":"ESTIBADOR","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"COTO HOGAR","u":"O"},{"c":"Función","o":"=","v":"VENDEDOR","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"FERRETERIA","u":"O"},{"c":"Unidad Organizativa","o":"=","v":"COTO HOGAR-TEXTIL-ELECTRO","u":"O"}],"u":"2026-09-16"},
+  {"id":"30","f":"2026-03-12","n":"29 - Curso para Colaboradores de Electro","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso Básico de Ventas","m":"623"},{"n":"Curso de Estudio de Casos \"Clavos\"","m":"777"},{"n":"Curso de Prioridad de Reposición de NOA","m":"2130"},{"n":"Relevamiento de clases de NOA","m":"2184"},{"n":"Toma de inventario - Electro","m":"2186"}],"cd":[{"c":"Unidad Organizativa","o":"=","v":"ELECTRODOMESTICOS","u":""},{"c":"Función","o":"=","v":"VENDEDOR","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"ELECTRODOMESTICOS","u":"O"},{"c":"Función","o":"=","v":"VENDEDOR ELECTRO","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"ELECTRODOMESTICOS","u":"O"},{"c":"Función","o":"=","v":"REPOSITOR","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"ELECTRODOMESTICOS","u":"O"},{"c":"Función","o":"=","v":"ESTIBADOR","u":"Y"}],"u":"2026-09-16"},
+  {"id":"29","f":"2026-03-12","n":"22 - Curso para Jefes de Coto Digital","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso Básico de Coto Digital","m":"1628"},{"n":"Curso de Coto Digital Picking","m":"1780"},{"n":"Curso de Armadores de Coto Digital","m":"2050"},{"n":"Medios de pago","m":"2178"},{"n":"Auxiliares administrativos de Coto Digital - Parte 1","m":"2179"},{"n":"Auxiliares administrativos de Coto Digital - Parte 2","m":"2180"},{"n":"Cobradores de Coto Digital","m":"2198"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"DIGITAL","u":""},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"DIGITAL","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"28","f":"2026-03-12","n":"23 - Curso para Auxiliares de Coto Digital","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso Básico de Coto Digital","m":"1628"},{"n":"Curso de Coto Digital Picking","m":"1780"},{"n":"Curso de Armadores de Coto Digital","m":"2050"},{"n":"Medios de pago","m":"2178"},{"n":"Auxiliares administrativos de Coto Digital - Parte 1","m":"2179"},{"n":"Auxiliares administrativos de Coto Digital - Parte 2","m":"2180"},{"n":"Cobradores de Coto Digital","m":"2198"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"DIGITAL","u":""},{"c":"Función","o":"=","v":"AUXILIAR","u":"Y"}],"u":"2026-09-16"},
+  {"id":"27","f":"2026-03-12","n":"26 - Cursos para Cajeros de Coto Digital","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso Básico de Coto Digital","m":"1628"},{"n":"Curso de Armadores de Coto Digital","m":"2050"},{"n":"Medios de pago","m":"2178"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"DIGITAL","u":""},{"c":"Función","o":"=","v":"CAJERO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"26","f":"2026-03-12","n":"25 - Curso para Choferes de Coto Digital","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso Básico de Coto Digital","m":"1628"},{"n":"Curso de Choferes de Flota Propia","m":"2169"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"DIGITAL","u":""},{"c":"Función","o":"=","v":"CHOFER COTO DIGITAL","u":"Y"}],"u":"2026-09-16"},
+  {"id":"25","f":"2026-03-12","n":"24 - Cursos para Cobradores de Coto Digital","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Curso Básico de Coto Digital","m":"1628"},{"n":"Curso de Armadores de Coto Digital","m":"2050"},{"n":"Medios de pago","m":"2178"},{"n":"Cobradores de Coto Digital","m":"2198"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"DIGITAL","u":""},{"c":"Función","o":"=","v":"COBRADOR","u":"Y"}],"u":"2026-09-16"},
+  {"id":"24","f":"2026-03-12","n":"28 - Curso para Jauleros de Coto Digital","e":"Activa","t":"Automática","cs":[{"n":"Curso Básico de Coto Digital","m":"1628"},{"n":"Curso de Coto Digital Picking","m":"1780"},{"n":"Curso de Armadores de Coto Digital","m":"2050"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"DIGITAL","u":""},{"c":"Función","o":"=","v":"JAULERO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"23","f":"2026-03-12","n":"27 - Cursos para Armadores y Cadetes de Coto Digital","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso Básico de Coto Digital","m":"1628"},{"n":"Curso de Coto Digital Picking","m":"1780"},{"n":"Curso de Armadores de Coto Digital","m":"2050"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"DIGITAL","u":""},{"c":"Función","o":"=","v":"ARMADOR","u":"Y"},{"c":"Sector Genérico","o":"=","v":"DIGITAL","u":"O"},{"c":"Función","o":"=","v":"CADETE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"DIGITAL","u":"O"},{"c":"Función","o":"=","v":"CAJERO.","u":"Y"}],"u":"2026-09-16"},
+  {"id":"22","f":"2026-03-12","n":"21 - Cursos para técnicos de Mantenimiento de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Instructivo de Uso de la Máquina ULMA","m":"466"},{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso Básico de Electricidad","m":"517"},{"n":"Curso de Seguridad Eléctrica","m":"606"},{"n":"Curso de Circuito de Service","m":"1089"},{"n":"Curso de Puesta a Punto de ULMA Superchick 3.0","m":"1632"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Control de Vehículos Industriales","m":"2183"}],"cd":[{"c":"Sector Genérico","o":"=","v":"MANTENIMIENTO","u":""},{"c":"Función","o":"=","v":"TÉCNICO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"21","f":"2026-03-12","n":"20 - Cursos para Jefes de Mantenimiento de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Instructivo de Uso de la Máquina ULMA","m":"466"},{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso Básico de Electricidad","m":"517"},{"n":"Curso de Seguridad Eléctrica","m":"606"},{"n":"Curso de Circuito de Service","m":"1089"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso de Puesta a Punto de ULMA Superchick 3.0","m":"1632"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Control de Vehículos Industriales","m":"2183"}],"cd":[{"c":"Centros","o":"=","v":"SUCURSALES","u":""},{"c":"Sector Genérico","o":"=","v":"MANTENIMIENTO","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"AREA MANTENIMIENTO","u":"Y"},{"c":"Unidad Organizativa","o":"=","v":"MANTENIMIENTO SUCURSALES","u":"O"}],"u":"2026-09-16"},
+  {"id":"20","f":"2026-03-12","n":"19 - Cursos para Colaboradores de Salón","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Flujo del Hueco de Salón","m":"1974"},{"n":"Curso de Prioridad de Reposición de Salón","m":"1990"},{"n":"Curso de \"N\" Días de Salón","m":"1994"},{"n":"Curso de Relevamiento de Clases de Salón","m":"1999"},{"n":"Curso de Traspasos de Sucursal a 126 de Salón","m":"2020"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"SALON","u":""},{"c":"Función","o":"=","v":"ESTIBADOR","u":"Y"},{"c":"Sector Genérico","o":"=","v":"SALON","u":"O"},{"c":"Función","o":"=","v":"REPOSITOR","u":"Y"}],"u":"2026-09-16"},
+  {"id":"19","f":"2026-03-12","n":"18 - Cursos para Jefes de Salón y Depósito","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Estudio de Casos \"Clavos\"","m":"777"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de la Aplicación \"Sucursales 3\"","m":"1433"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Curso de Flujo del Hueco de Salón","m":"1974"},{"n":"Curso de Prioridad de Reposición de Salón","m":"1990"},{"n":"Curso de \"N\" Días de Salón","m":"1994"},{"n":"Curso de Relevamiento de Clases de Salón","m":"1999"},{"n":"Curso de Traspasos de Sucursal a 126 de Salón","m":"2020"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"SALON","u":""},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"SALON","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"17","f":"2026-03-12","n":"17 - Cursos para colaboradores de Elaborados","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Elaboración de Facturas","m":"1615"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"FRESCOS ELABORADOS","u":""},{"c":"Función","o":"!~","v":"JEFE","u":"Y"},{"c":"Función","o":"!~","v":"POSTULANTE A JEFE","u":"Y"},{"c":"Función","o":"!~","v":"COCINERO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"16","f":"2026-03-12","n":"16 - Cursos para Cocineros de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"FRESCOS ELABORADOS","u":""},{"c":"Función","o":"=","v":"COCINERO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"15","f":"2026-03-12","n":"15 - Cursos para Jefes de Elaborados","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de la Aplicación \"Sucursales 3\"","m":"1433"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso de Elaboración de Facturas","m":"1615"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"FRESCOS ELABORADOS","u":""},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"FRESCOS ELABORADOS","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"14","f":"2026-03-12","n":"13 - Cursos para colaboradores de Frescos 2","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Corte de Quesos","m":"1613"},{"n":"Curso de Armado de Picadas","m":"1621"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Unidad Organizativa","o":"=","v":"QUESOS Y FIAMBRES","u":""}],"u":"2026-09-16"},
+  {"id":"13","f":"2026-03-11","n":"12 - Cursos para Pescadería","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Curso de Exhibición de Productos de Pescadería","m":"2168"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"FRESCOS 2 + ELABORADOS","u":""},{"c":"Unidad Organizativa","o":"=","v":"PESCADERIA","u":"Y"}],"u":"2026-09-16"},
+  {"id":"12","f":"2026-03-11","n":"11 - Cursos para Jefes de Frescos 2","e":"Activa","t":"Automática","cs":[{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de la Aplicación \"Sucursales 3\"","m":"1433"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso de Corte de Quesos","m":"1613"},{"n":"Curso de Armado de Picadas","m":"1621"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Curso de Exhibición de Productos de Pescadería","m":"2168"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"FRESCOS 2 + ELABORADOS","u":""},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"FRESCOS 2 + ELABORADOS","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"11","f":"2026-03-11","n":"10 - Cursos para Verduleros de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Frutas y Verduras","m":"930"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Productos VICTORY","m":"2131"},{"n":"Armados de frutas y verduras","m":"2187"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"FRESCOS 1 - FRUTAS Y VERDURAS","u":""}],"u":"2026-09-16"},
+  {"id":"10","f":"2026-03-11","n":"9 - Cursos para Carniceros de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Instructivo de Uso de la Máquina ULMA","m":"466"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Introducción al Sector Carniceria","m":"629"},{"n":"Curso de Desposte de Media Res","m":"736"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Cortes de media res - Cuarto delantero","m":"2105"},{"n":"Productos VICTORY","m":"2131"},{"n":"Cortes de media res - Cuarto trasero","m":"2167"},{"n":"Cortes de media res - Pecho","m":"2181"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Función","o":"=","v":"CORTADOR","u":""},{"c":"Centros","o":"=","v":"SUCURSALES","u":"O"},{"c":"Función","o":"=","v":"DESPOSTADOR","u":"Y"},{"c":"Función","o":"=","v":"EMPAQUETADOR","u":"O"},{"c":"Función","o":"=","v":"SIERRISTA","u":"O"},{"c":"Unidad Organizativa","o":"=","v":"FRESCOS","u":"O"},{"c":"Función","o":"=","v":"REPOSITOR","u":"Y"},{"c":"Sector Genérico","o":"=","v":"FRESCOS 1 - CARNICERIA","u":"O"},{"c":"Función","o":"=","v":"REPOSITOR","u":"Y"}],"u":"2026-09-16"},
+  {"id":"9","f":"2026-03-11","n":"8 - Cursos para Jefes de Frescos 1","e":"Activa","t":"Automática","cs":[{"n":"Instructivo de Uso de la Máquina ULMA","m":"466"},{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Introducción al Sector Carniceria","m":"629"},{"n":"Curso de Desposte de Media Res","m":"736"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de Frutas y Verduras","m":"930"},{"n":"Curso de la Aplicación \"Sucursales 3\"","m":"1433"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Cortes de media res - Cuarto delantero","m":"2105"},{"n":"Productos VICTORY","m":"2131"},{"n":"Cortes de media res - Cuarto trasero","m":"2167"},{"n":"Cortes de media res - Pecho","m":"2181"},{"n":"Armados de frutas y verduras","m":"2187"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"FRESCOS 1 - CARNICERIA","u":""},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"FRESCOS 1 - CARNICERIA","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"8","f":"2026-03-11","n":"7 - Cursos para Cadetes de Cajas","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Cadetes","m":"881"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"CAJAS","u":""},{"c":"Función","o":"=","v":"CADETE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"CAJAS","u":"O"},{"c":"Función","o":"=","v":"RUTERO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"7","f":"2026-03-11","n":"6 - Cursos para Cajeros de Cajas","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Resolución de Conflictos en Línea de Cajas","m":"1173"},{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Curso de Reconocimiento de Dólares","m":"1392"},{"n":"Curso de Reconocimiento de Euros","m":"1396"},{"n":"Medios de pago","m":"2178"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"CAJAS","u":""},{"c":"Función","o":"=","v":"CAJERO","u":"Y"}],"u":"2026-09-16"},
+  {"id":"6","f":"2026-03-11","n":"5 - Cursos para Auxiliares de Cajas","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso Básico de Envíos","m":"645"},{"n":"Curso Operativo de Cajas \" Apertura del Sector\"","m":"761"},{"n":"Curso de Cadetes","m":"881"},{"n":"Curso de Resolución de Conflictos en Línea de Cajas","m":"1173"},{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Curso de Reconocimiento de Dólares","m":"1392"},{"n":"Curso de Reconocimiento de Euros","m":"1396"},{"n":"Aplicativo TCI","m":"2171"},{"n":"Contrato de la Tarjeta TCI","m":"2172"},{"n":"Prevención de LA/FT/FP","m":"2177"},{"n":"Medios de pago","m":"2178"},{"n":"Introducción al STS","m":"2205"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"CAJAS","u":""},{"c":"Función","o":"=","v":"AUXILIAR","u":"Y"}],"u":"2026-09-16"},
+  {"id":"4","f":"2026-03-11","n":"4 - Cursos para Jefes de Cajas","e":"Activa","t":"Automática","cs":[{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Administración de Personal \"Operatorias de Cajas\"","m":"631"},{"n":"Curso Básico de Envíos","m":"645"},{"n":"Curso Operativo de Cajas \" Apertura del Sector\"","m":"761"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de Cadetes","m":"881"},{"n":"Curso de Resolución de Conflictos en Línea de Cajas","m":"1173"},{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Curso de Reconocimiento de Dólares","m":"1392"},{"n":"Curso de Reconocimiento de Euros","m":"1396"},{"n":"Aplicativo TCI","m":"2171"},{"n":"Contrato de la Tarjeta TCI","m":"2172"},{"n":"Prevención de LA/FT/FP","m":"2177"},{"n":"Medios de pago","m":"2178"},{"n":"Introducción al STS","m":"2205"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Sector Genérico","o":"=","v":"CAJAS","u":""},{"c":"Función","o":"=","v":"JEFE","u":"Y"},{"c":"Sector Genérico","o":"=","v":"CAJAS","u":"O"},{"c":"Función","o":"=","v":"POSTULANTE A JEFE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"3","f":"2026-03-11","n":"3 - Cursos para Gerentes de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Curso Básico de Coto Hogar","m":"410"},{"n":"Curso de Detección de Incendios","m":"473"},{"n":"Curso de Conociendo al Cliente","m":"488"},{"n":"Curso de Recepciones del Centro de Distribución","m":"496"},{"n":"Curso de Seguridad Eléctrica","m":"606"},{"n":"Curso de Stock Conceptos Básicos","m":"621"},{"n":"Curso de Introducción al Sector Carniceria","m":"629"},{"n":"Curso de Recepción de Proveedores","m":"654"},{"n":"Curso de Estudio de Casos \"Clavos\"","m":"777"},{"n":"Curso de Análisis de Mermas","m":"877"},{"n":"Curso de Frutas y Verduras","m":"930"},{"n":"Curso de Circuito de Service","m":"1089"},{"n":"Curso de Panel de Control","m":"1207"},{"n":"Curso de Reconocimiento de Pesos","m":"1388"},{"n":"Curso de Reconocimiento de Dólares","m":"1392"},{"n":"Curso de Reconocimiento de Euros","m":"1396"},{"n":"Curso de la Aplicación \"Sucursales 3\"","m":"1433"},{"n":"Curso de Toma de Inventario \"¿Qué es un inventario?\"","m":"1609"},{"n":"Curso Básico de Coto Digital","m":"1628"},{"n":"Curso de Toma de Inventario \"Tipos de Inventario\"","m":"1773"},{"n":"Curso de Flujo del Hueco de Salón","m":"1974"},{"n":"Curso de Prioridad de Reposición de Salón","m":"1990"},{"n":"Curso de \"N\" Días de Salón","m":"1994"},{"n":"Curso de Relevamiento de Clases de Salón","m":"1999"},{"n":"Curso de Traspasos de Sucursal a 126 de Salón","m":"2020"},{"n":"Limpieza con ECONOR","m":"2071"},{"n":"Curso de Modalidades de Hurto y Controles","m":"2096"},{"n":"Cortes de media res - Cuarto delantero","m":"2105"},{"n":"Productos VICTORY","m":"2131"},{"n":"Cortes de media res - Cuarto trasero","m":"2167"},{"n":"Curso de Exhibición de Productos de Pescadería","m":"2168"},{"n":"Medios de pago","m":"2178"},{"n":"Cortes de media res - Pecho","m":"2181"},{"n":"Toma de inventario - Electro","m":"2186"},{"n":"Armados de frutas y verduras","m":"2187"},{"n":"Seguridad alimentaria","m":"2207"}],"cd":[{"c":"Centros","o":"=","v":"SUCURSALES","u":""},{"c":"Función","o":"=","v":"GERENTE","u":"Y"},{"c":"Centros","o":"=","v":"SUCURSALES","u":"O"},{"c":"Función","o":"=","v":"GERENTE POSTULANTE","u":"Y"}],"u":"2026-09-16"},
+  {"id":"2","f":"2026-03-11","n":"2 - Cursos básicos para todos los usuarios de Central","e":"Activa","t":"Automática","cs":[{"n":"Prevención Cardiovascular - Servicio Médico","m":"2064"},{"n":"Seguridad de la Información","m":"2109"},{"n":"Inducción en Prevención de Riesgos Laborales","m":"2206"}],"cd":[{"c":"Centros","o":"=","v":"ADMINISTRACION CENTRAL","u":""}],"u":"2026-09-16"},
+  {"id":"1","f":"2026-03-11","n":"1 - Cursos básicos para todos los usuarios de Sucursal","e":"Activa","t":"Automática","cs":[{"n":"Uso Seguro del Montacargas","m":"1285"},{"n":"Prevención Cardiovascular - Servicio Médico","m":"2064"},{"n":"Seguridad de la Información","m":"2109"},{"n":"Introductorio de toma de inventario","m":"2173"},{"n":"Inducción en Prevención de Riesgos Laborales","m":"2206"}],"cd":[{"c":"Centros","o":"=","v":"SUCURSALES","u":""},{"c":"Función","o":"!~","v":"DELEGADO","u":"Y"},{"c":"Unidad Organizativa","o":"!~","v":"SERVICIO MEDICO","u":"Y"},{"c":"Centros","o":"=","v":"FABRICAS","u":"O"}],"u":"2026-09-16"},
+];
+
 const TECNICO_SEED = [
   {c:"Cajas",t:"Curso Básico de Envíos",p:"2016-05-16",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
   {c:"Cajas",t:"Curso de Cadetes",p:"2017-01-06",po:true,mo:true,ev:false,tx:false,d:"HTML",e:""},
@@ -4162,7 +4240,31 @@ const state = {
   tecCategoria: "",
   tecOrden: "",
   tecOrdenDir: 1,
+  // Filtro por valor de cada columna, al estilo del autofiltro de Excel:
+  // { diseno: ["HTML"], publicacion: ["2016", ""] }. Una columna sin entrada
+  // acá no filtra nada. Convive con el buscador y con los KPI de arriba: todo
+  // suma (Y), nunca reemplaza.
+  tecColFiltros: {},
   tecSubView: "grilla",
+  // Filtros de Métodos de matriculación. Igual que los de la grilla: son de
+  // pantalla, no viajan a ningún lado.
+  matFiltro: "",
+  matEstado: "",
+  matTipo: "",
+  matCampo: "",
+  matCurso: "",
+  // "reglas" (cada regla con sus cursos) o "cursos" (cada curso con las reglas
+  // que lo otorgan). Es la misma información dada vuelta, y cada una contesta
+  // una pregunta distinta: "¿a quién alcanza esta regla?" y "¿por qué me
+  // llegó este curso?".
+  matVista: "reglas",
+  // "Mostrame solo los cursos que se matriculan solos y no están en el
+  // Seguimiento técnico": es el cruce que justifica tener las dos cosas en la
+  // misma pantalla.
+  matSinFila: false,
+  // Qué reglas están desplegadas. La mediana es de 6 cursos por regla y la más
+  // grande tiene 36: si se abrieran todas, la lista sería ilegible.
+  matAbiertas: {},
   // Año que mira el gráfico por mes de Reportes. Antes estaba clavado en el
   // año en curso: el 2 de enero la vista quedaba vacía y no había forma de
   // mirar el año que se acababa de cerrar, que es justo cuando se mira.
@@ -4773,7 +4875,7 @@ function render() {
   // devolviera antes, se lo estaría devolviendo a un <input> que renderFilters
   // reemplaza un renglón más abajo.
   const foco = focoDeLaVista();
-  (renderView(), renderFilters(), updateBell(), aplicarPermisos(), devolverFoco(foco));
+  (tecFiltPopCerrar(), renderView(), renderFilters(), updateBell(), aplicarPermisos(), devolverFoco(foco));
 }
 // Si el re-render es de la MISMA vista (por ej. editar una tarjeta del
 // Planner sin cambiar de pestaña), el documento entero se vuelve a armar
@@ -5836,6 +5938,74 @@ function tecFechaISO(txt) {
   // a quien prefiera tipearlo así; cualquier otra cosa queda como la escribió.
   return txt;
 }
+// ===== Filtro por columna =====
+// Las flechitas del encabezado ordenaban y nada más. Ordenar contesta "cuál
+// es el más viejo"; filtrar contesta "mostrame solo los de Storyline", que es
+// la pregunta que aparece diez veces por día. Ahora cada columna tiene las
+// dos cosas: el nombre ordena y el embudito abre la lista de valores reales
+// de esa columna, con cuántas filas tiene cada uno.
+// Columnas que se pueden filtrar por valor. "Curso" queda afuera a propósito:
+// son 95 nombres distintos, o sea una lista tan larga como la tabla — para eso
+// está el buscador de arriba.
+const TEC_FILT_COLS = ["categoria", "publicacion", "scorm", "mail", "portada", "mosaico", "evaluacion", "textos", "diseno", "estado", "mapa"];
+function tecColFiltrable(k) {
+  return TEC_FILT_COLS.includes(k);
+}
+// El valor con el que una fila entra (o no) en el filtro de una columna.
+// Las fechas se agrupan por año: 95 fechas sueltas no son una lista para
+// elegir, "2016" sí. "!" es la fecha mal escrita, que ya se marca en la grilla.
+function tecValorCol(fila, k) {
+  if (TEC_CHKS.includes(k)) return fila[k] ? "si" : "no";
+  if (k === "mapa") return fila.cardId ? "si" : "no";
+  if (TEC_FECHAS.includes(k)) {
+    const v = (fila[k] || "").trim();
+    if (!v) return "";
+    return tecFechaMala(v) ? "!" : v.slice(0, 4);
+  }
+  return (fila[k] || "").toString().trim();
+}
+function tecValorColLabel(k, v) {
+  if (TEC_CHKS.includes(k)) return v === "si" ? "Sí" : "No";
+  if (k === "mapa") return v === "si" ? "Vinculado" : "Sin vincular";
+  if (v === "!") return "Fecha mal escrita";
+  if (!v) return TEC_FECHAS.includes(k) ? "Sin fecha" : "Vacío";
+  return v;
+}
+// Los valores que existen de verdad en esa columna, con cuántas filas tiene
+// cada uno. Se cuenta sobre las filas que pasan TODOS los demás filtros: así
+// el número que se ve al abrir el embudo es el que se va a ver al elegirlo.
+function tecOpcionesCol(k) {
+  const base = tecRows(k),
+    cuenta = new Map();
+  base.forEach((fila) => {
+    const v = tecValorCol(fila, k);
+    cuenta.set(v, (cuenta.get(v) || 0) + 1);
+  });
+  const opts = [...cuenta.entries()].map(([v, n]) => ({ v: v, n: n, label: tecValorColLabel(k, v) }));
+  // Lo vacío siempre último, el resto alfabético (o por año, que es lo mismo
+  // porque el año es texto de cuatro dígitos).
+  opts.sort((a, b) => (!a.v && b.v ? 1 : a.v && !b.v ? -1 : a.label.localeCompare(b.label, "es")));
+  return opts;
+}
+function tecColFiltro(k) {
+  const sel = state.tecColFiltros[k];
+  return Array.isArray(sel) && sel.length ? sel : null;
+}
+function tecColFiltroN() {
+  return TEC_FILT_COLS.filter((k) => tecColFiltro(k)).length;
+}
+// Marca o desmarca un valor. Si queda sin valores marcados, la columna deja
+// de filtrar entera: un filtro con cero valores mostraría la tabla vacía sin
+// que se entienda por qué.
+function tecColFiltroToggle(k, v) {
+  const sel = (state.tecColFiltros[k] || []).slice(),
+    i = sel.indexOf(v);
+  (i === -1 ? sel.push(v) : sel.splice(i, 1),
+    sel.length ? (state.tecColFiltros[k] = sel) : delete state.tecColFiltros[k]);
+}
+function tecColFiltroLimpiar(k) {
+  delete state.tecColFiltros[k];
+}
 // Los KPI de arriba no son adorno: cada uno es este filtro. "Sin portada" y
 // "sin mosaico" salen de las mismas columnas de la tabla, así que el número
 // siempre se puede comprobar mirando las filas que quedan.
@@ -5845,7 +6015,10 @@ function tecPendientePasa(fila, cual) {
   if (cual === "vinculados") return !!fila.cardId;
   return true;
 }
-function tecRows() {
+// "salvo" es la columna cuyo propio filtro se ignora: lo usa el embudo para
+// contar cuántas filas daría cada valor SIN contarse a sí mismo. Sin eso, al
+// abrir un filtro ya aplicado se vería un solo valor con todas las filas.
+function tecRows(salvo) {
   const filtro = (state.tecFiltro || "").trim().toLowerCase();
   let lista = state.tecnico.filter((fila) => {
     if (filtro && !(fila.curso || "").toLowerCase().includes(filtro) && !(fila.categoria || "").toLowerCase().includes(filtro))
@@ -5853,6 +6026,11 @@ function tecRows() {
     if (state.tecDiseno && (fila.diseno || "") !== state.tecDiseno) return false;
     if (state.tecCategoria && (fila.categoria || "") !== state.tecCategoria) return false;
     if (state.tecPendiente && !tecPendientePasa(fila, state.tecPendiente)) return false;
+    for (const k of TEC_FILT_COLS) {
+      if (k === salvo) continue;
+      const sel = tecColFiltro(k);
+      if (sel && !sel.includes(tecValorCol(fila, k))) return false;
+    }
     return true;
   });
   if (state.tecOrden) {
@@ -6057,10 +6235,19 @@ function tecGroupHTML(grupo) {
     "</tbody>"
   );
 }
+// El encabezado de una columna hace dos cosas distintas y por eso son dos
+// botones: el nombre ordena, el embudito filtra. Sin separarlos, un solo clic
+// tendría que adivinar cuál de las dos querías.
 function tecTh(campo, label, tit) {
-  const activo = state.tecOrden === campo;
+  const activo = state.tecOrden === campo,
+    sel = tecColFiltro(campo),
+    filtrable = tecColFiltrable(campo);
   return (
-    '<th class="tec-th-sort' +
+    '<th class="tec-th' +
+    (sel ? " filt" : "") +
+    '" data-col="' +
+    campo +
+    '"><button class="tec-th-sort' +
     (activo ? " on" : "") +
     '" data-action="tec:sort" data-campo="' +
     campo +
@@ -6070,8 +6257,153 @@ function tecTh(campo, label, tit) {
     esc(label) +
     '<span class="tec-th-ar">' +
     (activo ? (state.tecOrdenDir === 1 ? "▲" : "▼") : "↕") +
-    "</span></th>"
+    "</span></button>" +
+    (filtrable ? tecThFiltroBtn(campo, label, sel) : "") +
+    "</th>"
   );
+}
+function tecThFiltroBtn(campo, label, sel) {
+  return (
+    '<button class="tec-th-filt' +
+    (sel ? " on" : "") +
+    '" data-action="tec:filtcol" data-campo="' +
+    campo +
+    '" title="' +
+    esc(sel ? "Filtrando " + label + ": " + sel.map((v) => tecValorColLabel(campo, v)).join(", ") : "Filtrar por " + label) +
+    '">▾' +
+    (sel ? '<span class="tec-th-filt-n">' + sel.length + "</span>" : "") +
+    "</button>"
+  );
+}
+// Una columna que solo se filtra (los tildes y el vínculo con el Mapa no se
+// ordenan: ordenar por "tiene portada" es lo mismo que el KPI de arriba).
+function tecThSoloFiltro(campo, label, tit) {
+  const sel = tecColFiltro(campo);
+  return (
+    '<th class="tec-th' +
+    (sel ? " filt" : "") +
+    '" data-col="' +
+    campo +
+    '"><span class="tec-th-lbl" title="' +
+    esc(tit || label) +
+    '">' +
+    esc(label) +
+    "</span>" +
+    tecThFiltroBtn(campo, label, sel) +
+    "</th>"
+  );
+}
+// El popover del embudo va suelto y en position:fixed: el encabezado de la
+// tabla es sticky dentro de un contenedor con scroll, así que cualquier cosa
+// colgada del <th> se recortaría contra el borde de la tabla.
+function tecFiltPopHTML(campo) {
+  const opts = tecOpcionesCol(campo),
+    sel = state.tecColFiltros[campo] || [],
+    label = campo === "categoria" ? "Categoría" : campo === "curso" ? "Curso" : tecColLabel(campo);
+  return (
+    '<div class="filt-pop-label">Filtrar por ' +
+    esc(label) +
+    "</div>" +
+    (opts.length > 9
+      ? '<div class="filt"><input id="tecFiltBuscar" placeholder="Buscar valor..." autocomplete="off"></div>'
+      : "") +
+    '<div class="tec-filt-lista" id="tecFiltLista">' +
+    (opts.length
+      ? opts
+          .map(
+            (o) =>
+              '<label class="tec-col-opt" data-txt="' +
+              esc(o.label.toLowerCase()) +
+              '"><input type="checkbox" data-tec-fv="' +
+              esc(o.v) +
+              '" data-campo="' +
+              campo +
+              '"' +
+              (sel.includes(o.v) ? " checked" : "") +
+              "> " +
+              (o.v ? "" : '<i class="tec-filt-vacio">') +
+              esc(o.label) +
+              (o.v ? "" : "</i>") +
+              '<span class="tec-filt-n">' +
+              o.n +
+              "</span></label>",
+          )
+          .join("")
+      : '<div class="filt-pop-nota">No queda ningún valor con los otros filtros puestos.</div>') +
+    "</div>" +
+    '<button class="btn btn-ghost btn-sm" data-action="tec:filtcol-limpiar" data-campo="' +
+    campo +
+    '" style="align-self:flex-start"' +
+    (sel.length ? "" : " hidden") +
+    ">✕ Quitar este filtro</button>"
+  );
+}
+// Abre (o cierra) el embudo de una columna, pegado al botón que lo llamó.
+let tecFiltAncla = null;
+function tecFiltPopAbrir(btn, campo) {
+  const abierto = $("#tecFiltPop");
+  if (abierto) {
+    const mismo = abierto.dataset.campo === campo;
+    tecFiltPopCerrar();
+    if (mismo) return;
+  }
+  const pop = document.createElement("div");
+  ((pop.id = "tecFiltPop"), (pop.className = "filt-pop tec-filt-pop"), (pop.dataset.campo = campo));
+  pop.innerHTML = tecFiltPopHTML(campo);
+  ((tecFiltAncla = btn), document.body.appendChild(pop), tecFiltPopUbicar());
+  const buscar = $("#tecFiltBuscar");
+  if (buscar) buscar.focus();
+}
+// Está ubicado a mano contra el botón, así que hay que reubicarlo cuando la
+// tabla o la página se mueven. Y se mueven solas: el encabezado es sticky
+// dentro de un contenedor con scroll, y darle el foco al botón ya alcanza
+// para que el navegador scrollee un poco.
+function tecFiltPopUbicar() {
+  const pop = $("#tecFiltPop");
+  if (!pop) return;
+  if (!tecFiltAncla || !tecFiltAncla.isConnected) return tecFiltPopCerrar();
+  const r = tecFiltAncla.getBoundingClientRect();
+  // Si el botón se fue de la pantalla, el popover apuntaría a la nada.
+  if (r.bottom < 0 || r.top > window.innerHeight || r.right < 0 || r.left > window.innerWidth) return tecFiltPopCerrar();
+  const ancho = pop.offsetWidth,
+    alto = pop.offsetHeight,
+    // Si abajo no entra, se abre para arriba en vez de salirse de la pantalla.
+    abajo = r.bottom + 6 + alto <= window.innerHeight;
+  ((pop.style.top = Math.round(abajo ? r.bottom + 6 : Math.max(8, r.top - 6 - alto)) + "px"),
+    (pop.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - ancho - 8))) + "px"));
+}
+function tecFiltPopCerrar() {
+  const pop = $("#tecFiltPop");
+  ((tecFiltAncla = null), pop && pop.remove());
+}
+(window.addEventListener("scroll", tecFiltPopUbicar, true), window.addEventListener("resize", tecFiltPopUbicar));
+// Refresca los números de al lado de cada valor y el "quitar este filtro",
+// sin volver a armar la lista: si se redibujara entera, marcar tres valores
+// seguidos sería imposible porque las opciones se reordenarían en el medio.
+function tecFiltPopSync(campo) {
+  const pop = $("#tecFiltPop");
+  if (!pop || pop.dataset.campo !== campo) return;
+  const cuenta = new Map(tecOpcionesCol(campo).map((o) => [o.v, o.n]));
+  pop.querySelectorAll("[data-tec-fv]").forEach((chk) => {
+    const n = cuenta.get(chk.dataset.tecFv) || 0,
+      fila = chk.closest(".tec-col-opt"),
+      span = fila && fila.querySelector(".tec-filt-n");
+    if (span) span.textContent = n;
+    if (fila) fila.classList.toggle("cero", !n && !chk.checked);
+  });
+  const limpiar = pop.querySelector('[data-action="tec:filtcol-limpiar"]');
+  if (limpiar) limpiar.hidden = !tecColFiltro(campo);
+}
+// Buscar dentro de la lista del embudo: con "Publicación" hay doce años y con
+// "Categoría" veintipico de categorías, y tipear tres letras es más rápido que
+// scrollear la lista.
+function tecFiltPopBuscar(txt) {
+  const pop = $("#tecFiltPop");
+  if (!pop) return;
+  const q = (txt || "").trim().toLowerCase();
+  pop.querySelectorAll(".tec-col-opt").forEach((fila) => {
+    fila.hidden = !!q && !(fila.dataset.txt || "").includes(q);
+  });
 }
 // Las columnas visibles partidas en tramos por grupo ("Fechas",
 // "Producción"), respetando el orden en que están. Con el selector de
@@ -6109,10 +6441,8 @@ function tecHeadHTML() {
     tecTh("curso", "Curso") +
     tecColsVisibles()
       .map((col) =>
-        // Los tildes y el vínculo con el Mapa no se ordenan: ordenar por
-        // "tiene portada" es lo mismo que el KPI de arriba, que ya filtra.
         TEC_CHKS.includes(col.k) || col.k === "mapa"
-          ? '<th title="' + esc(col.tit || col.label) + '">' + esc(col.label) + "</th>"
+          ? tecThSoloFiltro(col.k, col.label, col.tit)
           : tecTh(col.k, col.label, col.tit),
       )
       .join("") +
@@ -6163,6 +6493,33 @@ function tecListHTML() {
 function renderTecList() {
   const el = $("#tecList");
   if (el) ((el.innerHTML = tecListHTML()), tecTopSync());
+}
+// Abrir o cerrar una regla redibuja solo la lista: redibujar la vista entera
+// devolvería el scroll al tope y la regla que se acaba de abrir quedaría
+// fuera de la pantalla.
+function renderMatList() {
+  const el = $("#matList");
+  if (!el) return;
+  ((matIndiceTec = null),
+    (el.innerHTML =
+      state.matVista === "cursos"
+        ? matCursosHTML()
+        : matReglas().length
+          ? '<div class="mat-lista">' + matReglas().map(matReglaHTML).join("") + "</div>"
+          : '<div class="mat-nada">Ninguna regla coincide con lo que buscás.</div>'));
+}
+// Igual que en la grilla: el contador y el "limpiar" se actualizan a mano
+// mientras se tipea, porque redibujar la barra entera sacaría el cursor del
+// buscador a mitad de palabra.
+function matTopSync() {
+  const elN = $("#matTopN"),
+    elL = $("#matLimpiar");
+  if (elN) elN.textContent = matReglas().length + " de " + MATRI_SEED.length + " reglas";
+  if (elL) elL.hidden = !matFiltrando();
+}
+function matIrA(id) {
+  const el = document.querySelector('.mat-card [data-id="' + id + '"]');
+  if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
 }
 // Eran cuatro cajas del alto de una tarjeta para cuatro números, ocupando la
 // primera pantalla entera antes de que empezara la grilla —que es a lo que se
@@ -6337,7 +6694,7 @@ function tecColsBadgeSync() {
   if (todas) todas.hidden = !ocultas;
 }
 function tecFiltrando() {
-  return !!(state.tecFiltro || state.tecDiseno || state.tecCategoria || state.tecPendiente || state.tecOrden);
+  return !!(state.tecFiltro || state.tecDiseno || state.tecCategoria || state.tecPendiente || state.tecOrden || tecColFiltroN());
 }
 // El contador y el "limpiar" se dibujan siempre y se actualizan aparte: si
 // aparecieran y desaparecieran con cada tecla habría que redibujar la barra
@@ -6348,18 +6705,302 @@ function tecTopSync() {
   if (elN) elN.textContent = tecRows().length + " de " + state.tecnico.length;
   if (elL) elL.hidden = !tecFiltrando();
 }
+// ===== Vista: Métodos de matriculación =====
+// La misma información que el administrador de reglas, pero legible: allá son
+// 63 filas de un Excel con las condiciones apelotonadas en una celda. Acá cada
+// regla es una tarjeta, las condiciones se leen como una frase y los cursos
+// que otorga se cruzan con el Seguimiento técnico por el ID de Moodle.
+//
+// Se puede mirar de dos maneras porque son dos preguntas distintas:
+// "por reglas" contesta a quién alcanza una regla, y "por cursos" contesta
+// por qué a alguien le apareció un curso.
+function matClaveCurso(nombre) {
+  // Los dos sistemas nombran distinto el mismo curso ("Curso de Cadetes" acá,
+  // "Cadetes" en el Técnico), así que el prefijo se saca antes de comparar.
+  return norm(nombre)
+    .replace(/^curso (basico )?(de |del |para )?/, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+let matIndiceTec = null;
+function matTecFila(nombre) {
+  // El índice se arma una vez por dibujado: buscar 80 cursos contra 95 filas
+  // recorriendo la lista entera cada vez son 7600 comparaciones por render.
+  if (!matIndiceTec) {
+    matIndiceTec = new Map();
+    state.tecnico.forEach((f) => {
+      const k = matClaveCurso(f.curso || "");
+      if (k && !matIndiceTec.has(k)) matIndiceTec.set(k, f);
+    });
+  }
+  return matIndiceTec.get(matClaveCurso(nombre)) || null;
+}
+function matCamposUsados() {
+  const set = new Set();
+  MATRI_SEED.forEach((r) => r.cd.forEach((c) => set.add(c.c)));
+  return [...set].sort((a, b) => a.localeCompare(b, "es"));
+}
+// Todos los cursos que alguna regla otorga, con cuántas reglas los otorgan.
+function matCursosTodos() {
+  const mapa = new Map();
+  MATRI_SEED.forEach((r) =>
+    r.cs.forEach((c) => {
+      const k = c.m || c.n;
+      if (!mapa.has(k)) mapa.set(k, { n: c.n, m: c.m, reglas: [] });
+      mapa.get(k).reglas.push(r);
+    }),
+  );
+  return [...mapa.values()].sort((a, b) => a.n.localeCompare(b.n, "es"));
+}
+function matReglaTexto(r) {
+  return norm(
+    r.n + " " + r.id + " " + r.cs.map((c) => c.n + " " + c.m).join(" ") + " " + r.cd.map((c) => c.c + " " + c.v).join(" "),
+  );
+}
+function matReglas() {
+  const q = norm(state.matFiltro).trim();
+  return MATRI_SEED.filter((r) => {
+    if (state.matEstado && r.e !== state.matEstado) return false;
+    if (state.matTipo && r.t !== state.matTipo) return false;
+    if (state.matCampo && !r.cd.some((c) => c.c === state.matCampo)) return false;
+    if (state.matCurso && !r.cs.some((c) => (c.m || c.n) === state.matCurso)) return false;
+    if (q && !matReglaTexto(r).includes(q)) return false;
+    return true;
+  });
+}
+function matFiltrando() {
+  return !!(state.matFiltro || state.matEstado || state.matTipo || state.matCampo || state.matCurso || state.matSinFila);
+}
+// Una condición dicha como se lee: "Función es AUDITOR", "Unidad Organizativa
+// no contiene BAZAR". El conector con la anterior va arriba y en chiquito,
+// porque es lo que cambia el sentido de toda la lista.
+const MATRI_OPS = { "=": "es", "≠": "no es", "~": "contiene", "!~": "no contiene" };
+// Una "Y" o una "O" sueltas entre dos renglones se leen como un punto, no como
+// la palabra que decide si la regla suma condiciones o abre otra puerta.
+const MATRI_UNE = { Y: "Y además", O: "O también" };
+function matCondHTML(cd) {
+  if (!cd.length) return '<div class="mat-vacio">Sin condiciones: alcanza a todo el padrón.</div>';
+  return (
+    '<ul class="mat-conds">' +
+    cd
+      .map(
+        (c) =>
+          (c.u ? '<li class="mat-une"><span>' + esc(MATRI_UNE[c.u] || c.u) + "</span></li>" : "") +
+          '<li class="mat-cond' +
+          (c.o === "≠" || c.o === "!~" ? " neg" : "") +
+          '"><b>' +
+          esc(c.c) +
+          "</b> " +
+          esc(MATRI_OPS[c.o] || c.o) +
+          " <i>" +
+          esc(c.v) +
+          "</i></li>",
+      )
+      .join("") +
+    "</ul>"
+  );
+}
+// Un curso que otorga la regla. Si está en el Seguimiento técnico, el chip
+// lleva a su fila; si no está, se dice —un curso que se matricula solo y no
+// figura en el Técnico es justamente lo que conviene ver.
+function matCursoChipHTML(c) {
+  const fila = matTecFila(c.n);
+  return (
+    (fila
+      ? '<button class="mat-curso ok" data-action="mat:ver-tec" data-curso="' + esc(fila.curso) + '" title="Ver en la grilla de Seguimiento técnico">'
+      : '<span class="mat-curso" title="Este curso no figura en el Seguimiento técnico">') +
+    esc(c.n) +
+    (c.m ? '<span class="mat-mid">' + esc(c.m) + "</span>" : "") +
+    (fila ? "</button>" : "</span>")
+  );
+}
+function matReglaHTML(r) {
+  const abierta = !!state.matAbiertas[r.id];
+  return (
+    '<div class="mat-card' +
+    (r.e === "Activa" ? "" : " baja") +
+    (abierta ? " open" : "") +
+    '"><button class="mat-h" data-action="mat:toggle" data-id="' +
+    r.id +
+    '"><span class="mat-ar">▸</span><span class="mat-h-t"><b>' +
+    esc(r.n) +
+    '</b><span class="mat-meta">#' +
+    esc(r.id) +
+    " · " +
+    r.cs.length +
+    " curso" +
+    (r.cs.length === 1 ? "" : "s") +
+    " · " +
+    r.cd.length +
+    " condici" +
+    (r.cd.length === 1 ? "ón" : "ones") +
+    '</span></span><span class="mat-chips"><span class="mat-chip ' +
+    (r.e === "Activa" ? "on" : "off") +
+    '">' +
+    esc(r.e) +
+    '</span><span class="mat-chip ' +
+    (r.t === "Automática" ? "auto" : "man") +
+    '">' +
+    esc(r.t) +
+    "</span></span></button>" +
+    (abierta
+      ? '<div class="mat-body"><div class="mat-col"><div class="mat-sub">Otorga estos cursos</div><div class="mat-cursos">' +
+        r.cs.map(matCursoChipHTML).join("") +
+        (r.cs.length ? "" : '<div class="mat-vacio">Esta regla no tiene ningún curso asignado.</div>') +
+        '</div></div><div class="mat-col"><div class="mat-sub">Se aplica a quien cumpla</div>' +
+        matCondHTML(r.cd) +
+        '</div><div class="mat-pie">Creada el ' +
+        esc(tecFechaVer(r.f)) +
+        (r.u ? " · Última aplicación: " + esc(tecFechaVer(r.u)) : "") +
+        "</div></div>"
+      : "")
+  );
+}
+// La misma información dada vuelta: cada curso con las reglas que lo otorgan.
+// Es la vista que contesta "¿por qué a esta persona le apareció este curso?".
+function matCursosHTML() {
+  const reglasOK = new Set(matReglas().map((r) => r.id)),
+    lista = matCursosTodos()
+      .map((c) => Object.assign({}, c, { reglas: c.reglas.filter((r) => reglasOK.has(r.id)) }))
+      .filter((c) => c.reglas.length && (!state.matSinFila || !matTecFila(c.n)));
+  if (!lista.length) return '<div class="mat-nada">Ningún curso queda con los filtros puestos.</div>';
+  return (
+    '<div class="mat-lista">' +
+    lista
+      .map((c) => {
+        const fila = matTecFila(c.n);
+        return (
+          '<div class="mat-ccard"><div class="mat-ch">' +
+          (fila
+            ? '<button class="mat-ct" data-action="mat:ver-tec" data-curso="' + esc(fila.curso) + '" title="Ver en la grilla de Seguimiento técnico">' + esc(c.n) + "</button>"
+            : '<span class="mat-ct">' + esc(c.n) + "</span>") +
+          (c.m ? '<span class="mat-mid">' + esc(c.m) + "</span>" : "") +
+          (fila ? "" : '<span class="mat-chip off" title="No hay una fila con este nombre en el Seguimiento técnico">Sin fila en Técnico</span>') +
+          '<span class="mat-meta">' +
+          c.reglas.length +
+          " regla" +
+          (c.reglas.length === 1 ? "" : "s") +
+          "</span></div><div class=\"mat-creglas\">" +
+          c.reglas
+            .map(
+              (r) =>
+                '<button class="mat-rchip' +
+                (r.e === "Activa" ? "" : " baja") +
+                '" data-action="mat:ver-regla" data-id="' +
+                r.id +
+                '" title="Ver esta regla">' +
+                esc(r.n) +
+                "</button>",
+            )
+            .join("") +
+          "</div></div>"
+        );
+      })
+      .join("") +
+    "</div>"
+  );
+}
+function matKpi(n, label, activo, filtro, valor) {
+  return (
+    '<button class="tec-stat' +
+    (activo ? " on" : "") +
+    '" data-action="mat:kpi" data-f="' +
+    filtro +
+    '" data-v="' +
+    esc(valor) +
+    '"><b>' +
+    n +
+    "</b><span>" +
+    esc(label) +
+    "</span></button>"
+  );
+}
+function renderMatri() {
+  matIndiceTec = null;
+  const reglas = matReglas(),
+    activas = MATRI_SEED.filter((r) => r.e === "Activa").length,
+    autos = MATRI_SEED.filter((r) => r.t === "Automática").length,
+    manuales = MATRI_SEED.length - autos,
+    cursos = matCursosTodos(),
+    sinFila = cursos.filter((c) => !matTecFila(c.n)).length;
+  return (
+    '<div class="mat-intro">Las reglas del <b>administrador de matriculaciones</b>: quién queda inscripto a qué curso. Se ven acá para consultarlas; se editan en el administrador. Export del ' +
+    esc(tecFechaVer(MATRI_EXPORT)) +
+    ".</div>" +
+    '<div class="tec-top"><div class="filt">🔎<input id="matSearch" placeholder="Buscar regla, curso, sector, legajo..." value="' +
+    esc(state.matFiltro || "") +
+    '"></div>' +
+    '<div class="filt">🏷<select id="matCampo"><option value="">Condición: cualquier campo</option>' +
+    matCamposUsados()
+      .map((c) => '<option value="' + esc(c) + '"' + (state.matCampo === c ? " selected" : "") + ">" + esc(c) + "</option>")
+      .join("") +
+    "</select></div>" +
+    '<div class="filt">📘<select id="matCurso"><option value="">Curso: todos (' +
+    cursos.length +
+    ")</option>" +
+    cursos
+      .map(
+        (c) =>
+          '<option value="' +
+          esc(c.m || c.n) +
+          '"' +
+          (state.matCurso === (c.m || c.n) ? " selected" : "") +
+          ">" +
+          esc(c.n) +
+          " (" +
+          c.reglas.length +
+          ")</option>",
+      )
+      .join("") +
+    "</select></div>" +
+    '<div class="mat-vistas"><button class="mapa-sec' +
+    (state.matVista === "cursos" ? "" : " active") +
+    '" data-action="mat:vista" data-v="reglas">Por regla</button><button class="mapa-sec' +
+    (state.matVista === "cursos" ? " active" : "") +
+    '" data-action="mat:vista" data-v="cursos">Por curso</button></div>' +
+    '<span class="tec-top-n" id="matTopN">' +
+    reglas.length +
+    " de " +
+    MATRI_SEED.length +
+    " reglas</span>" +
+    '<button class="btn btn-ghost btn-sm" id="matLimpiar" data-action="mat:limpiar"' +
+    (matFiltrando() ? "" : " hidden") +
+    ">✕ Limpiar filtros</button>" +
+    "</div>" +
+    '<div class="tec-stats">' +
+    matKpi(MATRI_SEED.length, "reglas cargadas", false, "", "") +
+    matKpi(activas, "activas", state.matEstado === "Activa", "estado", "Activa") +
+    matKpi(autos, "automáticas", state.matTipo === "Automática", "tipo", "Automática") +
+    matKpi(manuales, "manuales", state.matTipo === "Manual", "tipo", "Manual") +
+    matKpi(cursos.length, "cursos alcanzados", false, "", "") +
+    matKpi(sinFila, "sin fila en Técnico", state.matSinFila, "sinfila", "") +
+    "</div>" +
+    '<div id="matList">' +
+    (state.matVista === "cursos"
+      ? matCursosHTML()
+      : reglas.length
+        ? '<div class="mat-lista">' + reglas.map(matReglaHTML).join("") + "</div>"
+        : '<div class="mat-nada">Ninguna regla coincide con lo que buscás.</div>') +
+    "</div>"
+  );
+}
+
+// La pestaña "Validación" (cursos del Mapa sin fila en Técnico y al revés) se
+// sacó de la navegación a pedido del área: el cruce ya está hecho y revisado,
+// y la pestaña quedaba pidiendo atención sobre algo cerrado. El código
+// —tecValidacionHTML() y todo lo suyo— queda entero para volver a colgarlo
+// acá el día que haga falta otra ronda de cruce.
 function renderTecnico() {
-  const nVal = tecValidacionTotal();
+  const esMat = state.tecSubView === "matri";
   return (
     '<div class="mapa-secciones"><div class="mapa-sec ' +
-    (state.tecSubView === "validacion" ? "" : "active") +
+    (esMat ? "" : "active") +
     '" data-action="tec:subview" data-v="grilla">📋 Grilla</div><div class="mapa-sec ' +
-    (state.tecSubView === "validacion" ? "active" : "") +
-    '" data-action="tec:subview" data-v="validacion">🔎 Validación <b>(' +
-    nVal +
+    (esMat ? "active" : "") +
+    '" data-action="tec:subview" data-v="matri">🎟 Métodos de matriculación <b>(' +
+    MATRI_SEED.length +
     ")</b></div></div>" +
-    (state.tecSubView === "validacion"
-      ? tecValidacionHTML()
+    (esMat
+      ? renderMatri()
       : '<div class="tec-top"><div class="filt">🔎<input id="tecSearch" placeholder="Buscar curso o categoría..." value="' +
         esc(state.tecFiltro || "") +
         '"></div>' +
@@ -8656,6 +9297,7 @@ function openDetail(id2) {
     (state.selectedId = id2),
     pushRecent(id2),
     renderPanel(),
+    msgHiloAlFinal(),
     $("#panel").classList.add("open"),
     $("#overlay").classList.remove("hidden"));
 }
@@ -8733,13 +9375,16 @@ function renderSectorResults(value) {
         '"</button>'
       : "");
 }
+// Los tres botones quedan fuera del Tab (tabindex="-1"): un campo de fecha ya
+// tiene tres paradas propias —día, mes, año— y con los presets hacían falta
+// diez Tab para pasar de "Tipo" a "Prioridad". Se siguen tocando igual.
 function datePresetsHTML(campo) {
   return (
-    '<div class="datepresets"><button type="button" class="dp-btn" data-action="date:preset" data-field="' +
+    '<div class="datepresets"><button type="button" class="dp-btn" tabindex="-1" data-action="date:preset" data-field="' +
     campo +
-    '" data-preset="hoy">Hoy</button><button type="button" class="dp-btn" data-action="date:preset" data-field="' +
+    '" data-preset="hoy">Hoy</button><button type="button" class="dp-btn" tabindex="-1" data-action="date:preset" data-field="' +
     campo +
-    '" data-preset="manana">Mañana</button><button type="button" class="dp-btn" data-action="date:preset" data-field="' +
+    '" data-preset="manana">Mañana</button><button type="button" class="dp-btn" tabindex="-1" data-action="date:preset" data-field="' +
     campo +
     '" data-preset="semana">+1 semana</button></div>'
   );
@@ -8855,6 +9500,81 @@ function ultimoTocadoHTML(tarjeta) {
 // tarjeta se descarta y vuelven a mandar los defaults de cada sección.
 let accAbiertos = {},
   accTarjeta = null;
+// Una barra fina que se queda pegada arriba al scrollear el panel: estado,
+// fecha de fin y quién la tiene. Son los tres datos que se van de pantalla
+// apenas se baja a Checklist o a Mensajes, y son justo los que hay que tener
+// a mano mientras se trabaja abajo.
+function panelCtxHTML(tarjeta) {
+  const estado = ESTADOS.find((e) => e.id === tarjeta.estado) || { nombre: tarjeta.estado, dot: "#999" },
+    quien = member(tarjeta.responsable),
+    vencida = isOverdue(tarjeta);
+  return (
+    '<div class="panel-ctx"><span class="pctx" style="--dot:' +
+    esc(estado.dot || "#999") +
+    '">' +
+    esc(estado.nombre || "—") +
+    "</span>" +
+    '<span class="pctx fecha' +
+    (vencida ? " vencida" : "") +
+    '">' +
+    (tarjeta.fin ? (vencida ? "⚠ Vencida el " : "📅 ") + tecFechaVer(tarjeta.fin) : "📅 Sin fecha de fin") +
+    "</span>" +
+    (quien
+      ? '<span class="pctx quien">' + avatarHTML(tarjeta.responsable, true) + esc(quien.nombre) + "</span>"
+      : '<span class="pctx quien vacio">Sin responsable</span>') +
+    "</div>"
+  );
+}
+// El responsable de la tarjeta. Existía en los datos desde siempre —"Mis
+// tareas", Mi semana, Carga del equipo y Reportes se paran encima de él— pero
+// la única forma de ponerlo era el botón "Asignarme", o sea ponerse una misma.
+function responsableSelectHTML(tarjeta) {
+  return (
+    '<div class="fld"><label>Responsable</label><select data-field="responsable"><option value="">Sin responsable</option>' +
+    TEAM.map(
+      (miembro) =>
+        '<option value="' +
+        miembro.id +
+        '"' +
+        (tarjeta.responsable === miembro.id ? " selected" : "") +
+        ">" +
+        esc(miembro.nombre) +
+        "</option>",
+    ).join("") +
+    "</select></div>"
+  );
+}
+// Las tarjetas que se pueden recorrer con ‹ › desde el panel: las que están a
+// la vista en el Planner con los filtros puestos. Fuera del Planner (Mapa,
+// Calendario, Inicio…) no hay una lista obvia y no se ofrece la flecha.
+function panelVecinas() {
+  return state.view === "kanban" ? filteredBoard() : [];
+}
+function panelNavHTML(tarjeta) {
+  const lista = panelVecinas(),
+    i = lista.findIndex((c) => c.id === tarjeta.id);
+  if (i === -1 || lista.length < 2) return "";
+  return (
+    '<div class="panel-nav"><button class="btn btn-icon btn-ghost" data-action="panel:prev"' +
+    (i === 0 ? " disabled" : "") +
+    ' title="Tarjeta anterior (Alt + ←)">‹</button><span class="panel-nav-n">' +
+    (i + 1) +
+    "/" +
+    lista.length +
+    '</span><button class="btn btn-icon btn-ghost" data-action="panel:next"' +
+    (i === lista.length - 1 ? " disabled" : "") +
+    ' title="Tarjeta siguiente (Alt + →)">›</button></div>'
+  );
+}
+// Pasar a la anterior o la siguiente sin cerrar el panel: revisar veinte
+// tarjetas era abrir, mirar, cerrar, buscar la de al lado y volver a abrir.
+function panelMover(paso) {
+  const lista = panelVecinas(),
+    i = lista.findIndex((c) => c.id === state.selectedId);
+  if (i === -1) return;
+  const siguiente = lista[i + paso];
+  if (siguiente) openDetail(siguiente.id);
+}
 function renderPanel() {
   const tarjeta = current();
   if (!tarjeta) {
@@ -9068,11 +9788,13 @@ function renderPanel() {
     '</div>\n        <input class="chk-text" style="font-size:18px;font-weight:700;font-family:var(--titulo);width:100%;margin-top:4px" placeholder="Ej: Cajas – Apertura del sector" value="' +
     esc(tarjeta.titulo) +
     '" data-field="titulo">\n      </div>\n      <div class="panel-headtop">' +
+    panelNavHTML(tarjeta) +
     savestateHTML() +
     (state.view !== "kanban" && !inInventory(tarjeta)
       ? '<button class="btn btn-icon btn-ghost" data-action="panel:goplanner" title="Ver en Planner">↗</button>'
       : "") +
     '<button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>\n    </div>\n    <div class="panel-body">\n      ' +
+    panelCtxHTML(tarjeta) +
     txt7 +
     // "Datos" junta lo que antes eran Tipo y Estado sueltos arriba MÁS todo el
     // bloque "Más detalles": son los datos de la tarjeta, se cargan de una y se
@@ -9093,6 +9815,12 @@ function renderPanel() {
     '" data-field="fin">' +
     datePresetsHTML("fin") +
     "</div>\n      </div>\n      " +
+    // Una tarjeta sin fecha de fin no aparece en Calendario ni en Timeline.
+    // No es un error —hay tareas sin fecha— pero desaparecía en silencio: se
+    // la buscaba en el Calendario y no estaba, sin ninguna pista de por qué.
+    (tarjeta.fin
+      ? ""
+      : '<div class="aviso-sinfecha">📅 Sin fecha de fin, esta tarjeta <b>no se ve en Calendario ni en Timeline</b>. Solo aparece en el Planner.</div>') +
     (tarjeta.revisionDesde
       ? '<div class="fld-hint" style="margin:-4px 0 10px">🕓 En revisión desde ' +
         fmtShort(tarjeta.revisionDesde) +
@@ -9108,8 +9836,13 @@ function renderPanel() {
     '>Normal</option><option value="alta" ' +
     (tarjeta.prioridad === "alta" ? "selected" : "") +
     ">Alta</option></select></div>" +
+    // El responsable manda en media app —"Mis tareas", Mi semana, Carga del
+    // equipo, quién figura en Reportes— y la única forma de ponerlo era
+    // "Asignarme". Para poner a otra persona había que pedírselo.
+    responsableSelectHTML(tarjeta) +
+    "</div>" +
     html2 +
-    '</div>\n      <div class="fld"><label>Asignados</label><div class="chiplist">' +
+    '\n      <div class="fld"><label>Asignados</label><div class="chiplist">' +
     txt3 +
     '</div><span class="fld-hint">Todos los que trabajan en ella (los que quieras).</span></div>\n      ' +
     sectorPicker(tarjeta) +
@@ -9141,7 +9874,7 @@ function renderPanel() {
     vinculosHTML(tarjeta) +
     "\n      " +
     htmlActividad +
-    '\n\n      <div class="panel-pie">\n        <button class="btn btn-primary btn-sm" data-action="card:save" title="Guardar ahora">💾 Guardar</button>\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
+    '\n\n      <div class="panel-pie">\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
   document.querySelectorAll("#panel details[data-acc]").forEach((d) => {
     const guardado = accAbiertos[d.dataset.acc];
     if (guardado !== undefined) d.open = guardado;
@@ -9751,12 +10484,15 @@ document.addEventListener("click", (ev) => {
     case "settings:open":
       openSettings();
       break;
-    case "msg:todos":
+    case "msg:todos": {
+      // Al desplegar los anteriores, el hilo se queda donde estaba leyendo en
+      // vez de saltar al final: si no, "ver los anteriores" te mandaba justo
+      // al lado opuesto de lo que pediste ver.
       ((msgTodos = true), renderPanel());
+      const hilo = $("#msgHilo");
+      if (hilo) hilo.scrollTop = 0;
       break;
-    case "msg:menos":
-      ((msgTodos = false), renderPanel());
-      break;
+    }
     case "cmt:add":
       addComment();
       break;
@@ -9893,6 +10629,53 @@ document.addEventListener("click", (ev) => {
       render();
       break;
     }
+    case "mat:toggle":
+      (state.matAbiertas[el.dataset.id] ? delete state.matAbiertas[el.dataset.id] : (state.matAbiertas[el.dataset.id] = true),
+        renderMatList());
+      break;
+    case "mat:vista":
+      // "Sin fila en Técnico" es un filtro de cursos: volver a "por regla" lo
+      // apaga, para que no quede un filtro encendido que no filtra nada.
+      ((state.matVista = el.dataset.v), state.matVista === "reglas" && (state.matSinFila = false), render());
+      break;
+    case "mat:kpi":
+      // Tocar el KPI encendido lo apaga, igual que en la grilla: es la salida
+      // más corta de un filtro puesto sin querer.
+      if (el.dataset.f === "estado") state.matEstado = state.matEstado === el.dataset.v ? "" : el.dataset.v;
+      else if (el.dataset.f === "tipo") state.matTipo = state.matTipo === el.dataset.v ? "" : el.dataset.v;
+      // Los cursos sin fila en el Técnico son cursos, no reglas: el KPI lleva
+      // a la vista "por curso", que es donde se pueden mirar uno por uno.
+      else if (el.dataset.f === "sinfila")
+        ((state.matSinFila = !state.matSinFila), state.matSinFila && (state.matVista = "cursos"));
+      else break;
+      render();
+      break;
+    case "mat:limpiar":
+      ((state.matFiltro = ""),
+        (state.matEstado = ""),
+        (state.matTipo = ""),
+        (state.matCampo = ""),
+        (state.matCurso = ""),
+        (state.matSinFila = false),
+        render());
+      break;
+    case "mat:ver-regla":
+      // Desde "por curso" a la regla concreta: se cambia de vista, se la abre
+      // y se la lleva a la pantalla, porque con 63 tarjetas no se encuentra
+      // sola.
+      ((state.matVista = "reglas"), (state.matAbiertas[el.dataset.id] = true), render(), matIrA(el.dataset.id));
+      break;
+    case "mat:ver-tec":
+      // Del curso de una regla a su fila en la grilla: se busca por el nombre
+      // exacto de la fila, así queda una sola y se ve de una.
+      ((state.tecSubView = "grilla"), (state.tecFiltro = el.dataset.curso), render());
+      break;
+    case "tec:filtcol":
+      tecFiltPopAbrir(el, el.dataset.campo);
+      break;
+    case "tec:filtcol-limpiar":
+      (tecColFiltroLimpiar(el.dataset.campo), tecFiltPopCerrar(), render());
+      break;
     case "tec:limpiar":
       ((state.tecFiltro = ""),
         (state.tecDiseno = ""),
@@ -9900,6 +10683,8 @@ document.addEventListener("click", (ev) => {
         (state.tecPendiente = ""),
         (state.tecOrden = ""),
         (state.tecOrdenDir = 1),
+        (state.tecColFiltros = {}),
+        tecFiltPopCerrar(),
         render());
       break;
     case "tec:link":
@@ -10153,11 +10938,11 @@ document.addEventListener("click", (ev) => {
     case "card:link":
       copyCardLink(val10 ? state.cards.find((c) => c.id === val10) : current());
       break;
-    case "card:save":
-      // El guardado automático ya corre solo (debounce + polling), pero
-      // este botón fuerza un guardado inmediato y da una confirmación
-      // explícita para quien prefiere no confiar en el automático.
-      guardarAhora(false).then(() => flash(state.saveError ? "✗ No se pudo guardar" : "✓ Guardado"));
+    case "panel:prev":
+      panelMover(-1);
+      break;
+    case "panel:next":
+      panelMover(1);
       break;
     case "qedit:open":
       openQEdit(val10);
@@ -10509,13 +11294,17 @@ function applyEduField(id, campo, value) {
     refrescarResumenEdu(eduCatDe(recurso));
   }
 }
-// En el panel de la tarjeta, las secciones se abren y se cierran SOLO con la
-// flechita: el encabezado es una barra ancha y cualquier clic cerca de él
-// plegaba la sección en la que se estaba trabajando. Afuera del panel (la
-// Ayuda, por ejemplo) el <details> sigue funcionando como siempre.
+// En el panel, una sección CERRADA se abre con un clic en cualquier parte del
+// encabezado —tocar "Checklist" tiene que abrir el checklist— pero una
+// ABIERTA solo se cierra con la flechita. Antes era simétrico y con la barra
+// entera clickeable cualquier roce plegaba la sección en la que se estaba
+// trabajando; el arreglo de aquel momento fue bloquear las dos direcciones, y
+// eso dejó el encabezado muerto. Así se abre fácil y no se cierra sin querer.
 document.addEventListener("click", (ev) => {
   const resumen = ev.target.closest && ev.target.closest("#panel details.acc > summary");
-  if (resumen && !ev.target.closest(".acc-ar")) ev.preventDefault();
+  if (!resumen) return;
+  const seccion = resumen.parentElement;
+  if (seccion.open && !ev.target.closest(".acc-ar")) ev.preventDefault();
 });
 (document.addEventListener("input", (ev) => {
   if (ev.target.id === "cmdkInput") {
@@ -10530,8 +11319,24 @@ document.addEventListener("click", (ev) => {
     ((state.tecFiltro = ev.target.value), renderTecList());
     return;
   }
+  if (ev.target.id === "tecFiltBuscar") {
+    tecFiltPopBuscar(ev.target.value);
+    return;
+  }
+  if (ev.target.id === "matSearch") {
+    ((state.matFiltro = ev.target.value), renderMatList(), matTopSync());
+    return;
+  }
   if (ev.target.id === "tecCategoria") {
     ((state.tecCategoria = ev.target.value), render());
+    return;
+  }
+  if (ev.target.id === "matCampo") {
+    ((state.matCampo = ev.target.value), render());
+    return;
+  }
+  if (ev.target.id === "matCurso") {
+    ((state.matCurso = ev.target.value), render());
     return;
   }
   if (ev.target.id === "tecPickSearch") {
@@ -10625,6 +11430,15 @@ document.addEventListener("click", (ev) => {
       // Solo la tabla, no la barra: redibujar la barra cerraría el popover y
       // habría que reabrirlo para cada columna.
       (tecColToggle(ev.target.dataset.tecCol), tecColsBadgeSync(), renderTecList());
+      return;
+    }
+    // Un valor marcado o desmarcado en el embudo de una columna. Se redibuja
+    // la tabla y el encabezado, pero NO el embudo: quien está eligiendo tres
+    // valores los elige de corrido, sin que la lista se le arme de nuevo abajo
+    // del dedo. Los contadores de al lado sí se refrescan.
+    if (ev.target.dataset && ev.target.dataset.tecFv !== undefined) {
+      const campoFv = ev.target.dataset.campo;
+      (tecColFiltroToggle(campoFv, ev.target.dataset.tecFv), renderTecList(), tecFiltPopSync(campoFv));
       return;
     }
     if (ev.target.dataset && ev.target.dataset.tecId) {
@@ -10921,6 +11735,11 @@ function pushRecent(id2) {
   const elCols = $("#tecColsPop");
   if (elCols && !elCols.classList.contains("hidden") && !ev.target.closest(".filt-pop-wrap"))
     elCols.classList.add("hidden");
+  // El embudo de columna vive colgado del <body> (ver tecFiltPopAbrir), así
+  // que se cierra por su cuenta: cualquier clic que no sea adentro del
+  // popover ni en el propio ▾ lo saca.
+  if ($("#tecFiltPop") && !ev.target.closest("#tecFiltPop") && !ev.target.closest('[data-action="tec:filtcol"]'))
+    tecFiltPopCerrar();
   const elRoulettePop = $("#roulettePop");
   if (elRoulettePop && !elRoulettePop.classList.contains("hidden") && !ev.target.closest(".roulette-launcher"))
     elRoulettePop.classList.add("hidden");
@@ -10957,6 +11776,10 @@ function pushRecent(id2) {
         el2.classList.add("hidden");
         return;
       }
+      if ($("#tecFiltPop")) {
+        tecFiltPopCerrar();
+        return;
+      }
       for (const sel of ["#filtrosPop", "#tecColsPop", "#roulettePop", "#cotofracePop"]) {
         const pop = $(sel);
         if (pop && !pop.classList.contains("hidden")) {
@@ -10968,6 +11791,13 @@ function pushRecent(id2) {
       else {
         if ($("#panel").classList.contains("open")) closePanel();
       }
+    }
+    // Alt + ← / → recorre las tarjetas del Planner con el panel abierto. Alt
+    // solo: las flechas peladas mueven el cursor adentro de un campo, y
+    // Alt+↑/↓ ya reordena el checklist.
+    if (ev.altKey && (ev.key === "ArrowLeft" || ev.key === "ArrowRight") && state.selectedId) {
+      (ev.preventDefault(), panelMover(ev.key === "ArrowRight" ? 1 : -1));
+      return;
     }
     if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey) && ev.target.id === "cmtInput") {
       (ev.preventDefault(), addComment());
@@ -11587,10 +12417,11 @@ function logAct(val, txt) {
     }));
   if (val.actividad.length > 60) val.actividad = val.actividad.slice(-60);
 }
-// Cuántos mensajes se muestran sin desplegar. La sección tiene que ser fácil
-// de encontrar y de usar, pero no puede comerse el panel: con tres alcanza
-// para ver de qué se está hablando, y el resto está a un clic.
-const MSG_A_LA_VISTA = 3;
+// Cuántos mensajes se dibujan sin desplegar. El hilo tiene alto propio y
+// scrollea, así que el tope es para no armar cien globos de una en una
+// tarjeta con años de conversación; lo anterior está a un clic, arriba de
+// todo, donde se espera encontrarlo en un chat.
+const MSG_A_LA_VISTA = 12;
 let msgTodos = false;
 // El autor se guarda por NOMBRE (es lo que se ve), así que para pintarle su
 // color hay que ir a buscarlo al equipo. Si no está —alguien que ya no
@@ -11599,53 +12430,107 @@ let msgTodos = false;
 function miembroPorNombre(nombre) {
   return TEAM.find((m) => (m.nombre || "").toLowerCase() === String(nombre || "").toLowerCase());
 }
-function mensajeHTML(msg) {
+// Un mensaje, con forma de globo de chat. Lo que el equipo pidió: "algo más
+// parecido a un grupo de wasap". Los míos van a la derecha en azul COTO, los
+// del resto a la izquierda; dos seguidos de la misma persona en el mismo rato
+// se pegan y no repiten nombre ni carita, que es lo que hace que una
+// conversación se lea como una conversación y no como un registro.
+const MSG_PEGADO_MS = 5 * 60 * 1000;
+// 24 horas a propósito: "16:18" son cinco caracteres que entran en el hueco
+// que el globo le reserva; "04:18 p. m." son once y se monta arriba del texto.
+function msgHora(ts) {
+  return new Date(ts || 0).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+// El separador de día: "Hoy", "Ayer" o la fecha. Sin esto, un mensaje de hace
+// tres semanas y uno de esta mañana se leen pegados como si fueran la misma
+// charla.
+function msgDiaLabel(ts) {
+  const iso = isoOf(new Date(ts || 0)),
+    hoy = isoOf(new Date()),
+    ayer = isoOf(addDays(new Date(), -1));
+  if (iso === hoy) return "Hoy";
+  if (iso === ayer) return "Ayer";
+  return new Date(ts || 0).toLocaleDateString("es-AR", { day: "numeric", month: "long" });
+}
+function mensajeHTML(msg, anterior) {
   const quien = miembroPorNombre(msg.autor),
+    mio = !!state.user && msg.autor === state.user,
     inicial = String(msg.autor || "?").slice(0, 1).toUpperCase(),
     color = quien ? quien.color : "var(--line)",
-    tinta = quien ? contrasteSobre(quien.color) : "var(--ink-soft)";
+    tinta = quien ? contrasteSobre(quien.color) : "var(--ink-soft)",
+    pegado =
+      !!anterior &&
+      anterior.autor === msg.autor &&
+      Math.abs((msg.ts || 0) - (anterior.ts || 0)) < MSG_PEGADO_MS &&
+      isoOf(new Date(anterior.ts || 0)) === isoOf(new Date(msg.ts || 0));
   return (
-    '<div class="msg"><span class="avatar sm" style="background:' +
-    esc(color) +
-    ";color:" +
-    esc(tinta) +
-    '" title="' +
-    esc(msg.autor) +
+    '<div class="msg' +
+    (mio ? " mio" : "") +
+    (pegado ? " pegado" : "") +
     '">' +
-    esc(inicial) +
-    '</span><div class="msg-c"><div class="msg-h"><b>' +
-    esc(msg.autor) +
-    "</b><span>" +
-    relTime(msg.ts) +
-    '</span></div><div class="msg-t">' +
+    (pegado
+      ? '<span class="avatar sm hueco"></span>'
+      : '<span class="avatar sm" style="background:' +
+        esc(color) +
+        ";color:" +
+        esc(tinta) +
+        '" title="' +
+        esc(msg.autor) +
+        '">' +
+        esc(inicial) +
+        "</span>") +
+    '<div class="burbuja">' +
+    (pegado || mio ? "" : '<div class="msg-quien" style="color:' + esc(color) + '">' + esc(msg.autor) + "</div>") +
+    '<div class="msg-t">' +
     mentionize(msg.texto) +
-    "</div></div></div>"
+    '</div><span class="msg-hora" title="' +
+    esc(relTime(msg.ts)) +
+    '">' +
+    msgHora(msg.ts) +
+    "</span></div></div>"
   );
 }
 function mensajesHTML(tarjeta) {
-  const todos = (tarjeta.comentarios || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)),
+  // Del más viejo al más nuevo, como se lee una conversación. El hilo tiene
+  // alto fijo y scrollea: el equipo pidió los mensajes bien a mano pero
+  // también que no se coman la tarjeta entera.
+  const todos = (tarjeta.comentarios || []).slice().sort((a, b) => (a.ts || 0) - (b.ts || 0)),
     ocultos = Math.max(0, todos.length - MSG_A_LA_VISTA),
-    visibles = msgTodos ? todos : todos.slice(0, MSG_A_LA_VISTA);
+    visibles = msgTodos ? todos : todos.slice(-MSG_A_LA_VISTA);
+  let hilo = "",
+    dia = "",
+    anterior = null;
+  visibles.forEach((msg) => {
+    const suDia = isoOf(new Date(msg.ts || 0));
+    if (suDia !== dia) {
+      ((hilo += '<div class="msg-dia"><span>' + esc(msgDiaLabel(msg.ts)) + "</span></div>"), (dia = suDia), (anterior = null));
+    }
+    ((hilo += mensajeHTML(msg, anterior)), (anterior = msg));
+  });
   return (
     '<details class="acc sec-acc" data-acc="mensajes" open><summary class="sub">Mensajes' +
     (todos.length ? " · " + todos.length : "") +
     '<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">' +
-    // El campo para escribir va ARRIBA: es lo que se viene a hacer acá.
-    '<div class="msg-nuevo"><textarea id="cmtInput" rows="1" placeholder="Dejale un mensaje al equipo… @nombre para mencionar"></textarea>' +
-    '<button class="btn btn-sm btn-primary" data-action="cmt:add">Enviar</button></div>' +
-    '<div class="msg-tip">Ctrl + Enter para enviar</div>' +
     (todos.length
-      ? '<div class="msg-lista">' +
-        visibles.map(mensajeHTML).join("") +
-        "</div>" +
+      ? '<div class="msg-hilo" id="msgHilo">' +
         (ocultos && !msgTodos
           ? '<button class="msg-mas" data-action="msg:todos">Ver los ' + ocultos + " anteriores</button>"
-          : todos.length > MSG_A_LA_VISTA
-            ? '<button class="msg-mas" data-action="msg:menos">Ver solo los últimos ' + MSG_A_LA_VISTA + "</button>"
-            : "")
+          : "") +
+        hilo +
+        "</div>"
       : '<div class="acc-vacio">Todavía nadie dejó un mensaje en esta tarjeta.</div>') +
+    // El campo para escribir va abajo del hilo, como en cualquier chat.
+    '<div class="msg-nuevo"><textarea id="cmtInput" rows="1" placeholder="Dejale un mensaje al equipo… @nombre para mencionar"></textarea>' +
+    '<button class="btn btn-sm btn-primary" data-action="cmt:add" title="Ctrl + Enter">Enviar</button></div>' +
+    '<div class="msg-tip">Ctrl + Enter para enviar</div>' +
     "\n  </div></details>"
   );
+}
+// El hilo arranca abajo de todo, en el último mensaje: es lo que se viene a
+// leer, y con alto fijo el de arriba no sirve de nada.
+function msgHiloAlFinal() {
+  const hilo = $("#msgHilo");
+  if (hilo) hilo.scrollTop = hilo.scrollHeight;
 }
 function addComment() {
   const val = current();
@@ -11665,7 +12550,8 @@ function addComment() {
     // líneas que no decían nada.
     touch(),
     (msgTodos = false),
-    renderPanel());
+    renderPanel(),
+    msgHiloAlFinal());
   const campo2 = $("#cmtInput");
   if (campo2) campo2.focus();
 }
