@@ -2344,19 +2344,23 @@ button {
   transform: rotate(90deg);
   color: var(--cat, var(--coto-blue));
 }
-/* En el panel de la tarjeta las secciones se abren y cierran SOLO con la
-   flecha: el encabezado es una barra ancha y cualquier clic cerca de él
-   plegaba la sección en la que se estaba trabajando (ver el guard de click en
-   app.js, con el mismo alcance). Por eso ahí la flecha deja de ser un ::after
-   y pasa a ser un elemento real, con un blanco cómodo de tocar. Fuera del
-   panel —la Ayuda, por ejemplo— el <details> sigue funcionando como siempre. */
+/* En el panel, una sección cerrada se abre tocando cualquier parte del
+   encabezado; una abierta se cierra solo con la flecha (ver el guard de click
+   en app.js, con el mismo alcance). Por eso ahí la flecha deja de ser un
+   ::after y pasa a ser un elemento real, con un blanco cómodo de tocar. Fuera
+   del panel —la Ayuda, por ejemplo— el <details> funciona como siempre. */
 .acc-ar {
   display: none;
 }
 #panel .acc > summary {
+  cursor: pointer;
+}
+/* Abierta, el encabezado ya no promete nada: el cuerpo está a la vista y lo
+   único que queda por hacer es cerrarla, que es tarea de la flecha. */
+#panel .acc[open] > summary {
   cursor: default;
 }
-#panel .acc > summary:hover {
+#panel .acc[open] > summary:hover {
   background: 0 0;
 }
 #panel .acc > summary::after {
@@ -2366,9 +2370,10 @@ button {
   flex: none;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  margin: -4px -6px -4px 4px;
+  width: 34px;
+  height: 34px;
+  font-size: 14px;
+  margin: -6px -8px -6px 4px;
   border-radius: 50%;
   color: var(--ink-soft);
   cursor: pointer;
@@ -2399,10 +2404,10 @@ button {
   border-radius: var(--r-sm);
   transition: background 0.14s;
 }
-#panel .sec-acc > summary:hover {
+#panel .sec-acc:not([open]) > summary:hover {
   background: var(--surface-2);
 }
-#panel .sec-acc > summary:hover .sub {
+#panel .sec-acc:not([open]) > summary:hover .sub {
   color: var(--ink);
 }
 /* Lo que separa una sección de la siguiente es el aire, no una raya: la
@@ -2417,7 +2422,7 @@ button {
   margin-top: 10px;
 }
 .fld-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ink-soft);
   margin-top: 1px;
 }
@@ -2480,6 +2485,45 @@ button {
   align-items: center;
   gap: 10px;
 }
+/* Pasar a la tarjeta de al lado sin cerrar el panel: revisar veinte tarjetas
+   era abrir, mirar, cerrar, buscar la siguiente y volver a abrir. */
+.panel-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  padding: 2px;
+}
+.panel-nav .btn-icon {
+  width: 26px;
+  height: 26px;
+  font-size: 15px;
+  line-height: 1;
+}
+.panel-nav .btn-icon[disabled] {
+  opacity: 0.3;
+  cursor: default;
+}
+.panel-nav-n {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  padding: 0 2px;
+}
+/* Una tarjeta sin fecha de fin no aparece en Calendario ni en Timeline. No es
+   un error, pero desaparecía en silencio: se la buscaba en el Calendario y no
+   estaba, sin ninguna pista de por qué. */
+.aviso-sinfecha {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--warn-ink);
+  background: var(--warn-soft);
+  border-radius: var(--r-sm);
+  padding: 9px 12px;
+  margin: -2px 0 2px;
+}
 .savestate {
   display: inline-flex;
   align-items: center;
@@ -2532,13 +2576,66 @@ button {
   flex-direction: column;
   gap: 16px;
 }
+/* Estado, fecha de fin y quién la tiene: los tres datos que se van de pantalla
+   apenas bajás a Checklist o a Mensajes, y justo los que hacen falta tener a
+   mano mientras trabajás abajo. Se queda pegada arriba al scrollear. */
+.panel-ctx {
+  position: sticky;
+  top: -16px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: -16px -18px 0;
+  padding: 10px 18px;
+  background: color-mix(in srgb, var(--surface) 94%, var(--coto-blue));
+  border-bottom: 1px solid var(--line);
+}
+.pctx {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  padding: 4px 11px;
+  white-space: nowrap;
+}
+.pctx[style*="--dot"]::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dot);
+  flex: none;
+}
+.pctx.fecha.vencida {
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 35%, transparent);
+  background: var(--bad-soft);
+}
+.pctx.quien {
+  padding-left: 4px;
+}
+.pctx.quien .avatar {
+  margin-right: 1px;
+}
+.pctx.quien.vacio {
+  color: var(--ink-soft);
+  font-weight: 600;
+  padding-left: 11px;
+}
 .fld {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
 .fld label {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--ink-soft);
 }
@@ -2549,12 +2646,12 @@ button {
 .fld select,
 .fld textarea {
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 14.5px;
   color: var(--ink);
   background: var(--surface-2);
   border: 1px solid transparent;
   border-radius: var(--r-sm);
-  padding: 9px 11px;
+  padding: 10px 12px;
   outline: 0;
   width: 100%;
   transition:
@@ -2583,6 +2680,18 @@ button {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+/* En el teléfono el panel mide lo que mide la pantalla: dos campos de fecha
+   con sus tres botones al lado no entran, y el de la derecha quedaba cortado
+   contra el borde. Uno abajo del otro entran los dos enteros. */
+@media (max-width: 620px) {
+  .fld-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+.datepresets {
+  flex-wrap: wrap;
+}
 .chiplist {
   display: flex;
   flex-wrap: wrap;
@@ -2590,9 +2699,9 @@ button {
 }
 .chip-toggle {
   cursor: pointer;
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 6px 12px;
   border-radius: var(--pill);
   border: 1px solid var(--line);
   background: var(--surface-2);
@@ -2751,11 +2860,14 @@ button {
    es lo que lo hacía ver como un formulario viejo. Las dos se fueron: ahora
    la jerarquía la dan el tamaño de letra y el aire, que es lo que tiene que
    hacerla. */
+/* El encabezado de sección era el texto más chico de todo el panel (10.5px)
+   siendo justo lo que lo organiza: se leía como una etiqueta al margen y no
+   como el título de lo que hay abajo. */
 .sub {
-  font-size: 10.5px;
+  font-size: 12.5px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.06em;
   color: var(--ink-soft);
   display: flex;
   align-items: center;
@@ -3445,48 +3557,119 @@ button {
   opacity: 0.75;
   margin: 4px 0 2px;
 }
-.msg-lista {
+/* ===== El hilo de mensajes =====
+   El equipo lo pidió "con la onda de un grupo de wasap": del más viejo al más
+   nuevo, globos, los míos de un lado y los del resto del otro, separadores de
+   día y la hora adentro del globo. El hilo tiene alto propio y scrollea —con
+   el campo para escribir abajo, como cualquier chat— porque la otra mitad del
+   pedido era que los mensajes no se coman la tarjeta entera. */
+.msg-hilo {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 10px;
+  gap: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 10px 10px 4px;
+  margin: 2px -4px 10px;
+  background: var(--surface-2);
+  border-radius: var(--r-s);
+  scrollbar-width: thin;
+}
+.msg-dia {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 6px;
+}
+.msg-dia:first-child {
+  margin-top: 0;
+}
+.msg-dia span {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border-radius: var(--pill);
+  padding: 3px 11px;
 }
 .msg {
   display: flex;
-  gap: 9px;
-  align-items: flex-start;
+  gap: 8px;
+  align-items: flex-end;
+  max-width: 88%;
+}
+/* Los míos van a la derecha, con el orden dado vuelta: la carita queda del
+   lado de afuera igual que del otro lado. */
+.msg.mio {
+  flex-direction: row-reverse;
+  align-self: flex-end;
 }
 .msg .avatar.sm {
   flex: none;
-  margin-top: 1px;
 }
-.msg-c {
+/* Dos mensajes seguidos de la misma persona en el mismo rato se pegan: la
+   carita se reserva el lugar pero no se repite, que es lo que hace que una
+   charla se lea como una charla. */
+.msg .avatar.sm.hueco {
+  background: 0 0;
+  border: 0;
+  box-shadow: none;
+}
+.msg.pegado {
+  margin-top: -2px;
+}
+.burbuja {
+  position: relative;
   min-width: 0;
-  flex: 1;
+  background: var(--surface);
+  border-radius: 14px 14px 14px 4px;
+  padding: 7px 50px 7px 11px;
+  box-shadow: var(--shadow-sm);
 }
-.msg-h {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-  line-height: 1.2;
+.msg.pegado .burbuja {
+  border-top-left-radius: 6px;
 }
-.msg-h b {
-  font-size: 12.5px;
-  color: var(--ink);
+.msg.mio .burbuja {
+  background: var(--coto-blue);
+  border-radius: 14px 14px 4px 14px;
 }
-.msg-h span {
-  font-size: 11px;
-  color: var(--ink-soft);
+.msg.mio.pegado .burbuja {
+  border-top-right-radius: 6px;
+}
+.msg-quien {
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  margin-bottom: 1px;
 }
 .msg-t {
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.45;
   color: var(--ink);
-  margin-top: 2px;
   overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.msg.mio .msg-t {
+  color: #fff;
+}
+/* La hora va adentro del globo, abajo a la derecha, con el texto reservándole
+   el lugar (el padding-right del globo) para que no se le monte encima. */
+.msg-hora {
+  position: absolute;
+  right: 11px;
+  bottom: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.msg.mio .msg-hora {
+  color: rgba(255, 255, 255, 0.72);
 }
 .msg-mas {
-  margin-top: 10px;
+  align-self: center;
+  margin-bottom: 4px;
   border: 0;
   background: 0 0;
   font-family: inherit;
@@ -6151,6 +6334,12 @@ html {
   border-radius: 5px;
   padding: 0 3px;
 }
+/* Adentro de un globo propio el fondo es azul COTO: la mención quedaba azul
+   sobre azul, o sea invisible. */
+.msg.mio .mention {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
+}
 .qchips {
   display: flex;
   gap: 6px;
@@ -7577,17 +7766,24 @@ html {
   border-color: transparent;
   color: #fff;
 }
+/* "Hoy / Mañana / +1 semana" medían 21px de alto: la mitad de lo que se
+   puede tocar cómodo, y son de los botones que más se usan del panel. */
 .datepresets {
   display: flex;
-  gap: 4px;
-  margin-top: 6px;
+  gap: 6px;
+  margin-top: 8px;
 }
 .dp-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
   border: 1px solid var(--line);
   background: var(--surface);
   border-radius: 999px;
-  padding: 3px 9px;
-  font-size: 11px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
   color: var(--ink-soft);
 }
@@ -8249,6 +8445,23 @@ html {
     padding-left: 14px;
   }
 }
+/* En el teléfono el nombre de la regla se come el renglón: los dos chips
+   (Activa / Automática) bajan a una línea propia en vez de quedar apretados
+   contra el borde. */
+@media (max-width: 620px) {
+  .mat-h {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    align-items: flex-start;
+  }
+  .mat-h-t {
+    flex: 1 1 70%;
+  }
+  .mat-chips {
+    flex: 1 1 100%;
+    padding-left: 22px;
+  }
+}
 .mat-sub {
   font-size: 10.5px;
   font-weight: 800;
@@ -8342,11 +8555,19 @@ button.mat-curso.ok:hover {
   gap: 8px;
   padding: 2px 0 2px 10px;
 }
+/* Va en una pastilla y no suelto: una "O" de diez píxeles al lado de una
+   línea se lee como un punto, no como la palabra que decide si la regla suma
+   condiciones o abre otra puerta. */
 .mat-une span {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: var(--coto-blue);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--coto-blue) 30%, var(--line));
+  border-radius: var(--pill);
+  padding: 2px 10px;
+  line-height: 1.2;
 }
 .mat-une::after {
   content: "";

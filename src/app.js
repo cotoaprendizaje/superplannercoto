@@ -6774,6 +6774,9 @@ function matFiltrando() {
 // no contiene BAZAR". El conector con la anterior va arriba y en chiquito,
 // porque es lo que cambia el sentido de toda la lista.
 const MATRI_OPS = { "=": "es", "≠": "no es", "~": "contiene", "!~": "no contiene" };
+// Una "Y" o una "O" sueltas entre dos renglones se leen como un punto, no como
+// la palabra que decide si la regla suma condiciones o abre otra puerta.
+const MATRI_UNE = { Y: "Y además", O: "O también" };
 function matCondHTML(cd) {
   if (!cd.length) return '<div class="mat-vacio">Sin condiciones: alcanza a todo el padrón.</div>';
   return (
@@ -6781,7 +6784,7 @@ function matCondHTML(cd) {
     cd
       .map(
         (c) =>
-          (c.u ? '<li class="mat-une"><span>' + esc(c.u) + "</span></li>" : "") +
+          (c.u ? '<li class="mat-une"><span>' + esc(MATRI_UNE[c.u] || c.u) + "</span></li>" : "") +
           '<li class="mat-cond' +
           (c.o === "≠" || c.o === "!~" ? " neg" : "") +
           '"><b>' +
@@ -9294,6 +9297,7 @@ function openDetail(id2) {
     (state.selectedId = id2),
     pushRecent(id2),
     renderPanel(),
+    msgHiloAlFinal(),
     $("#panel").classList.add("open"),
     $("#overlay").classList.remove("hidden"));
 }
@@ -9371,13 +9375,16 @@ function renderSectorResults(value) {
         '"</button>'
       : "");
 }
+// Los tres botones quedan fuera del Tab (tabindex="-1"): un campo de fecha ya
+// tiene tres paradas propias —día, mes, año— y con los presets hacían falta
+// diez Tab para pasar de "Tipo" a "Prioridad". Se siguen tocando igual.
 function datePresetsHTML(campo) {
   return (
-    '<div class="datepresets"><button type="button" class="dp-btn" data-action="date:preset" data-field="' +
+    '<div class="datepresets"><button type="button" class="dp-btn" tabindex="-1" data-action="date:preset" data-field="' +
     campo +
-    '" data-preset="hoy">Hoy</button><button type="button" class="dp-btn" data-action="date:preset" data-field="' +
+    '" data-preset="hoy">Hoy</button><button type="button" class="dp-btn" tabindex="-1" data-action="date:preset" data-field="' +
     campo +
-    '" data-preset="manana">Mañana</button><button type="button" class="dp-btn" data-action="date:preset" data-field="' +
+    '" data-preset="manana">Mañana</button><button type="button" class="dp-btn" tabindex="-1" data-action="date:preset" data-field="' +
     campo +
     '" data-preset="semana">+1 semana</button></div>'
   );
@@ -9493,6 +9500,81 @@ function ultimoTocadoHTML(tarjeta) {
 // tarjeta se descarta y vuelven a mandar los defaults de cada sección.
 let accAbiertos = {},
   accTarjeta = null;
+// Una barra fina que se queda pegada arriba al scrollear el panel: estado,
+// fecha de fin y quién la tiene. Son los tres datos que se van de pantalla
+// apenas se baja a Checklist o a Mensajes, y son justo los que hay que tener
+// a mano mientras se trabaja abajo.
+function panelCtxHTML(tarjeta) {
+  const estado = ESTADOS.find((e) => e.id === tarjeta.estado) || { nombre: tarjeta.estado, dot: "#999" },
+    quien = member(tarjeta.responsable),
+    vencida = isOverdue(tarjeta);
+  return (
+    '<div class="panel-ctx"><span class="pctx" style="--dot:' +
+    esc(estado.dot || "#999") +
+    '">' +
+    esc(estado.nombre || "—") +
+    "</span>" +
+    '<span class="pctx fecha' +
+    (vencida ? " vencida" : "") +
+    '">' +
+    (tarjeta.fin ? (vencida ? "⚠ Vencida el " : "📅 ") + tecFechaVer(tarjeta.fin) : "📅 Sin fecha de fin") +
+    "</span>" +
+    (quien
+      ? '<span class="pctx quien">' + avatarHTML(tarjeta.responsable, true) + esc(quien.nombre) + "</span>"
+      : '<span class="pctx quien vacio">Sin responsable</span>') +
+    "</div>"
+  );
+}
+// El responsable de la tarjeta. Existía en los datos desde siempre —"Mis
+// tareas", Mi semana, Carga del equipo y Reportes se paran encima de él— pero
+// la única forma de ponerlo era el botón "Asignarme", o sea ponerse una misma.
+function responsableSelectHTML(tarjeta) {
+  return (
+    '<div class="fld"><label>Responsable</label><select data-field="responsable"><option value="">Sin responsable</option>' +
+    TEAM.map(
+      (miembro) =>
+        '<option value="' +
+        miembro.id +
+        '"' +
+        (tarjeta.responsable === miembro.id ? " selected" : "") +
+        ">" +
+        esc(miembro.nombre) +
+        "</option>",
+    ).join("") +
+    "</select></div>"
+  );
+}
+// Las tarjetas que se pueden recorrer con ‹ › desde el panel: las que están a
+// la vista en el Planner con los filtros puestos. Fuera del Planner (Mapa,
+// Calendario, Inicio…) no hay una lista obvia y no se ofrece la flecha.
+function panelVecinas() {
+  return state.view === "kanban" ? filteredBoard() : [];
+}
+function panelNavHTML(tarjeta) {
+  const lista = panelVecinas(),
+    i = lista.findIndex((c) => c.id === tarjeta.id);
+  if (i === -1 || lista.length < 2) return "";
+  return (
+    '<div class="panel-nav"><button class="btn btn-icon btn-ghost" data-action="panel:prev"' +
+    (i === 0 ? " disabled" : "") +
+    ' title="Tarjeta anterior (Alt + ←)">‹</button><span class="panel-nav-n">' +
+    (i + 1) +
+    "/" +
+    lista.length +
+    '</span><button class="btn btn-icon btn-ghost" data-action="panel:next"' +
+    (i === lista.length - 1 ? " disabled" : "") +
+    ' title="Tarjeta siguiente (Alt + →)">›</button></div>'
+  );
+}
+// Pasar a la anterior o la siguiente sin cerrar el panel: revisar veinte
+// tarjetas era abrir, mirar, cerrar, buscar la de al lado y volver a abrir.
+function panelMover(paso) {
+  const lista = panelVecinas(),
+    i = lista.findIndex((c) => c.id === state.selectedId);
+  if (i === -1) return;
+  const siguiente = lista[i + paso];
+  if (siguiente) openDetail(siguiente.id);
+}
 function renderPanel() {
   const tarjeta = current();
   if (!tarjeta) {
@@ -9706,11 +9788,13 @@ function renderPanel() {
     '</div>\n        <input class="chk-text" style="font-size:18px;font-weight:700;font-family:var(--titulo);width:100%;margin-top:4px" placeholder="Ej: Cajas – Apertura del sector" value="' +
     esc(tarjeta.titulo) +
     '" data-field="titulo">\n      </div>\n      <div class="panel-headtop">' +
+    panelNavHTML(tarjeta) +
     savestateHTML() +
     (state.view !== "kanban" && !inInventory(tarjeta)
       ? '<button class="btn btn-icon btn-ghost" data-action="panel:goplanner" title="Ver en Planner">↗</button>'
       : "") +
     '<button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>\n    </div>\n    <div class="panel-body">\n      ' +
+    panelCtxHTML(tarjeta) +
     txt7 +
     // "Datos" junta lo que antes eran Tipo y Estado sueltos arriba MÁS todo el
     // bloque "Más detalles": son los datos de la tarjeta, se cargan de una y se
@@ -9731,6 +9815,12 @@ function renderPanel() {
     '" data-field="fin">' +
     datePresetsHTML("fin") +
     "</div>\n      </div>\n      " +
+    // Una tarjeta sin fecha de fin no aparece en Calendario ni en Timeline.
+    // No es un error —hay tareas sin fecha— pero desaparecía en silencio: se
+    // la buscaba en el Calendario y no estaba, sin ninguna pista de por qué.
+    (tarjeta.fin
+      ? ""
+      : '<div class="aviso-sinfecha">📅 Sin fecha de fin, esta tarjeta <b>no se ve en Calendario ni en Timeline</b>. Solo aparece en el Planner.</div>') +
     (tarjeta.revisionDesde
       ? '<div class="fld-hint" style="margin:-4px 0 10px">🕓 En revisión desde ' +
         fmtShort(tarjeta.revisionDesde) +
@@ -9746,8 +9836,13 @@ function renderPanel() {
     '>Normal</option><option value="alta" ' +
     (tarjeta.prioridad === "alta" ? "selected" : "") +
     ">Alta</option></select></div>" +
+    // El responsable manda en media app —"Mis tareas", Mi semana, Carga del
+    // equipo, quién figura en Reportes— y la única forma de ponerlo era
+    // "Asignarme". Para poner a otra persona había que pedírselo.
+    responsableSelectHTML(tarjeta) +
+    "</div>" +
     html2 +
-    '</div>\n      <div class="fld"><label>Asignados</label><div class="chiplist">' +
+    '\n      <div class="fld"><label>Asignados</label><div class="chiplist">' +
     txt3 +
     '</div><span class="fld-hint">Todos los que trabajan en ella (los que quieras).</span></div>\n      ' +
     sectorPicker(tarjeta) +
@@ -9779,7 +9874,7 @@ function renderPanel() {
     vinculosHTML(tarjeta) +
     "\n      " +
     htmlActividad +
-    '\n\n      <div class="panel-pie">\n        <button class="btn btn-primary btn-sm" data-action="card:save" title="Guardar ahora">💾 Guardar</button>\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
+    '\n\n      <div class="panel-pie">\n        <button class="btn btn-sm" data-action="card:link" title="Copiar un enlace directo a esta tarjeta">🔗 Copiar enlace</button>\n        <div class="panel-menu-wrap" style="margin-left:auto;position:relative">\n          <button class="btn btn-ghost btn-sm" data-action="panel:menu" title="Más acciones">⋯ Más</button>\n          <div class="panel-menu">\n            <button class="menu-item" data-action="tpl:save">💾 Guardar como plantilla</button>\n            <button class="menu-item" data-action="card:dup">⧉ Duplicar</button>\n            <div class="menu-sep"></div>\n            <button class="menu-item" style="color:var(--bad)" data-action="card:del">🗑 Eliminar</button>\n          </div>\n        </div>\n      </div>\n    </div>';
   document.querySelectorAll("#panel details[data-acc]").forEach((d) => {
     const guardado = accAbiertos[d.dataset.acc];
     if (guardado !== undefined) d.open = guardado;
@@ -10389,12 +10484,15 @@ document.addEventListener("click", (ev) => {
     case "settings:open":
       openSettings();
       break;
-    case "msg:todos":
+    case "msg:todos": {
+      // Al desplegar los anteriores, el hilo se queda donde estaba leyendo en
+      // vez de saltar al final: si no, "ver los anteriores" te mandaba justo
+      // al lado opuesto de lo que pediste ver.
       ((msgTodos = true), renderPanel());
+      const hilo = $("#msgHilo");
+      if (hilo) hilo.scrollTop = 0;
       break;
-    case "msg:menos":
-      ((msgTodos = false), renderPanel());
-      break;
+    }
     case "cmt:add":
       addComment();
       break;
@@ -10840,11 +10938,11 @@ document.addEventListener("click", (ev) => {
     case "card:link":
       copyCardLink(val10 ? state.cards.find((c) => c.id === val10) : current());
       break;
-    case "card:save":
-      // El guardado automático ya corre solo (debounce + polling), pero
-      // este botón fuerza un guardado inmediato y da una confirmación
-      // explícita para quien prefiere no confiar en el automático.
-      guardarAhora(false).then(() => flash(state.saveError ? "✗ No se pudo guardar" : "✓ Guardado"));
+    case "panel:prev":
+      panelMover(-1);
+      break;
+    case "panel:next":
+      panelMover(1);
       break;
     case "qedit:open":
       openQEdit(val10);
@@ -11196,13 +11294,17 @@ function applyEduField(id, campo, value) {
     refrescarResumenEdu(eduCatDe(recurso));
   }
 }
-// En el panel de la tarjeta, las secciones se abren y se cierran SOLO con la
-// flechita: el encabezado es una barra ancha y cualquier clic cerca de él
-// plegaba la sección en la que se estaba trabajando. Afuera del panel (la
-// Ayuda, por ejemplo) el <details> sigue funcionando como siempre.
+// En el panel, una sección CERRADA se abre con un clic en cualquier parte del
+// encabezado —tocar "Checklist" tiene que abrir el checklist— pero una
+// ABIERTA solo se cierra con la flechita. Antes era simétrico y con la barra
+// entera clickeable cualquier roce plegaba la sección en la que se estaba
+// trabajando; el arreglo de aquel momento fue bloquear las dos direcciones, y
+// eso dejó el encabezado muerto. Así se abre fácil y no se cierra sin querer.
 document.addEventListener("click", (ev) => {
   const resumen = ev.target.closest && ev.target.closest("#panel details.acc > summary");
-  if (resumen && !ev.target.closest(".acc-ar")) ev.preventDefault();
+  if (!resumen) return;
+  const seccion = resumen.parentElement;
+  if (seccion.open && !ev.target.closest(".acc-ar")) ev.preventDefault();
 });
 (document.addEventListener("input", (ev) => {
   if (ev.target.id === "cmdkInput") {
@@ -11689,6 +11791,13 @@ function pushRecent(id2) {
       else {
         if ($("#panel").classList.contains("open")) closePanel();
       }
+    }
+    // Alt + ← / → recorre las tarjetas del Planner con el panel abierto. Alt
+    // solo: las flechas peladas mueven el cursor adentro de un campo, y
+    // Alt+↑/↓ ya reordena el checklist.
+    if (ev.altKey && (ev.key === "ArrowLeft" || ev.key === "ArrowRight") && state.selectedId) {
+      (ev.preventDefault(), panelMover(ev.key === "ArrowRight" ? 1 : -1));
+      return;
     }
     if (ev.key === "Enter" && (ev.ctrlKey || ev.metaKey) && ev.target.id === "cmtInput") {
       (ev.preventDefault(), addComment());
@@ -12308,10 +12417,11 @@ function logAct(val, txt) {
     }));
   if (val.actividad.length > 60) val.actividad = val.actividad.slice(-60);
 }
-// Cuántos mensajes se muestran sin desplegar. La sección tiene que ser fácil
-// de encontrar y de usar, pero no puede comerse el panel: con tres alcanza
-// para ver de qué se está hablando, y el resto está a un clic.
-const MSG_A_LA_VISTA = 3;
+// Cuántos mensajes se dibujan sin desplegar. El hilo tiene alto propio y
+// scrollea, así que el tope es para no armar cien globos de una en una
+// tarjeta con años de conversación; lo anterior está a un clic, arriba de
+// todo, donde se espera encontrarlo en un chat.
+const MSG_A_LA_VISTA = 12;
 let msgTodos = false;
 // El autor se guarda por NOMBRE (es lo que se ve), así que para pintarle su
 // color hay que ir a buscarlo al equipo. Si no está —alguien que ya no
@@ -12320,53 +12430,107 @@ let msgTodos = false;
 function miembroPorNombre(nombre) {
   return TEAM.find((m) => (m.nombre || "").toLowerCase() === String(nombre || "").toLowerCase());
 }
-function mensajeHTML(msg) {
+// Un mensaje, con forma de globo de chat. Lo que el equipo pidió: "algo más
+// parecido a un grupo de wasap". Los míos van a la derecha en azul COTO, los
+// del resto a la izquierda; dos seguidos de la misma persona en el mismo rato
+// se pegan y no repiten nombre ni carita, que es lo que hace que una
+// conversación se lea como una conversación y no como un registro.
+const MSG_PEGADO_MS = 5 * 60 * 1000;
+// 24 horas a propósito: "16:18" son cinco caracteres que entran en el hueco
+// que el globo le reserva; "04:18 p. m." son once y se monta arriba del texto.
+function msgHora(ts) {
+  return new Date(ts || 0).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+// El separador de día: "Hoy", "Ayer" o la fecha. Sin esto, un mensaje de hace
+// tres semanas y uno de esta mañana se leen pegados como si fueran la misma
+// charla.
+function msgDiaLabel(ts) {
+  const iso = isoOf(new Date(ts || 0)),
+    hoy = isoOf(new Date()),
+    ayer = isoOf(addDays(new Date(), -1));
+  if (iso === hoy) return "Hoy";
+  if (iso === ayer) return "Ayer";
+  return new Date(ts || 0).toLocaleDateString("es-AR", { day: "numeric", month: "long" });
+}
+function mensajeHTML(msg, anterior) {
   const quien = miembroPorNombre(msg.autor),
+    mio = !!state.user && msg.autor === state.user,
     inicial = String(msg.autor || "?").slice(0, 1).toUpperCase(),
     color = quien ? quien.color : "var(--line)",
-    tinta = quien ? contrasteSobre(quien.color) : "var(--ink-soft)";
+    tinta = quien ? contrasteSobre(quien.color) : "var(--ink-soft)",
+    pegado =
+      !!anterior &&
+      anterior.autor === msg.autor &&
+      Math.abs((msg.ts || 0) - (anterior.ts || 0)) < MSG_PEGADO_MS &&
+      isoOf(new Date(anterior.ts || 0)) === isoOf(new Date(msg.ts || 0));
   return (
-    '<div class="msg"><span class="avatar sm" style="background:' +
-    esc(color) +
-    ";color:" +
-    esc(tinta) +
-    '" title="' +
-    esc(msg.autor) +
+    '<div class="msg' +
+    (mio ? " mio" : "") +
+    (pegado ? " pegado" : "") +
     '">' +
-    esc(inicial) +
-    '</span><div class="msg-c"><div class="msg-h"><b>' +
-    esc(msg.autor) +
-    "</b><span>" +
-    relTime(msg.ts) +
-    '</span></div><div class="msg-t">' +
+    (pegado
+      ? '<span class="avatar sm hueco"></span>'
+      : '<span class="avatar sm" style="background:' +
+        esc(color) +
+        ";color:" +
+        esc(tinta) +
+        '" title="' +
+        esc(msg.autor) +
+        '">' +
+        esc(inicial) +
+        "</span>") +
+    '<div class="burbuja">' +
+    (pegado || mio ? "" : '<div class="msg-quien" style="color:' + esc(color) + '">' + esc(msg.autor) + "</div>") +
+    '<div class="msg-t">' +
     mentionize(msg.texto) +
-    "</div></div></div>"
+    '</div><span class="msg-hora" title="' +
+    esc(relTime(msg.ts)) +
+    '">' +
+    msgHora(msg.ts) +
+    "</span></div></div>"
   );
 }
 function mensajesHTML(tarjeta) {
-  const todos = (tarjeta.comentarios || []).slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)),
+  // Del más viejo al más nuevo, como se lee una conversación. El hilo tiene
+  // alto fijo y scrollea: el equipo pidió los mensajes bien a mano pero
+  // también que no se coman la tarjeta entera.
+  const todos = (tarjeta.comentarios || []).slice().sort((a, b) => (a.ts || 0) - (b.ts || 0)),
     ocultos = Math.max(0, todos.length - MSG_A_LA_VISTA),
-    visibles = msgTodos ? todos : todos.slice(0, MSG_A_LA_VISTA);
+    visibles = msgTodos ? todos : todos.slice(-MSG_A_LA_VISTA);
+  let hilo = "",
+    dia = "",
+    anterior = null;
+  visibles.forEach((msg) => {
+    const suDia = isoOf(new Date(msg.ts || 0));
+    if (suDia !== dia) {
+      ((hilo += '<div class="msg-dia"><span>' + esc(msgDiaLabel(msg.ts)) + "</span></div>"), (dia = suDia), (anterior = null));
+    }
+    ((hilo += mensajeHTML(msg, anterior)), (anterior = msg));
+  });
   return (
     '<details class="acc sec-acc" data-acc="mensajes" open><summary class="sub">Mensajes' +
     (todos.length ? " · " + todos.length : "") +
     '<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">' +
-    // El campo para escribir va ARRIBA: es lo que se viene a hacer acá.
-    '<div class="msg-nuevo"><textarea id="cmtInput" rows="1" placeholder="Dejale un mensaje al equipo… @nombre para mencionar"></textarea>' +
-    '<button class="btn btn-sm btn-primary" data-action="cmt:add">Enviar</button></div>' +
-    '<div class="msg-tip">Ctrl + Enter para enviar</div>' +
     (todos.length
-      ? '<div class="msg-lista">' +
-        visibles.map(mensajeHTML).join("") +
-        "</div>" +
+      ? '<div class="msg-hilo" id="msgHilo">' +
         (ocultos && !msgTodos
           ? '<button class="msg-mas" data-action="msg:todos">Ver los ' + ocultos + " anteriores</button>"
-          : todos.length > MSG_A_LA_VISTA
-            ? '<button class="msg-mas" data-action="msg:menos">Ver solo los últimos ' + MSG_A_LA_VISTA + "</button>"
-            : "")
+          : "") +
+        hilo +
+        "</div>"
       : '<div class="acc-vacio">Todavía nadie dejó un mensaje en esta tarjeta.</div>') +
+    // El campo para escribir va abajo del hilo, como en cualquier chat.
+    '<div class="msg-nuevo"><textarea id="cmtInput" rows="1" placeholder="Dejale un mensaje al equipo… @nombre para mencionar"></textarea>' +
+    '<button class="btn btn-sm btn-primary" data-action="cmt:add" title="Ctrl + Enter">Enviar</button></div>' +
+    '<div class="msg-tip">Ctrl + Enter para enviar</div>' +
     "\n  </div></details>"
   );
+}
+// El hilo arranca abajo de todo, en el último mensaje: es lo que se viene a
+// leer, y con alto fijo el de arriba no sirve de nada.
+function msgHiloAlFinal() {
+  const hilo = $("#msgHilo");
+  if (hilo) hilo.scrollTop = hilo.scrollHeight;
 }
 function addComment() {
   const val = current();
@@ -12386,7 +12550,8 @@ function addComment() {
     // líneas que no decían nada.
     touch(),
     (msgTodos = false),
-    renderPanel());
+    renderPanel(),
+    msgHiloAlFinal());
   const campo2 = $("#cmtInput");
   if (campo2) campo2.focus();
 }
