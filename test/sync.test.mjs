@@ -584,6 +584,88 @@ async function pruebaDosTirandoALaVez(browser, backend) {
   (await vivi.close(), await dami.close());
 }
 
+// --- importar un JSON tiene que poder SACAR filas -------------------------
+//
+// Esto apareció corrigiendo el Seguimiento técnico contra el Moodle real: se
+// preparó un archivo con 95 filas para reemplazar 106, se importó… y quedaron
+// 203. El importar cambiaba la lista en memoria, pero al guardar se mezcla con
+// la del servidor y todo lo ausente volvía solo. Una fila solo se va de verdad
+// si queda su "lápida", que es lo que deja la ✕ de cada fila — y el importador
+// no la dejaba.
+//
+// La otra mitad: un archivo que trae SOLO el Seguimiento técnico no puede
+// llevarse puesto el tablero. Antes se exigía "cards" siempre, así que
+// corregir una grilla obligaba a pisar el tablero entero con la foto del
+// respaldo, revirtiendo lo que alguien hubiera tocado mientras tanto.
+async function pruebaImportarBorra(browser, backend) {
+  console.log("\nimportar puede sacar filas, y solo toca lo que trae");
+  await backend.reset();
+  const page = await openClient(browser, backend.url, "Dami");
+  await page.waitForTimeout(1000);
+
+  // Punto de partida conocido: seis filas en el servidor, y un tablero.
+  await page.evaluate(async () => {
+    state.tecnico = ["A", "B", "C", "D", "E", "F"].map((n, i) => ({
+      id: "tec-" + n, curso: "Curso " + n, categoria: "Cajas", publicacion: "",
+      portada: false, mosaico: false, evaluacion: false, textos: false,
+      diseno: "", estado: "", cardId: null, updatedAt: Date.now() - 100000,
+    }));
+    state.deletedTecnico = {};
+    await Store.save(docSnapshotTecnico(), false, TEC_FILA);
+  });
+  await page.waitForTimeout(800);
+  const tablero = await page.evaluate(() => state.cards.length);
+
+  // Un archivo con CUATRO de las seis, y sin "cards".
+  const archivo = await page.evaluate(() =>
+    JSON.stringify({
+      version: 1,
+      tecnico: state.tecnico
+        .filter((f) => f.id !== "tec-C" && f.id !== "tec-E")
+        .map((f) => Object.assign({}, f, { updatedAt: Date.now() })),
+    }),
+  );
+  await page.evaluate(() => doImport());
+  await page.waitForTimeout(300);
+  await page.evaluate((t) => { document.querySelector("#importText").value = t; }, archivo);
+  await page.click('[data-action="data:import-run"]');
+  await page.waitForTimeout(300);
+  const pregunta = await page.evaluate(() => (document.querySelector(".modal .sub-t") || {}).textContent || "");
+  (check("avisa cuántas filas se van, no solo «reemplaza todo»", /se borran 2 filas/i.test(pregunta), pregunta),
+    check("y avisa que el tablero no se toca", !/tablero/i.test(pregunta), pregunta));
+  await page.click('[data-action="confirm:yes"]');
+  await page.waitForTimeout(1500);
+
+  const recien = await page.evaluate(() => state.tecnico.length);
+  check("al importar quedan las 4 filas del archivo", recien === 4, { recien });
+
+  // Y ahora lo que fallaba: guardar y volver a bajar del servidor.
+  await page.evaluate(() => guardarTecnicoAhora());
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => refreshTecnicoFromRemote());
+  await page.waitForTimeout(1200);
+  const tras = await page.evaluate(() => ({
+    filas: state.tecnico.length,
+    nombres: state.tecnico.map((f) => f.id).sort(),
+    lapidas: Object.keys(state.deletedTecnico || {}).length,
+    cards: state.cards.length,
+  }));
+  (check("y después de sincronizar NO vuelven", tras.filas === 4, tras),
+    check("las que se fueron son las que faltaban en el archivo", !tras.nombres.includes("tec-C") && !tras.nombres.includes("tec-E"), tras),
+    check("queda una lápida por cada fila sacada", tras.lapidas === 2, tras),
+    check("y el tablero no se tocó: el archivo no lo traía", tras.cards === tablero, { antes: tablero, ahora: tras.cards }));
+
+  // Una segunda pantalla, que nunca importó nada, ve lo mismo.
+  const otra = await openClient(browser, backend.url, "Vivi");
+  await otra.waitForTimeout(1200);
+  await otra.evaluate(() => refreshTecnicoFromRemote());
+  await otra.waitForTimeout(1200);
+  const vistoPorLaOtra = await otra.evaluate(() => state.tecnico.length);
+  check("y la otra pantalla también las ve borradas", vistoPorLaOtra === 4, { vistoPorLaOtra });
+
+  (await page.close(), await otra.close());
+}
+
 // --- corrida ------------------------------------------------------------
 
 const backend = await startFakeBackend();
@@ -597,7 +679,8 @@ try {
     await pruebaBackups(browser, backend),
     await pruebaBackendCaido(browser, backend),
     await pruebaFrasesSinRepetir(browser, backend.url),
-    await pruebaDosTirandoALaVez(browser, backend));
+    await pruebaDosTirandoALaVez(browser, backend),
+    await pruebaImportarBorra(browser, backend));
 } finally {
   (await browser.close(), await backend.stop());
 }
