@@ -256,6 +256,79 @@ const despues = await page.evaluate(() => ({
 const tablero = await page.evaluate(() => state.cards.length);
 check("reiniciar las frases no toca las tarjetas", tablero > 3, { tarjetas: tablero });
 
+// ── Técnico: las pestañas y los filtros por columna ───────────────────────
+console.log("\nSeguimiento técnico");
+await page.evaluate(() => {
+  (closeModal(), (state.view = "tecnico"), (state.tecSubView = "grilla"), (state.tecColFiltros = {}), (state.tecFiltro = ""), render());
+});
+await page.waitForTimeout(500);
+const pestanas = await page.evaluate(() => [...document.querySelectorAll(".mapa-sec")].map((s) => s.textContent.trim()));
+(check("la pestaña Validación ya no está en la navegación", !pestanas.some((t) => /Validaci/i.test(t)), pestanas),
+  check("y está la de Métodos de matriculación", pestanas.some((t) => /matriculaci/i.test(t)), pestanas));
+
+// El embudo de una columna: se abre, lista los valores reales con cuántas
+// filas tiene cada uno, y al marcar uno la tabla queda con esas filas.
+const antesFilas = await page.evaluate(() => tecRows().length);
+await page.click('[data-action="tec:filtcol"][data-campo="diseno"]');
+await page.waitForTimeout(400);
+const embudo = await page.evaluate(() => ({
+  abierto: !!document.querySelector("#tecFiltPop"),
+  opciones: [...document.querySelectorAll("#tecFiltPop [data-tec-fv]")].map((c) => c.dataset.tecFv),
+  cuentaHTML: +(document.querySelector('#tecFiltPop [data-tec-fv="HTML"]')?.closest(".tec-col-opt")?.querySelector(".tec-filt-n")?.textContent || 0),
+}));
+(check("el embudo de una columna se abre sin que lo cierre el scroll", embudo.abierto === true, embudo),
+  check("y lista los valores que esa columna tiene de verdad", embudo.opciones.includes("HTML"), embudo),
+  check("con cuántas filas tiene cada uno", embudo.cuentaHTML > 0, embudo));
+await page.click('#tecFiltPop [data-tec-fv="HTML"]');
+await page.waitForTimeout(400);
+const filtrado = await page.evaluate(() => ({
+  filas: tecRows().length,
+  soloHTML: tecRows().every((f) => (f.diseno || "") === "HTML"),
+  contador: document.querySelector("#tecTopN").textContent,
+  sigueAbierto: !!document.querySelector("#tecFiltPop"),
+}));
+(check("marcar un valor filtra la tabla de verdad", filtrado.soloHTML === true && filtrado.filas < antesFilas, filtrado),
+  check("el contador de arriba lo acompaña", filtrado.contador.startsWith(String(filtrado.filas)), filtrado),
+  check("y el embudo no se cierra al marcar, para poder marcar varios", filtrado.sigueAbierto === true, filtrado));
+await page.click('[data-action="tec:limpiar"]');
+await page.waitForTimeout(400);
+check(
+  "«Limpiar filtros» también saca los de columna",
+  await page.evaluate(() => Object.keys(state.tecColFiltros).length === 0 && tecRows().length === state.tecnico.length),
+);
+
+// ── Métodos de matriculación ──────────────────────────────────────────────
+console.log("\nmétodos de matriculación");
+await page.evaluate(() => {
+  ((state.tecSubView = "matri"), (state.matVista = "reglas"), (state.matAbiertas = {}), render());
+});
+await page.waitForTimeout(500);
+const matri = await page.evaluate(() => ({
+  tarjetas: document.querySelectorAll(".mat-card").length,
+  reglas: MATRI_SEED.length,
+  cursos: matCursosTodos().length,
+  // El cruce con el Técnico es por nombre: si se rompiera, no engancharía casi
+  // ninguno y los chips dejarían de llevar a la fila.
+  cruzados: matCursosTodos().filter((c) => matTecFila(c.n)).length,
+}));
+(check("se ven las 63 reglas", matri.tarjetas === matri.reglas && matri.reglas === 63, matri),
+  check("que alcanzan 80 cursos", matri.cursos === 80, matri),
+  check("y casi todos enganchan con una fila del Técnico", matri.cruzados >= 70, matri));
+await page.click(".mat-card .mat-h");
+await page.waitForTimeout(400);
+const abierta = await page.evaluate(() => ({
+  cursos: document.querySelectorAll(".mat-card.open .mat-curso").length,
+  condiciones: document.querySelectorAll(".mat-card.open .mat-cond").length,
+}));
+(check("una regla se abre y muestra los cursos que otorga", abierta.cursos > 0, abierta),
+  check("y las condiciones, leídas una por renglón", abierta.condiciones > 0, abierta));
+await page.click('[data-action="mat:vista"][data-v="cursos"]');
+await page.waitForTimeout(400);
+check(
+  "«Por curso» da vuelta la información: cada curso con sus reglas",
+  await page.evaluate(() => document.querySelectorAll(".mat-ccard").length > 0 && document.querySelectorAll(".mat-rchip").length > 0),
+);
+
 await browser.close();
 await backend.stop();
 const fallan = resultados.filter((r) => !r.ok);

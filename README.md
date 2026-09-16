@@ -32,7 +32,7 @@ index.html        ← generado. NO está en el repositorio: lo arma el build.
 npm install       # una sola vez (Playwright, para los tests)
 npm run build     # regenera index.html desde src/
 npm start         # sirve la carpeta en http://localhost:8080
-npm test          # las 144 pruebas (build incluido)
+npm test          # las 159 pruebas (build incluido)
 ```
 
 El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
@@ -80,7 +80,7 @@ guardado escriba la copia local entera, esas pruebas se ponen en rojo.
 
 ## Pruebas
 
-Son 144, en cinco baterías, y corren solas en cada cambio (ver
+Son 159, en cinco baterías, y corren solas en cada cambio (ver
 `.github/workflows/pruebas.yml`). Todas abren la app de verdad en un navegador
 contra `test/fake-backend.mjs`, que imita las filas de Supabase y su endpoint
 de ingreso.
@@ -91,7 +91,7 @@ de ingreso.
 | `test/tamano.test.mjs` | Que el documento sincronizado no engorde ni se lleve las imágenes adentro. Es la prueba que faltaba el día que se agotó la cuota. |
 | `test/ingreso.test.mjs` | Que sin sesión no se baje nada; que con sesión se trabaje normal aunque el token venza en el medio; que al recargar la app espere en el ingreso en vez de abrirse sola, y que pasadas las 12 h vuelva a pedir la contraseña. |
 | `test/numeros.test.mjs` | Que los números que el equipo lee sean los mismos en todas las vistas: que la campana no marque como pendiente algo terminado, que Reportería coincida con el Planner y con Técnico, y que el pulso de Inicio dé lo mismo que las columnas del Planner. |
-| `test/interfaz.test.mjs` | Lo que se rompe al usarla, no al leerla: que en el buscador del tablero se pueda escribir de corrido, que una tarjeta creada con “Mis tareas” puesto se vea en el momento, y que reiniciar las CotoFrases no se lleve puesto nada más. Las tres las encontró el área usando la app, no una prueba. |
+| `test/interfaz.test.mjs` | Lo que se rompe al usarla, no al leerla: que en el buscador del tablero se pueda escribir de corrido, que una tarjeta creada con “Mis tareas” puesto se vea en el momento, y que reiniciar las CotoFrases no se lleve puesto nada más. También que en Técnico el embudo de cada columna filtre de verdad y que las 63 reglas de matriculación crucen con las filas del Seguimiento técnico. |
 
 El flujo genera `index.html` desde `src/` antes de correr las pruebas y
 publica exactamente ese archivo: lo que se prueba y lo que sale a producción

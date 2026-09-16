@@ -6360,14 +6360,14 @@ html {
    horizontal sí o sí — pero "Curso" (con qué fila estás) se queda fijo a la
    izquierda para no perder el contexto a mitad de scroll. */
 .tec-table td.tec-curso,
-.tec-table th[data-campo="curso"] {
+.tec-table th[data-col="curso"] {
   position: sticky;
   left: 0;
   z-index: 1;
   background: var(--surface);
   box-shadow: 1px 0 0 var(--line);
 }
-.tec-table th[data-campo="curso"] {
+.tec-table th[data-col="curso"] {
   z-index: 3;
   background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
 }
@@ -6744,13 +6744,36 @@ html {
   font-weight: 600;
   white-space: nowrap;
 }
-.tec-th-sort {
-  cursor: pointer;
+/* El encabezado de una columna hace dos cosas: el nombre ordena y el ▾ filtra.
+   Son dos botones separados dentro del mismo <th> porque un solo clic no puede
+   adivinar cuál de las dos querías. */
+.tec-th {
+  padding: 4px 6px !important;
+}
+.tec-th > * {
+  vertical-align: middle;
+}
+.tec-th-sort,
+.tec-th-lbl {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: none;
+  padding: 5px 6px;
+  border-radius: var(--r-sm);
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
   user-select: none;
   white-space: nowrap;
 }
+.tec-th-sort {
+  cursor: pointer;
+}
 .tec-th-sort:hover {
   color: var(--coto-blue);
+  background: color-mix(in srgb, var(--coto-blue) 10%, transparent);
 }
 .tec-th-sort.on {
   color: var(--coto-blue);
@@ -6762,6 +6785,75 @@ html {
 }
 .tec-th-sort.on .tec-th-ar {
   opacity: 1;
+}
+/* El embudito: chiquito y apagado hasta que filtra algo, y ahí se enciende con
+   el número de valores elegidos, para que nunca queden filas escondidas sin
+   que se vea desde dónde. */
+.tec-th-filt {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--ink-soft);
+  cursor: pointer;
+  padding: 3px 5px;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  line-height: 1;
+}
+.tec-th-filt:hover {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--coto-blue);
+}
+.tec-th-filt.on {
+  background: var(--coto-blue);
+  border-color: var(--coto-blue);
+  color: #fff;
+}
+.tec-th-filt-n {
+  font-size: 10px;
+  font-weight: 800;
+}
+.tec-th.filt {
+  background: color-mix(in srgb, var(--coto-blue) 13%, var(--surface)) !important;
+}
+/* Cuelga del <body> y se ubica a mano contra el botón: el encabezado de la
+   tabla es sticky adentro de un contenedor con scroll, así que un popover
+   colgado del <th> se recortaría contra el borde de la grilla. */
+.tec-filt-pop {
+  position: fixed;
+  left: 0;
+  top: 0;
+  min-width: 210px;
+  max-width: 280px;
+  z-index: 80;
+}
+.tec-filt-lista {
+  display: flex;
+  flex-direction: column;
+  max-height: 46vh;
+  overflow-y: auto;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+.tec-filt-lista .tec-col-opt {
+  gap: 8px;
+  padding: 5px 4px;
+}
+.tec-filt-lista .tec-col-opt.cero {
+  opacity: 0.4;
+}
+.tec-filt-n {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.tec-filt-vacio {
+  color: var(--ink-soft);
 }
 .tec-cat {
   max-width: 160px;
@@ -8025,4 +8117,318 @@ html {
     min-width: 70px;
     padding: 3px 6px;
   }
+}
+
+/* ===== Métodos de matriculación =====
+   Las 63 reglas del administrador de matriculaciones. En el Excel de origen
+   cada regla es una fila con las condiciones apelotonadas en una celda; acá
+   cada una es una tarjeta que se abre, con los cursos que otorga de un lado y
+   las condiciones —leídas como una frase— del otro. */
+.mat-intro {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  padding: 10px 14px;
+  margin-bottom: var(--sp-3);
+}
+.mat-vistas {
+  display: inline-flex;
+  gap: 4px;
+}
+.mat-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+.mat-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--surface);
+  overflow: hidden;
+}
+.mat-card.open {
+  border-color: color-mix(in srgb, var(--coto-blue) 40%, var(--line));
+  box-shadow: var(--shadow-sm);
+}
+/* Una regla dada de baja sigue a la vista pero apagada: saberlas es parte del
+   trabajo, confundirlas con las que están corriendo no. */
+.mat-card.baja .mat-h-t b {
+  color: var(--ink-soft);
+  text-decoration: line-through;
+}
+.mat-h {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: none;
+  text-align: left;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.mat-h:hover {
+  background: color-mix(in srgb, var(--coto-blue) 5%, transparent);
+}
+.mat-ar {
+  flex: none;
+  font-size: 12px;
+  color: var(--ink-soft);
+  transition: transform 0.15s;
+}
+.mat-card.open .mat-ar {
+  transform: rotate(90deg);
+  color: var(--coto-blue);
+}
+.mat-h-t {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.mat-h-t b {
+  font-family: var(--titulo);
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.mat-meta {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.mat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: none;
+}
+.mat-chip {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: var(--pill);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  white-space: nowrap;
+}
+.mat-chip.on {
+  color: var(--ok);
+  background: var(--ok-soft);
+  border-color: transparent;
+}
+.mat-chip.off {
+  color: var(--warn-ink);
+  background: var(--warn-soft);
+  border-color: transparent;
+}
+.mat-chip.auto {
+  color: var(--coto-blue);
+  background: color-mix(in srgb, var(--coto-blue) 12%, transparent);
+  border-color: transparent;
+}
+.mat-body {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: var(--sp-3);
+  padding: 0 14px 14px 36px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 14px;
+}
+@media (max-width: 760px) {
+  .mat-body {
+    grid-template-columns: 1fr;
+    padding-left: 14px;
+  }
+}
+.mat-sub {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+.mat-cursos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+/* Un curso que está en el Seguimiento técnico lleva a su fila; uno que no
+   está se ve apagado, que es justo lo que conviene notar: se matricula solo y
+   no lo estamos siguiendo. */
+.mat-curso {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: var(--pill);
+  border: 1px dashed var(--line);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-family: inherit;
+  text-align: left;
+}
+button.mat-curso.ok {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--coto-blue) 28%, var(--line));
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+button.mat-curso.ok:hover {
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+}
+.mat-mid {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: var(--r-sm);
+  padding: 1px 5px;
+  font-variant-numeric: tabular-nums;
+}
+/* Las condiciones como una lista leíble, con el conector (Y / O) suelto entre
+   renglones: es lo que cambia el sentido de toda la regla y en el Excel se
+   perdía en el medio del texto. */
+.mat-conds {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.mat-cond {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border-left: 3px solid color-mix(in srgb, var(--coto-blue) 45%, transparent);
+}
+.mat-cond.neg {
+  border-left-color: color-mix(in srgb, var(--warn-ink) 55%, transparent);
+}
+.mat-cond b {
+  font-weight: 800;
+}
+.mat-cond i {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--coto-blue);
+}
+.mat-cond.neg i {
+  color: var(--warn-ink);
+}
+/* El conector entre condiciones: en el Excel se perdía en el medio del texto
+   y es justo lo que cambia el sentido de la regla entera ("Y" acumula, "O"
+   abre otra puerta). Acá va suelto, entre renglones y con una línea al lado. */
+.mat-une {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0 2px 10px;
+}
+.mat-une span {
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--coto-blue);
+}
+.mat-une::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.mat-pie {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  border-top: 1px solid var(--line-soft);
+  padding-top: 9px;
+}
+.mat-vacio,
+.mat-nada {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.mat-nada {
+  padding: 28px 14px;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-s);
+}
+/* Vista "por curso": la misma información dada vuelta, para contestar por qué
+   a alguien le apareció un curso. */
+.mat-ccard {
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--surface);
+  padding: 11px 14px;
+}
+.mat-ch {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.mat-ct {
+  font-family: var(--titulo);
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: left;
+}
+button.mat-ct {
+  cursor: pointer;
+}
+button.mat-ct:hover {
+  color: var(--coto-blue);
+  text-decoration: underline;
+}
+.mat-ch .mat-meta {
+  margin-left: auto;
+}
+.mat-creglas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.mat-rchip {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--pill);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+.mat-rchip:hover {
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+}
+.mat-rchip.baja {
+  color: var(--ink-soft);
+  text-decoration: line-through;
 }
