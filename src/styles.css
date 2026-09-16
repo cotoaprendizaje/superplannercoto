@@ -3394,6 +3394,117 @@ button {
   border-color: var(--coto-blue);
   color: #fff;
 }
+/* Los mensajes del equipo. La sección es de las primeras del panel, así que
+   cada mensaje tiene que ocupar poco: la cara a la izquierda hace de columna
+   y el texto cuelga de ella, sin caja, sin marco y sin raya. Tres a la vista
+   y el resto a un clic. */
+.msg-nuevo {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+/* Mismo vestido que los campos de Datos: vive fuera de .fld, así que si no se
+   le dice nada sale con la monoespaciada del navegador y un marco propio, y
+   parece de otra aplicación. */
+.msg-nuevo textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  resize: vertical;
+  transition:
+    min-height 0.14s,
+    border-color 0.14s,
+    background 0.14s,
+    box-shadow 0.14s;
+  font-family: var(--texto);
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  padding: 9px 11px;
+  outline: 0;
+}
+.msg-nuevo textarea:hover {
+  border-color: var(--line);
+}
+.msg-nuevo textarea:focus {
+  min-height: 74px;
+  border-color: var(--coto-blue);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--coto-blue) 14%, transparent);
+}
+.msg-nuevo .btn {
+  flex: none;
+  margin-top: 2px;
+}
+.msg-tip {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  opacity: 0.75;
+  margin: 4px 0 2px;
+}
+.msg-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+.msg {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+}
+.msg .avatar.sm {
+  flex: none;
+  margin-top: 1px;
+}
+.msg-c {
+  min-width: 0;
+  flex: 1;
+}
+.msg-h {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  line-height: 1.2;
+}
+.msg-h b {
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.msg-h span {
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.msg-t {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink);
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+.msg-mas {
+  margin-top: 10px;
+  border: 0;
+  background: 0 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--coto-blue);
+  cursor: pointer;
+  padding: 4px 0;
+}
+.msg-mas:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.acc-vacio {
+  font-size: 12px;
+  color: var(--ink-soft);
+  padding: 8px 0 2px;
+}
 .cmt {
   background: var(--surface-2);
   border: 1px solid var(--line);

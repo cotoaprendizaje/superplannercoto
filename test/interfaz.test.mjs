@@ -131,6 +131,95 @@ check(
   sinFiltro,
 );
 
+// ── Los mensajes del equipo en la tarjeta ─────────────────────────────────
+//
+// El equipo pidió dejarse mensajes entre compañeras dentro de cada tarjeta:
+// que se vea quién escribió, que quede el historial, y que no se coma el
+// panel. Antes existían, pero mezclados con el registro del sistema en un
+// acordeón al final: para leer un mensaje había que pasar por veinte líneas
+// de "movida a En revisión".
+console.log("\nlos mensajes de la tarjeta");
+const idTarjeta = await page.evaluate(() => {
+  const c = newCard("libre", "TARJETA CON CONVERSACIÓN", {});
+  const hs = (n) => Date.now() - n * 3600000;
+  c.comentarios = [
+    { id: "m1", autor: TEAM[0].nombre, texto: "uno", ts: hs(50) },
+    { id: "m2", autor: (TEAM[1] || TEAM[0]).nombre, texto: "dos", ts: hs(30) },
+    { id: "m3", autor: (TEAM[2] || TEAM[0]).nombre, texto: "tres", ts: hs(20) },
+    { id: "m4", autor: (TEAM[1] || TEAM[0]).nombre, texto: "cuatro", ts: hs(3) },
+    { id: "m5", autor: TEAM[0].nombre, texto: "cinco", ts: hs(1) },
+  ];
+  ((c.actividad = [{ ts: hs(60), autor: "Vivi", texto: "creada" }]), state.cards.push(c), render());
+  return c.id;
+});
+await page.evaluate((i) => openDetail(i), idTarjeta);
+await page.waitForTimeout(700);
+const sec = await page.evaluate(() => {
+  const s = document.querySelector('[data-acc="mensajes"]'),
+    orden = [...document.querySelectorAll("#panel details[data-acc]")].map((d) => d.dataset.acc);
+  return {
+    existe: !!s,
+    abierta: !!(s && s.open),
+    justoDespuesDeDatos: orden[0] === "datos" && orden[1] === "mensajes",
+    titulo: s ? s.querySelector("summary").textContent.replace(/\s+/g, " ").trim() : "",
+    aLaVista: document.querySelectorAll("#panel .msg").length,
+    conAvatar: document.querySelectorAll("#panel .msg .avatar").length,
+    autores: [...document.querySelectorAll("#panel .msg-h b")].map((b) => b.textContent),
+    botonMas: (document.querySelector(".msg-mas") || {}).textContent || "",
+  };
+});
+(check("hay una sección de mensajes propia y abierta", sec.existe && sec.abierta, sec),
+  check("y está arriba, pegada a Datos", sec.justoDespuesDeDatos === true, sec),
+  check("el título dice cuántos hay", /Mensajes · 5/.test(sec.titulo), sec),
+  check("muestra solo los 3 últimos, no los 5", sec.aLaVista === 3, sec),
+  check("y ofrece ver los anteriores", /Ver los 2 anteriores/.test(sec.botonMas), sec),
+  check("cada mensaje dice quién lo escribió", sec.autores.length === 3 && sec.autores.every(Boolean), sec),
+  check("con la cara de esa persona al lado", sec.conAvatar === 3, sec));
+
+await page.click(".msg-mas");
+await page.waitForTimeout(400);
+check(
+  "al desplegar aparecen los cinco",
+  (await page.evaluate(() => document.querySelectorAll("#panel .msg").length)) === 5,
+);
+
+// Escribir uno, con el atajo.
+await page.click("#cmtInput");
+await page.keyboard.type("MENSAJE DE PRUEBA");
+await page.keyboard.press("Control+Enter");
+await page.waitForTimeout(700);
+const tras = await page.evaluate(() => {
+  const c = state.cards.find((x) => x.titulo === "TARJETA CON CONVERSACIÓN");
+  return {
+    guardados: c.comentarios.length,
+    autorDelUltimo: c.comentarios[c.comentarios.length - 1].autor,
+    yo: state.user,
+    primeroEnPantalla: (document.querySelector("#panel .msg-t") || {}).textContent.trim(),
+    aLaVista: document.querySelectorAll("#panel .msg").length,
+    actividad: (document.querySelector('[data-acc="actividad"]') || {}).textContent || "",
+  };
+});
+(check("Ctrl+Enter envía el mensaje", tras.guardados === 6, tras),
+  check("queda firmado con quien lo escribió", tras.autorDelUltimo === tras.yo, tras),
+  check("y aparece primero, sin tener que buscarlo", tras.primeroEnPantalla === "MENSAJE DE PRUEBA", tras),
+  check("al enviar vuelve a mostrar solo los últimos 3", tras.aLaVista === 3, tras),
+  check("y no ensucia Actividad con un «comentó»", !/comentó/i.test(tras.actividad), tras));
+
+// Abrir otra tarjeta no arrastra el «ver anteriores» de la anterior.
+await page.evaluate(() => {
+  const c = newCard("libre", "OTRA TARJETA", {});
+  (state.cards.push(c), render(), openDetail(c.id));
+});
+await page.waitForTimeout(500);
+await page.evaluate((i) => openDetail(i), idTarjeta);
+await page.waitForTimeout(500);
+check(
+  "cambiar de tarjeta reinicia el desplegado",
+  (await page.evaluate(() => document.querySelectorAll("#panel .msg").length)) === 3,
+);
+await page.keyboard.press("Escape");
+await page.waitForTimeout(400);
+
 // ── Reiniciar las CotoFrases desde Ajustes ────────────────────────────────
 console.log("\nreiniciar las CotoFrases desde Ajustes");
 await page.evaluate(() => {
