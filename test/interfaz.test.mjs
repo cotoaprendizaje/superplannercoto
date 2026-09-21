@@ -653,6 +653,185 @@ check(
   await page.evaluate(() => document.querySelectorAll(".mat-ccard").length > 0 && document.querySelectorAll(".mat-rchip").length > 0),
 );
 
+// ── Qué falta ─────────────────────────────────────────────────────────────
+console.log("\nqué falta");
+await page.evaluate(() => {
+  // Un curso al que le falta todo y otro al que no le falta nada, para poder
+  // comprobar los dos extremos del orden.
+  state.tecnico = state.tecnico.filter((f) => !/^ZZ /.test(f.curso || ""));
+  const completo = {
+      id: "zz-lleno",
+      curso: "ZZ Curso completo",
+      categoria: "ZZ Prueba",
+      portada: true,
+      mosaico: true,
+      evaluacion: true,
+      textos: true,
+      publicacion: "2024-03-01",
+      scorm: "2024-03-02",
+      mail: "2024-03-03",
+      cardId: state.cards[0].id,
+    },
+    vacio = { id: "zz-vacio", curso: "ZZ Curso sin nada", categoria: "ZZ Prueba" };
+  (state.tecnico.push(completo, vacio),
+    (state.view = "tecnico"),
+    (state.tecSubView = "falta"),
+    (state.tecFiltro = "ZZ"),
+    render());
+});
+await page.waitForTimeout(400);
+const falta = await page.evaluate(() => {
+  const items = Array.from(document.querySelectorAll(".falta-list .falta-item")),
+    nombres = items.map((i) => i.querySelector(".falta-curso").textContent);
+  return {
+    items: items.length,
+    // El que menos le falta va primero: es el orden que contesta "por dónde
+    // arranco", no el alfabético.
+    primero: nombres[0],
+    pendientesVacio: tecPendientes(state.tecnico.find((f) => f.id === "zz-vacio")).length,
+    pendientesLleno: tecPendientes(state.tecnico.find((f) => f.id === "zz-lleno")).length,
+    // El completo no ensucia la lista de pendientes: se pliega abajo.
+    plegados: document.querySelectorAll(".falta-completos .falta-item").length,
+    pasosLinea: document.querySelectorAll(".falta-item .tlin-paso").length,
+    pasosHechos: document.querySelectorAll(".falta-item .tlin-paso.ok").length,
+  };
+});
+(check("«Qué falta» lista los cursos con algo pendiente", falta.items >= 1, falta),
+  check("al que no le falta nada queda plegado aparte", falta.plegados === 1, falta),
+  check("un curso sin nada cargado tiene 8 pendientes", falta.pendientesVacio === 8, falta),
+  check("y uno completo, ninguno", falta.pendientesLleno === 0, falta),
+  check("las tres fechas se dibujan como tres pasos", falta.pasosLinea >= 3, falta),
+  check("y los pasos cargados se ven hechos", falta.pasosHechos >= 3, falta));
+
+// Tildar una pieza acá mismo baja la cuenta y redibuja la lista.
+const tildeAntes = await page.evaluate(
+  () => document.querySelector('.falta-item [data-tec-field="portada"]') !== null,
+);
+check("las piezas se tildan sin salir de la vista", tildeAntes);
+await page.click('.falta-item [data-tec-field="portada"]');
+await page.waitForTimeout(350);
+check(
+  "y al tildarla baja lo que le falta al curso",
+  await page.evaluate(() => tecPendientes(state.tecnico.find((f) => f.id === "zz-vacio")).length === 7),
+);
+
+// ── Un curso, un registro ─────────────────────────────────────────────────
+console.log("\nun curso, un registro");
+const pares = await page.evaluate(() => {
+  // Dos casos armados a mano: uno idéntico salvo acentos, otro que se parece
+  // pero no es igual — exactamente los dos tipos que hay en el dato real.
+  const c1 = newCard("curso", "ZZ Manual de Prueba - Capítulo 3", {}),
+    c2 = newCard("curso", "ZZ Higiene Y Limpieza", {});
+  (state.cards.push(c1, c2),
+    state.tecnico.push(
+      { id: "zz-p1", curso: "ZZ Manual de Prueba – 3", categoria: "ZZ Prueba" },
+      { id: "zz-p2", curso: "zz higiene y limpieza", categoria: "ZZ Prueba" },
+    ),
+    parInvalidar());
+  const ex = valParesExactos(),
+    pa = valParesParecidos();
+  return {
+    exacto: ex.some((x) => x.fila.id === "zz-p2" && x.card.id === c2.id),
+    parecido: pa.some((x) => x.fila.id === "zz-p1" && x.card.id === c1.id),
+    // Lo que ya se ofrece como par no vuelve a contarse como fila suelta: si
+    // no, el mismo problema figuraría dos veces y el total dejaría de cerrar.
+    noSeRepite: !valFilasSinCurso().some((f) => f.id === "zz-p1" || f.id === "zz-p2"),
+  };
+});
+(check("dos nombres iguales salvo mayúsculas se detectan como el mismo curso", pares.exacto, pares),
+  check('"– 3" y "- Capítulo 3" se ofrecen como par a decidir', pares.parecido, pares),
+  check("y un par ofrecido no se cuenta además como fila suelta", pares.noSeRepite, pares));
+
+await page.evaluate(() => ((state.tecSubView = "revision"), render()));
+await page.waitForTimeout(400);
+const revision = await page.evaluate(() => ({
+  grupos: document.querySelectorAll(".val-grupo").length,
+  pares: document.querySelectorAll(".par").length,
+  // Las revisiones sin nada pendiente se pliegan a una línea en vez de ocupar
+  // una caja entera.
+  lineasOk: document.querySelectorAll(".val-linea-ok").length,
+  total: valTotal(),
+}));
+(check("Revisión agrupa todo en tres bloques", revision.grupos === 3, revision),
+  check("con los pares enfrentados para poder compararlos", revision.pares >= 2, revision),
+  check("lo que ya está bien ocupa una línea, no una caja", revision.lineasOk >= 1, revision));
+
+// "Son distintos" se guarda en la fila y el par no vuelve.
+await page.evaluate(() => {
+  const b = document.querySelector('[data-action="val:nopar"][data-fila="zz-p1"]');
+  if (b) b.click();
+});
+await page.waitForTimeout(400);
+const descarte = await page.evaluate(() => ({
+  guardado: (state.tecnico.find((f) => f.id === "zz-p1").noEs || []).length,
+  vuelve: valParesParecidos().some((x) => x.fila.id === "zz-p1"),
+}));
+(check("marcar «son distintos» queda guardado en la fila", descarte.guardado === 1, descarte),
+  check("y ese par no vuelve a preguntarse", descarte.vuelve === false, descarte));
+
+// Vincular el par exacto los une de verdad, por id y no por texto.
+const vinculado = await page.evaluate(() => {
+  const x = valParesExactos().find((p) => p.fila.id === "zz-p2");
+  if (!x) return null;
+  return ((x.fila.cardId = x.card.id), parInvalidar(), { id: state.tecnico.find((f) => f.id === "zz-p2").cardId });
+});
+check("vincular un par lo deja unido por id", !!(vinculado && vinculado.id), vinculado);
+
+// ── Mover una tarjeta ─────────────────────────────────────────────────────
+console.log("\nmover una tarjeta de columna");
+const movida = await page.evaluate(() => {
+  const c = state.cards.find((x) => x.titulo === "Guion de seguridad");
+  ((c.estado = "pendiente"), (c.actividad = []), (c.revisionDesde = null));
+  const cambio = moverTarjetaAEstado(c, "en-revision"),
+    sinCambio = moverTarjetaAEstado(c, "en-revision");
+  return {
+    cambio: cambio,
+    sinCambio: sinCambio,
+    estado: c.estado,
+    // Pasar a revisión sella desde cuándo: es lo que después cuenta los días.
+    sello: !!c.revisionDesde,
+    anotado: (c.actividad || []).length,
+  };
+});
+(check("mover una tarjeta cambia su columna", movida.cambio === true && movida.estado === "en-revision", movida),
+  check("lo anota en la actividad", movida.anotado === 1, movida),
+  check("sella desde cuándo está en revisión", movida.sello, movida),
+  check("y mover a la misma columna no hace nada", movida.sinCambio === false && movida.anotado === 1, movida));
+
+// ── Navegación ────────────────────────────────────────────────────────────
+console.log("\nnavegación");
+const paleta = await page.evaluate(() => {
+  const cmds = paletteCommands();
+  return {
+    falta: cmds.some((c) => c.act === "tecsub" && c.arg === "falta"),
+    revision: cmds.some((c) => c.act === "tecsub" && c.arg === "revision"),
+    matri: cmds.some((c) => c.act === "tecsub" && c.arg === "matri"),
+  };
+});
+(check("el buscador encuentra «Qué falta»", paleta.falta, paleta),
+  check("y «Revisión»", paleta.revision, paleta),
+  check("y «Métodos de matriculación»", paleta.matri, paleta));
+const salto = await page.evaluate(() => {
+  ((state.view = "reportes"), render());
+  const b = document.createElement("button");
+  (b.setAttribute("data-action", "tec:subview"), b.setAttribute("data-v", "revision"), document.body.appendChild(b), b.click(), b.remove());
+  return { view: state.view, sub: state.tecSubView };
+});
+check(
+  "desde otra vista se puede saltar directo a una solapa de Técnico",
+  salto.view === "tecnico" && salto.sub === "revision",
+  salto,
+);
+
+// Dejar el tablero como estaba para que nada de esto ensucie lo que sigue.
+await page.evaluate(() => {
+  ((state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id))),
+    (state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo))),
+    (state.tecFiltro = ""),
+    (state.tecSubView = "grilla"),
+    parInvalidar());
+});
+
 await browser.close();
 await backend.stop();
 const fallan = resultados.filter((r) => !r.ok);

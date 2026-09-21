@@ -4669,6 +4669,21 @@ function kanbanCards() {
     .filter((tarjeta) => tarjeta.activo !== false && (!isInventory(tarjeta) || tarjeta.quedaEnTablero))
     .filter(passBoard);
 }
+// Mover una tarjeta de columna pasó a tener tres puertas de entrada —el
+// arrastre con mouse, el arrastre con el dedo y el selector de la edición
+// rápida— y las tres tienen que dejar exactamente el mismo rastro. Cuando
+// cada una anotaba por su cuenta ya se habían desincronizado una vez, así
+// que el registro vive acá y las tres lo llaman.
+// Devuelve si hubo cambio, para que quien llama sepa si vale la pena redibujar.
+function moverTarjetaAEstado(tarjeta, estadoId) {
+  if (!tarjeta || !estadoId || tarjeta.estado === estadoId) return false;
+  const nombre = (ESTADOS.find((e) => e.id === estadoId) || {}).nombre || estadoId;
+  (logAct(tarjeta, "pasó a " + nombre),
+    estadoId === "en-revision" && (tarjeta.revisionDesde = isoOf(new Date())),
+    (tarjeta.estado = estadoId),
+    touch());
+  return true;
+}
 // Cuántas finalizadas se dibujan antes del "ver las anteriores". Con 90 cursos
 // publicados, la columna entera es la misma pared de tarjetas que el área ya
 // pidió sacar del tablero una vez.
@@ -4897,7 +4912,8 @@ function render() {
   // devolviera antes, se lo estaría devolviendo a un <input> que renderFilters
   // reemplaza un renglón más abajo.
   const foco = focoDeLaVista();
-  (tecFiltPopCerrar(),
+  (parInvalidar(),
+    tecFiltPopCerrar(),
     renderView(),
     renderFilters(),
     updateBell(),
@@ -6590,6 +6606,190 @@ function tecNuevaFilaModalHTML(catPrefill) {
     '<div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="tec:add-confirmar">Crear</button></div>'
   );
 }
+// ===== Qué falta =====
+// La grilla contesta "qué dice tal celda". Lo que no contestaba es "por dónde
+// arranco el lunes": para eso hay que leer doce columnas de noventa filas y
+// hacer la cuenta en la cabeza. Esta vista hace la cuenta.
+//
+// Mira exactamente los mismos datos que la grilla —mismo buscador, mismos
+// filtros, mismas columnas visibles— y los ordena por cuánto le falta a cada
+// curso, de menos a más: arriba quedan los que se cierran con un tilde.
+//
+// Los cursos dados de baja no aparecen: a un curso que ya no está vigente no
+// le falta nada.
+const TEC_FALTA_BANDAS = [
+  { max: 2, titulo: "Para cerrar ya", sub: "Les falta poco: un rato y quedan listos." },
+  { max: 4, titulo: "A mitad de camino", sub: "Ya tienen lo más pesado hecho." },
+  { max: Infinity, titulo: "Recién arrancados", sub: "Todavía les falta casi todo." },
+];
+// Todo lo que se le pide a un curso y todavía no tiene. Las piezas salen de
+// las columnas VISIBLES: si alguien escondió "Mosaico" de la grilla, es
+// porque a su área no le corresponde, y entonces tampoco le falta.
+function tecPendientes(fila) {
+  const items = [];
+  TEC_CHKS.filter(tecColVisible).forEach((k) => {
+    if (!fila[k]) items.push({ k: k, que: "pieza", label: tecColLabel(k) });
+  });
+  TEC_FECHAS.forEach((k) => {
+    const v = (fila[k] || "").trim();
+    if (!v) items.push({ k: k, que: "fecha", label: tecColLabel(k) });
+    else if (tecFechaMala(v)) items.push({ k: k, que: "fecha", label: tecColLabel(k), mala: true });
+  });
+  // El vínculo con el Mapa cuenta como faltante y no como un extra: es lo que
+  // hace que el mismo curso no viva dos veces, una acá y otra en el Planner.
+  if (!fila.cardId) items.push({ k: "mapa", que: "vinculo", label: "Vínculo con el Mapa" });
+  return items;
+}
+// Las tres fechas no son tres columnas sueltas: son tres momentos de un mismo
+// recorrido, y en ese orden. Dibujadas como pasos se ve de una dónde se cortó
+// —un curso publicado en Moodle al que nunca le salió el mail es un problema
+// distinto de uno que ni se publicó— y eso en tres celdas de tabla no se ve.
+function tecLineaHTML(fila) {
+  return (
+    '<div class="tlin">' +
+    TEC_FECHAS.map((k, i) => {
+      const v = (fila[k] || "").trim(),
+        mala = v && tecFechaMala(v),
+        estado = mala ? "mala" : v ? "ok" : "falta";
+      return (
+        (i ? '<i class="tlin-arco' + (v && !mala ? " on" : "") + '"></i>' : "") +
+        '<span class="tlin-paso ' +
+        estado +
+        '" title="' +
+        esc(tecColLabel(k) + ": " + (mala ? 'no se entiende "' + v + '"' : v ? tecFechaVer(v) : "sin cargar")) +
+        '"><i class="tlin-punto"></i><span class="tlin-lbl">' +
+        esc(tecColLabel(k)) +
+        '</span><span class="tlin-fec">' +
+        (mala ? "?" : v ? esc(tecFechaVer(v)) : "—") +
+        "</span></span>"
+      );
+    }).join("") +
+    "</div>"
+  );
+}
+// Las piezas sí se tildan acá mismo: son la mayor parte del trabajo pendiente
+// y mandarla a la grilla por cada tilde sería pedirle a alguien que abra y
+// cierre noventa veces. Las fechas, en cambio, hay que escribirlas, y para eso
+// está la grilla a un clic: un solo lugar donde se edita cada cosa.
+function tecFaltaPiezasHTML(fila) {
+  const piden = TEC_CHKS.filter(tecColVisible);
+  if (!piden.length) return "";
+  return (
+    '<div class="falta-piezas">' +
+    piden
+      .map(
+        (k) =>
+          '<label class="falta-pz' +
+          (fila[k] ? " on" : "") +
+          '"><input type="checkbox" data-tec-id="' +
+          fila.id +
+          '" data-tec-field="' +
+          k +
+          '"' +
+          (fila[k] ? " checked" : "") +
+          ">" +
+          esc(tecColLabel(k)) +
+          "</label>",
+      )
+      .join("") +
+    "</div>"
+  );
+}
+function tecFaltaItemHTML(x) {
+  const fila = x.fila,
+    n = x.pendientes.length,
+    sinVinculo = !fila.cardId;
+  return (
+    '<div class="falta-item' +
+    (n ? "" : " listo") +
+    '"><div class="falta-h"><span class="falta-n' +
+    (n ? "" : " ok") +
+    '">' +
+    (n ? "faltan " + n : "✓ completo") +
+    '</span><span class="falta-tit"><b class="falta-curso">' +
+    esc(fila.curso || "(sin nombre)") +
+    "</b>" +
+    (fila.categoria ? '<span class="falta-cat">' + esc(fila.categoria) + "</span>" : "") +
+    '</span><span class="falta-acc"><button class="btn btn-ghost btn-sm" data-action="tec:goto" data-id="' +
+    fila.id +
+    '" title="Abrir esta fila en la grilla">Ver en la grilla →</button>' +
+    (sinVinculo
+      ? '<button class="btn btn-ghost btn-sm" data-action="tec:link" data-id="' + fila.id + '">🔗 Vincular</button>'
+      : "") +
+    "</span></div>" +
+    // Los tildes y la línea de fechas van uno al lado del otro mientras
+    // entren: son las dos mitades de la misma respuesta —qué piezas faltan y
+    // en qué punto del recorrido quedó— y apiladas hacían una tarjeta el
+    // doble de alta para decir lo mismo.
+    '<div class="falta-cuerpo">' +
+    tecFaltaPiezasHTML(fila) +
+    tecLineaHTML(fila) +
+    "</div></div>"
+  );
+}
+function tecFaltaHTML() {
+  const vivas = tecRows().filter(tecFilaActiva),
+    bajas = tecRows().length - vivas.length,
+    conteo = vivas
+      .map((fila) => ({ fila: fila, pendientes: tecPendientes(fila) }))
+      .sort(
+        (a, b) =>
+          a.pendientes.length - b.pendientes.length ||
+          (a.fila.categoria || "").localeCompare(b.fila.categoria || "", "es") ||
+          (a.fila.curso || "").localeCompare(b.fila.curso || "", "es"),
+      ),
+    completos = conteo.filter((x) => !x.pendientes.length),
+    pendientes = conteo.filter((x) => x.pendientes.length),
+    pct = conteo.length ? Math.round((completos.length / conteo.length) * 100) : 0;
+  if (!conteo.length)
+    return '<div class="empty"><div class="big">🔍</div><div style="font-weight:700;color:var(--ink)">Sin resultados</div><div style="margin-top:4px">Probá con otra búsqueda o quitá los filtros de arriba.</div></div>';
+  let banda = -1;
+  return (
+    '<div class="falta-cab"><div class="falta-cab-t"><b>' +
+    completos.length +
+    " de " +
+    conteo.length +
+    "</b> curso" +
+    (conteo.length === 1 ? "" : "s") +
+    " vigente" +
+    (conteo.length === 1 ? "" : "s") +
+    (completos.length === 1 ? " está completo" : " están completos") +
+    (bajas ? ' <span class="falta-bajas">· ' + bajas + " dado" + (bajas === 1 ? "" : "s") + " de baja, no se cuentan</span>" : "") +
+    '</div><div class="falta-bar"><i style="width:' +
+    pct +
+    '%"></i></div></div>' +
+    '<div class="falta-list">' +
+    pendientes
+      .map((x) => {
+        // Las bandas se abren al vuelo, cuando la cuenta de faltantes cruza el
+        // límite de la anterior: así no hay que recorrer la lista dos veces ni
+        // dibujar encabezados de grupos que quedaron vacíos por el filtro.
+        const i = TEC_FALTA_BANDAS.findIndex((b) => x.pendientes.length <= b.max);
+        let cab = "";
+        if (i !== banda) {
+          banda = i;
+          cab =
+            '<div class="falta-banda"><h3>' +
+            esc(TEC_FALTA_BANDAS[i].titulo) +
+            '</h3><span>' +
+            esc(TEC_FALTA_BANDAS[i].sub) +
+            "</span></div>";
+        }
+        return cab + tecFaltaItemHTML(x);
+      })
+      .join("") +
+    (completos.length
+      ? '<details class="falta-completos"><summary>' +
+        completos.length +
+        " curso" +
+        (completos.length === 1 ? "" : "s") +
+        " sin nada pendiente</summary>" +
+        completos.map(tecFaltaItemHTML).join("") +
+        "</details>"
+      : "") +
+    "</div>"
+  );
+}
 function tecListHTML() {
   const grupos = tecGroups();
   if (!grupos.length)
@@ -6607,9 +6807,14 @@ function tecListHTML() {
     "</table></div>"
   );
 }
+// "Qué falta" y la grilla comparten contenedor y barra de filtros: son dos
+// lecturas del mismo dato, no dos pantallas distintas, así que redibujar es
+// lo mismo para las dos salvo el alto, que solo tiene sentido para la tabla.
 function renderTecList() {
   const el = $("#tecList");
-  if (el) ((el.innerHTML = tecListHTML()), tecTopSync(), tecGrillaAlto());
+  if (!el) return;
+  const falta = state.tecSubView === "falta";
+  ((el.innerHTML = falta ? tecFaltaHTML() : tecListHTML()), tecTopSync(), falta || tecGrillaAlto());
 }
 // La grilla se queda pegada debajo de la barra de arriba y scrollea adentro
 // suyo, así el encabezado con los embudos no se va nunca de pantalla. Las dos
@@ -7129,22 +7334,38 @@ function renderMatri() {
 // y la pestaña quedaba pidiendo atención sobre algo cerrado. El código
 // —tecValidacionHTML() y todo lo suyo— queda entero para volver a colgarlo
 // acá el día que haga falta otra ronda de cruce.
-function renderTecnico() {
-  const sub = state.tecSubView === "matri" || state.tecSubView === "revision" ? state.tecSubView : "grilla",
-    pendientes = valTotal();
+// Las cuatro solapas de Técnico son cuatro preguntas distintas sobre el mismo
+// catálogo: qué dice cada celda (Grilla), por dónde arranco (Qué falta), cómo
+// se inscribe la gente (Matriculación) y qué quedó mal cargado (Revisión).
+// Las dos primeras comparten buscador, filtros y KPI porque miran lo mismo
+// con otro par de ojos; cambiar de una a otra no debería obligar a volver a
+// filtrar.
+const TEC_SUBS = ["grilla", "falta", "matri", "revision"];
+function tecSubHTML(sub, id, label, n, alerta) {
   return (
-    '<div class="mapa-secciones"><div class="mapa-sec ' +
-    (sub === "grilla" ? "active" : "") +
-    '" data-action="tec:subview" data-v="grilla">📋 Grilla</div><div class="mapa-sec ' +
-    (sub === "matri" ? "active" : "") +
-    '" data-action="tec:subview" data-v="matri">🎟 Métodos de matriculación <b>(' +
-    MATRI_SEED.length +
-    ')</b></div><div class="mapa-sec ' +
-    (sub === "revision" ? "active" : "") +
-    (pendientes ? " pend" : "") +
-    '" data-action="tec:subview" data-v="revision">🔧 Revisión <b>(' +
-    pendientes +
-    ")</b></div></div>" +
+    '<div class="mapa-sec ' +
+    (sub === id ? "active" : "") +
+    (alerta && n ? " pend" : "") +
+    '" data-action="tec:subview" data-v="' +
+    id +
+    '">' +
+    label +
+    (n === null ? "" : " <b>(" + n + ")</b>") +
+    "</div>"
+  );
+}
+function renderTecnico() {
+  const sub = TEC_SUBS.includes(state.tecSubView) ? state.tecSubView : "grilla",
+    pendientes = valTotal(),
+    conDatos = sub === "grilla" || sub === "falta",
+    falta = state.tecnico.filter(tecFilaActiva).filter((f) => tecPendientes(f).length).length;
+  return (
+    '<div class="mapa-secciones">' +
+    tecSubHTML(sub, "grilla", "📋 Grilla", null) +
+    tecSubHTML(sub, "falta", "🎯 Qué falta", falta) +
+    tecSubHTML(sub, "matri", "🎟 Métodos de matriculación", MATRI_SEED.length) +
+    tecSubHTML(sub, "revision", "🔧 Revisión", pendientes, true) +
+    "</div>" +
     (sub === "matri"
       ? renderMatri()
       : sub === "revision"
@@ -7153,7 +7374,7 @@ function renderTecnico() {
         esc(state.tecFiltro || "") +
         '"></div>' +
         tecCategoriaFiltroHTML() +
-        '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' +
+        (sub === "grilla" ? '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' : "") +
         tecColsPopHTML() +
         '<span class="tec-top-n" id="tecTopN">' +
         tecRows().length +
@@ -7164,7 +7385,7 @@ function renderTecnico() {
         ">✕ Limpiar filtros</button></div>" +
         tecKpisHTML() +
         '<div id="tecList">' +
-        tecListHTML() +
+        (sub === "falta" ? tecFaltaHTML() : tecListHTML()) +
         "</div>")
   );
 }
@@ -7354,24 +7575,186 @@ function valLimpiarDuplicados() {
 // Cursos activos del Mapa sin ninguna fila de Técnico (ni por id ni por
 // título). Si hay una fila SIN vincular con un título parecido se sugiere
 // un vínculo de un clic; si no, se ofrece crear la fila directamente.
-function valCursosSinTec() {
-  const filasLibres = state.tecnico.filter((f) => !f.cardId);
-  return repCursosActivos()
-    .filter((c) => !tecFilaParaCard(c))
-    .map((c) => {
-      const palabras = (c.titulo || "").toLowerCase().split(/\s+/).filter((p) => p.length >= 3),
-        candidatos = filasLibres
-          .map((f) => ({ f, score: tecPickScore(f.curso || "", palabras) }))
-          .filter((x) => x.score > 0)
-          .sort((a, b) => b.score - a.score);
-      return { card: c, sugerida: candidatos[0] ? candidatos[0].f : null };
+// ===== Un curso, un registro =====
+// El mismo curso está cargado dos veces —una tarjeta en el Planner y una fila
+// en Técnico— y nadie las vinculó nunca. Por eso "cuántos cursos tenemos" da
+// un número distinto según dónde se mire.
+//
+// Cuando los dos títulos son idénticos la app ya los trata como el mismo
+// curso, pero por el texto: alcanza con que alguien corrija una tilde de un
+// lado para que se separen de nuevo. Vincularlos de verdad (por id) lo deja
+// firme.
+//
+// El caso difícil es el otro: "Manual de Recursos Humanos – 3" y "Manual de
+// Recursos Humanos - Capítulo 3" son el mismo curso y ningún programa puede
+// afirmarlo solo. Eso se propone, no se decide: la app pone los dos títulos
+// uno al lado del otro y la respuesta la da el área.
+//
+// Un "no, son distintos" se guarda en la fila (campo noEs) y viaja con el
+// resto de Técnico, así el descarte vale para todo el equipo y el par no
+// vuelve a aparecer la semana que viene.
+const PAR_UMBRAL = 0.55;
+function tecNormTitulo(t) {
+  return (t || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+// Palabras de menos de tres letras afuera: "de", "la", "y" están en casi todos
+// los títulos y solo sirven para que dos cursos sin nada que ver se parezcan.
+const parTokenCache = new Map();
+function tecTokens(t) {
+  const k = t || "";
+  if (parTokenCache.has(k)) return parTokenCache.get(k);
+  const v = Array.from(new Set(tecNormTitulo(k).split(" ").filter((w) => w.length >= 3)));
+  // Los mismos títulos se tokenizan una y otra vez al comparar cien filas
+  // contra cien tarjetas. El mapa no crece: hay tantas entradas como títulos.
+  return (parTokenCache.set(k, v), v);
+}
+// Coeficiente de Dice: cuántas palabras comparten sobre el total de las dos
+// listas. Da 1 cuando son iguales y baja parejo a medida que se separan, que
+// es lo que hace falta para poder poner un umbral y no una regla por caso.
+function tecParecido(a, b) {
+  const ta = tecTokens(a),
+    tb = tecTokens(b);
+  if (!ta.length || !tb.length) return 0;
+  const comunes = ta.filter((w) => tb.includes(w)).length;
+  return (2 * comunes) / (ta.length + tb.length);
+}
+// Filas y tarjetas que todavía no están comprometidas con nadie. Se calcula
+// una vez y lo usan las dos búsquedas de pares.
+function parLibres() {
+  const filas = state.tecnico.filter((f) => !f.cardId && (f.curso || "").trim()),
+    tomadas = new Set(state.tecnico.filter((f) => f.cardId).map((f) => f.cardId)),
+    cards = state.cards.filter((c) => isCurso(c) && c.activo !== false && !tomadas.has(c.id));
+  return { filas: filas, cards: cards };
+}
+function parDescartado(fila, cardId) {
+  return Array.isArray(fila.noEs) && fila.noEs.includes(cardId);
+}
+// Mismo título salvo mayúsculas, acentos y puntuación. Acá no hay nada que
+// decidir: son el mismo curso y lo único que falta es dejarlo escrito.
+// Comparar cada fila contra cada tarjeta es cien por cien comparaciones, y
+// entre el número de la solapa, el encabezado y las cuatro secciones que la
+// usan eso pasaba seis veces por dibujado. Se calcula una sola vez y se tira
+// al empezar el siguiente render, que es cuando el dato pudo haber cambiado.
+let parCache = null;
+function parInvalidar() {
+  parCache = null;
+}
+function parPares() {
+  if (parCache) return parCache;
+  const exactos = parCalcularExactos(),
+    parecidos = parCalcularParecidos(exactos),
+    todos = exactos.concat(parecidos);
+  parCache = {
+    exactos: exactos,
+    parecidos: parecidos,
+    filas: new Set(todos.map((x) => x.fila.id)),
+    cards: new Set(todos.map((x) => x.card.id)),
+  };
+  return parCache;
+}
+function valParesExactos() {
+  return parPares().exactos;
+}
+function valParesParecidos() {
+  return parPares().parecidos;
+}
+function parFilasOfrecidas() {
+  return parPares().filas;
+}
+function parCardsOfrecidas() {
+  return parPares().cards;
+}
+function parCalcularExactos() {
+  const libres = parLibres(),
+    porTitulo = {};
+  libres.cards.forEach((c) => {
+    const k = tecNormTitulo(c.titulo);
+    if (k) porTitulo[k] = porTitulo[k] || c;
+  });
+  const usadas = new Set();
+  return libres.filas
+    .map((f) => {
+      const card = porTitulo[tecNormTitulo(f.curso)];
+      return card && !usadas.has(card.id) && !parDescartado(f, card.id) ? (usadas.add(card.id), { fila: f, card: card }) : null;
+    })
+    .filter(Boolean);
+}
+// Se parecen mucho pero no son iguales. Cada fila se queda con su mejor
+// candidata y una tarjeta no se ofrece dos veces: proponer el mismo curso
+// para dos filas distintas es pedirle al área que resuelva un enredo que
+// armó la app.
+function parCalcularParecidos(exactos) {
+  const libres = parLibres(),
+    yaExactos = new Set(exactos.map((x) => x.fila.id)),
+    tomadas = new Set(),
+    pares = [];
+  libres.filas
+    .filter((f) => !yaExactos.has(f.id))
+    .forEach((f) => {
+      let mejor = null;
+      libres.cards.forEach((c) => {
+        if (parDescartado(f, c.id)) return;
+        const score = tecParecido(f.curso, c.titulo);
+        if (score >= PAR_UMBRAL && score < 1 && (!mejor || score > mejor.score)) mejor = { card: c, score: score };
+      });
+      if (mejor) pares.push({ fila: f, card: mejor.card, score: mejor.score });
     });
+  // Los más parecidos primero: se resuelven de arriba hacia abajo y la
+  // confianza baja a medida que se avanza, que es el orden en el que uno se
+  // cansa de decidir.
+  return pares
+    .sort((a, b) => b.score - a.score)
+    .filter((x) => (tomadas.has(x.card.id) ? false : (tomadas.add(x.card.id), true)));
+}
+// Las filas y tarjetas que ya están ofrecidas como par no vuelven a contarse
+// como "sueltas" (ver parFilasOfrecidas/parCardsOfrecidas arriba): si no, el
+// mismo problema figura dos veces y el total de cosas para revisar deja de
+// querer decir algo.
+function valParHTML(x, exacto) {
+  return (
+    '<div class="par"><div class="par-lados"><div class="par-lado"><span class="par-de">Planner</span><b>' +
+    esc(x.card.titulo) +
+    '</b></div><div class="par-signo">' +
+    (exacto ? "=" : "≈") +
+    '</div><div class="par-lado"><span class="par-de">Técnico</span><b>' +
+    esc(x.fila.curso) +
+    "</b></div></div>" +
+    (exacto ? "" : '<div class="par-score">se parecen un ' + Math.round(x.score * 100) + "%</div>") +
+    '<div class="par-acc"><button class="btn btn-sm btn-primary" data-action="tec:linksuggest" data-fila="' +
+    x.fila.id +
+    '" data-card="' +
+    x.card.id +
+    '">✓ Es el mismo curso</button><button class="btn btn-ghost btn-sm" data-action="val:nopar" data-fila="' +
+    x.fila.id +
+    '" data-card="' +
+    x.card.id +
+    '">Son distintos</button><button class="btn btn-ghost btn-sm" data-action="card:open" data-id="' +
+    x.card.id +
+    '">Ver la tarjeta</button><button class="btn btn-ghost btn-sm" data-action="tec:goto" data-id="' +
+    x.fila.id +
+    '">Ver la fila</button></div></div>'
+  );
+}
+// Cursos del Mapa que no tienen fila en Técnico NI ninguna parecida: para
+// estos no hay nada que vincular, hay que crear la fila. La sugerencia de
+// "¿será esta?" se mudó a la sección de pares, que la hace mejor y en un solo
+// lugar — tenerla también acá mostraba el mismo problema dos veces con dos
+// criterios distintos.
+function valCursosSinTec() {
+  const ofrecidas = parCardsOfrecidas();
+  return repCursosActivos().filter((c) => !tecFilaParaCard(c) && !ofrecidas.has(c.id)).map((c) => ({ card: c }));
 }
 // Filas de Técnico sin vincular y sin ningún curso del Planner con el mismo
 // título — la otra mitad del mismo hueco que valCursosSinTec().
 function valFilasSinCurso() {
+  const ofrecidas = parFilasOfrecidas();
   return state.tecnico.filter((f) => {
-    if (f.cardId) return false;
+    if (f.cardId || ofrecidas.has(f.id)) return false;
     const titulo = (f.curso || "").trim().toLowerCase();
     return !titulo || !state.cards.some((c) => (c.titulo || "").trim().toLowerCase() === titulo);
   });
@@ -7415,16 +7798,6 @@ function valEstadoContradictorio() {
     .map((f) => ({ fila: f, card: tecCardDeFila(f) }))
     .filter((x) => x.card && tecEstadoSugiereBaja(x.fila.estado) && inInventory(x.card));
 }
-function tecValidacionTotal() {
-  return (
-    valDuplicadosMapa().reduce((n, g) => n + (g.length - 1), 0) +
-    valCursosSinTec().length +
-    valFilasSinCurso().length +
-    valFechas().length +
-    valTitulosDifieren().length +
-    valEstadoContradictorio().length
-  );
-}
 // Una tarjeta sin fecha de fin no aparece en Calendario ni en Timeline, y deja
 // a Reportes sin poder decir qué está por salir. El área decidió que la fecha
 // se carga siempre (el responsable no), así que esto es un faltante de verdad
@@ -7458,12 +7831,44 @@ function valSinFechaHTML(lista) {
     "</div>"
   );
 }
+// Tarjetas del Planner que no son cursos y comparten nombre. A diferencia de
+// los cursos duplicados, acá repetir un nombre puede ser totalmente legítimo
+// —"Reunión de equipo" pasa todas las semanas—, así que la app no propone
+// borrar nada: muestra el grupo, marca cuáles están vacías (sin descripción,
+// sin checklist, sin responsable y sin fechas, que es la pinta de una tarjeta
+// creada dos veces sin querer) y deja que el área decida.
+function valTareaVacia(tarjeta) {
+  return (
+    !(tarjeta.desc || "").trim() &&
+    !(tarjeta.checklist || []).length &&
+    !tarjeta.responsable &&
+    !(tarjeta.asignados || []).length &&
+    !tarjeta.inicio &&
+    !tarjeta.fin
+  );
+}
+function valTareasRepetidas() {
+  const grupos = {};
+  state.cards
+    .filter((c) => !isCurso(c) && c.activo !== false)
+    .forEach((c) => {
+      const k = tecNormTitulo(c.titulo);
+      if (k) (grupos[k] = grupos[k] || []).push(c);
+    });
+  return Object.values(grupos).filter((g) => g.length > 1);
+}
 // Cuántas cosas hay para revisar. Lo usa el encabezado del panel y también el
 // número de la pestaña, así que vive en un solo lugar: si los dos contaran por
 // su cuenta, tarde o temprano dirían cosas distintas.
+// Hubo una segunda versión de esta cuenta (tecValidacionTotal) que no sumaba
+// las tarjetas sin fecha: nadie la llamaba y era justamente la clase de
+// número paralelo que hace que dos pantallas digan cosas distintas.
 function valTotal() {
   return (
+    valParesExactos().length +
+    valParesParecidos().length +
     valDuplicadosMapa().reduce((n, g) => n + (g.length - 1), 0) +
+    valTareasRepetidas().reduce((n, g) => n + (g.length - 1), 0) +
     valCursosSinTec().length +
     valFilasSinCurso().length +
     valFechas().length +
@@ -7472,19 +7877,47 @@ function valTotal() {
     valSinFecha().length
   );
 }
+// Una sección sin nada pendiente no necesita una caja: con una línea en verde
+// alcanza para saber que eso ya está revisado. Antes las nueve secciones
+// ocupaban lo mismo estuvieran vacías o no, y encontrar las tres que tenían
+// trabajo costaba scrollear la pantalla entera.
 function valSeccion(titulo, n, itemsHTML, vacioMsg) {
+  if (!n) return '<div class="val-linea-ok">✓ <b>' + esc(titulo) + "</b> — " + esc(vacioMsg) + "</div>";
   return (
     '<div class="rep-sec"><div class="rep-sec-h"><h3>' +
     esc(titulo) +
     '</h3><span class="rep-sec-sub">' +
     n +
     " en total</span></div>" +
-    (itemsHTML || '<div class="rep-empty">' + esc(vacioMsg) + "</div>") +
+    itemsHTML +
     "</div>"
   );
 }
+// Las nueve revisiones son de tres naturalezas distintas: cosas cargadas dos
+// veces, cosas a medio cargar y cosas que se contradicen entre sí. Agrupadas
+// así la pantalla se recorre de arriba abajo sin tener que acordarse de qué
+// significa cada título.
+function valGrupo(titulo, sub, n, secciones) {
+  return (
+    '<div class="val-grupo"><div class="val-grupo-h"><h2>' +
+    esc(titulo) +
+    "</h2>" +
+    (n ? '<span class="val-grupo-n">' + n + "</span>" : '<span class="val-grupo-n ok">✓</span>') +
+    '<span class="val-grupo-sub">' +
+    esc(sub) +
+    "</span></div>" +
+    secciones.join("") +
+    "</div>"
+  );
+}
+function valListaHTML(items) {
+  return '<div class="carga-list">' + items.join("") + "</div>";
+}
 function tecValidacionHTML() {
-  const duplicados = valDuplicadosMapa(),
+  const exactos = valParesExactos(),
+    parecidos = valParesParecidos(),
+    duplicados = valDuplicadosMapa(),
+    repetidas = valTareasRepetidas(),
     sinTec = valCursosSinTec(),
     filasSueltas = valFilasSinCurso(),
     fechas = valFechas(),
@@ -7492,6 +7925,7 @@ function tecValidacionHTML() {
     contradiccion = valEstadoContradictorio(),
     sinFecha = valSinFecha(),
     nDup = duplicados.reduce((n, g) => n + (g.length - 1), 0),
+    nRep = repetidas.reduce((n, g) => n + (g.length - 1), 0),
     total = valTotal();
   return (
     (total
@@ -7501,136 +7935,172 @@ function tecValidacionHTML() {
         (total === 1 ? "" : "s") +
         " para revisar. Cada una se arregla acá mismo, sin salir de esta pantalla.</div>"
       : '<div class="val-cab ok">✅ <b>Todo en orden.</b> No hay datos sueltos entre el Planner, el Mapa y Seguimiento técnico.</div>') +
-    valSeccion(
-      "Tarjetas sin fecha de fin",
-      sinFecha.length,
-      valSinFechaHTML(sinFecha),
-      "Todas las tarjetas del tablero tienen fecha de fin.",
-    ) +
-    valSeccion(
-      "Cursos duplicados en el Mapa",
-      nDup,
-      duplicados.length
-        ? (nDup > 1
+    valGrupo(
+      "El mismo curso, cargado dos veces",
+      "Lo que hace que el total de cursos dé distinto según dónde se mire.",
+      exactos.length + parecidos.length + nDup + nRep,
+      [
+        valSeccion(
+          "Mismo nombre en el Planner y en Técnico, sin vincular",
+          exactos.length,
+          (exactos.length > 1
+            ? '<button class="btn btn-sm btn-primary" data-action="val:vincularexactos" style="margin-bottom:8px">🔗 Vincular los ' +
+              exactos.length +
+              " de una vez</button>"
+            : "") + exactos.map((x) => valParHTML(x, true)).join(""),
+          "No queda ningún par con el mismo nombre sin vincular.",
+        ),
+        valSeccion(
+          "Se parecen mucho: ¿son el mismo curso?",
+          parecidos.length,
+          '<div class="val-ayuda">Los nombres no son idénticos, así que esto no lo puede decidir la app. Mirá los dos y elegí. Lo que marques como distinto no vuelve a aparecer.</div>' +
+            parecidos.map((x) => valParHTML(x, false)).join(""),
+          "Ningún par quedó en duda.",
+        ),
+        valSeccion(
+          "Cursos duplicados en el Mapa",
+          nDup,
+          (nDup > 1
             ? '<button class="btn btn-sm" data-action="val:limpiarduplicados" style="margin-bottom:6px">🧹 Limpiar los ' +
               nDup +
               " duplicados (deja uno de cada grupo)</button>"
             : "") +
-          duplicados
-            .map((g) => {
-              const keeper = elegirParaMantener(g);
-              return (
-                '<div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin:10px 0 2px">"' +
-                esc(g[0].titulo) +
-                '" · ' +
-                g.length +
-                ' veces</div><div class="carga-list">' +
-                g
-                  .map(
-                    (c) =>
-                      '<div class="lnk"><span class="lnk-a" data-action="card:open" data-id="' +
-                      c.id +
-                      '" style="cursor:pointer;flex:1">' +
-                      esc(c.titulo) +
-                      (c.id === keeper.id ? ' <span class="badge" style="margin-left:6px">se mantiene</span>' : "") +
-                      '</span><span style="font-size:11px;color:var(--ink-soft);margin-right:8px">creado ' +
-                      tecFechaVer(c.creadoEl || "") +
-                      '</span><button class="btn btn-ghost btn-sm" data-action="kcard:del" data-id="' +
-                      c.id +
-                      '" style="color:var(--bad)">🗑 Eliminar</button></div>',
+            duplicados
+              .map((g) => {
+                const keeper = elegirParaMantener(g);
+                return (
+                  '<div class="val-grupo-t">"' +
+                  esc(g[0].titulo) +
+                  '" · ' +
+                  g.length +
+                  " veces</div>" +
+                  valListaHTML(
+                    g.map(
+                      (c) =>
+                        '<div class="lnk"><span class="lnk-a" data-action="card:open" data-id="' +
+                        c.id +
+                        '" style="cursor:pointer;flex:1">' +
+                        esc(c.titulo) +
+                        (c.id === keeper.id ? ' <span class="badge" style="margin-left:6px">se mantiene</span>' : "") +
+                        '</span><span class="val-nota">creado ' +
+                        tecFechaVer(c.creadoEl || "") +
+                        '</span><button class="btn btn-ghost btn-sm" data-action="kcard:del" data-id="' +
+                        c.id +
+                        '" style="color:var(--bad)">🗑 Eliminar</button></div>',
+                    ),
                   )
-                  .join("") +
-                "</div>"
-              );
-            })
-            .join("")
-        : "",
-      "No hay cursos activos con el mismo título repetido.",
+                );
+              })
+              .join(""),
+          "No hay cursos activos con el mismo título repetido.",
+        ),
+        valSeccion(
+          "Tarjetas del Planner con el mismo nombre",
+          nRep,
+          '<div class="val-ayuda">Repetir un nombre puede estar bien —una reunión que pasa todas las semanas, por ejemplo—, así que acá no se borra nada solo. Las que figuran <b>vacías</b> son las que tienen pinta de haberse creado dos veces sin querer.</div>' +
+            repetidas
+              .map(
+                (g) =>
+                  '<div class="val-grupo-t">"' +
+                  esc(g[0].titulo) +
+                  '" · ' +
+                  g.length +
+                  " veces</div>" +
+                  valListaHTML(
+                    g.map(
+                      (c) =>
+                        '<div class="lnk"><span class="lnk-a" data-action="card:open" data-id="' +
+                        c.id +
+                        '" style="cursor:pointer;flex:1">' +
+                        esc(c.titulo) +
+                        (valTareaVacia(c) ? ' <span class="badge badge-warn">vacía</span>' : "") +
+                        '</span><span class="val-nota">' +
+                        esc(((ESTADOS.find((e) => e.id === c.estado) || {}).nombre || c.estado || "")) +
+                        '</span><button class="btn btn-ghost btn-sm" data-action="kcard:del" data-id="' +
+                        c.id +
+                        '" style="color:var(--bad)">🗑 Eliminar</button></div>',
+                    ),
+                  ),
+              )
+              .join(""),
+          "Ninguna tarjeta del Planner repite nombre.",
+        ),
+      ],
     ) +
-    valSeccion(
-      "Cursos activos sin fila en Técnico",
-      sinTec.length,
-      sinTec.length
-        ? '<div class="carga-list">' +
-          sinTec
-            .map(
+    valGrupo(
+      "Falta terminar de cargar",
+      "Datos que el área ya decidió que van siempre, y todavía no están.",
+      sinFecha.length + sinTec.length + filasSueltas.length + fechas.length,
+      [
+        valSeccion(
+          "Tarjetas sin fecha de fin",
+          sinFecha.length,
+          valSinFechaHTML(sinFecha),
+          "Todas las tarjetas del tablero tienen fecha de fin.",
+        ),
+        valSeccion(
+          "Cursos activos sin fila en Técnico",
+          sinTec.length,
+          valListaHTML(
+            sinTec.map(
               (x) =>
                 '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span class="lnk-a" data-action="card:open" data-id="' +
                 x.card.id +
-                '" style="cursor:pointer;min-width:160px">' +
+                '" style="cursor:pointer;flex:1;min-width:160px">' +
                 esc(x.card.titulo) +
-                "</span>" +
-                (x.sugerida
-                  ? '<span style="font-size:12px;color:var(--ink-soft);margin-right:8px">¿es "' +
-                    esc(x.sugerida.curso) +
-                    '"?</span><button class="btn btn-ghost btn-sm" data-action="tec:linksuggest" data-fila="' +
-                    x.sugerida.id +
-                    '" data-card="' +
-                    x.card.id +
-                    '">Vincular</button>'
-                  : "") +
-                // Sea o no la sugerencia correcta, siempre hay una forma de buscar
-                // OTRA fila (no solo la única sugerida) o crear una nueva — antes
-                // esto era una vía muerta si la sugerencia no era la indicada.
-                '<button class="btn btn-ghost btn-sm" data-action="tec:linkfila" data-id="' +
+                '</span><button class="btn btn-ghost btn-sm" data-action="tec:linkfila" data-id="' +
                 x.card.id +
-                '">🔎 Buscar otra</button><button class="btn btn-ghost btn-sm" data-action="tec:crearfila" data-id="' +
+                '">🔎 Buscar fila</button><button class="btn btn-ghost btn-sm" data-action="tec:crearfila" data-id="' +
                 x.card.id +
-                '">+ Crear fila</button>' +
-                "</div>",
-            )
-            .join("") +
-          "</div>"
-        : "",
-      "Todos los cursos activos tienen su fila en Técnico.",
-    ) +
-    valSeccion(
-      "Filas de Técnico sin curso en el Mapa",
-      filasSueltas.length,
-      filasSueltas.length
-        ? '<div class="carga-list">' +
-          filasSueltas
-            .map(
+                '">+ Crear fila</button></div>',
+            ),
+          ),
+          "Todos los cursos activos tienen su fila en Técnico.",
+        ),
+        valSeccion(
+          "Filas de Técnico sin curso en el Mapa",
+          filasSueltas.length,
+          valListaHTML(
+            filasSueltas.map(
               (f) =>
                 '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span style="flex:1;min-width:160px;font-size:13px">' +
                 esc(f.curso || "(sin nombre)") +
                 '</span><button class="btn btn-ghost btn-sm" data-action="tec:link" data-id="' +
                 f.id +
                 '">🔗 Vincular</button></div>',
-            )
-            .join("") +
-          "</div>"
-        : "",
-      "Todas las filas de Técnico están vinculadas o coinciden con un curso del Mapa.",
-    ) +
-    valSeccion(
-      "Fechas dudosas o faltantes",
-      fechas.length,
-      fechas.length
-        ? '<div class="carga-list">' +
-          fechas
-            .map(
+            ),
+          ),
+          "Todas las filas de Técnico están vinculadas o coinciden con un curso del Mapa.",
+        ),
+        valSeccion(
+          "Fechas dudosas o faltantes",
+          fechas.length,
+          valListaHTML(
+            fechas.map(
               (f) =>
                 '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span style="flex:1;min-width:160px;font-size:13px">' +
                 esc(f.curso || "(sin nombre)") +
-                '</span><span style="font-size:12px;color:var(--bad);margin-right:8px">' +
+                '</span><span class="val-nota bad">' +
                 esc(valFechaMotivo(f)) +
                 '</span><button class="btn btn-ghost btn-sm" data-action="tec:goto" data-id="' +
                 f.id +
                 '">Corregir</button></div>',
-            )
-            .join("") +
-          "</div>"
-        : "",
-      "Ninguna fecha pendiente de corregir.",
+            ),
+          ),
+          "Ninguna fecha pendiente de corregir.",
+        ),
+      ],
     ) +
-    valSeccion(
-      "Títulos que no coinciden",
-      titulos.length,
-      titulos.length
-        ? '<div class="carga-list">' +
-          titulos
-            .map(
+    valGrupo(
+      "Datos que se contradicen",
+      "Los dos lados están cargados, pero no dicen lo mismo.",
+      titulos.length + contradiccion.length,
+      [
+        valSeccion(
+          "Títulos que no coinciden",
+          titulos.length,
+          valListaHTML(
+            titulos.map(
               (x) =>
                 '<div class="lnk" style="flex-wrap:wrap;gap:6px 10px"><div style="flex:1;min-width:220px;font-size:12.5px"><b>Mapa:</b> ' +
                 esc(x.card.titulo) +
@@ -7645,34 +8115,30 @@ function tecValidacionHTML() {
                 '" data-card="' +
                 x.card.id +
                 '">Usar el de Técnico</button></div>',
-            )
-            .join("") +
-          "</div>"
-        : "",
-      "Los nombres coinciden en todas las filas vinculadas.",
-    ) +
-    valSeccion(
-      "Activo en el Mapa pero marcado de baja en Técnico",
-      contradiccion.length,
-      contradiccion.length
-        ? '<div class="carga-list">' +
-          contradiccion
-            .map(
+            ),
+          ),
+          "Los nombres coinciden en todas las filas vinculadas.",
+        ),
+        valSeccion(
+          "Activo en el Mapa pero marcado de baja en Técnico",
+          contradiccion.length,
+          valListaHTML(
+            contradiccion.map(
               (x) =>
                 '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span class="lnk-a" data-action="card:open" data-id="' +
                 x.card.id +
                 '" style="cursor:pointer;flex:1;min-width:160px">' +
                 esc(x.card.titulo) +
-                '</span><span style="font-size:12px;color:var(--ink-soft);margin-right:8px">Técnico: "' +
+                '</span><span class="val-nota">Técnico: "' +
                 esc(x.fila.estado) +
                 '"</span><button class="btn btn-ghost btn-sm" data-action="curso:bajaid" data-id="' +
                 x.card.id +
                 '" style="color:var(--bad)">Dar de baja</button></div>',
-            )
-            .join("") +
-          "</div>"
-        : "",
-      "Sin contradicciones de estado.",
+            ),
+          ),
+          "Sin contradicciones de estado.",
+        ),
+      ],
     )
   );
 }
@@ -8232,13 +8698,30 @@ function repRevisionHTML() {
   );
 }
 function repFuenteHTML() {
-  const sinFecha = repCursosActivos().length - repPublicaciones().length;
+  const sinFecha = repCursosActivos().length - repPublicaciones().length,
+    sueltas = state.tecnico.filter((f) => !f.cardId && tecFilaActiva(f)).length;
   return (
     '<div class="rep-nota">Todos los cursos activos cuentan en Reportería, tengan o no fecha de publicación registrada. La fecha sale de Seguimiento técnico (vinculado a mano, o por título si el curso tiene el mismo nombre en las dos partes) o, si no, del sello que graba el Planner desde el 2 de septiembre de 2026.' +
     (sinFecha
       ? " " + sinFecha + " curso" + (sinFecha === 1 ? "" : "s") + " activo" + (sinFecha === 1 ? "" : "s") + " no tiene" + (sinFecha === 1 ? "" : "n") + " fecha registrada todavía: cuenta" + (sinFecha === 1 ? "" : "n") + " en el total y en la barra \"S/F\" del histórico, pero no en el gráfico por mes de este año."
       : "") +
-    "</div>"
+    "</div>" +
+    // La pregunta que el área hace cada vez que compara dos pantallas es por
+    // qué no dan el mismo número. La respuesta es siempre la misma —hay filas
+    // de Técnico que todavía no son el mismo registro que una tarjeta— así que
+    // conviene que esté escrita acá, al lado del número, y con el camino para
+    // arreglarlo en vez de solo el dato.
+    (sueltas
+      ? '<div class="rep-nota rep-nota-ojo">Acá se cuentan los cursos del <b>Mapa</b>. Seguimiento técnico tiene ' +
+        sueltas +
+        " fila" +
+        (sueltas === 1 ? "" : "s") +
+        " vigente" +
+        (sueltas === 1 ? "" : "s") +
+        " que todavía no " +
+        (sueltas === 1 ? "está unida" : "están unidas") +
+        ' a ninguna tarjeta, y por eso los totales de una pantalla y otra no coinciden.<div style="margin-top:8px"><button class="btn btn-sm" data-action="tec:subview" data-v="revision">Unir lo que falta →</button></div></div>'
+      : "")
   );
 }
 function repSeccion(titulo, sub, contenido) {
@@ -8351,8 +8834,8 @@ function repLoQueVieneHTML() {
     hoy = todayISO();
   if (!lista.length)
     return (
-      '<div class="rep-empty">Ninguna tarjeta en desarrollo o revisión tiene fecha de fin, así que no se puede decir qué está por salir. ' +
-      'Se cargan desde <b>Técnico → Revisión</b>.</div>'
+      '<div class="rep-empty">Ninguna tarjeta en desarrollo o revisión tiene fecha de fin, así que no se puede decir qué está por salir.' +
+      '<div style="margin-top:8px"><button class="btn btn-sm" data-action="tec:subview" data-v="revision">Cargar las fechas que faltan →</button></div></div>'
     );
   return (
     '<div class="carga-list">' +
@@ -11078,9 +11561,16 @@ document.addEventListener("click", (ev) => {
       }
       break;
     }
-    case "tec:subview":
-      ((state.tecSubView = el.dataset.v), render());
+    // Sirve para cambiar de solapa dentro de Técnico y también como enlace
+    // desde cualquier otra vista: así un aviso puede mandar directo a la
+    // solapa donde se arregla lo que avisa, en vez de nombrarla por escrito.
+    case "tec:subview": {
+      const deOtraVista = state.view !== "tecnico";
+      ((state.tecSubView = el.dataset.v), (state.view = "tecnico"));
+      if (deOtraVista) (closePanel(), pushNav(), refreshTecnicoFromRemote());
+      render();
       break;
+    }
     case "tec:linksuggest": {
       const filaSug = state.tecnico.find((f) => f.id === el.dataset.fila);
       if (filaSug) ((filaSug.cardId = el.dataset.card), touchTecnico(), render());
@@ -11122,6 +11612,35 @@ document.addEventListener("click", (ev) => {
           patch(cardBaja, { activo: false, bajaEl: todayISO() }),
           render(),
           flash("🚫 Dado de baja: ya no cuenta como activo"));
+      break;
+    }
+    // "No, son distintos" se guarda en la fila y viaja con Técnico: el descarte
+    // lo hace una persona una vez y vale para todo el equipo.
+    case "val:nopar": {
+      const filaPar = state.tecnico.find((f) => f.id === el.dataset.fila);
+      if (filaPar) {
+        ((filaPar.noEs = (filaPar.noEs || []).concat(el.dataset.card)), touchTecnico(), render(), flash("Anotado: son cursos distintos"));
+      }
+      break;
+    }
+    // Los pares de nombre idéntico no tienen nada que decidir, así que se
+    // vinculan todos juntos. Igual se pregunta: son varios cambios de una.
+    case "val:vincularexactos": {
+      const pares = valParesExactos();
+      if (!pares.length) break;
+      confirmar(
+        "¿Vincular " +
+          pares.length +
+          " par" +
+          (pares.length === 1 ? "" : "es") +
+          " que tienen exactamente el mismo nombre en el Planner y en Técnico? No se borra ni se pisa nada: solo quedan unidos como un mismo curso.",
+        () => {
+          (pares.forEach((x) => (x.fila.cardId = x.card.id)),
+            touchTecnico(),
+            render(),
+            flash("🔗 " + pares.length + " vinculados"));
+        },
+      );
       break;
     }
     case "val:limpiarduplicados": {
@@ -11317,11 +11836,7 @@ document.addEventListener("click", (ev) => {
           col = $("#qeEstado");
         // Mismo registro que al arrastrar: si cambia de columna queda anotado
         // en Actividad y, si va a revisión, se sella desde cuándo.
-        if (col && col.value !== tarjeta9.estado) {
-          (logAct(tarjeta9, "pasó a " + ((ESTADOS.find((e) => e.id === col.value) || {}).nombre || col.value)),
-            col.value === "en-revision" && (tarjeta9.revisionDesde = isoOf(new Date())),
-            (tarjeta9.estado = col.value));
-        }
+        if (col) moverTarjetaAEstado(tarjeta9, col.value);
         (prio && (tarjeta9.prioridad = prio.value),
           fin && (tarjeta9.fin = fin.value || null),
           touch(),
@@ -11408,6 +11923,8 @@ document.addEventListener("click", (ev) => {
       closeModal();
       if (val20 === "act") paletteAccion(val21, el.dataset.id);
       else if (val20 === "view") (state.view !== val21 && ((state.view = val21), pushNav()), render());
+      else if (val20 === "tecsub")
+        ((state.view = "tecnico"), (state.tecSubView = val21), pushNav(), refreshTecnicoFromRemote(), render());
       else {
         if (val20 === "card") openDetail(el.dataset.id);
         else {
@@ -11837,6 +12354,10 @@ document.addEventListener("click", (ev) => {
       const value = ev.target.type === "checkbox" ? ev.target.checked : ev.target.value;
       (applyTecField(ev.target.dataset.tecId, ev.target.dataset.tecField, value),
         ev.target.type === "date" && ev.target.classList.toggle("vacia", !ev.target.value));
+      // En la grilla el tilde se queda donde está; en "Qué falta" además mueve
+      // el curso de banda y cambia la cuenta de arriba, así que hay que
+      // redibujar o la pantalla queda mintiendo.
+      if (state.tecSubView === "falta" && ev.target.type === "checkbox") renderTecList();
       return;
     }
     if (ev.target.dataset && ev.target.dataset.eduId) {
@@ -12000,16 +12521,10 @@ document.addEventListener("click", (ev) => {
     const el2 = ev.target.closest(".kcol-body");
     if (el2 && state.dragId) {
       ev.preventDefault();
-      const hallado = state.cards.find((tarjeta) => tarjeta.id === state.dragId);
-      hallado &&
-        hallado.estado !== el2.dataset.estado &&
-        (logAct(
-          hallado,
-          "pasó a " + ((ESTADOS.find((estado) => estado.id === el2.dataset.estado) || {}).nombre || ""),
-        ),
-        el2.dataset.estado === "en-revision" && (hallado.revisionDesde = isoOf(new Date())),
-        (hallado.estado = el2.dataset.estado),
-        touch());
+      moverTarjetaAEstado(
+        state.cards.find((tarjeta) => tarjeta.id === state.dragId),
+        el2.dataset.estado,
+      );
       ((state.dragId = null), render());
       return;
     }
@@ -12029,6 +12544,134 @@ document.addEventListener("click", (ev) => {
       (rescheduleCard(state.dragTl, iso), (state.dragTl = null));
     }
   }));
+// ===== Arrastrar con el dedo =====
+// El arrastre del tablero estaba armado con drag-and-drop de HTML5, que en
+// pantallas táctiles sencillamente no existe: en una tablet o un celular la
+// tarjeta no se levanta nunca, por más que uno insista. Esto lo resuelve con
+// eventos de puntero, que sí funcionan en los dos mundos.
+//
+// El mouse se deja como estaba a propósito. El arrastre nativo da el fantasma
+// del sistema, el cursor correcto y el autoscroll gratis; reimplementarlo
+// para todos sería cambiar algo que funciona por algo que habría que volver
+// a probar entero.
+//
+// La espera antes de levantar la tarjeta no es un capricho: sin ella, el
+// gesto de scrollear la columna se llevaría puesta la primera tarjeta que el
+// dedo toque.
+const TAP_ESPERA_MS = 320,
+  TAP_TOLERANCIA = 12,
+  TAP_BORDE = 56,
+  TAP_PASO = 14;
+let tapDrag = null;
+function tapDragLimpiar() {
+  if (!tapDrag) return;
+  (tapDrag.reloj && clearTimeout(tapDrag.reloj),
+    tapDrag.clon && tapDrag.clon.remove(),
+    tapDrag.el && tapDrag.el.classList.remove("drag"),
+    document.querySelectorAll(".kcol-body.drop").forEach((c) => c.classList.remove("drop")),
+    document.body.classList.remove("tap-drag"));
+  tapDrag = null;
+}
+// La tarjeta que sigue al dedo es una copia: la original se queda en su lugar
+// atenuada, así se ve de dónde salió y a la columna no le cambia el alto en
+// medio del gesto.
+function tapDragLevantar() {
+  if (!tapDrag || tapDrag.activo) return;
+  const caja = tapDrag.el.getBoundingClientRect(),
+    clon = tapDrag.el.cloneNode(true);
+  (clon.classList.add("kcard-clon"),
+    (clon.style.width = caja.width + "px"),
+    (clon.style.left = caja.left + "px"),
+    (clon.style.top = caja.top + "px"),
+    document.body.appendChild(clon));
+  ((tapDrag.clon = clon),
+    (tapDrag.dx = tapDrag.x0 - caja.left),
+    (tapDrag.dy = tapDrag.y0 - caja.top),
+    (tapDrag.activo = true),
+    tapDrag.el.classList.add("drag"),
+    document.body.classList.add("tap-drag"));
+  // Un toquecito para avisar que la tarjeta ya está levantada; sin esto no
+  // hay forma de saber cuándo terminó la espera.
+  try {
+    navigator.vibrate && navigator.vibrate(12);
+  } catch (e) {}
+}
+// Con el dedo sobre una tarjeta no se ve el tablero entero, así que acercarse
+// al borde corre la vista. Sin esto, en un celular solo se podría soltar en
+// la columna que ya estaba a la vista, que es casi lo mismo que no poder
+// mover nada.
+function tapDragArrimar(x, y) {
+  const tablero = document.querySelector(".kanban");
+  if (tablero) {
+    if (x < tablero.getBoundingClientRect().left + TAP_BORDE) tablero.scrollLeft -= TAP_PASO;
+    else if (x > tablero.getBoundingClientRect().right - TAP_BORDE) tablero.scrollLeft += TAP_PASO;
+  }
+  if (y < TAP_BORDE) window.scrollBy(0, -TAP_PASO);
+  else if (y > window.innerHeight - TAP_BORDE) window.scrollBy(0, TAP_PASO);
+}
+function tapDragColumna(x, y) {
+  const abajo = document.elementFromPoint(x, y);
+  return abajo ? abajo.closest(".kcol-body") : null;
+}
+(document.addEventListener("pointerdown", (ev) => {
+  // El mouse sigue por el camino nativo.
+  if (ev.pointerType === "mouse" || !ev.isPrimary) return;
+  const el = ev.target.closest && ev.target.closest(".kcard");
+  // Los botones de acción rápida de la tarjeta se tocan, no se arrastran.
+  if (!el || ev.target.closest("button") || ev.target.closest("input,textarea,select")) return;
+  tapDragLimpiar();
+  tapDrag = {
+    id: el.dataset.id,
+    el: el,
+    x0: ev.clientX,
+    y0: ev.clientY,
+    activo: false,
+    movio: false,
+    clon: null,
+    reloj: setTimeout(tapDragLevantar, TAP_ESPERA_MS),
+  };
+}),
+  document.addEventListener("pointermove", (ev) => {
+    if (!tapDrag || !ev.isPrimary) return;
+    if (!tapDrag.activo) {
+      // Se movió antes de que la tarjeta se levantara: era un scroll.
+      if (Math.abs(ev.clientX - tapDrag.x0) > TAP_TOLERANCIA || Math.abs(ev.clientY - tapDrag.y0) > TAP_TOLERANCIA)
+        tapDragLimpiar();
+      return;
+    }
+    tapDrag.movio = true;
+    ((tapDrag.clon.style.left = ev.clientX - tapDrag.dx + "px"),
+      (tapDrag.clon.style.top = ev.clientY - tapDrag.dy + "px"));
+    const col = tapDragColumna(ev.clientX, ev.clientY);
+    (document.querySelectorAll(".kcol-body.drop").forEach((c) => c !== col && c.classList.remove("drop")),
+      col && col.classList.add("drop"));
+    tapDragArrimar(ev.clientX, ev.clientY);
+  }),
+  // touchmove hace falta aparte y sin passive: es el único que puede frenar
+  // el scroll de la página mientras la tarjeta va en el aire.
+  document.addEventListener(
+    "touchmove",
+    (ev) => {
+      if (tapDrag && tapDrag.activo) ev.preventDefault();
+    },
+    { passive: false },
+  ),
+  document.addEventListener("pointerup", (ev) => {
+    if (!tapDrag || !ev.isPrimary) return;
+    const suelto = tapDrag.activo ? tapDragColumna(ev.clientX, ev.clientY) : null,
+      id = tapDrag.id,
+      arrastro = tapDrag.activo && tapDrag.movio;
+    tapDragLimpiar();
+    if (suelto && moverTarjetaAEstado(state.cards.find((c) => c.id === id), suelto.dataset.estado)) render();
+    // Soltar la tarjeta no puede además abrir el panel: el toque termina en
+    // un click sintético que hay que comerse una sola vez.
+    if (arrastro) {
+      const comer = (e) => (e.stopPropagation(), e.preventDefault());
+      document.addEventListener("click", comer, { capture: true, once: true });
+      setTimeout(() => document.removeEventListener("click", comer, true), 400);
+    }
+  }),
+  document.addEventListener("pointercancel", tapDragLimpiar));
 // ===== Reordenar el checklist =====
 // El orden del checklist es información: son los pasos de un trabajo, y hasta
 // ahora quedaba fijo al orden de carga. Se mueve arrastrando la manija o con
@@ -13022,6 +13665,14 @@ function paletteCommands() {
     arg: txt2,
     kw: txt3,
   });
+  const sub = (txt, txt2, txt3) => ({
+    t: txt,
+    d: "Saltar a la solapa",
+    ic: "→",
+    act: "tecsub",
+    arg: txt2,
+    kw: txt3,
+  });
   return [
     fn("Inicio", "inicio", "home panel principal resumen dashboard kpi indicadores carga"),
     fn("Planner", "kanban", "planner tablero kanban tareas estados"),
@@ -13029,6 +13680,12 @@ function paletteCommands() {
     fn("Timeline", "timeline", "gantt cronograma"),
     fn("Mapa del área", "mapa", "cursos edu points apps bases inventario"),
     fn("Seguimiento técnico", "tecnico", "tecnico grilla excel categorias cursos scorm moodle mail portada mosaico"),
+    // Las solapas de Técnico también se buscan: el trabajo del área está en
+    // "Qué falta" y en "Revisión", y llegar ahí obligaba a entrar a Técnico y
+    // recién entonces ver que existían.
+    sub("Técnico · Qué falta", "falta", "que falta pendiente portada mosaico evaluacion textos fechas prioridad"),
+    sub("Técnico · Métodos de matriculación", "matri", "matriculacion inscripcion reglas cohorte perfil legajo"),
+    sub("Técnico · Revisión", "revision", "revision validar duplicados sueltos vincular errores datos"),
     fn("Reportes", "reportes", "reportes reporteria metricas publicaciones sector revision graficos"),
     {
       t: "Nueva tarjeta",
