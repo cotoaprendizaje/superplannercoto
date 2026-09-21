@@ -4875,7 +4875,7 @@ function render() {
   // devolviera antes, se lo estaría devolviendo a un <input> que renderFilters
   // reemplaza un renglón más abajo.
   const foco = focoDeLaVista();
-  (tecFiltPopCerrar(), renderView(), renderFilters(), updateBell(), aplicarPermisos(), devolverFoco(foco));
+  (tecFiltPopCerrar(), renderView(), renderFilters(), updateBell(), aplicarPermisos(), tecGrillaAlto(), devolverFoco(foco));
 }
 // Si el re-render es de la MISMA vista (por ej. editar una tarjeta del
 // Planner sin cambiar de pestaña), el documento entero se vuelve a armar
@@ -6492,8 +6492,25 @@ function tecListHTML() {
 }
 function renderTecList() {
   const el = $("#tecList");
-  if (el) ((el.innerHTML = tecListHTML()), tecTopSync());
+  if (el) ((el.innerHTML = tecListHTML()), tecTopSync(), tecGrillaAlto());
 }
+// La grilla se queda pegada debajo de la barra de arriba y scrollea adentro
+// suyo, así el encabezado con los embudos no se va nunca de pantalla. Las dos
+// medidas dependen de dónde arranca la tabla —abajo del título, la subnav, el
+// buscador y los KPI—, y eso cambia con el ancho de la ventana y con cuántos
+// filtros haya puestos, así que se miden en vez de clavarse.
+function tecGrillaAlto() {
+  const wrap = document.querySelector(".tec-table-wrap");
+  if (!wrap) return;
+  // Desde donde arranca la tabla hasta el pie de la ventana. Se mide en vez de
+  // clavarse porque lo de arriba —título, subnav, buscador, KPI— cambia de
+  // alto con el ancho de la ventana y con los filtros que haya puestos.
+  // Se usa la posición en el documento (top + scrollY) y no la de pantalla:
+  // si no, recalcular con la página scrolleada iría agrandando la caja sola.
+  const arriba = Math.round(wrap.getBoundingClientRect().top + window.scrollY);
+  wrap.style.setProperty("--tec-alto", Math.max(280, window.innerHeight - arriba - 16) + "px");
+}
+window.addEventListener("resize", tecGrillaAlto);
 // Abrir o cerrar una regla redibuja solo la lista: redibujar la vista entera
 // devolvería el scroll al tope y la regla que se acaba de abrir quedaría
 // fuera de la pantalla.
