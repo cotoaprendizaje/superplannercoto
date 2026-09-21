@@ -369,6 +369,30 @@ const pestanas = await page.evaluate(() => [...document.querySelectorAll(".mapa-
 
 // El embudo de una columna: se abre, lista los valores reales con cuántas
 // filas tiene cada uno, y al marcar uno la tabla queda con esas filas.
+// El encabezado de la grilla se queda a la vista al scrollear: el contenedor
+// ya era el que scrolleaba (lo obliga el scroll horizontal de las once
+// columnas) pero medía los 8700 px de la tabla entera, así que el encabezado
+// se pegaba a un borde que nunca se movía y se iba con la página.
+const grilla = await page.evaluate(() => {
+  const w = document.querySelector(".tec-table-wrap");
+  return { caja: w.clientHeight, tabla: w.scrollHeight, ventana: window.innerHeight };
+});
+(check("la grilla scrollea adentro de su propia caja", grilla.caja < grilla.tabla, grilla),
+  check("y esa caja no es más alta que la ventana", grilla.caja <= grilla.ventana, grilla));
+await page.evaluate(() => window.scrollTo(0, 99999));
+await page.waitForTimeout(400);
+const pegado = await page.evaluate(() => {
+  const th = document.querySelector(".tec-head-c th"),
+    barra = document.querySelector(".topbar");
+  if (!th) return { sinEncabezado: true };
+  const r = th.getBoundingClientRect(),
+    piso = barra ? barra.getBoundingClientRect().bottom - 2 : 0;
+  return { top: Math.round(r.top), piso: Math.round(piso), visible: r.top >= piso && r.top < window.innerHeight };
+});
+check("el encabezado con los embudos sigue a la vista con la página abajo de todo", pegado.visible === true, pegado);
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.waitForTimeout(300);
+
 const antesFilas = await page.evaluate(() => tecRows().length);
 await page.click('[data-action="tec:filtcol"][data-campo="diseno"]');
 await page.waitForTimeout(400);

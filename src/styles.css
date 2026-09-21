@@ -6473,9 +6473,18 @@ html {
     width: 100%;
   }
 }
+/* La grilla scrollea adentro de su propia caja, no con la página. Antes el
+   contenedor ya era el que scrolleaba (lo obliga el scroll horizontal de las
+   once columnas) pero no tenía alto propio: medía los 8700 px de la tabla
+   entera, así que el encabezado se quedaba pegado a un borde que nunca se
+   movía y se iba de pantalla con el resto. Con un alto que llega hasta el
+   pie de la ventana, el encabezado con los embudos se ve siempre, que es lo
+   que hace una planilla. El alto lo calcula tecGrillaAlto() según dónde
+   arranque la tabla, que depende de cuántos filtros haya puestos arriba. */
 .tec-table-wrap {
-  overflow-x: auto;
+  overflow: auto;
   max-width: 100%;
+  max-height: var(--tec-alto, 70vh);
   border: 1px solid var(--line);
   border-radius: var(--r-l);
   background: var(--surface);
