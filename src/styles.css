@@ -3403,6 +3403,28 @@ button {
 .kbar .grow {
   flex: 1;
 }
+/* "Ver las N anteriores" al pie de Finalizados. Publicar ya no saca la tarjeta
+   del tablero, y con 90 cursos publicados esa columna es una pared: se dibujan
+   las últimas quince y el resto queda a un clic. */
+.kcol-mas {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  border: 1px dashed var(--line);
+  background: none;
+  border-radius: var(--r-sm);
+  padding: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.kcol-mas:hover {
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+  border-style: solid;
+}
 .quick-add {
   margin-top: 8px;
 }

@@ -4652,6 +4652,28 @@ function passBoard(tarjeta) {
 function filteredBoard() {
   return boardCards().filter(passBoard);
 }
+// Lo que se ve en el Planner. Igual que filteredBoard() más los cursos que se
+// publicaron DESDE que existe esta función: el área pidió que publicar no haga
+// desaparecer la tarjeta, sino que la deje en "Finalizados", pero contando de
+// ahí en adelante — los 90 cursos publicados antes se quedan afuera, porque
+// son historia y no trabajo terminado esta semana.
+//
+// Por eso el corte es una marca (quedaEnTablero) y no una fecha: las tarjetas
+// viejas no la tienen y nunca la van a tener, así que no hay fecha de corte
+// que discutir ni tarjeta vieja que se cuele por tener la publicación reciente.
+//
+// Es a propósito que Calendario, Timeline y los números de Inicio sigan usando
+// filteredBoard(): ahí un curso ya publicado no es trabajo pendiente.
+function kanbanCards() {
+  return state.cards
+    .filter((tarjeta) => tarjeta.activo !== false && (!isInventory(tarjeta) || tarjeta.quedaEnTablero))
+    .filter(passBoard);
+}
+// Cuántas finalizadas se dibujan antes del "ver las anteriores". Con 90 cursos
+// publicados, la columna entera es la misma pared de tarjetas que el área ya
+// pidió sacar del tablero una vez.
+const KFIN_A_LA_VISTA = 15;
+let kfinTodas = false;
 // Sello que se agrega arriba de todo justo antes de imprimir: el topbar y la
 // barra de filtros se ocultan en @media print, así que sin esto un
 // Calendario o Timeline impreso queda sin decir cuándo se sacó ni qué
@@ -5087,7 +5109,7 @@ function sortCards(lista) {
   });
 }
 function renderKanban() {
-  const lista2 = filteredBoard(),
+  const lista2 = kanbanCards(),
     html =
       '<div class="kbar">\n    <span class="pill">' +
       lista2.length +
@@ -5103,8 +5125,13 @@ function renderKanban() {
       ">Título</option>\n    </select></div></div>",
     kcolMax = Math.max(1, ...ESTADOS.map((estado) => lista2.filter((arg) => arg.estado === estado.id).length)),
     txt = ESTADOS.map((estado) => {
-      const lista = sortCards(lista2.filter((arg) => arg.estado === estado.id)),
-        cantidad2 = lista.filter(isOverdue).length;
+      const todas = sortCards(lista2.filter((arg) => arg.estado === estado.id)),
+        // Solo "Finalizados" se recorta: es la única que crece para siempre.
+        // Las otras tres son trabajo en curso y tienen un techo natural.
+        recorta = estado.id === "finalizado" && !kfinTodas && todas.length > KFIN_A_LA_VISTA,
+        lista = recorta ? todas.slice(0, KFIN_A_LA_VISTA) : todas,
+        ocultas = todas.length - lista.length,
+        cantidad2 = todas.filter(isOverdue).length;
       return (
         '<section class="kcol">\n      <div class="kcol-head"><span class="kcol-dot" style="background:' +
         estado.dot +
@@ -5123,6 +5150,11 @@ function renderKanban() {
         '">' +
         (lista.map(cardKanban).join("") ||
           '<div style="font-size:12px;color:var(--ink-soft);padding:10px;text-align:center">— vacío —</div>') +
+        (ocultas
+          ? '<button class="kcol-mas" data-action="kfin:todas">Ver las ' + ocultas + " anteriores</button>"
+          : estado.id === "finalizado" && kfinTodas && todas.length > KFIN_A_LA_VISTA
+            ? '<button class="kcol-mas" data-action="kfin:menos">Ver solo las últimas ' + KFIN_A_LA_VISTA + "</button>"
+            : "") +
         '</div>\n      <div class="quick-add"><input data-quickadd="' +
         estado.id +
         '" placeholder="+ Agregar… (Enter)"></div>\n    </section>'
@@ -10687,6 +10719,12 @@ document.addEventListener("click", (ev) => {
       // exacto de la fila, así queda una sola y se ve de una.
       ((state.tecSubView = "grilla"), (state.tecFiltro = el.dataset.curso), render());
       break;
+    case "kfin:todas":
+      ((kfinTodas = true), render());
+      break;
+    case "kfin:menos":
+      ((kfinTodas = false), render());
+      break;
     case "tec:filtcol":
       tecFiltPopAbrir(el, el.dataset.campo);
       break;
@@ -11120,6 +11158,12 @@ document.addEventListener("click", (ev) => {
         patch(val22, {
           publicado: true,
           enActualizacion: false,
+          // Publicar ya no hace desaparecer la tarjeta del Planner: la deja
+          // en "Finalizados", que es donde el equipo espera verla terminada.
+          // La marca es lo que separa "publicado de ahora en adelante" de los
+          // que ya estaban publicados, que siguen sin volver al tablero.
+          estado: "finalizado",
+          quedaEnTablero: true,
           // Se rellena solo la primera vez: una actualización posterior
           // (curso:republicar) no debe correr la fecha de la primera
           // publicación, que es la que le importa a Reportería.
