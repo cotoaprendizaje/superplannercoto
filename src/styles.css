@@ -8684,3 +8684,33 @@ button.mat-ct:hover {
   color: var(--ink-soft);
   text-decoration: line-through;
 }
+
+/* La columna "Estado" del Seguimiento técnico. Antes el estado y las notas de
+   trabajo compartían una sola celda de texto libre, así que la app tenía que
+   adivinar por palabras si un curso estaba de baja — y se le pasaron las once
+   del Centro de Distribución, que decían "Curso inutilizado". Ahora el estado
+   se elige y el comentario queda al lado, libre. */
+/* Un <select> más angosto que su opción recorta el texto: "Dado de baja"
+   quedaba en "Dado ·". La celda le reserva el ancho de la opción más larga. */
+.tec-baja {
+  min-width: 128px;
+}
+.tec-baja-sel {
+  width: 100%;
+  border: 1px solid transparent;
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-radius: var(--r-sm);
+  padding: 5px 7px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tec-baja-sel:hover {
+  border-color: var(--line);
+}
+.tec-baja-sel.off {
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}

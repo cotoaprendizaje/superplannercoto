@@ -469,6 +469,34 @@ const baja = await page.evaluate(() => ({
 (check("«Curso inutilizado» cuenta como dado de baja", baja.inutilizado === true && baja.mayusculas === true, baja),
   check("y un comentario normal sigue contando como activo", baja.comentario === false && baja.vacio === false, baja));
 
+// El estado dejó de adivinarse: se elige. El caso que lo obligó son dos cursos
+// de Cajas que están de baja Y llevan la nota "Reemplazado por Medios de Pago"
+// —"reemplazado" habla del contenido, no de si el curso sigue en Moodle, así
+// que no puede ser una palabra de baja.
+const estadoCol = await page.evaluate(() => {
+  const f = state.tecnico[0];
+  ((f.estado = "Reemplazado por Medios de Pago"), delete f.baja, render());
+  const arrancaVigente = tecFilaActiva(f);
+  applyTecField(f.id, "baja", "si");
+  const trasElegir = { deBaja: !tecFilaActiva(f), comentario: f.estado, explicito: f.baja };
+  // Y se puede volver atrás aunque el comentario diga otra cosa: gana la
+  // elección de la persona, no el texto.
+  const g = state.tecnico[1];
+  ((g.estado = "Curso inutilizado"), delete g.baja);
+  const adivinado = !tecFilaActiva(g);
+  applyTecField(g.id, "baja", "no");
+  return { arrancaVigente, trasElegir, adivinado, laEleccionGana: tecFilaActiva(g) };
+});
+(check("«reemplazado» no se lee como baja: es una nota de contenido", estadoCol.arrancaVigente === true, estadoCol),
+  check("se puede marcar de baja sin perder el comentario", estadoCol.trasElegir.deBaja === true && estadoCol.trasElegir.comentario === "Reemplazado por Medios de Pago", estadoCol),
+  check("una fila que nadie tocó se sigue leyendo del comentario", estadoCol.adivinado === true, estadoCol),
+  check("pero lo que elige una persona le gana al texto", estadoCol.laEleccionGana === true, estadoCol));
+await page.evaluate(() => {
+  // se deja la grilla como estaba para lo que sigue
+  (state.tecnico.forEach((f) => delete f.baja), render());
+});
+await page.waitForTimeout(300);
+
 // ── Métodos de matriculación ──────────────────────────────────────────────
 console.log("\nmétodos de matriculación");
 await page.evaluate(() => {

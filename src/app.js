@@ -5890,7 +5890,8 @@ const TEC_COLS = [
   { k: "evaluacion", label: "Evaluación", grupo: "Piezas" },
   { k: "textos", label: "Textos", grupo: "Piezas" },
   { k: "diseno", label: "Diseño", grupo: "Formato" },
-  { k: "estado", label: "Estado / Comentario", grupo: "Seguimiento" },
+  { k: "baja", label: "Estado", grupo: "Seguimiento", tit: "Si el curso sigue vigente o está dado de baja" },
+  { k: "estado", label: "Comentario", grupo: "Seguimiento", tit: "Notas de trabajo sobre el curso" },
   { k: "mapa", label: "Mapa", grupo: "Seguimiento", tit: "Tarjeta del Mapa vinculada" },
 ];
 const TEC_CHKS = ["portada", "mosaico", "evaluacion", "textos"];
@@ -5943,7 +5944,7 @@ function tecColsTodas() {
 // Ancho mínimo de la tabla según lo que esté a la vista: con las quince
 // columnas hay scroll horizontal sí o sí, con cinco no tiene por qué haberlo.
 function tecTableMin() {
-  const ancho = { estado: 210, mapa: 150, diseno: 130 };
+  const ancho = { estado: 210, mapa: 150, diseno: 130, baja: 130 };
   return (
     320 +
     (tecPlano() ? 120 : 0) +
@@ -5979,7 +5980,7 @@ function tecFechaISO(txt) {
 // Columnas que se pueden filtrar por valor. "Curso" queda afuera a propósito:
 // son 95 nombres distintos, o sea una lista tan larga como la tabla — para eso
 // está el buscador de arriba.
-const TEC_FILT_COLS = ["categoria", "publicacion", "scorm", "mail", "portada", "mosaico", "evaluacion", "textos", "diseno", "estado", "mapa"];
+const TEC_FILT_COLS = ["categoria", "publicacion", "scorm", "mail", "portada", "mosaico", "evaluacion", "textos", "diseno", "baja", "estado", "mapa"];
 function tecColFiltrable(k) {
   return TEC_FILT_COLS.includes(k);
 }
@@ -5987,6 +5988,7 @@ function tecColFiltrable(k) {
 // Las fechas se agrupan por año: 95 fechas sueltas no son una lista para
 // elegir, "2016" sí. "!" es la fecha mal escrita, que ya se marca en la grilla.
 function tecValorCol(fila, k) {
+  if (k === "baja") return tecFilaActiva(fila) ? "no" : "si";
   if (TEC_CHKS.includes(k)) return fila[k] ? "si" : "no";
   if (k === "mapa") return fila.cardId ? "si" : "no";
   if (TEC_FECHAS.includes(k)) {
@@ -5997,6 +5999,7 @@ function tecValorCol(fila, k) {
   return (fila[k] || "").toString().trim();
 }
 function tecValorColLabel(k, v) {
+  if (k === "baja") return v === "si" ? "Dado de baja" : "Vigente";
   if (TEC_CHKS.includes(k)) return v === "si" ? "Sí" : "No";
   if (k === "mapa") return v === "si" ? "Vinculado" : "Sin vincular";
   if (v === "!") return "Fecha mal escrita";
@@ -6195,6 +6198,28 @@ function tecFechaCelda(fila, campo) {
     '"></td>'
   );
 }
+// El estado del curso, elegido y no adivinado. Arranca mostrando lo que la app
+// venía deduciendo del comentario, así la grilla no cambia de aspecto el primer
+// día; en cuanto alguien elige, queda explícito para siempre.
+//
+// El caso que obligó a partir la columna: dos cursos de Cajas están dados de
+// baja Y llevan la nota "Reemplazado por Medios de Pago". Con un solo campo
+// había que elegir entre el estado y la nota, y "reemplazado" no puede ser una
+// palabra de baja — habla del contenido, no de si el curso sigue en Moodle.
+function tecBajaSelect(fila) {
+  const deBaja = fila.baja === true || (fila.baja === undefined && tecEstadoSugiereBaja(fila.estado));
+  return (
+    '<select class="tec-baja-sel' +
+    (deBaja ? " off" : "") +
+    '" data-tec-id="' +
+    fila.id +
+    '" data-tec-field="baja"><option value="no"' +
+    (deBaja ? "" : " selected") +
+    '>Vigente</option><option value="si"' +
+    (deBaja ? " selected" : "") +
+    ">Dado de baja</option></select>"
+  );
+}
 // Una celda por tipo de columna. Las cinco fechas comparten dibujo, los
 // cuatro tildes también: lo único propio de cada columna es su clave.
 function tecCeldaHTML(fila, col) {
@@ -6202,6 +6227,7 @@ function tecCeldaHTML(fila, col) {
   if (TEC_CHKS.includes(col.k)) return '<td class="tec-chk">' + tecCheckbox(fila, col.k) + "</td>";
   if (col.k === "diseno") return '<td class="tec-diseno">' + tecDisenoSelect(fila) + "</td>";
   if (col.k === "mapa") return '<td class="tec-linkcell">' + tecLinkHTML(fila) + "</td>";
+  if (col.k === "baja") return '<td class="tec-baja">' + tecBajaSelect(fila) + "</td>";
   return (
     '<td class="tec-estado"><input type="text" data-tec-id="' +
     fila.id +
@@ -6473,7 +6499,7 @@ function tecHeadHTML() {
     tecTh("curso", "Curso") +
     tecColsVisibles()
       .map((col) =>
-        TEC_CHKS.includes(col.k) || col.k === "mapa"
+        TEC_CHKS.includes(col.k) || col.k === "mapa" || col.k === "baja"
           ? tecThSoloFiltro(col.k, col.label, col.tit)
           : tecTh(col.k, col.label, col.tit),
       )
@@ -6611,7 +6637,13 @@ function tecKpisHTML() {
 // Un curso "activo" es el que sigue vigente: ni la tarjeta vinculada dada de
 // baja en el Mapa, ni un comentario del tipo "Dado de baja" en la columna de
 // estado (que es como venía marcado en el Excel).
+// "baja" es la respuesta explícita: la eligió una persona en la grilla y manda
+// sobre cualquier otra cosa. Cuando no está —las filas que nadie tocó desde
+// que existe la columna— se sigue leyendo el comentario como hasta ahora, así
+// que nada cambia de lugar hasta que alguien decide.
 function tecFilaActiva(fila) {
+  if (fila.baja === true) return false;
+  if (fila.baja === false) return true;
   if (tecEstadoSugiereBaja(fila.estado)) return false;
   const card = fila.cardId ? state.cards.find((c) => c.id === fila.cardId) : null;
   return !(card && card.activo === false);
@@ -11332,6 +11364,12 @@ function toggleArr(arg, txt, sector) {
 function applyTecField(id, campo, value) {
   const fila = state.tecnico.find((f) => f.id === id);
   if (!fila) return;
+  // "baja" viaja como texto desde el <select> y se guarda como sí/no: lo que
+  // manda es la elección de la persona, no lo que diga el comentario.
+  if (campo === "baja") {
+    ((fila.baja = value === "si"), touchTecnico(), renderTecList());
+    return;
+  }
   // Se guarda ISO, pero solo cuando la fecha ya está completa: mientras se
   // tipea "12/05/20…" no matchea y queda el texto crudo, sin pelearle al cursor.
   ((fila[campo] = TEC_FECHAS.includes(campo) ? tecFechaISO(value) : value), touchTecnico());
