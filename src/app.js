@@ -11052,7 +11052,15 @@ document.addEventListener("click", (ev) => {
       const tarjeta9 = state.cards.find((c) => c.id === el.dataset.id);
       if (tarjeta9) {
         const prio = $("#qePrio"),
-          fin = $("#qeFin");
+          fin = $("#qeFin"),
+          col = $("#qeEstado");
+        // Mismo registro que al arrastrar: si cambia de columna queda anotado
+        // en Actividad y, si va a revisión, se sella desde cuándo.
+        if (col && col.value !== tarjeta9.estado) {
+          (logAct(tarjeta9, "pasó a " + ((ESTADOS.find((e) => e.id === col.value) || {}).nombre || col.value)),
+            col.value === "en-revision" && (tarjeta9.revisionDesde = isoOf(new Date())),
+            (tarjeta9.estado = col.value));
+        }
         (prio && (tarjeta9.prioridad = prio.value),
           fin && (tarjeta9.fin = fin.value || null),
           touch(),
@@ -12133,7 +12141,22 @@ function openQEdit(id) {
   openModal(
     '<h2 style="font-size:16px">✎ Edición rápida</h2><div class="sub-t">' +
       esc(tarjeta.titulo) +
-      '</div><div class="fld-row"><div class="fld"><label>Prioridad</label><select id="qePrio"><option value="normal" ' +
+      // Mover una tarjeta de columna se hacía SOLO arrastrando, y arrastrar no
+      // existe en pantallas táctiles ni funciona igual en todos los teclados y
+      // trackpads. Acá la columna se elige de una lista: el mismo resultado,
+      // sin depender de que el arrastre ande.
+      '</div><div class="fld"><label>Columna del tablero</label><select id="qeEstado">' +
+      ESTADOS.map(
+        (estado) =>
+          '<option value="' +
+          estado.id +
+          '"' +
+          (tarjeta.estado === estado.id ? " selected" : "") +
+          ">" +
+          esc(estado.nombre) +
+          "</option>",
+      ).join("") +
+      '</select></div><div class="fld-row"><div class="fld"><label>Prioridad</label><select id="qePrio"><option value="normal" ' +
       (tarjeta.prioridad === "normal" ? "selected" : "") +
       '>Normal</option><option value="alta" ' +
       (tarjeta.prioridad === "alta" ? "selected" : "") +

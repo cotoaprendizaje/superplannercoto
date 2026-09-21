@@ -282,6 +282,31 @@ const fin = await page.evaluate(() => {
 await page.evaluate((i) => openDetail(i), idTarjeta);
 await page.waitForTimeout(500);
 
+// ── Mover una tarjeta de columna sin arrastrar ────────────────────────────
+console.log("\nmover de columna sin arrastrar");
+const qe = await page.evaluate(async () => {
+  const c = newCard("libre", "TARJETA QUE SE MUEVE", {});
+  ((c.estado = "pendiente"), state.cards.push(c), (state.view = "kanban"), (state.mis = false), (state.filters = {}), render());
+  openQEdit(c.id);
+  const hayColumna = !!document.querySelector("#qeEstado");
+  const sel = document.querySelector("#qeEstado");
+  if (sel) ((sel.value = "en-revision"), document.querySelector('[data-action="qedit:save"]').click());
+  const d = state.cards.find((x) => x.id === c.id);
+  return {
+    hayColumna,
+    estado: d.estado,
+    // El mismo registro que deja arrastrar: queda anotado y se sella la fecha.
+    anotado: (d.actividad || []).some((a) => /revisi/i.test(a.texto)),
+    selloRevision: !!d.revisionDesde,
+  };
+});
+(check("la edición rápida deja elegir la columna", qe.hayColumna === true, qe),
+  check("y mover la tarjeta sin arrastrarla", qe.estado === "en-revision", qe),
+  check("queda anotado en Actividad, igual que al arrastrar", qe.anotado === true, qe),
+  check("y sella desde cuándo está en revisión", qe.selloRevision === true, qe));
+await page.evaluate((i) => openDetail(i), idTarjeta);
+await page.waitForTimeout(400);
+
 // ── El panel: escala, encabezados y lo que faltaba ────────────────────────
 console.log("\nel panel de la tarjeta");
 const panel = await page.evaluate(() => {
