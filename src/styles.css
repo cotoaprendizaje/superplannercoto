@@ -8769,3 +8769,167 @@ button.mat-ct:hover {
 .mapa-sec.pend b {
   color: var(--warn-ink);
 }
+
+/* ===== La franja de Reportes =====
+   Reportes solo miraba para atrás. Esta franja dice en una frase lo que el
+   equipo pregunta en voz alta —cuánto sacamos este mes, qué está por salir— y
+   rota sola: son cuatro respuestas distintas, y cuatro cajas al mismo tiempo
+   vuelven a ser un tablero que hay que interpretar. */
+.rep-franja {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--coto-blue);
+  border-radius: var(--r-s);
+  padding: 14px 12px 14px 18px;
+  margin-bottom: var(--sp-3);
+  box-shadow: var(--shadow-sm);
+}
+.rep-franja.tono-ok {
+  border-left-color: var(--ok);
+}
+.rep-franja.tono-warn {
+  border-left-color: var(--warn);
+}
+.rep-franja-txt {
+  flex: 1;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  animation: 0.3s viewIn;
+}
+.rep-franja-txt b {
+  font-family: var(--titulo);
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--ink);
+  margin-right: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.rep-franja.tono-ok .rep-franja-txt b {
+  color: var(--ok);
+}
+.rep-franja.tono-warn .rep-franja-txt b {
+  color: var(--warn-ink);
+}
+.rep-franja-nav {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: 50%;
+  color: var(--ink-soft);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.rep-franja-nav:hover {
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+}
+.rep-franja-pts {
+  display: flex;
+  gap: 5px;
+  flex: none;
+}
+.rep-pt {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.rep-pt.on {
+  background: var(--coto-blue);
+}
+@media (max-width: 620px) {
+  .rep-franja-pts {
+    display: none;
+  }
+  .rep-franja-txt {
+    font-size: 13.5px;
+  }
+  .rep-franja-txt b {
+    font-size: 21px;
+  }
+}
+/* Cuándo sale cada cosa, en palabras: "en 3 días" se entiende sin restar. */
+.rep-cuando {
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.rep-cuando.pronto {
+  color: var(--warn-ink);
+}
+.rep-cuando.tarde {
+  color: var(--bad);
+}
+
+/* ===== El semáforo de cada curso =====
+   Cuatro casillas en cuatro columnas obligan a mirar cuatro veces para saber
+   cómo viene un curso. Cuatro puntos pegados al nombre se leen de un vistazo;
+   las casillas siguen ahí para editar, esto es solo para leer. */
+.tec-sem {
+  display: inline-flex;
+  gap: 3px;
+  vertical-align: middle;
+  margin-right: 8px;
+  flex: none;
+}
+.tec-sem-p {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.tec-sem-p.on {
+  background: color-mix(in srgb, var(--coto-blue) 65%, transparent);
+}
+.tec-sem.full .tec-sem-p.on {
+  background: var(--ok);
+}
+.tec-table td.tec-curso {
+  display: flex;
+  align-items: center;
+}
+/* Cómo viene cada categoría, en el encabezado que ya estaba: «Cajas · 12
+   cursos» no ayuda a decidir dónde meterse; «9 completos · 3 con algo
+   pendiente» sí. */
+.tec-cat-av {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: 14px;
+  vertical-align: middle;
+}
+.tec-cat-bar {
+  display: block;
+  width: 84px;
+  height: 5px;
+  border-radius: var(--pill);
+  background: var(--line);
+  overflow: hidden;
+}
+.tec-cat-bar i {
+  display: block;
+  height: 100%;
+  background: var(--ok);
+}
+.tec-cat-txt {
+  font-family: var(--texto);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .tec-cat-bar {
+    display: none;
+  }
+}

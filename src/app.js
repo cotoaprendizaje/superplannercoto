@@ -4897,7 +4897,14 @@ function render() {
   // devolviera antes, se lo estaría devolviendo a un <input> que renderFilters
   // reemplaza un renglón más abajo.
   const foco = focoDeLaVista();
-  (tecFiltPopCerrar(), renderView(), renderFilters(), updateBell(), aplicarPermisos(), tecGrillaAlto(), devolverFoco(foco));
+  (tecFiltPopCerrar(),
+    renderView(),
+    renderFilters(),
+    updateBell(),
+    aplicarPermisos(),
+    tecGrillaAlto(),
+    repFranjaArrancar(),
+    devolverFoco(foco));
 }
 // Si el re-render es de la MISMA vista (por ej. editar una tarjeta del
 // Planner sin cambiar de pestaña), el documento entero se vuelve a armar
@@ -6248,7 +6255,9 @@ function tecRowHTML(fila) {
         esc(fila.categoria) +
         '" placeholder="Sin categoría"></td>'
       : "") +
-    '<td class="tec-curso"><input type="text" data-tec-id="' +
+    '<td class="tec-curso">' +
+    tecSemaforoHTML(fila) +
+    '<input type="text" data-tec-id="' +
     fila.id +
     '" data-tec-field="curso" value="' +
     esc(fila.curso) +
@@ -6280,7 +6289,9 @@ function tecGroupHTML(grupo) {
     grupo.filas.length +
     " curso" +
     (grupo.filas.length === 1 ? "" : "s") +
-    "</span></button></td></tr>" +
+    "</span></button>" +
+    tecCatAvanceHTML(grupo.filas) +
+    "</td></tr>" +
     grupo.filas.map(tecRowHTML).join("") +
     '<tr class="tec-add-row"><td colspan="' +
     cols +
@@ -6296,6 +6307,54 @@ function tecGroupHTML(grupo) {
 // El encabezado de una columna hace dos cosas distintas y por eso son dos
 // botones: el nombre ordena, el embudito filtra. Sin separarlos, un solo clic
 // tendría que adivinar cuál de las dos querías.
+// Cuántas piezas de producción tiene cargadas una fila, sobre cuántas se le
+// piden. Es el número que hace que "cómo viene este curso" se pueda contestar
+// sin leer cuatro tildes de cuatro columnas distintas.
+function tecPiezas(fila) {
+  const piden = TEC_CHKS.filter((k) => tecColVisible(k));
+  return { hechas: piden.filter((k) => fila[k]).length, total: piden.length };
+}
+// El encabezado de cada categoría dice cómo viene, no solo cuántos hay.
+// "Cajas · 12 cursos" no ayuda a decidir dónde meterse; "9 completos, 3 con
+// algo pendiente" sí. Solo cuenta los vigentes: un curso dado de baja no
+// tiene nada pendiente.
+function tecCatAvanceHTML(filas) {
+  const vivas = filas.filter(tecFilaActiva);
+  if (!vivas.length) return "";
+  const completos = vivas.filter((f) => {
+      const p = tecPiezas(f);
+      return p.total && p.hechas === p.total;
+    }).length,
+    faltan = vivas.length - completos,
+    pct = Math.round((completos / vivas.length) * 100);
+  return (
+    '<span class="tec-cat-av"><span class="tec-cat-bar"><i style="width:' +
+    pct +
+    '%"></i></span><span class="tec-cat-txt">' +
+    completos +
+    " completo" +
+    (completos === 1 ? "" : "s") +
+    (faltan ? " · " + faltan + " con algo pendiente" : "") +
+    "</span></span>"
+  );
+}
+// El semáforo de una fila: un punto por pieza, prendido o apagado. Cuatro
+// casillas de formulario en cuatro columnas obligan a mirar cuatro veces;
+// cuatro puntos juntos se leen de un vistazo, y el título dice cuál es cuál.
+function tecSemaforoHTML(fila) {
+  const piden = TEC_CHKS.filter((k) => tecColVisible(k));
+  if (!piden.length) return "";
+  const p = tecPiezas(fila);
+  return (
+    '<span class="tec-sem' +
+    (p.hechas === p.total ? " full" : "") +
+    '" title="' +
+    esc(piden.map((k) => tecColLabel(k) + ": " + (fila[k] ? "sí" : "no")).join(" · ")) +
+    '">' +
+    piden.map((k) => '<i class="tec-sem-p' + (fila[k] ? " on" : "") + '"></i>').join("") +
+    "</span>"
+  );
+}
 function tecTh(campo, label, tit) {
   const activo = state.tecOrden === campo,
     sel = tecColFiltro(campo),
@@ -8193,6 +8252,133 @@ function repSeccion(titulo, sub, contenido) {
     "</div>"
   );
 }
+// ===== La franja que cuenta cómo viene el año =====
+// Reportes solo miraba para atrás: gráficos de lo ya publicado. Faltaba lo que
+// el equipo pregunta en voz alta —"¿cuánto sacamos este mes?", "¿qué está por
+// salir?"— dicho en una frase, no en un gráfico que hay que leer.
+//
+// Las frases rotan solas. No es decoración: son cuatro respuestas distintas y
+// una sola no alcanza, pero cuatro cajas al mismo tiempo vuelven a ser un
+// tablero que hay que interpretar.
+const REP_FRASE_MS = 6000;
+let repFraseIdx = 0,
+  repFraseTimer = null;
+function repMesNombre(fecha) {
+  return fecha.toLocaleDateString("es-AR", { month: "long" });
+}
+// Las tarjetas que están por salir: en desarrollo o en revisión, con fecha de
+// fin, ordenadas por cuál cae primero. Es lo único de Reportes que mira para
+// adelante, y sale del Planner —no hay otra fuente que sepa qué se está
+// trabajando ahora.
+function repLoQueViene() {
+  return boardCards()
+    .filter((c) => (c.estado === "en-desarrollo" || c.estado === "en-revision") && c.fin)
+    .sort((a, b) => (a.fin < b.fin ? -1 : a.fin > b.fin ? 1 : 0));
+}
+// Cuántas tarjetas cambiaron de columna en los últimos siete días. Sale de
+// Actividad, que ya lo venía registrando sin que nadie lo mirara.
+function repMovidasSemana() {
+  const desde = Date.now() - 7 * 86400000;
+  return boardCards().filter((c) => (c.actividad || []).some((a) => (a.ts || 0) >= desde && /pasó a /.test(a.texto || "")));
+}
+function repFrases() {
+  const hoy = new Date(),
+    anio = hoy.getFullYear(),
+    mesISO = isoOf(hoy).slice(0, 7),
+    puntos = repPublicaciones(),
+    delMes = puntos.filter((p) => p.fecha.slice(0, 7) === mesISO).length,
+    delAnio = puntos.filter((p) => p.fecha.slice(0, 4) === String(anio)).length,
+    anterior = puntos.filter((p) => p.fecha.slice(0, 4) === String(anio - 1)).length,
+    vienen = repLoQueViene(),
+    movidas = repMovidasSemana().length,
+    activos = repCursosActivos().length,
+    lista = [];
+  lista.push(
+    delMes
+      ? { n: delMes, txt: "curso" + (delMes === 1 ? "" : "s") + " publicado" + (delMes === 1 ? "" : "s") + " en " + repMesNombre(hoy), tono: "ok" }
+      : { n: 0, txt: "cursos publicados en " + repMesNombre(hoy) + " — el mes recién arranca", tono: "neutro" },
+  );
+  lista.push({
+    n: delAnio,
+    txt: "publicados en " + anio + (anterior ? " · en " + (anio - 1) + " fueron " + anterior : ""),
+    tono: "neutro",
+  });
+  if (vienen.length)
+    lista.push({
+      n: vienen.length,
+      txt: "a punto de salir" + (vienen[0].fin ? " · el primero, el " + tecFechaVer(vienen[0].fin) : ""),
+      tono: "warn",
+    });
+  if (movidas) lista.push({ n: movidas, txt: "tarjetas se movieron esta semana", tono: "neutro" });
+  lista.push({ n: activos, txt: "cursos activos en el Mapa hoy", tono: "neutro" });
+  return lista;
+}
+function repFranjaHTML() {
+  const frases = repFrases();
+  if (repFraseIdx >= frases.length) repFraseIdx = 0;
+  const f = frases[repFraseIdx];
+  return (
+    '<div class="rep-franja tono-' +
+    f.tono +
+    '" id="repFranja"><button class="rep-franja-nav" data-action="rep:frase" data-paso="-1" title="Anterior">‹</button>' +
+    '<div class="rep-franja-txt"><b>' +
+    f.n +
+    "</b> " +
+    esc(f.txt) +
+    "</div>" +
+    '<div class="rep-franja-pts">' +
+    frases.map((_, i) => '<span class="rep-pt' + (i === repFraseIdx ? " on" : "") + '"></span>').join("") +
+    "</div>" +
+    '<button class="rep-franja-nav" data-action="rep:frase" data-paso="1" title="Siguiente">›</button></div>'
+  );
+}
+// Solo se redibuja la franja, no la vista: si rotara con render() se perdería
+// el scroll y cualquier cosa que se esté mirando abajo cada seis segundos.
+function repFranjaSync() {
+  const el = document.querySelector("#repFranja");
+  if (el) el.outerHTML = repFranjaHTML();
+}
+function repFranjaArrancar() {
+  clearInterval(repFraseTimer);
+  if (state.view !== "reportes") return;
+  repFraseTimer = setInterval(() => {
+    if (state.view !== "reportes" || !document.querySelector("#repFranja")) return clearInterval(repFraseTimer);
+    ((repFraseIdx = (repFraseIdx + 1) % Math.max(1, repFrases().length)), repFranjaSync());
+  }, REP_FRASE_MS);
+}
+function repLoQueVieneHTML() {
+  const lista = repLoQueViene().slice(0, 8),
+    hoy = todayISO();
+  if (!lista.length)
+    return (
+      '<div class="rep-empty">Ninguna tarjeta en desarrollo o revisión tiene fecha de fin, así que no se puede decir qué está por salir. ' +
+      'Se cargan desde <b>Técnico → Revisión</b>.</div>'
+    );
+  return (
+    '<div class="carga-list">' +
+    lista
+      .map((c) => {
+        const dias = daysBetween(hoy, c.fin),
+          cuando = dias < 0 ? "vencida" : dias === 0 ? "hoy" : dias === 1 ? "mañana" : "en " + dias + " días";
+        return (
+          '<div class="lnk"><span class="lnk-a" data-action="card:open" data-id="' +
+          c.id +
+          '" style="cursor:pointer;flex:1">' +
+          esc(c.titulo) +
+          '</span><span class="val-est">' +
+          esc((ESTADOS.find((e) => e.id === c.estado) || {}).nombre || "") +
+          '</span><span class="rep-cuando' +
+          (dias < 0 ? " tarde" : dias <= 7 ? " pronto" : "") +
+          '">' +
+          esc(cuando) +
+          "</span></div>"
+        );
+      })
+      .join("") +
+    "</div>"
+  );
+}
+
 function renderReportes() {
   // Antes era una pila: cuatro cajas, gráfico, gráfico, lista, lista — todo
   // del mismo ancho y del mismo peso, más de 2.500 px de scroll. Ahora hay
@@ -8200,6 +8386,7 @@ function renderReportes() {
   // mientras entren.
   return (
     '<div class="rep-top"><button class="btn btn-ghost btn-sm" data-action="reportes:csv" title="Descargar estos números en CSV">⬇ CSV</button><button class="btn btn-ghost btn-sm" data-action="app:print" title="Imprimir o guardar como PDF">🖨 PDF</button></div>' +
+    repFranjaHTML() +
     repHeroHTML() +
     '<div class="rep-cols">' +
     repSeccion(
@@ -8218,7 +8405,10 @@ function renderReportes() {
     // "Carga y foco del equipo" se sacó de acá: era exactamente el mismo
     // bloque que ya está en Inicio, mirando los mismos datos. El CSV lo sigue
     // exportando, que es donde sí sirve tenerlo junto al resto.
-    '<div class="rep-cols rep-cols-1">' +
+    '<div class="rep-cols">' +
+    // Lo único de Reportes que mira para adelante. El resto son gráficos de lo
+    // ya publicado, y la pregunta que el equipo hace en voz alta es la otra.
+    repSeccion("Lo que está por salir", "En desarrollo o en revisión, con fecha", repLoQueVieneHTML()) +
     repSeccion("Las que más esperan revisión", "Cuánto hace que están frenadas", repRevisionHTML()) +
     "</div>" +
     repFuenteHTML()
@@ -10829,6 +11019,13 @@ document.addEventListener("click", (ev) => {
       // exacto de la fila, así queda una sola y se ve de una.
       ((state.tecSubView = "grilla"), (state.tecFiltro = el.dataset.curso), render());
       break;
+    case "rep:frase": {
+      // Tocar una flecha corta la rotación automática: si el equipo se puso a
+      // mirar una frase, que no se la cambie sola a los tres segundos.
+      const frases = repFrases().length;
+      ((repFraseIdx = (repFraseIdx + (+el.dataset.paso || 1) + frases) % frases), clearInterval(repFraseTimer), repFranjaSync());
+      break;
+    }
     case "kfin:todas":
       ((kfinTodas = true), render());
       break;
