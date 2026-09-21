@@ -7173,7 +7173,21 @@ function tecFilaPickListHTML(filas, filtro) {
 // tipeadas a mano también. Esta vista junta en un solo lugar los casos
 // donde el Mapa y Seguimiento técnico no cuentan la misma historia, cada
 // uno con el atajo concreto para resolverlo — nada se corrige solo.
-const TEC_BAJA_KEYWORDS = ["baja", "discontinuado", "descontinuado", "no vigente", "eliminado", "anulado"];
+// La columna "Estado / Comentario" es texto libre, así que si una fila está
+// dada de baja hay que deducirlo de cómo lo escribió quien la cargó. Cada
+// palabra de esta lista salió de leer lo que el equipo escribió de verdad:
+// "inutilizado" son las once filas del Centro de Distribución, que la app
+// venía contando como cursos activos porque ninguna de las otras palabras
+// aparecía en el texto.
+const TEC_BAJA_KEYWORDS = [
+  "baja",
+  "discontinuado",
+  "descontinuado",
+  "no vigente",
+  "eliminado",
+  "anulado",
+  "inutilizado",
+];
 function tecEstadoSugiereBaja(estado) {
   const t = (estado || "").trim().toLowerCase();
   return !!t && TEC_BAJA_KEYWORDS.some((k) => t.includes(k));

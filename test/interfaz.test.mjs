@@ -455,6 +455,20 @@ check(
   await page.evaluate(() => Object.keys(state.tecColFiltros).length === 0 && tecRows().length === state.tecnico.length),
 );
 
+// Una fila que dice "Curso inutilizado" está dada de baja. La columna es texto
+// libre, así que la app lo deduce de lo que escribió quien la cargó: las once
+// filas del Centro de Distribución usaban esa palabra y se contaban activas.
+const baja = await page.evaluate(() => ({
+  inutilizado: tecEstadoSugiereBaja("Curso inutilizado"),
+  mayusculas: tecEstadoSugiereBaja("CURSO INUTILIZADO"),
+  dadoDeBaja: tecEstadoSugiereBaja("Dado de baja"),
+  // Un comentario común no puede leerse como una baja.
+  comentario: tecEstadoSugiereBaja("Falta portada audiovisual"),
+  vacio: tecEstadoSugiereBaja(""),
+}));
+(check("«Curso inutilizado» cuenta como dado de baja", baja.inutilizado === true && baja.mayusculas === true, baja),
+  check("y un comentario normal sigue contando como activo", baja.comentario === false && baja.vacio === false, baja));
+
 // ── Métodos de matriculación ──────────────────────────────────────────────
 console.log("\nmétodos de matriculación");
 await page.evaluate(() => {
