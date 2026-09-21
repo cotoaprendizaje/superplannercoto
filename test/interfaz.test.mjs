@@ -522,6 +522,47 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(300);
 
+// ── Revisión: todo lo suelto junto, y se arregla ahí mismo ────────────────
+console.log("\nla pestaña Revisión");
+const rev = await page.evaluate(() => {
+  const c = newCard("libre", "TARJETA SIN FECHA DE FIN", {});
+  ((c.estado = "en-desarrollo"), (c.fin = null), state.cards.push(c));
+  ((state.tecSubView = "revision"), render());
+  return {
+    pestaña: [...document.querySelectorAll(".mapa-sec")].map((x) => x.textContent.trim()),
+    // El número de la pestaña y el del encabezado salen del mismo lugar: si
+    // cada uno contara por su cuenta, tarde o temprano dirían cosas distintas.
+    total: valTotal(),
+    enLaPestaña: +(document.querySelector('[data-v="revision"] b').textContent.match(/\d+/) || [0])[0],
+    // Cada cosa se arregla sin salir: acá, poniéndole la fecha.
+    campos: document.querySelectorAll("[data-val-fin]").length,
+    secciones: document.querySelectorAll(".rep-sec").length,
+    id: c.id,
+  };
+});
+(check("Revisión es una pestaña de Técnico, con el número de pendientes", rev.pestaña.some((t) => /Revisi/.test(t)), rev),
+  check("y ese número es el mismo que cuenta el panel", rev.enLaPestaña === rev.total, rev),
+  check("junta todo lo suelto en una sola pantalla", rev.secciones >= 6, rev),
+  check("y las tarjetas sin fecha traen el campo para ponerla", rev.campos > 0, rev));
+
+const arreglo = await page.evaluate((id) => {
+  const antes = valTotal(),
+    inp = document.querySelector('[data-val-fin="' + id + '"]');
+  ((inp.value = "2026-10-15"), inp.dispatchEvent(new Event("change", { bubbles: true })));
+  const d = state.cards.find((c) => c.id === id);
+  return {
+    antes,
+    despues: valTotal(),
+    guardada: d.fin,
+    // Arreglada, desaparece de la lista: es lo que hace que la pantalla se
+    // vacíe sola a medida que se trabaja.
+    sigueEnLaLista: !!document.querySelector('[data-val-fin="' + id + '"]'),
+  };
+}, rev.id);
+(check("poner la fecha ahí mismo la guarda en la tarjeta", arreglo.guardada === "2026-10-15", arreglo),
+  check("baja el contador de pendientes", arreglo.despues === arreglo.antes - 1, arreglo),
+  check("y la fila arreglada desaparece de la lista", arreglo.sigueEnLaLista === false, arreglo));
+
 // ── Métodos de matriculación ──────────────────────────────────────────────
 console.log("\nmétodos de matriculación");
 await page.evaluate(() => {

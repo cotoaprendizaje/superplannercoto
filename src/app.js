@@ -7071,18 +7071,26 @@ function renderMatri() {
 // —tecValidacionHTML() y todo lo suyo— queda entero para volver a colgarlo
 // acá el día que haga falta otra ronda de cruce.
 function renderTecnico() {
-  const esMat = state.tecSubView === "matri";
+  const sub = state.tecSubView === "matri" || state.tecSubView === "revision" ? state.tecSubView : "grilla",
+    pendientes = valTotal();
   return (
     '<div class="mapa-secciones"><div class="mapa-sec ' +
-    (esMat ? "" : "active") +
+    (sub === "grilla" ? "active" : "") +
     '" data-action="tec:subview" data-v="grilla">📋 Grilla</div><div class="mapa-sec ' +
-    (esMat ? "active" : "") +
+    (sub === "matri" ? "active" : "") +
     '" data-action="tec:subview" data-v="matri">🎟 Métodos de matriculación <b>(' +
     MATRI_SEED.length +
+    ')</b></div><div class="mapa-sec ' +
+    (sub === "revision" ? "active" : "") +
+    (pendientes ? " pend" : "") +
+    '" data-action="tec:subview" data-v="revision">🔧 Revisión <b>(' +
+    pendientes +
     ")</b></div></div>" +
-    (esMat
+    (sub === "matri"
       ? renderMatri()
-      : '<div class="tec-top"><div class="filt">🔎<input id="tecSearch" placeholder="Buscar curso o categoría..." value="' +
+      : sub === "revision"
+        ? tecValidacionHTML()
+        : '<div class="tec-top"><div class="filt">🔎<input id="tecSearch" placeholder="Buscar curso o categoría..." value="' +
         esc(state.tecFiltro || "") +
         '"></div>' +
         tecCategoriaFiltroHTML() +
@@ -7358,6 +7366,53 @@ function tecValidacionTotal() {
     valEstadoContradictorio().length
   );
 }
+// Una tarjeta sin fecha de fin no aparece en Calendario ni en Timeline, y deja
+// a Reportes sin poder decir qué está por salir. El área decidió que la fecha
+// se carga siempre (el responsable no), así que esto es un faltante de verdad
+// y no una preferencia. Solo mira el trabajo abierto: a un curso publicado
+// hace tres años pedirle fecha de fin no tiene sentido.
+function valSinFecha() {
+  return boardCards()
+    .filter((c) => !c.fin && c.estado !== "finalizado")
+    .sort((a, b) => (a.titulo || "").localeCompare(b.titulo || "", "es"));
+}
+// La fecha se pone acá mismo, sin abrir la tarjeta: si hay veinte, abrir y
+// cerrar veinte paneles es lo que hace que nadie lo termine.
+function valSinFechaHTML(lista) {
+  if (!lista.length) return "";
+  return (
+    '<div class="carga-list">' +
+    lista
+      .map(
+        (c) =>
+          '<div class="lnk"><span class="lnk-a" data-action="card:open" data-id="' +
+          c.id +
+          '" style="cursor:pointer;flex:1">' +
+          esc(c.titulo) +
+          '</span><span class="val-est">' +
+          esc(((ESTADOS.find((e) => e.id === c.estado) || {}).nombre || c.estado || "")) +
+          '</span><input type="date" class="val-fecha" data-val-fin="' +
+          c.id +
+          '" title="Poner fecha de fin"></div>',
+      )
+      .join("") +
+    "</div>"
+  );
+}
+// Cuántas cosas hay para revisar. Lo usa el encabezado del panel y también el
+// número de la pestaña, así que vive en un solo lugar: si los dos contaran por
+// su cuenta, tarde o temprano dirían cosas distintas.
+function valTotal() {
+  return (
+    valDuplicadosMapa().reduce((n, g) => n + (g.length - 1), 0) +
+    valCursosSinTec().length +
+    valFilasSinCurso().length +
+    valFechas().length +
+    valTitulosDifieren().length +
+    valEstadoContradictorio().length +
+    valSinFecha().length
+  );
+}
 function valSeccion(titulo, n, itemsHTML, vacioMsg) {
   return (
     '<div class="rep-sec"><div class="rep-sec-h"><h3>' +
@@ -7376,14 +7431,23 @@ function tecValidacionHTML() {
     fechas = valFechas(),
     titulos = valTitulosDifieren(),
     contradiccion = valEstadoContradictorio(),
+    sinFecha = valSinFecha(),
     nDup = duplicados.reduce((n, g) => n + (g.length - 1), 0),
-    total = nDup + sinTec.length + filasSueltas.length + fechas.length + titulos.length + contradiccion.length;
+    total = valTotal();
   return (
-    '<div class="rep-nota" style="margin:0 0 16px;border-top:none;padding-top:0">' +
     (total
-      ? "⚠️ " + total + " cosa" + (total === 1 ? "" : "s") + " para revisar entre el Mapa y Seguimiento técnico."
-      : "✅ Sin discrepancias detectadas entre el Mapa y Seguimiento técnico.") +
-    "</div>" +
+      ? '<div class="val-cab">⚠️ <b>' +
+        total +
+        "</b> cosa" +
+        (total === 1 ? "" : "s") +
+        " para revisar. Cada una se arregla acá mismo, sin salir de esta pantalla.</div>"
+      : '<div class="val-cab ok">✅ <b>Todo en orden.</b> No hay datos sueltos entre el Planner, el Mapa y Seguimiento técnico.</div>') +
+    valSeccion(
+      "Tarjetas sin fecha de fin",
+      sinFecha.length,
+      valSinFechaHTML(sinFecha),
+      "Todas las tarjetas del tablero tienen fecha de fin.",
+    ) +
     valSeccion(
       "Cursos duplicados en el Mapa",
       nDup,
@@ -11560,6 +11624,16 @@ document.addEventListener("click", (ev) => {
     if (ev.target.dataset && ev.target.dataset.tecFv !== undefined) {
       const campoFv = ev.target.dataset.campo;
       (tecColFiltroToggle(campoFv, ev.target.dataset.tecFv), renderTecList(), tecFiltPopSync(campoFv));
+      return;
+    }
+    // La fecha que se pone desde Revisión: se guarda y la fila desaparece de
+    // la lista, que es lo que hace que la pantalla se vacíe sola a medida que
+    // se arregla. Por eso redibuja la vista entera y no solo la tabla.
+    if (ev.target.dataset && ev.target.dataset.valFin) {
+      const tarjetaFin = state.cards.find((c) => c.id === ev.target.dataset.valFin);
+      if (tarjetaFin && ev.target.value) {
+        ((tarjetaFin.fin = ev.target.value), touch(), render(), flash("✓ Fecha puesta"));
+      }
       return;
     }
     if (ev.target.dataset && ev.target.dataset.tecId) {
