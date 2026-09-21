@@ -249,6 +249,39 @@ check(
   (await page.evaluate(() => document.querySelectorAll("#panel .msg").length)) === 12,
 );
 
+// ── Publicar deja la tarjeta en Finalizados, de ahora en adelante ─────────
+console.log("\npublicar sin que la tarjeta desaparezca");
+const fin = await page.evaluate(() => {
+  // Un curso ya publicado ANTES del cambio: no lleva la marca.
+  const viejo = newCard("curso", "CURSO YA PUBLICADO DE ANTES", {});
+  ((viejo.publicado = true), (viejo.publicadoEl = "2026-03-10"), (viejo.estado = "finalizado"));
+  // Uno que se va a publicar ahora.
+  const nuevo = newCard("curso", "CURSO QUE SE PUBLICA AHORA", {});
+  nuevo.estado = "en-revision";
+  (state.cards.push(viejo, nuevo), (state.view = "kanban"), (state.mis = false), (state.filters = {}), render());
+  const antes = kanbanCards().some((c) => c.id === nuevo.id);
+  (openDetail(nuevo.id), document.querySelector('[data-action="curso:publicar"]').click());
+  const d = state.cards.find((c) => c.id === nuevo.id);
+  return {
+    antes,
+    publicado: d.publicado,
+    estado: d.estado,
+    sigueEnElTablero: kanbanCards().some((c) => c.id === nuevo.id),
+    // El de antes se queda afuera: "de ahora en adelante" no arrastra los 90
+    // cursos que ya estaban publicados.
+    elViejoNoVuelve: !kanbanCards().some((c) => c.id === viejo.id),
+    // Calendario y Timeline no se llenan de cursos publicados.
+    fueraDelCalendario: !filteredBoard().some((c) => c.id === nuevo.id),
+  };
+});
+(check("publicar deja la tarjeta en Finalizados", fin.publicado === true && fin.estado === "finalizado", fin),
+  check("y la tarjeta sigue en el tablero, no desaparece", fin.sigueEnElTablero === true, fin),
+  check("un curso publicado de antes no vuelve al tablero", fin.elViejoNoVuelve === true, fin),
+  check("Calendario y Timeline siguen sin los publicados", fin.fueraDelCalendario === true, fin));
+// Se vuelve a la tarjeta de la conversación: lo que sigue mira ese panel.
+await page.evaluate((i) => openDetail(i), idTarjeta);
+await page.waitForTimeout(500);
+
 // ── El panel: escala, encabezados y lo que faltaba ────────────────────────
 console.log("\nel panel de la tarjeta");
 const panel = await page.evaluate(() => {
