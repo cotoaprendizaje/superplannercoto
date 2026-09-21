@@ -522,6 +522,64 @@ await page.evaluate(() => {
 });
 await page.waitForTimeout(300);
 
+// ── Reportes: la franja que cuenta cómo viene el año ──────────────────────
+console.log("\nReportes, más vivo");
+const rep = await page.evaluate(() => {
+  const iso = (d) => new Date(Date.now() + d * 86400000).toISOString().slice(0, 10);
+  const a = newCard("libre", "SALE EN 3 DÍAS", {});
+  ((a.estado = "en-desarrollo"), (a.fin = iso(3)));
+  const b = newCard("libre", "SALE EN 10 DÍAS", {});
+  ((b.estado = "en-revision"), (b.fin = iso(10)));
+  // Una sin fecha: no puede figurar en «lo que está por salir», porque no se
+  // sabe cuándo sale.
+  const c = newCard("libre", "SIN FECHA", {});
+  c.estado = "en-desarrollo";
+  ((a.actividad = [{ ts: Date.now() - 86400000, autor: "Vivi", texto: "pasó a En desarrollo" }]),
+    state.cards.push(a, b, c),
+    (state.view = "reportes"),
+    render());
+  return {
+    frases: repFrases().length,
+    hayFranja: !!document.querySelector("#repFranja"),
+    enPantalla: (document.querySelector(".rep-franja-txt") || {}).textContent || "",
+    // Ordenadas por cuál sale primero, y la sin fecha afuera.
+    vienen: repLoQueViene().map((x) => x.titulo),
+    movidas: repMovidasSemana().length,
+  };
+});
+(check("Reportes abre con una franja que dice cómo viene el año", rep.hayFranja === true, rep),
+  check("con varias frases para rotar, no una sola", rep.frases >= 3, rep),
+  check("«lo que está por salir» ordena por cuál cae primero", rep.vienen[0] === "SALE EN 3 DÍAS" && rep.vienen[1] === "SALE EN 10 DÍAS", rep),
+  check("y deja afuera las que no tienen fecha", !rep.vienen.includes("SIN FECHA"), rep),
+  check("cuenta lo que se movió esta semana, desde Actividad", rep.movidas >= 1, rep));
+
+const paso = await page.evaluate(() => {
+  const antes = (document.querySelector(".rep-franja-txt") || {}).textContent;
+  document.querySelector('[data-action="rep:frase"][data-paso="1"]').click();
+  return { antes, despues: (document.querySelector(".rep-franja-txt") || {}).textContent };
+});
+check("la flecha pasa a la frase siguiente", paso.antes !== paso.despues && !!paso.despues, paso);
+await page.evaluate(() => ((state.view = "tecnico"), render()));
+await page.waitForTimeout(300);
+
+// El semáforo de cada curso y el avance de cada categoría: saber cómo viene un
+// curso obligaba a mirar cuatro casillas en cuatro columnas distintas.
+const sem = await page.evaluate(() => {
+  ((state.tecSubView = "grilla"), (state.tecFiltro = ""), (state.tecColFiltros = {}), render());
+  const f = state.tecnico[0];
+  ((f.portada = true), (f.mosaico = true), (f.evaluacion = false), (f.textos = false), render());
+  return {
+    piezas: tecPiezas(f),
+    puntos: document.querySelectorAll(".tec-sem-p").length,
+    prendidos: document.querySelectorAll(".tec-sem-p.on").length,
+    // El encabezado de categoría dice cómo viene, no solo cuántos hay.
+    avance: (document.querySelector(".tec-cat-txt") || {}).textContent || "",
+  };
+});
+(check("cada fila lleva su semáforo de piezas", sem.puntos > 0 && sem.prendidos > 0, sem),
+  check("que cuenta lo que está cargado de verdad", sem.piezas.hechas === 2 && sem.piezas.total === 4, sem),
+  check("y cada categoría dice cuántos están completos", /completo/.test(sem.avance), sem));
+
 // ── Revisión: todo lo suelto junto, y se arregla ahí mismo ────────────────
 console.log("\nla pestaña Revisión");
 const rev = await page.evaluate(() => {
