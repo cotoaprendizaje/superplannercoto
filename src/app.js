@@ -5945,6 +5945,11 @@ function tecColVisible(k) {
 function tecColsVisibles() {
   return TEC_COLS.filter((c) => tecColVisible(c.k));
 }
+function tecModoGuardar() {
+  try {
+    localStorage.setItem(TEC_MODO_KEY, tecModo());
+  } catch (e) {}
+}
 function tecColsGuardar() {
   try {
     localStorage.setItem(TEC_COLS_KEY, JSON.stringify(tecColsOcultas()));
@@ -6827,6 +6832,199 @@ function tecFaltaHTML() {
     "</div>"
   );
 }
+// ===== Técnico en fichas =====
+// La grilla se armó como un reemplazo del Excel y se quedó siendo un Excel:
+// doce columnas, scroll horizontal, todo del mismo gris y del mismo tamaño.
+// Funciona para tipear rápido y no funciona para lo que el área hace de
+// verdad, que es mirar un curso y saber cómo viene.
+//
+// Cada curso pasa a ser una ficha de tres renglones, que entra siempre en el
+// ancho de la pantalla:
+//
+//   ●●●○  Nombre del curso                    [Vigente ▾]  📍 Mapa   ✕
+//         ✓ Portada  ✓ Mosaico  ○ Evaluación  ○ Textos  ·  HTML ▾
+//         Publicado 04/09/18 ── SCORM — ── Mail —        💬 comentario
+//
+// Todo se edita ahí mismo: son los mismos campos de la grilla, con los mismos
+// data-tec-id, así que guardan por el mismo camino de siempre. La planilla no
+// se va a ningún lado —para cargar veinte fechas seguidas sigue siendo más
+// rápida—, queda a un clic en la barra de arriba.
+const TEC_MODO_KEY = "cf.tecModo.v1";
+function tecModo() {
+  if (!state.tecModo) {
+    let guardado = "";
+    try {
+      guardado = localStorage.getItem(TEC_MODO_KEY) || "";
+    } catch (e) {}
+    state.tecModo = guardado === "planilla" ? "planilla" : "fichas";
+  }
+  return state.tecModo;
+}
+function tecModoHTML() {
+  const m = tecModo();
+  return (
+    '<div class="tec-modo"><button class="tec-modo-b' +
+    (m === "fichas" ? " on" : "") +
+    '" data-action="tec:modo" data-m="fichas" title="Cada curso en una ficha, todo a la vista">🗂 Fichas</button><button class="tec-modo-b' +
+    (m === "planilla" ? " on" : "") +
+    '" data-action="tec:modo" data-m="planilla" title="La tabla de siempre, para cargar muchos datos seguidos">▦ Planilla</button></div>'
+  );
+}
+// Los cuatro tildes de producción, con el nombre al lado. En la planilla son
+// cuatro columnas con el encabezado a dos metros del tilde; acá cada uno dice
+// qué es, y el que ya está se apaga para que la vista caiga en lo que falta.
+function tecFichaPiezasHTML(fila) {
+  return (
+    '<div class="tf-piezas">' +
+    TEC_CHKS.map(
+      (k) =>
+        '<label class="tf-pz' +
+        (fila[k] ? " on" : "") +
+        '"><input type="checkbox" data-tec-id="' +
+        fila.id +
+        '" data-tec-field="' +
+        k +
+        '"' +
+        (fila[k] ? " checked" : "") +
+        ">" +
+        esc(tecColLabel(k)) +
+        "</label>",
+    ).join("") +
+    "</div>"
+  );
+}
+// Las tres fechas como los tres pasos que son, con el campo para editarlas
+// debajo de cada una. Es la misma lectura que la vista "Qué falta", pero acá
+// además se cargan.
+function tecFichaFechasHTML(fila) {
+  return (
+    '<div class="tf-fechas">' +
+    TEC_FECHAS.map((k, i) => {
+      const v = (fila[k] || "").trim(),
+        mala = v && tecFechaMala(v);
+      return (
+        (i ? '<i class="tf-arco' + (v && !mala ? " on" : "") + '"></i>' : "") +
+        '<span class="tf-paso ' +
+        (mala ? "mala" : v ? "ok" : "falta") +
+        '"><span class="tf-paso-lbl">' +
+        esc(tecColLabel(k)) +
+        (mala ? ' <b title="No se entiende como fecha">⚠</b>' : "") +
+        '</span><input type="date" class="tec-date' +
+        (v && !mala ? "" : " vacia") +
+        '" data-tec-id="' +
+        fila.id +
+        '" data-tec-field="' +
+        k +
+        '" value="' +
+        (mala ? "" : esc(v)) +
+        '"></span>'
+      );
+    }).join("") +
+    "</div>"
+  );
+}
+function tecFichaHTML(fila) {
+  const viva = tecFilaActiva(fila),
+    p = tecPiezas(fila);
+  return (
+    '<article class="tf' +
+    (viva ? "" : " baja") +
+    (p.total && p.hechas === p.total ? " full" : "") +
+    '" data-tec-row="' +
+    fila.id +
+    '"><div class="tf-h">' +
+    tecSemaforoHTML(fila) +
+    '<input class="tf-nombre" type="text" data-tec-id="' +
+    fila.id +
+    '" data-tec-field="curso" value="' +
+    esc(fila.curso) +
+    '" placeholder="Nombre del curso">' +
+    (tecPlano()
+      ? '<input class="tf-cat" type="text" list="tecCategoriasList" data-tec-id="' +
+        fila.id +
+        '" data-tec-field="categoria" value="' +
+        esc(fila.categoria) +
+        '" placeholder="Sin categoría">'
+      : "") +
+    tecBajaSelect(fila) +
+    '<span class="tf-mapa">' +
+    tecLinkHTML(fila) +
+    '</span><span class="chk-del" data-action="tec:del" data-id="' +
+    fila.id +
+    '" title="Borrar esta fila">✕</span></div>' +
+    // Dos renglones y no tres: con ciento catorce cursos, cada renglón de más
+    // son mil píxeles de scroll. El comentario va en la misma línea que las
+    // piezas —tiene todo el espacio sobrante— en vez de ocupar uno propio que
+    // la mayor parte del tiempo está vacío.
+    '<div class="tf-cuerpo">' +
+    tecFichaPiezasHTML(fila) +
+    '<span class="tf-diseno">' +
+    tecDisenoSelect(fila) +
+    '</span><input class="tf-com" type="text" data-tec-id="' +
+    fila.id +
+    '" data-tec-field="estado" value="' +
+    esc(fila.estado || "") +
+    '" placeholder="Comentario…">' +
+    tecFichaFechasHTML(fila) +
+    "</div></article>"
+  );
+}
+function tecFichasHTML() {
+  const grupos = tecGroups();
+  if (!grupos.length)
+    return (
+      tecCategoriasDatalistHTML() +
+      '<div class="empty"><div class="big">🔍</div><div style="font-weight:700;color:var(--ink)">Sin resultados</div><div style="margin-top:4px">Probá con otra búsqueda o quitá los filtros de arriba.</div></div>'
+    );
+  return (
+    tecCategoriasDatalistHTML() +
+    grupos
+      .map(
+        (g) =>
+          '<section class="tf-grupo">' +
+          (g.categoria === null
+            ? ""
+            : '<div class="tf-grupo-h"><h3>' +
+              esc(g.categoria) +
+              '</h3><span class="tf-grupo-n">' +
+              g.filas.length +
+              " curso" +
+              (g.filas.length === 1 ? "" : "s") +
+              "</span>" +
+              tecCatAvanceHTML(g.filas) +
+              '<button class="btn btn-ghost btn-sm" data-action="tec:add" data-cat="' +
+              esc(g.categoria) +
+              '">+ Agregar acá</button></div>') +
+          g.filas.map(tecFichaHTML).join("") +
+          "</section>",
+      )
+      .join("")
+  );
+}
+// Tildar una pieza cambia el semáforo del encabezado de la ficha y el avance
+// de la categoría. Se tocan a mano en vez de redibujar todo: redibujar con el
+// foco puesto en un campo de texto lo tira, y acá se trabaja escribiendo.
+function tecFichaSync(filaId) {
+  const fila = state.tecnico.find((f) => f.id === filaId),
+    ficha = document.querySelector('.tf[data-tec-row="' + filaId + '"]');
+  if (!fila || !ficha) return;
+  const sem = ficha.querySelector(".tec-sem"),
+    p = tecPiezas(fila);
+  if (sem) sem.outerHTML = tecSemaforoHTML(fila);
+  ficha.classList.toggle("full", !!p.total && p.hechas === p.total);
+  TEC_CHKS.forEach((k) => {
+    const lbl = ficha.querySelector('[data-tec-field="' + k + '"]');
+    if (lbl && lbl.parentElement) lbl.parentElement.classList.toggle("on", !!fila[k]);
+  });
+  const grupo = ficha.closest(".tf-grupo"),
+    av = grupo && grupo.querySelector(".tec-cat-av");
+  if (av) {
+    const filas = Array.from(grupo.querySelectorAll(".tf")).map((el) =>
+      state.tecnico.find((f) => f.id === el.dataset.tecRow),
+    );
+    av.outerHTML = tecCatAvanceHTML(filas.filter(Boolean));
+  }
+}
 function tecListHTML() {
   const grupos = tecGroups();
   if (!grupos.length)
@@ -6850,8 +7048,11 @@ function tecListHTML() {
 function renderTecList() {
   const el = $("#tecList");
   if (!el) return;
-  const falta = state.tecSubView === "falta";
-  ((el.innerHTML = falta ? tecFaltaHTML() : tecListHTML()), tecTopSync(), falta || tecGrillaAlto());
+  const falta = state.tecSubView === "falta",
+    planilla = !falta && tecModo() === "planilla";
+  ((el.innerHTML = falta ? tecFaltaHTML() : planilla ? tecListHTML() : tecFichasHTML()),
+    tecTopSync(),
+    planilla && tecGrillaAlto());
 }
 // La grilla se queda pegada debajo de la barra de arriba y scrollea adentro
 // suyo, así el encabezado con los embudos no se va nunca de pantalla. Las dos
@@ -7475,7 +7676,8 @@ function renderTecnico() {
         '"></div>' +
         tecCategoriaFiltroHTML() +
         (sub === "grilla" ? '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' : "") +
-        tecColsPopHTML() +
+        (sub === "grilla" ? tecModoHTML() : "") +
+        (sub === "grilla" && tecModo() === "planilla" ? tecColsPopHTML() : "") +
         '<span class="tec-top-n" id="tecTopN">' +
         tecRows().length +
         " de " +
@@ -7484,9 +7686,9 @@ function renderTecnico() {
         (tecFiltrando() ? "" : " hidden") +
         ">✕ Limpiar filtros</button></div>" +
         tecKpisHTML() +
-        (sub === "grilla" ? tecVistasHTML() : "") +
+        (sub === "grilla" && tecModo() === "planilla" ? tecVistasHTML() : "") +
         '<div id="tecList">' +
-        (sub === "falta" ? tecFaltaHTML() : tecListHTML()) +
+        (sub === "falta" ? tecFaltaHTML() : tecModo() === "planilla" ? tecListHTML() : tecFichasHTML()) +
         "</div>")
   );
 }
@@ -11758,6 +11960,9 @@ document.addEventListener("click", (ev) => {
     }
     // Una vista no borra nada: apaga y prende columnas del mismo selector de
     // siempre, y queda guardada igual que si se hubieran tildado a mano.
+    case "tec:modo":
+      ((state.tecModo = el.dataset.m === "planilla" ? "planilla" : "fichas"), tecModoGuardar(), render());
+      break;
     case "tec:vista": {
       const v = TEC_VISTAS.find((x) => x.id === el.dataset.v);
       if (!v) break;
@@ -13170,6 +13375,8 @@ document.addEventListener("click", (ev) => {
       // el curso de banda y cambia la cuenta de arriba, así que hay que
       // redibujar o la pantalla queda mintiendo.
       if (state.tecSubView === "falta" && ev.target.type === "checkbox") renderTecList();
+      else if (ev.target.type === "checkbox" && TEC_CHKS.includes(ev.target.dataset.tecField))
+        tecFichaSync(ev.target.dataset.tecId);
       return;
     }
     if (ev.target.dataset && ev.target.dataset.eduId) {
