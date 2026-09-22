@@ -938,6 +938,105 @@ const fusion = await page.evaluate((cardId) => {
   check("conserva el nombre de la fila que tenía los datos", fusion.nombre === 'ZZ Cronograma de Prueba "Capítulo 3"', fusion),
   check("la fila sobrante se borra con lápida", fusion.borrada && fusion.lapida, fusion));
 
+// ── Tarjetas que el Mapa no necesitaba ────────────────────────────────────
+// La otra mitad del mismo error del comparador: "Filas de Técnico sin curso
+// en el Mapa" listaba filas que SÍ tenían su curso con otro nombre, y el
+// botón de crear cursos en lote les armó a cada una una tarjeta nueva.
+console.log("\ntarjetas creadas de más en el Mapa");
+const deMas = await page.evaluate(() => {
+  state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id));
+  state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo));
+  // La tarjeta de siempre, con trabajo encima.
+  const real = newCard("curso", "ZZ Bandejas – Armado del hueco", {});
+  ((real.publicado = true),
+    (real.estado = "finalizado"),
+    (real.checklist = [{ id: "x", text: "guion", done: true }]),
+    state.cards.push(real));
+  // La fila que le corresponde, con otro nombre y todavía sin vincular.
+  const fila = { id: "zz-fila", curso: "ZZ Curso de Armado del Hueco de Bandejas", categoria: "ZZ Prueba", portada: true };
+  state.tecnico.push(fila);
+  // Lo que hizo el botón: crear una tarjeta nueva desde la fila y unirlas.
+  const creada = cardNuevaParaFila(fila);
+  (state.cards.push(creada), (fila.cardId = creada.id), parInvalidar());
+  const antes = valTarjetasDeMas();
+  return {
+    // La tarjeta de siempre quedó huérfana y por eso figuraba como "sin fila".
+    realQuedoHuerfana: valCursosSinTec().some((x) => x.card.id === real.id),
+    detecta: antes.some((x) => x.fila.id === "zz-fila" && x.real.id === real.id && x.creada.id === creada.id),
+    realId: real.id,
+    creadaId: creada.id,
+  };
+});
+(check("la tarjeta de siempre queda huérfana cuando se crea una de más", deMas.realQuedoHuerfana, deMas),
+  check("y se detecta cuál es la creada de más y cuál la de siempre", deMas.detecta, deMas));
+
+const reparado = await page.evaluate((ids) => {
+  const x = valTarjetasDeMas().find((y) => y.fila.id === "zz-fila");
+  valRepararTarjeta(x);
+  parInvalidar();
+  const fila = state.tecnico.find((f) => f.id === "zz-fila");
+  return {
+    // La fila vuelve a la tarjeta original…
+    vuelve: fila.cardId === ids.realId,
+    // …la creada de más se va…
+    borrada: !state.cards.some((c) => c.id === ids.creadaId),
+    // …y la original conserva su trabajo.
+    conservaTrabajo: (state.cards.find((c) => c.id === ids.realId).checklist || []).length === 1,
+    // Y deja de figurar como curso sin fila, que era el síntoma visible.
+    yaNoEsHuerfana: !valCursosSinTec().some((x) => x.card.id === ids.realId),
+  };
+}, { realId: deMas.realId, creadaId: deMas.creadaId });
+(check("deshacer devuelve la fila a la tarjeta de siempre", reparado.vuelve, reparado),
+  check("borra la tarjeta creada de más", reparado.borrada, reparado),
+  check("sin tocar el trabajo cargado en la original", reparado.conservaTrabajo, reparado),
+  check("y el curso deja de figurar como «sin fila»", reparado.yaNoEsHuerfana, reparado));
+
+// Una tarjeta creada de más pero que alguien YA empezó a usar no se toca.
+const conTrabajo = await page.evaluate(() => {
+  state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id));
+  state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo));
+  const real = newCard("curso", "ZZ Pescadería – Corte fino", {});
+  ((real.publicado = true), state.cards.push(real));
+  const fila = { id: "zz-f2", curso: "ZZ Curso de Corte Fino de Pescadería", categoria: "ZZ Prueba" };
+  state.tecnico.push(fila);
+  const creada = cardNuevaParaFila(fila);
+  // Alguien le puso un responsable: ya no es descartable.
+  ((creada.responsable = TEAM[0].id),
+    delete creada.nacidaDeFila,
+    state.cards.push(creada),
+    (fila.cardId = creada.id),
+    parInvalidar());
+  return { propone: valTarjetasDeMas().some((x) => x.fila.id === "zz-f2") };
+});
+check("una tarjeta creada de más que alguien ya usó no se propone borrar", conTrabajo.propone === false, conTrabajo);
+
+// Y el botón que causó todo esto ahora se saltea los casos dudosos.
+const loteCursos = await page.evaluate(() => {
+  state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id));
+  state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo));
+  const real = newCard("curso", "ZZ Fiambrería – Rotación de stock", {});
+  ((real.publicado = true), state.cards.push(real));
+  (state.tecnico.push({ id: "zz-f3", curso: "ZZ Curso de Rotación de Stock de Fiambrería", categoria: "ZZ Prueba" }),
+    parInvalidar());
+  return {
+    // Lo correcto: se ofrece como PAR con el curso que ya existe, no como una
+    // fila suelta a la que haya que inventarle una tarjeta.
+    esPar: valParesParecidos().some((x) => x.fila.id === "zz-f3" && x.card.id === real.id),
+    noEsSuelta: !valFilasSinCurso().some((f) => f.id === "zz-f3"),
+    // Y aunque se colara, el lote tiene su propia red: no se la lleva puesta.
+    quedaAfuera: !valFilasSinCursoSeguras().some((f) => f.id === "zz-f3"),
+  };
+});
+(check("una fila cuyo curso existe con otro nombre se ofrece como par", loteCursos.esPar, loteCursos),
+  check("y ya no figura como fila suelta a la que inventarle una tarjeta", loteCursos.noEsSuelta, loteCursos),
+  check("el lote de «crear cursos» tampoco se la llevaría puesta", loteCursos.quedaAfuera, loteCursos));
+
+await page.evaluate(() => {
+  ((state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id))),
+    (state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo))),
+    parInvalidar());
+});
+
 // ── El botón de crear filas en lote, desconfiado ──────────────────────────
 const lote = await page.evaluate(() => {
   const card = newCard("curso", "ZZ Uso Seguro de la Zorra", {});
