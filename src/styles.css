@@ -562,7 +562,6 @@ p {
 .tec-top-n,
 .badge b,
 .qchip b,
-td.tec-pub,
 .tec-date {
   font-variant-numeric: tabular-nums;
 }
@@ -6534,112 +6533,6 @@ html {
    pie de la ventana, el encabezado con los embudos se ve siempre, que es lo
    que hace una planilla. El alto lo calcula tecGrillaAlto() según dónde
    arranque la tabla, que depende de cuántos filtros haya puestos arriba. */
-.tec-table-wrap {
-  overflow: auto;
-  max-width: 100%;
-  max-height: var(--tec-alto, 70vh);
-  border: 1px solid var(--line);
-  border-radius: var(--r-l);
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-.tec-table {
-  width: 100%;
-  min-width: 980px;
-  border-collapse: collapse;
-  font-size: 12.5px;
-}
-/* Encabezado de dos pisos: arriba de qué habla cada bloque de columnas, abajo
-   el nombre de cada una. Once encabezados iguales en una sola fila se leen
-   como una tira sin forma. Los dos pisos quedan fijos al scrollear, así que
-   el de abajo arranca justo donde termina el de arriba (--tec-h-g). */
-.tec-table {
-  --tec-h-g: 26px;
-}
-.tec-table thead th {
-  position: sticky;
-  z-index: 2;
-  background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
-  text-align: left;
-  white-space: nowrap;
-}
-.tec-head-g th {
-  top: 0;
-  height: var(--tec-h-g);
-  padding: 0 10px;
-  border-bottom: 1px solid color-mix(in srgb, var(--coto-blue) 14%, transparent);
-}
-/* La etiqueta del grupo, chiquita y con una línea de color debajo que abarca
-   sus columnas: es lo que hace que el bloque se lea como un bloque. */
-.tec-head-g th span {
-  display: block;
-  padding: 5px 0 4px;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: color-mix(in srgb, var(--coto-blue) 75%, var(--ink));
-  border-bottom: 2px solid color-mix(in srgb, var(--coto-blue) 35%, transparent);
-}
-.tec-head-c th {
-  top: var(--tec-h-g);
-  padding: 8px 10px;
-  font-size: 10.5px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  color: var(--ink-soft);
-  border-bottom: 1px solid var(--line);
-}
-/* La grilla se veía —y se siente— como una planilla de cálculo: renglones
-   pegados y una línea fuerte debajo de cada uno, cien veces seguidas. Con
-   una línea tenue y aire entre filas sigue siendo una tabla, que es lo que
-   tiene que ser, pero se lee como parte de la app y no como un Excel
-   incrustado. */
-.tec-table td {
-  padding: 7px 8px;
-  border-bottom: 1px solid var(--line-soft);
-  vertical-align: middle;
-}
-/* La fila entera se resalta al pasar por encima: con once columnas, saber en
-   cuál estás parado es la mitad del trabajo. El encabezado de categoría y el
-   "+ agregar" quedan afuera: no son filas de curso. */
-.tec-table tbody tr:not(.tec-cat-row):not(.tec-add-row):not(.tec-edu-row):hover td {
-  background: color-mix(in srgb, var(--coto-blue) 4%, var(--surface));
-}
-/* La grilla tiene 10-11 columnas y en mobile/tablet hay que scrollear
-   horizontal sí o sí — pero "Curso" (con qué fila estás) se queda fijo a la
-   izquierda para no perder el contexto a mitad de scroll. */
-.tec-table td.tec-curso,
-.tec-table th[data-col="curso"] {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--surface);
-  box-shadow: 1px 0 0 var(--line);
-}
-.tec-table th[data-col="curso"] {
-  z-index: 3;
-  background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
-}
-/* La primera celda del piso de arriba también se queda fija: si no, al
-   scrollear de costado el nombre del curso pasa por debajo de un hueco. */
-.tec-head-g th:first-child {
-  position: sticky;
-  left: 0;
-  z-index: 3;
-  background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
-}
-.tec-cat-row td {
-  background: var(--surface-2);
-  font-family: var(--titulo);
-  font-weight: 800;
-  font-size: 13.5px;
-  padding: 11px 12px;
-  border-top: 1px solid var(--line);
-}
-/* El encabezado de cada categoría filtra la grilla por ella; el mismo clic
-   otra vez la vuelve a mostrar entera. */
 .tec-cat-b {
   display: inline-flex;
   align-items: baseline;
@@ -6668,16 +6561,6 @@ html {
   border: 1px solid var(--line-soft);
   color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
-}
-.tec-add-row td {
-  padding: 6px 10px;
-}
-/* Los archivos de Edu Point cuelgan de la categoría, debajo de sus cursos:
-   la jerarquía es CATEGORÍA > cursos > archivos. Va plegado para que la grilla
-   siga leyéndose como una lista de cursos hasta que se lo pida. */
-.tec-edu-row td {
-  padding: 0 10px 10px;
-  border-bottom: 1px solid var(--line);
 }
 .tec-edu > summary {
   display: flex;
@@ -6722,44 +6605,6 @@ html {
   gap: 6px;
   padding: 10px 4px 4px;
 }
-.tec-curso input,
-.tec-pub input,
-.tec-estado input,
-.tec-cat input {
-  width: 100%;
-  border: none;
-  background: 0 0;
-  font: inherit;
-  color: var(--ink);
-  padding: 6px 5px;
-  border-radius: 6px;
-}
-.tec-curso input {
-  min-width: 230px;
-  font-weight: 600;
-}
-.tec-pub input {
-  min-width: 118px;
-  font-variant-numeric: tabular-nums;
-}
-.tec-estado input {
-  min-width: 200px;
-  color: var(--ink-soft);
-}
-.tec-cat input {
-  min-width: 110px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-.tec-curso input:focus,
-.tec-pub input:focus,
-.tec-estado input:focus,
-.tec-cat input:focus {
-  background: var(--surface-2);
-  color: var(--ink);
-  outline: 0;
-}
 /* Desglose por diseño debajo de los KPIs de Técnico: contesta "cuántos son
    HTML" de un vistazo y cada chip filtra la tabla. */
 .tec-diseno-chips {
@@ -6780,28 +6625,6 @@ html {
 .tec-diseno-chips .qchip b {
   font-weight: 800;
 }
-/* Cada celda de fecha vacía mostraba "dd/mm/aaaa" con su iconito de
-   calendario. Con tres columnas de fecha y cien cursos son trescientos
-   "dd/mm/aaaa" en pantalla, todos iguales, y ahí no queda nada que leer: es
-   exactamente la textura de una planilla vacía. Ahora una fecha que falta es
-   un guión gris, y el formato aparece recién cuando entrás a escribirla. */
-.tec-pub {
-  position: relative;
-}
-.tec-date.vacia:not(:focus)::-webkit-datetime-edit {
-  color: transparent;
-}
-.tec-pub:has(.tec-date.vacia:not(:focus))::before {
-  content: "—";
-  position: absolute;
-  left: 13px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 13px;
-  color: var(--ink-soft);
-  opacity: 0.55;
-  pointer-events: none;
-}
 /* El calendarito: en las celdas que ya tienen fecha queda tenue, y en las
    vacías directamente no está hasta que apuntás la fila. Trescientos iconos
    de calendario repetidos son tanto ruido como los trescientos "dd/mm/aaaa"
@@ -6813,9 +6636,6 @@ html {
 }
 .tec-date.vacia::-webkit-calendar-picker-indicator {
   opacity: 0;
-}
-.tec-table tbody tr:hover .tec-date.vacia::-webkit-calendar-picker-indicator {
-  opacity: 0.35;
 }
 .tec-date:hover::-webkit-calendar-picker-indicator,
 .tec-date:focus::-webkit-calendar-picker-indicator,
@@ -6832,63 +6652,6 @@ html {
   text-overflow: ellipsis;
   max-width: 130px;
   cursor: help;
-}
-.tec-chk {
-  text-align: center;
-}
-.tec-chk input {
-  width: 17px;
-  height: 17px;
-  accent-color: var(--coto-blue);
-  cursor: pointer;
-}
-/* Cien desplegables con su marco y su flechita del sistema, uno debajo del
-   otro, es la otra mitad de la sensación de planilla. Se lee como texto
-   hasta que lo tocás; ahí aparece el marco y se comporta como siempre. */
-.tec-diseno select {
-  width: 100%;
-  min-width: 118px;
-  appearance: none;
-  -webkit-appearance: none;
-  border: 1px solid transparent;
-  border-radius: 7px;
-  padding: 5px 22px 5px 7px;
-  font-size: 11.5px;
-  font-weight: 600;
-  font-family: inherit;
-  background: 0 0;
-  color: var(--ink);
-  cursor: pointer;
-  transition:
-    border-color 0.14s,
-    background 0.14s;
-}
-/* La flecha, dibujada con dos bordes en vez de una imagen: el CSP de la app
-   no deja traer nada de afuera y un SVG en data: URI para esto es de más. */
-.tec-diseno {
-  position: relative;
-}
-.tec-diseno::after {
-  content: "";
-  position: absolute;
-  right: 13px;
-  top: calc(50% - 3px);
-  width: 6px;
-  height: 6px;
-  border-right: 1.6px solid var(--ink-soft);
-  border-bottom: 1.6px solid var(--ink-soft);
-  transform: rotate(45deg);
-  opacity: 0.45;
-  pointer-events: none;
-}
-.tec-diseno select:hover {
-  border-color: var(--line);
-  background: var(--surface-2);
-}
-.tec-diseno select:focus {
-  border-color: var(--coto-blue);
-  background: var(--surface);
-  outline: 0;
 }
 /* Era un recuadro azul de borde entero por fila: cien marcos fuertes en la
    última columna tiraban de todo el ojo hacia la derecha. Ahora es una
@@ -6995,84 +6758,8 @@ html {
   font-weight: 600;
   white-space: nowrap;
 }
-/* El encabezado de una columna hace dos cosas: el nombre ordena y el ▾ filtra.
-   Son dos botones separados dentro del mismo <th> porque un solo clic no puede
-   adivinar cuál de las dos querías. */
-.tec-th {
-  padding: 4px 6px !important;
-}
-.tec-th > * {
-  vertical-align: middle;
-}
-.tec-th-sort,
-.tec-th-lbl {
-  display: inline-flex;
-  align-items: center;
-  border: 0;
-  background: none;
-  padding: 5px 6px;
-  border-radius: var(--r-sm);
-  font: inherit;
-  color: inherit;
-  text-transform: inherit;
-  letter-spacing: inherit;
-  user-select: none;
-  white-space: nowrap;
-}
-.tec-th-sort {
-  cursor: pointer;
-}
-.tec-th-sort:hover {
-  color: var(--coto-blue);
-  background: color-mix(in srgb, var(--coto-blue) 10%, transparent);
-}
-.tec-th-sort.on {
-  color: var(--coto-blue);
-}
-.tec-th-ar {
-  margin-left: 4px;
-  opacity: 0.45;
-  font-size: 9px;
-}
-.tec-th-sort.on .tec-th-ar {
-  opacity: 1;
-}
-/* El embudito: chiquito y apagado hasta que filtra algo, y ahí se enciende con
-   el número de valores elegidos, para que nunca queden filas escondidas sin
-   que se vea desde dónde. */
-.tec-th-filt {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  border: 1px solid transparent;
-  background: none;
-  color: var(--ink-soft);
-  cursor: pointer;
-  padding: 3px 5px;
-  border-radius: var(--r-sm);
-  font-size: 11px;
-  line-height: 1;
-}
-.tec-th-filt:hover {
-  border-color: var(--line);
-  background: var(--surface);
-  color: var(--coto-blue);
-}
-.tec-th-filt.on {
-  background: var(--coto-blue);
-  border-color: var(--coto-blue);
-  color: #fff;
-}
-.tec-th-filt-n {
-  font-size: 10px;
-  font-weight: 800;
-}
-.tec-th.filt {
-  background: color-mix(in srgb, var(--coto-blue) 13%, var(--surface)) !important;
-}
-/* Cuelga del <body> y se ubica a mano contra el botón: el encabezado de la
-   tabla es sticky adentro de un contenedor con scroll, así que un popover
-   colgado del <th> se recortaría contra el borde de la grilla. */
+/* Cuelga del <body> y se ubica a mano contra el botón que lo abrió: así no
+   se recorta nunca contra el borde de ningún contenedor. */
 .tec-filt-pop {
   position: fixed;
   left: 0;
@@ -7105,9 +6792,6 @@ html {
 }
 .tec-filt-vacio {
   color: var(--ink-soft);
-}
-.tec-cat {
-  max-width: 160px;
 }
 .tec-flash {
   animation: tecFlash 1.6s ease-out;
@@ -8328,10 +8012,6 @@ html {
   .mapa-distseg {
     min-height: 28px;
   }
-  .tec-chk input[type="checkbox"] {
-    width: 22px;
-    height: 22px;
-  }
   .chk-del,
   .kq-btn,
   .al-ok,
@@ -8721,11 +8401,6 @@ button.mat-ct:hover {
    adivinar por palabras si un curso estaba de baja — y se le pasaron las once
    del Centro de Distribución, que decían "Curso inutilizado". Ahora el estado
    se elige y el comentario queda al lado, libre. */
-/* Un <select> más angosto que su opción recorta el texto: "Dado de baja"
-   quedaba en "Dado ·". La celda le reserva el ancho de la opción más larga. */
-.tec-baja {
-  min-width: 128px;
-}
 .tec-baja-sel {
   width: 100%;
   border: 1px solid transparent;
@@ -8924,10 +8599,6 @@ button.mat-ct:hover {
 }
 .tec-sem.full .tec-sem-p.on {
   background: var(--ok);
-}
-.tec-table td.tec-curso {
-  display: flex;
-  align-items: center;
 }
 /* Cómo viene cada categoría, en el encabezado que ya estaba: «Cajas · 12
    cursos» no ayuda a decidir dónde meterse; «9 completos · 3 con algo
@@ -9517,113 +9188,475 @@ button.mat-ct:hover {
   color: var(--ink-soft);
 }
 
-/* ===== Seguimiento técnico 2.0 =====
-   La forma de tabla se queda: el área la prefiere y para cargar datos es la
-   más rápida. Lo que cambia es todo lo que hace que una tabla de ciento
-   catorce filas por doce columnas se pueda mirar sin perderse.
+/* ===== Seguimiento técnico: la lista =====
+   Acá vivía una planilla: un contenedor con scroll propio, encabezado sticky
+   de dos pisos y doce columnas que no entraban en ninguna pantalla. Contestaba
+   bien "qué dice tal celda" y mal las tres preguntas que de verdad se le hacen
+   a esta vista todo el día —cómo viene este curso, cuál me falta cerrar, dónde
+   quedó parado—, y sobre todo se veía como un Excel incrustado en el medio de
+   la app.
 
-   El principio: la tabla deja de ser un damero uniforme y empieza a decir
-   cosas. Una fila terminada se ve terminada, una dada de baja se ve apagada,
-   y las columnas que son trabajo pendiente pesan más que las que son
-   referencia. */
+   Ahora es lo mismo que el Mapa: una grilla de tarjetas. Cerrada, cada curso
+   dice su nombre, sus piezas y su línea de fechas sin que haya que abrir nada;
+   abierta, se estira al ancho completo y se edita entera. Las categorías son
+   secciones de la página, con su encabezado y su avance, no bandas grises de
+   una tabla. */
+.tec-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+.tcat-h {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  padding-bottom: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  border-bottom: 2px solid color-mix(in srgb, var(--coto-blue) 20%, transparent);
+}
+.tcat-h .tec-cat-b {
+  font-family: var(--titulo);
+  font-size: 16px;
+  font-weight: 800;
+}
+.tcat-h .tcat-add {
+  margin-left: auto;
+}
+.tgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--sp-3);
+  align-items: stretch;
+}
+.tcat .tec-edu {
+  margin-top: var(--sp-3);
+}
 
-/* Rayado suave: con doce columnas, seguir un renglón hasta la punta derecha
-   sin una guía es la principal fuente de errores de carga. */
-.tec-table tbody tr:not(.tec-cat-row):not(.tec-add-row):not(.tec-edu-row):nth-child(even) td {
-  background: color-mix(in srgb, var(--ink) 2%, transparent);
+/* La tarjeta de un curso. Mismo gesto que las del Mapa: el canto se tiñe según
+   cómo está, y al abrirse ocupa la fila entera en vez de estirar su columna. */
+.tct {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--brd-card);
+  border-radius: var(--r-s);
+  background: var(--surface);
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
 }
-/* El resaltado de la fila bajo el cursor gana sobre el rayado y se nota de
-   verdad: antes era un 4% que se perdía contra el rayado. */
-.tec-table tbody tr:not(.tec-cat-row):not(.tec-add-row):not(.tec-edu-row):hover td {
-  background: color-mix(in srgb, var(--coto-blue) 7%, var(--surface));
+.tct:not(.abierta):hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--coto-blue) 45%, var(--line));
+  box-shadow: var(--shadow);
 }
-/* Un curso con las cuatro piezas hechas: canto verde a la izquierda. No se
-   tiñe la fila entera para no competir con el resaltado del cursor. */
-.tec-table tbody tr.tec-full td.tec-curso {
-  box-shadow:
-    inset 3px 0 0 var(--ok),
-    1px 0 0 var(--line);
+.tct.abierta {
+  grid-column: 1 / -1;
+  border-color: color-mix(in srgb, var(--coto-blue) 40%, var(--line));
+  box-shadow: var(--shadow);
 }
-/* Uno dado de baja: apagado, porque no es trabajo de nadie. Vuelve entero al
+/* Las cuatro piezas hechas: canto verde. Es la señal de "de este no queda
+   nada por hacer", la misma que tenía la fila terminada en la tabla. */
+.tct.llena {
+  border-left: 3px solid var(--ok);
+}
+/* Dado de baja: apagado, porque no es trabajo de nadie. Vuelve entero al
    pasarle por encima, porque el dato sigue estando y se puede editar. */
-.tec-table tbody tr.tec-off td {
-  opacity: 0.52;
+.tct.baja {
+  opacity: 0.58;
 }
-.tec-table tbody tr.tec-off:hover td {
+.tct.baja:hover,
+.tct.baja.abierta {
   opacity: 1;
 }
-/* El nombre del curso es lo que se busca al barrer la tabla, así que pesa más
-   que el resto de la fila. */
-.tec-curso input {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--ink);
+.tct.marcada {
+  border-color: var(--coto-blue);
+  background: color-mix(in srgb, var(--coto-blue) 6%, var(--surface));
 }
-/* El semáforo, pegado al nombre y en columna fija, contesta "cómo viene este
-   curso" antes de recorrer las cuatro columnas de tildes. */
-.tec-table td.tec-curso .tec-sem {
-  margin-right: 8px;
+.tct-cab {
+  display: flex;
+  align-items: flex-start;
 }
-/* Los tildes de producción: más grandes y con color de acierto. Eran casillas
-   de sistema de 13 px en una celda de 74, difíciles de acertar y de leer. */
-.tec-chk input[type="checkbox"] {
-  width: 17px;
-  height: 17px;
+.tct-mk {
+  flex: none;
+  display: flex;
+  padding: 13px 0 0 11px;
   cursor: pointer;
-  accent-color: var(--ok);
 }
-/* El encabezado de categoría deja de ser un renglón gris más: nombre grande,
-   cuántos son y cómo vienen, todo en la misma línea. */
-.tec-cat-row td {
-  background: color-mix(in srgb, var(--coto-blue) 5%, var(--surface));
-  border-top: 2px solid color-mix(in srgb, var(--coto-blue) 22%, transparent);
-  border-bottom: 1px solid var(--line);
-  padding: 12px 12px 11px;
+.tct-mk input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--coto-blue);
+  cursor: pointer;
 }
-.tec-cat-b {
-  font-size: 15px;
+.tct-b {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 11px 26px 9px 11px;
+  border: 0;
+  background: 0 0;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
 }
-/* Las fechas vacías dejan de gritar: un guión tenue en vez de un campo
-   dibujado. Lo que importa en esa columna es dónde SÍ hay fecha. */
-.tec-table .tec-date.vacia {
+.tct-n {
+  font-family: var(--titulo);
+  font-size: 14.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+.tct.abierta .tct-n {
+  font-size: 16.5px;
+}
+.tct-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  font-weight: 700;
+}
+.tct-pz {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.tct.llena .tct-pz {
+  color: var(--ok);
+}
+.tct-dis {
+  padding: 1px 7px;
+  border-radius: var(--pill);
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  color: var(--ink-soft);
+}
+.tct-off {
+  padding: 1px 7px;
+  border-radius: var(--pill);
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+}
+.tct-map {
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.tct-map.on {
+  color: var(--coto-blue);
+}
+.tct-ar {
+  position: absolute;
+  right: 10px;
+  top: 12px;
+  font-size: 9px;
+  color: var(--ink-soft);
   opacity: 0.45;
+  transition: opacity 0.14s;
 }
-.tec-table tbody tr:hover .tec-date.vacia {
+.tct:hover .tct-ar,
+.tct.abierta .tct-ar {
   opacity: 1;
+  color: var(--coto-blue);
 }
-/* El comentario es la columna más escrita del catálogo y la última de la
-   tabla: se le da el aire que le faltaba. */
-.tec-estado input {
-  font-size: 12.5px;
+/* La línea de fechas entra en una tarjeta angosta: los tres pasos se reparten
+   el ancho en vez de pedir 92 px cada uno. */
+/* Pegada abajo: con nombres de uno y de dos renglones, las líneas de fechas
+   de una misma fila arrancarían cada una a distinta altura y no habría cómo
+   compararlas de un barrido. */
+.tct-lin {
+  margin-top: auto;
+  padding: 0 11px 10px 38px;
+}
+/* Abierta, la tarjeta ocupa el ancho entero y los tres pasos quedarían
+   separados por un metro de nada. */
+.tct.abierta .tct-lin .tlin {
+  max-width: 560px;
+}
+.tct-lin .tlin {
+  flex: 1;
+  max-width: none;
+}
+.tct-lin .tlin-paso {
+  min-width: 0;
+  flex: 1;
+  padding: 2px 1px;
+}
+.tct-lin .tlin-lbl {
+  font-size: 9px;
+  white-space: normal;
+}
+.tct-lin .tlin-fec {
+  font-size: 11px;
+}
+.tct-lin .tlin-arco {
+  min-width: 8px;
 }
 
-/* Los rótulos del encabezado se parten en dos renglones en vez de estirar la
-   columna: "SCORM ACTUALIZADO" en una sola línea pedía 173 px para mostrar una
-   fecha de 90, y ese ancho de más era el que empujaba los comentarios fuera de
-   la pantalla. El nombre completo se conserva, que es lo que importa. */
-.tec-head-c th {
-  white-space: normal;
-  line-height: 1.22;
+/* La ficha abierta: todo lo que la tabla repartía en once columnas, junto y
+   con su rótulo al lado. */
+.tct-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  border-top: 1px solid var(--line-soft);
+  background: var(--surface-2);
 }
-.tec-head-c .tec-th-sort,
-.tec-head-c .tec-th-lbl {
-  white-space: normal;
-  text-align: left;
-  align-items: flex-start;
-  padding: 5px 2px;
+.tct-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
 }
-/* Las columnas de tildes solo tienen que contener una casilla: el ancho lo
-   fijaba el rótulo y no el contenido. */
-.tec-table th[data-col="portada"],
-.tec-table th[data-col="mosaico"],
-.tec-table th[data-col="evaluacion"],
-.tec-table th[data-col="textos"] {
-  max-width: 76px;
+.tct-bloque h4 {
+  margin: 0;
+  font-family: var(--texto);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
 }
-.tec-table th[data-col="mapa"] {
-  max-width: 108px;
+.tct-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--sp-3);
+  align-items: end;
 }
-/* Y el nombre del curso recupera el aire que le faltaba. */
-.tec-curso input {
-  min-width: 248px;
+.tct-f {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.tct-f.ancho {
+  grid-column: 1 / -1;
+}
+.tct-f > label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.tct-f > input,
+.tct-f select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 9px;
+}
+.tct-f > input:focus,
+.tct-f select:focus {
+  border-color: var(--coto-blue);
+  outline: 0;
+}
+.tct-f input[type="date"] {
+  font-variant-numeric: tabular-nums;
+}
+.tct-f .tec-baja-sel,
+.tct-f .tec-link,
+.tct-f .tec-link-wrap {
+  width: auto;
+}
+.tct-mala {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bad);
+}
+.tct-pie {
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--sp-3);
+}
+
+/* La barra de la lista: ordenar de un lado, los doce embudos del otro. Antes
+   esto era el encabezado de la tabla, y la mitad de los embudos vivía a la
+   derecha del borde de la pantalla. */
+.tbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-3);
+  margin-bottom: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--brd-card);
+  border-radius: var(--r-l);
+}
+.tbar-g {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.tbar-lbl {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.tbar-sel {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.tbar-dir {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.tbar-dir:hover {
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+}
+/* Cada embudo apagado hasta que filtra algo, y ahí se enciende con el número
+   de valores elegidos: nunca quedan cursos escondidos sin que se vea por qué. */
+.tbar-f {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--pill);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition:
+    border-color 0.14s,
+    background 0.14s,
+    color 0.14s;
+}
+.tbar-f i {
+  font-style: normal;
+  font-size: 9px;
+  opacity: 0.55;
+}
+.tbar-f:hover {
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+  background: var(--surface);
+}
+.tbar-f.on {
+  background: var(--coto-blue);
+  border-color: var(--coto-blue);
+  color: #fff;
+}
+.tbar-f-n {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 0 4px;
+  border-radius: var(--pill);
+  background: rgba(255, 255, 255, 0.28);
+}
+
+/* La barra del lote: solo existe cuando hay tarjetas marcadas. Poner "Portada
+   hecha" en doce cursos eran doce clics en doce lugares distintos; acá es uno. */
+.tsel {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-3);
+  margin-bottom: var(--sp-3);
+  border: 1px solid var(--coto-blue);
+  border-radius: var(--r-l);
+  background: color-mix(in srgb, var(--coto-blue) 9%, var(--surface));
+  box-shadow: var(--shadow);
+}
+.tsel-n {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--coto-blue);
+  white-space: nowrap;
+}
+.tsel-acc {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+.tsel-par {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tsel-par b {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.tsel-b {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 8px;
+  cursor: pointer;
+}
+.tsel-b.ok:hover {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+.tsel-b.no:hover,
+.tsel-b:hover {
+  border-color: var(--coto-blue);
+  color: var(--coto-blue);
+}
+.tsel-sel {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.tsel > .btn {
+  margin-left: auto;
+}
+@media (max-width: 760px) {
+  .tgrid {
+    grid-template-columns: 1fr;
+  }
+  .tsel {
+    position: static;
+  }
 }
