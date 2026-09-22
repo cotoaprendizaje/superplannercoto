@@ -560,14 +560,33 @@ async function pruebaDosTirandoALaVez(browser, backend) {
   // primera vuelta la usa la tapada para darse cuenta y reponer su frase; la
   // segunda es la que le lleva esa frase a la otra. En la app son dos pasadas
   // del polling, o sea hasta 24 s: para una frase del día alcanza y sobra.
-  for (const p of [vivi, dami]) await p.evaluate(() => mergeRemoteIntoState());
-  await vivi.waitForTimeout(2500);
-  for (const p of [vivi, dami]) await p.evaluate(() => mergeRemoteIntoState());
-  await vivi.waitForTimeout(600);
-
-  const enLaBase = await (await fetch(backend.url + "/rest/v1/planner?id=eq.coto&select=data")).json(),
-    guardadas = ((enLaBase[0] || {}).data || {}).cotofrase || { porUsuario: {} },
-    pantallas = await Promise.all([vivi, dami].map((p) => p.evaluate(() => state.cotofrase.porUsuario)));
+  //
+  // Se sigue pollear hasta que converge, en vez de esperar un rato clavado y
+  // mirar. Esto NO hace pasar la prueba con el bug adentro: sin el arreglo la
+  // frase tapada no vuelve nunca a la base, así que el bucle se agota y las
+  // comprobaciones fallan igual. Lo único que saca es la dependencia de que el
+  // guardado con retardo entre dentro de una ventana fija — con el bug ya
+  // arreglado, la prueba pasaba en una máquina rápida y fallaba en el runner
+  // de CI, que es más lento.
+  const leerBase = async () => {
+    const r = await (await fetch(backend.url + "/rest/v1/planner?id=eq.coto&select=data")).json();
+    return ((r[0] || {}).data || {}).cotofrase || { porUsuario: {} };
+  };
+  let guardadas = { porUsuario: {} },
+    pantallas = [];
+  for (let vuelta = 0; vuelta < 12; vuelta++) {
+    for (const p of [vivi, dami]) await p.evaluate(() => mergeRemoteIntoState());
+    await vivi.waitForTimeout(700);
+    ((guardadas = await leerBase()),
+      (pantallas = await Promise.all([vivi, dami].map((p) => p.evaluate(() => state.cotofrase.porUsuario)))));
+    if (
+      guardadas.porUsuario.Vivi &&
+      guardadas.porUsuario.Dami &&
+      guardadas.porUsuario.Vivi !== guardadas.porUsuario.Dami &&
+      JSON.stringify(pantallas[0]) === JSON.stringify(pantallas[1])
+    )
+      break;
+  }
 
   (check("no se pierde la frase de la que guardó primero", !!guardadas.porUsuario.Vivi, guardadas),
     check("ni la de la que guardó después", !!guardadas.porUsuario.Dami, guardadas),
