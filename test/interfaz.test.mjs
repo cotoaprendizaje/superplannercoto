@@ -857,6 +857,107 @@ const vinculado = await page.evaluate(() => {
 });
 check("vincular un par lo deja unido por id", !!(vinculado && vinculado.id), vinculado);
 
+// ── El comparador de nombres ──────────────────────────────────────────────
+// Esta batería existe por un error concreto: la primera versión tiraba los
+// tokens de menos de tres letras, así que los números de capítulo
+// desaparecían y los ocho capítulos del Manual de Recursos Humanos eran
+// indistinguibles entre sí. No se ofrecieron como par, y el botón de crear
+// filas en lote les abrió una fila duplicada a cada uno.
+console.log("\ncomparar nombres de curso");
+const comparador = await page.evaluate(() => ({
+  mismoCapitulo: tecParecido('Manual de Recursos Humanos "Capítulo 3"', "Manual de Recursos Humanos – 3"),
+  otroCapitulo: tecParecido('Manual de Recursos Humanos "Capítulo 3"', "Manual de Recursos Humanos – 4"),
+  otraEdicion: tecParecido("Seguridad e Higiene - 2026", "Seguridad e Higiene - 2025"),
+  // Un año de un solo lado no dice nada: puede ser el mismo curso.
+  unSoloAnio: tecParecido("Seguridad e Higiene 2026", "Seguridad e Higiene"),
+  // Solo palabras genéricas del catálogo en común no alcanza.
+  soloGenericas: tecParecido("Envíos – Conceptos básicos", "Ventas – Conceptos básicos"),
+  // Contención: el mismo curso escrito distinto no aporta palabras propias.
+  contiene: tecUnoContieneAlOtro("Curso de Uso Seguro del Montacargas", "Uso seguro del montacargas"),
+  noContiene: tecUnoContieneAlOtro("Coto Digital - Conceptos básicos", "Coto Hogar – Conceptos básicos"),
+}));
+(check("el capítulo 3 se reconoce con el capítulo 3", comparador.mismoCapitulo > 0.7, comparador),
+  check("y no se confunde con el capítulo 4", comparador.otroCapitulo === 0, comparador),
+  check("dos ediciones de distinto año son cursos distintos", comparador.otraEdicion === 0, comparador),
+  check("pero el año de un solo lado no los separa", comparador.unSoloAnio > 0.7, comparador),
+  check("compartir solo palabras genéricas no cuenta", comparador.soloGenericas === 0, comparador),
+  check("un nombre contenido en el otro es el mismo curso", comparador.contiene, comparador),
+  check("y «Digital» contra «Hogar» no lo es", comparador.noContiene === false, comparador));
+
+// ── Filas repetidas en Técnico ────────────────────────────────────────────
+console.log("\nfilas repetidas en Técnico");
+const repes = await page.evaluate(() => {
+  state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id));
+  state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo));
+  const card = newCard("curso", "ZZ Cronograma de Prueba – 3", {});
+  state.cards.push(card);
+  const llena = {
+      id: "zz-llena",
+      curso: 'ZZ Cronograma de Prueba "Capítulo 3"',
+      categoria: "ZZ Prueba",
+      portada: true,
+      mosaico: true,
+      scorm: "2024-02-02",
+      diseno: "HTML",
+    },
+    // La que abrió de más el botón de lote: vacía y unida a la tarjeta.
+    vacia = { id: "zz-vacia", curso: "ZZ Cronograma de Prueba – 3", categoria: "ZZ Prueba", cardId: card.id },
+    // Y dos que se parecen pero NO son el mismo curso: no se deben proponer.
+    distinta1 = { id: "zz-d1", curso: "ZZ Sucursal Digital – Conceptos básicos", categoria: "ZZ Prueba" },
+    distinta2 = { id: "zz-d2", curso: "ZZ Sucursal Hogar – Conceptos básicos", categoria: "ZZ Prueba", portada: true };
+  (state.tecnico.push(llena, vacia, distinta1, distinta2), parInvalidar());
+  const pares = valFilasRepetidas();
+  return {
+    proponeElReal: pares.some((x) => x.queda.id === "zz-llena" && x.va.id === "zz-vacia"),
+    // La que se mantiene es la que tiene los datos, nunca la vacía.
+    noProponeLasDistintas: !pares.some((x) => /^zz-d/.test(x.queda.id) || /^zz-d/.test(x.va.id)),
+    cardId: card.id,
+  };
+});
+(check("detecta el mismo curso con dos filas, una vacía", repes.proponeElReal, repes),
+  check("y no propone fusionar dos cursos que solo se parecen", repes.noProponeLasDistintas, repes));
+
+const fusion = await page.evaluate((cardId) => {
+  const queda = state.tecnico.find((f) => f.id === "zz-llena"),
+    va = state.tecnico.find((f) => f.id === "zz-vacia");
+  (tecFusionarFilas(queda, va), parInvalidar());
+  const d = state.tecnico.find((f) => f.id === "zz-llena");
+  return {
+    // Nada de lo que tenía se pierde…
+    conserva: d.portada && d.mosaico && d.scorm === "2024-02-02" && d.diseno === "HTML",
+    // …y se queda con el vínculo que traía la otra.
+    hereda: d.cardId === cardId,
+    nombre: d.curso,
+    // La sobrante se va de verdad, con lápida, para que no vuelva al sincronizar.
+    borrada: !state.tecnico.some((f) => f.id === "zz-vacia"),
+    lapida: !!state.deletedTecnico["zz-vacia"],
+  };
+}, repes.cardId);
+(check("fusionar no pierde ningún dato de la fila que se mantiene", fusion.conserva, fusion),
+  check("y le pasa el vínculo con el Mapa de la otra", fusion.hereda, fusion),
+  check("conserva el nombre de la fila que tenía los datos", fusion.nombre === 'ZZ Cronograma de Prueba "Capítulo 3"', fusion),
+  check("la fila sobrante se borra con lápida", fusion.borrada && fusion.lapida, fusion));
+
+// ── El botón de crear filas en lote, desconfiado ──────────────────────────
+const lote = await page.evaluate(() => {
+  const card = newCard("curso", "ZZ Uso Seguro de la Zorra", {});
+  ((card.publicado = true), (card.estado = "finalizado"), state.cards.push(card));
+  // Una fila de nombre parecido, sin vincular: el curso NO está sin fila, está
+  // cargado con otro nombre. Crearle una fila sería duplicarlo.
+  (state.tecnico.push({ id: "zz-parecida", curso: "ZZ Uso seguro de la zorra hidráulica", categoria: "ZZ Prueba" }),
+    parInvalidar());
+  const todos = valCursosSinTec().length,
+    seguros = valCursosSinTecSeguros().length;
+  return { todos, seguros, quedaAfuera: !valCursosSinTecSeguros().some((x) => x.card.id === card.id) };
+});
+check("el lote de «crear filas» saltea los cursos que ya podrían tener fila", lote.quedaAfuera, lote);
+
+await page.evaluate(() => {
+  ((state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id))),
+    (state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo))),
+    parInvalidar());
+});
+
 // ── Mover una tarjeta ─────────────────────────────────────────────────────
 console.log("\nmover una tarjeta de columna");
 const movida = await page.evaluate(() => {
