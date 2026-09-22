@@ -9572,3 +9572,335 @@ button.mat-ct:hover {
   font-style: italic;
   color: var(--ink-soft);
 }
+
+/* ===== Técnico en fichas =====
+   La grilla nació como reemplazo del Excel y se quedó siendo un Excel: doce
+   columnas, scroll horizontal y todo del mismo gris. Servía para tipear y no
+   para lo que el área hace de verdad, que es mirar un curso y saber cómo
+   viene. Cada curso es ahora una ficha de tres renglones que entra siempre en
+   el ancho de la pantalla. */
+.tec-modo {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: var(--pill);
+  overflow: hidden;
+  background: var(--surface);
+}
+.tec-modo-b {
+  padding: 6px 13px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--texto);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.tec-modo-b:hover {
+  background: var(--tinte);
+  color: var(--ink);
+}
+.tec-modo-b.on {
+  background: var(--coto-blue);
+  color: #fff;
+  font-weight: 700;
+}
+.tf-grupo {
+  margin-bottom: var(--sp-6);
+}
+/* El encabezado de categoría lleva el nombre, cuántos son y cómo vienen: es
+   el resumen que antes había que sacar contando tildes a mano. */
+.tf-grupo-h {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-3);
+  padding-bottom: var(--sp-2);
+  margin-bottom: var(--sp-2);
+  border-bottom: 2px solid var(--line);
+}
+.tf-grupo-h h3 {
+  margin: 0;
+  font-family: var(--titulo);
+  font-size: 18px;
+  color: var(--ink);
+}
+.tf-grupo-n {
+  padding: 2px 9px;
+  border-radius: var(--pill);
+  background: var(--tinte);
+  font-family: var(--texto);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.tf-grupo-h .btn {
+  margin-left: auto;
+}
+.tf {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: 7px;
+  background: var(--surface);
+  border: 1px solid var(--brd-card);
+  border-radius: var(--r-l);
+  transition: border-color 0.14s;
+}
+.tf:hover {
+  border-color: color-mix(in srgb, var(--coto-blue) 40%, var(--brd-card));
+}
+/* Completo: un fondo apenas verde. De baja: apagado, porque no es trabajo
+   pendiente de nadie, pero el dato sigue estando y se puede editar. */
+.tf.full {
+  background: var(--ok-soft);
+  border-color: transparent;
+}
+.tf.baja {
+  opacity: 0.6;
+}
+.tf.baja:hover {
+  opacity: 1;
+}
+.tf-h {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+/* El nombre es el dato más importante de la ficha y se edita en el lugar: sin
+   caja hasta que se lo toca, para que la lista se lea como una lista y no como
+   cien formularios apilados. */
+.tf-nombre {
+  /* Acotado: sin tope se estiraba mil píxeles y parecía un formulario vacío
+     en vez del nombre de un curso. */
+  flex: 1 1 auto;
+  max-width: 560px;
+  margin-right: auto;
+  min-width: 140px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  font-family: var(--texto);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.tf-nombre:hover {
+  border-color: var(--line);
+}
+.tf-nombre:focus {
+  background: var(--surface);
+  border-color: var(--coto-blue);
+  outline: none;
+}
+.tf-cat {
+  width: 150px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  font-family: var(--texto);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.tf-cat:hover,
+.tf-cat:focus {
+  border-color: var(--line);
+  background: var(--surface);
+  outline: none;
+}
+.tf-mapa {
+  flex: none;
+}
+.tf-h .chk-del {
+  flex: none;
+}
+.tf-cuerpo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2) var(--sp-4);
+  padding-left: 2px;
+}
+/* Cada tilde con su nombre al lado: en la planilla el encabezado queda a media
+   pantalla del tilde y hay que contar columnas para saber cuál es cuál. */
+.tf-piezas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--sp-1);
+}
+.tf-pz {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 7px;
+  border-radius: var(--pill);
+  cursor: pointer;
+  user-select: none;
+  font-family: var(--texto);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.tf-pz:hover {
+  background: var(--tinte);
+}
+.tf-pz.on {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+.tf-pz input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--ok);
+}
+.tf-diseno select {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--texto);
+  font-size: 12px;
+}
+/* Las tres fechas como los tres pasos que son, con su campo debajo. */
+.tf-fechas {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  margin-left: auto;
+}
+.tf-paso {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.tf-paso-lbl {
+  font-family: var(--texto);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.tf-paso.ok .tf-paso-lbl {
+  color: var(--ok);
+}
+.tf-paso.mala .tf-paso-lbl {
+  color: var(--bad);
+}
+.tf-paso input {
+  width: 118px;
+}
+.tf-arco {
+  width: 14px;
+  height: 2px;
+  margin: 0 2px 14px;
+  border-radius: var(--pill);
+  background: var(--line);
+}
+.tf-arco.on {
+  background: var(--ok);
+}
+/* El comentario es la columna más usada del catálogo y era la que se caía del
+   borde derecho de la planilla. Acá tiene su propio renglón, entero. */
+.tf-com {
+  flex: 1 1 170px;
+  min-width: 130px;
+  padding: 5px 9px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  font-family: var(--texto);
+  font-size: 12.5px;
+  color: var(--ink-soft);
+}
+.tf-com:hover {
+  border-color: var(--line);
+}
+.tf-com:focus {
+  background: var(--surface);
+  border-color: var(--coto-blue);
+  color: var(--ink);
+  outline: none;
+}
+/* El desplegable de vigencia vive en una celda de tabla, donde width:100% es
+   lo correcto. Dentro de la ficha ese 100% es el ancho de la ficha entera:
+   medía 1422 px y empujaba todo fuera de pantalla. */
+.tf .tec-baja-sel {
+  flex: none;
+  width: auto;
+  min-width: 112px;
+}
+/* Lo mismo con el vínculo al Mapa: acá no tiene una columna que lo contenga,
+   así que se acota y recorta el título si es largo. */
+.tf .tec-link {
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Por si alguna ficha igual queda con un contenido irreductible —un nombre de
+   curso larguísimo, un desplegable con una opción enorme—, la ficha scrollea
+   dentro de sí misma antes que empujar la página entera de costado. */
+.tf-h,
+.tf-cuerpo {
+  min-width: 0;
+  max-width: 100%;
+}
+.tf-nombre,
+.tf-com {
+  min-width: 0;
+}
+@media (max-width: 860px) {
+  .tf-fechas {
+    margin-left: 0;
+  }
+  .tf-paso input {
+    width: 104px;
+  }
+}
+
+/* En un celular las tres fechas en fila suman más que el ancho de pantalla,
+   así que se acomodan en dos renglones y el hilo entre pasos se va: con los
+   pasos apilados ya no une nada. */
+@media (max-width: 560px) {
+  .tf-fechas {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin-left: 0;
+  }
+  .tf-arco {
+    display: none;
+  }
+  .tf-paso input {
+    width: 94px;
+  }
+  .tf {
+    padding: var(--sp-3);
+  }
+  /* En pantalla angosta el comentario se lleva su propio renglón: compartirlo
+     con las piezas lo dejaba en cuarenta píxeles, donde no entra ni una
+     palabra. */
+  .tf-com {
+    flex: 1 1 100%;
+  }
+  /* El encabezado de la ficha pide unos 500 px para el nombre, el estado, el
+     vínculo y la ✕. En un celular se parte: arriba el semáforo y el nombre,
+     debajo los controles. */
+  .tf-h {
+    flex-wrap: wrap;
+  }
+  .tf-nombre {
+    flex: 1 1 calc(100% - 62px);
+    max-width: none;
+  }
+  .tf .tec-link {
+    max-width: 148px;
+  }
+}
