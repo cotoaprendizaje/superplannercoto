@@ -453,12 +453,12 @@ const cerrada = await page.evaluate(() => {
   const t = document.querySelector(".tct");
   return {
     nombre: !!t.querySelector(".tct-n"),
-    piezas: !!t.querySelector(".tct-pz .tec-sem-p"),
+    piezas: t.querySelectorAll(".tct-pz .tpz").length === 4,
     fechas: t.querySelectorAll(".tct-lin .tlin-paso").length,
     cuerpo: !!t.querySelector(".tct-cuerpo"),
   };
 });
-(check("la tarjeta cerrada muestra nombre, piezas y las tres fechas", cerrada.nombre && cerrada.piezas && cerrada.fechas === 3, cerrada),
+(check("el renglón cerrado muestra nombre, las cuatro piezas y las tres fechas", cerrada.nombre && cerrada.piezas && cerrada.fechas === 3, cerrada),
   check("y no despliega la ficha hasta que se la abre", cerrada.cuerpo === false, cerrada));
 
 // Abrirla la estira al ancho completo con todos los campos adentro.
@@ -483,6 +483,81 @@ const fichaAbierta = await page.evaluate(() => {
   check("solo una ficha abierta por vez", fichaAbierta.abiertas === 1, fichaAbierta));
 await page.evaluate(() => ((state.tecAbierta = null), renderTecList()));
 await page.waitForTimeout(250);
+
+// Las cuatro piezas van dichas por su nombre y se tildan en el renglón: cuatro
+// puntitos anónimos decían CUÁNTAS faltan pero no CUÁLES, y averiguarlo obligaba
+// a abrir curso por curso.
+const idPz = await page.evaluate(() => tecRows()[0].id);
+await page.evaluate((id) => {
+  const f = state.tecnico.find((x) => x.id === id);
+  (TEC_CHKS.forEach((k) => (f[k] = false)), renderTecList());
+}, idPz);
+await page.waitForTimeout(300);
+const piezasEnFila = await page.evaluate(
+  (id) => [...document.querySelectorAll('.tct[data-tec-row="' + id + '"] .tpz')].map((l) => l.textContent.trim()),
+  idPz,
+);
+check(
+  "cada renglón nombra sus cuatro piezas, sin abrir nada",
+  piezasEnFila.join("|") === "Portada|Mosaico|Evaluación|Textos",
+  piezasEnFila,
+);
+for (const k of ["portada", "mosaico", "evaluacion", "textos"])
+  await page.click('.tct[data-tec-row="' + idPz + '"] .tpz input[data-tec-field="' + k + '"]');
+await page.waitForTimeout(450);
+const trasTildar = await page.evaluate((id) => {
+  const f = state.tecnico.find((x) => x.id === id),
+    el = document.querySelector('.tct[data-tec-row="' + id + '"]');
+  return {
+    guardadas: ["portada", "mosaico", "evaluacion", "textos"].filter((k) => f[k]).length,
+    cantoVerde: el.classList.contains("llena"),
+    prendidas: el.querySelectorAll(".tpz.on").length,
+    avance: (el.closest(".tcat").querySelector(".tec-cat-txt") || {}).textContent || "",
+  };
+}, idPz);
+(check("tildarlas ahí mismo las guarda", trasTildar.guardadas === 4, trasTildar),
+  check("el renglón completo se marca en el momento", trasTildar.cantoVerde === true && trasTildar.prendidas === 4, trasTildar),
+  check("y el avance de la categoría deja de mentir", /1 completo/.test(trasTildar.avance), trasTildar));
+
+// El orden dice campo Y sentido en la misma línea: antes el desplegable decía
+// "Publicación" a secas y el sentido era un botón aparte que recién aparecía
+// después de elegir, rotulado "A-Z" —que para una fecha no quiere decir nada—.
+await page.selectOption('.tbar-sel[data-action="tec:orden-sel"]', "publicacion|-1");
+await page.waitForTimeout(500);
+const nuevasPrimero = await page.evaluate(() =>
+  tecRows()
+    .map((f) => f.publicacion)
+    .filter(Boolean)
+    .slice(0, 6),
+);
+check(
+  "«de la más nueva a la más vieja» ordena de verdad",
+  nuevasPrimero.every((v, i) => !i || nuevasPrimero[i - 1] >= v) && nuevasPrimero.length > 3,
+  nuevasPrimero,
+);
+await page.selectOption('.tbar-sel[data-action="tec:orden-sel"]', "publicacion|1");
+await page.waitForTimeout(500);
+const viejasPrimero = await page.evaluate(() =>
+  tecRows()
+    .map((f) => f.publicacion)
+    .filter(Boolean)
+    .slice(0, 6),
+);
+(check(
+  "y «de la más vieja a la más nueva» también",
+  viejasPrimero.every((v, i) => !i || viejasPrimero[i - 1] <= v),
+  viejasPrimero,
+),
+  check("son dos órdenes distintos, no el mismo", nuevasPrimero[0] !== viejasPrimero[0], {
+    nuevasPrimero,
+    viejasPrimero,
+  }));
+await page.selectOption('.tbar-sel[data-action="tec:orden-sel"]', "");
+await page.waitForTimeout(400);
+check(
+  "y se vuelve al agrupado por categoría",
+  await page.evaluate(() => !state.tecOrden && !!document.querySelector(".tcat")),
+);
 
 // Selección múltiple: poner "Portada hecha" en doce cursos eran doce clics en
 // doce lugares distintos de la planilla. Marcadas las tarjetas, es uno.
@@ -640,7 +715,7 @@ check("la flecha pasa a la frase siguiente", paso.antes !== paso.despues && !!pa
 await page.evaluate(() => ((state.view = "tecnico"), render()));
 await page.waitForTimeout(300);
 
-// El semáforo de cada curso y el avance de cada categoría: saber cómo viene un
+// Las piezas de cada curso y el avance de cada categoría: saber cómo viene un
 // curso obligaba a mirar cuatro casillas en cuatro columnas distintas.
 const sem = await page.evaluate(() => {
   ((state.tecSubView = "grilla"), (state.tecFiltro = ""), (state.tecColFiltros = {}), render());
@@ -648,13 +723,13 @@ const sem = await page.evaluate(() => {
   ((f.portada = true), (f.mosaico = true), (f.evaluacion = false), (f.textos = false), render());
   return {
     piezas: tecPiezas(f),
-    puntos: document.querySelectorAll(".tec-sem-p").length,
-    prendidos: document.querySelectorAll(".tec-sem-p.on").length,
+    puntos: document.querySelectorAll(".tct-pz .tpz").length,
+    prendidos: document.querySelectorAll(".tct-pz .tpz.on").length,
     // El encabezado de categoría dice cómo viene, no solo cuántos hay.
     avance: (document.querySelector(".tec-cat-txt") || {}).textContent || "",
   };
 });
-(check("cada fila lleva su semáforo de piezas", sem.puntos > 0 && sem.prendidos > 0, sem),
+(check("cada renglón lleva sus cuatro piezas", sem.puntos > 0 && sem.prendidos > 0, sem),
   check("que cuenta lo que está cargado de verdad", sem.piezas.hechas === 2 && sem.piezas.total === 4, sem),
   check("y cada categoría dice cuántos están completos", /completo/.test(sem.avance), sem));
 
