@@ -7869,6 +7869,83 @@ function valFilasSinCurso() {
     return !titulo || !state.cards.some((c) => (c.titulo || "").trim().toLowerCase() === titulo);
   });
 }
+// ===== Tarjetas que el Mapa no necesitaba =====
+// La otra mitad del mismo error. Con el comparador roto, "Filas de Técnico sin
+// curso en el Mapa" listaba filas que SÍ tenían su curso, solo que con otro
+// nombre; el botón de crear cursos en lote les armó a cada una una tarjeta
+// nueva y las dejó unidas a esa. Resultado: el Mapa tiene una tarjeta de más
+// por cada una, y la tarjeta original quedó huérfana —figura en "Cursos
+// activos sin fila en Técnico" aunque su fila exista—.
+//
+// Se reconoce a la tarjeta sobrante porque nació de la fila y nadie la tocó:
+// mismo nombre que la fila, sin descripción, sin checklist, sin responsable,
+// sin fechas de trabajo y sin una sola línea de actividad. Las que se creen de
+// ahora en más traen el sello nacidaDeFila y no hace falta adivinar.
+function cardNacidaDeFila(c) {
+  if (c.nacidaDeFila) return true;
+  return (
+    isCurso(c) &&
+    !!c.publicado &&
+    !(c.desc || "").trim() &&
+    !(c.notas || "").trim() &&
+    !(c.linkMoodle || "").trim() &&
+    !(c.checklist || []).length &&
+    !(c.asignados || []).length &&
+    !c.responsable &&
+    !(c.comentarios || []).length &&
+    !(c.actividad || []).length &&
+    !c.inicio &&
+    !c.fin
+  );
+}
+function valTarjetasDeMas() {
+  const huerfanas = repCursosActivos().filter((c) => !tecFilaParaCard(c));
+  if (!huerfanas.length) return [];
+  const usadas = new Set(),
+    out = [];
+  state.tecnico.forEach((f) => {
+    if (!f.cardId || !tecFilaActiva(f)) return;
+    const creada = state.cards.find((c) => c.id === f.cardId);
+    // Tiene que ser una tarjeta que nació de ESTA fila: mismo nombre y sin
+    // trabajo encima. Si alguien ya le cargó algo, deja de ser descartable.
+    if (!creada || !cardNacidaDeFila(creada) || tecNormTitulo(creada.titulo) !== tecNormTitulo(f.curso)) return;
+    let mejor = null;
+    huerfanas.forEach((c) => {
+      if (usadas.has(c.id) || c.id === creada.id) return;
+      const score = tecParecido(f.curso, c.titulo);
+      if (score >= PAR_UMBRAL && (!mejor || score > mejor.score)) mejor = { card: c, score: score };
+    });
+    if (mejor) (usadas.add(mejor.card.id), out.push({ fila: f, creada: creada, real: mejor.card, score: mejor.score }));
+  });
+  return out.sort((a, b) => b.score - a.score);
+}
+// Reparar es mover el vínculo de la fila a la tarjeta que ya existía y borrar
+// la que sobra. Se borra con el mismo camino con deshacer que el resto de la
+// app: seis segundos para arrepentirse.
+function valRepararTarjeta(x) {
+  ((x.fila.cardId = x.real.id), touchTecnico(), dropCardsWithUndo([x.creada.id]));
+}
+function valDeMasHTML(x) {
+  return (
+    '<div class="par"><div class="par-lados"><div class="par-lado"><span class="par-de">Se mantiene · la de siempre</span><b>' +
+    esc(x.real.titulo) +
+    '</b><span class="par-tiene">la tarjeta que ya tenías en el Mapa</span></div><div class="par-signo">≠</div><div class="par-lado"><span class="par-de">Se borra · la creada de más</span><b>' +
+    esc(x.creada.titulo) +
+    '</b><span class="par-tiene">vacía, la creó el botón desde la fila de Técnico</span></div></div>' +
+    '<div class="par-score">la fila «' +
+    esc(x.fila.curso) +
+    '» pasa a apuntar a la primera · se parecen un ' +
+    Math.round(x.score * 100) +
+    "%</div>" +
+    '<div class="par-acc"><button class="btn btn-sm btn-primary" data-action="val:repararmapa" data-fila="' +
+    x.fila.id +
+    '">↩ Deshacer: quedarme con la de siempre</button><button class="btn btn-ghost btn-sm" data-action="card:open" data-id="' +
+    x.real.id +
+    '">Ver la de siempre</button><button class="btn btn-ghost btn-sm" data-action="card:open" data-id="' +
+    x.creada.id +
+    '">Ver la creada</button></div></div>'
+  );
+}
 // ===== Filas repetidas en Técnico =====
 // El mismo curso con dos renglones en la grilla, con nombres distintos. La
 // causa concreta fue el botón de crear filas en lote: como el comparador de
@@ -7986,6 +8063,16 @@ function valRepetidaHTML(x) {
     '">Ver la otra</button></div></div>'
   );
 }
+// El mismo blindaje que valCursosSinTecSeguros(), para el otro lado. Crear una
+// tarjeta en el Mapa para una fila que ya tiene su curso con otro nombre es
+// justo lo que llenó el Mapa de duplicados, así que antes de hacerlo en lote
+// se mira si hay CUALQUIER curso sin fila que se le parezca aunque sea poco.
+function valFilasSinCursoSeguras() {
+  const huerfanas = repCursosActivos().filter((c) => !tecFilaParaCard(c));
+  return valFilasSinCurso()
+    .filter(filaTieneNombre)
+    .filter((f) => !huerfanas.some((c) => tecParecido(f.curso, c.titulo) >= CREAR_SOSPECHA));
+}
 // La contraparte de tecNuevaFilaPara(): dada una fila de Técnico, la tarjeta
 // de curso que le corresponde en el Mapa. Nace publicada y finalizada porque
 // una fila de Técnico existe justamente para un curso que ya está en Moodle;
@@ -8006,6 +8093,10 @@ function cardNuevaParaFila(fila) {
       sectores: sector ? [sector] : [],
     });
   ((tarjeta.checklist = []),
+    // Queda anotado de qué fila nació. Sin este sello hay que adivinarlo por
+    // la forma de la tarjeta, que es lo que hubo que hacer con las que ya
+    // estaban creadas (ver cardNacidaDeFila).
+    (tarjeta.nacidaDeFila = fila.id),
     fila.publicacion && !tecFechaMala(fila.publicacion) && (tarjeta.publicadoEl = fila.publicacion));
   return tarjeta;
 }
@@ -8123,6 +8214,7 @@ function valTotal() {
     valDuplicadosMapa().reduce((n, g) => n + (g.length - 1), 0) +
     valTareasRepetidas().reduce((n, g) => n + (g.length - 1), 0) +
     valFilasRepetidas().length +
+    valTarjetasDeMas().length +
     valCursosSinTec().length +
     valFilasSinCurso().length +
     valFechas().length +
@@ -8172,6 +8264,7 @@ function tecValidacionHTML() {
     duplicados = valDuplicadosMapa(),
     repetidas = valTareasRepetidas(),
     filasRepe = valFilasRepetidas(),
+    deMas = valTarjetasDeMas(),
     seguros = parSeguros(),
     sinTec = valCursosSinTec(),
     filasSueltas = valFilasSinCurso(),
@@ -8192,8 +8285,22 @@ function tecValidacionHTML() {
     valGrupo(
       "El mismo curso, cargado dos veces",
       "Lo que hace que el total de cursos dé distinto según dónde se mire.",
-      exactos.length + parecidos.length + filasRepe.length + nDup + nRep,
+      exactos.length + parecidos.length + filasRepe.length + deMas.length + nDup + nRep,
       [
+        valSeccion(
+          "Tarjetas que el Mapa no necesitaba",
+          deMas.length,
+          '<div class="val-ayuda"><b>Qué pasa:</b> el botón de «crear los cursos en el Mapa» armó una tarjeta nueva para una fila de Técnico que <b>ya tenía su curso</b>, solo que con otro nombre. Quedaron dos tarjetas del mismo curso, y la de siempre perdió su fila: por eso figura en «Cursos activos sin fila en Técnico».' +
+            '<br><b>Qué hacer:</b> <b>Deshacer</b> devuelve la fila a la tarjeta original y borra la que se creó de más. La creada está vacía —sin descripción, sin checklist, sin responsable y sin una sola línea de actividad—, así que no se pierde nada. Igual tenés 6 segundos para deshacer el borrado.' +
+            "</div>" +
+            (deMas.length > 1
+              ? '<button class="btn btn-sm btn-primary" data-action="val:repararmapatodo" style="margin-bottom:8px">↩ Deshacer las ' +
+                deMas.length +
+                " de una vez</button>"
+              : "") +
+            deMas.map(valDeMasHTML).join(""),
+          "No hay tarjetas creadas de más en el Mapa.",
+        ),
         valSeccion(
           "El mismo curso con dos filas en Técnico",
           filasRepe.length,
@@ -8333,9 +8440,9 @@ function tecValidacionHTML() {
           '<div class="val-ayuda"><b>Qué pasa:</b> este renglón de la grilla de Técnico es de un curso que no existe como tarjeta en el Mapa. Como Reportes cuenta el Mapa, este curso no entra en ningún total ni aparece en el catálogo del área.' +
             '<br><b>Qué hacer:</b> <b>+ Crear el curso</b> arma la tarjeta con ese nombre, la marca como publicada, le pone la fecha de publicación que ya tiene el renglón y los deja unidos. <b>🔗 Vincular</b> es por si la tarjeta ya existe con otro nombre.' +
             '<br><b>Si el curso ya no está vigente</b>, no hace falta crearle nada: marcalo <b>Dado de baja</b> en la columna Estado de la grilla y deja de figurar acá.</div>' +
-            (filasSueltas.filter(filaTieneNombre).length > 1
+            (valFilasSinCursoSeguras().length > 1
               ? '<button class="btn btn-sm btn-primary" data-action="val:crearcursos" style="margin-bottom:8px">+ Crear los ' +
-                filasSueltas.filter(filaTieneNombre).length +
+                valFilasSinCursoSeguras().length +
                 " cursos de una vez</button>"
               : "") +
             valListaHTML(
@@ -11917,6 +12024,35 @@ document.addEventListener("click", (ev) => {
     // tarjeta que no existe.
     // Fusionar es la única acción de esta pantalla que borra una fila, así que
     // se pregunta y se dice exactamente qué se mantiene.
+    case "val:repararmapa": {
+      const x = valTarjetasDeMas().find((y) => y.fila.id === el.dataset.fila);
+      if (x) (valRepararTarjeta(x), render(), flash("↩ Listo: quedó la tarjeta de siempre"));
+      break;
+    }
+    case "val:repararmapatodo": {
+      const todas = valTarjetasDeMas();
+      if (!todas.length) break;
+      confirmar(
+        "¿Deshacer " +
+          todas.length +
+          " tarjeta" +
+          (todas.length === 1 ? "" : "s") +
+          " creada" +
+          (todas.length === 1 ? "" : "s") +
+          " de más? Cada fila de Técnico vuelve a apuntar a la tarjeta que ya existía y se borra la creada, que está vacía. Quedan 6 segundos para deshacer el borrado.",
+        () => {
+          // Primero se mueven todos los vínculos y recién después se borran las
+          // tarjetas, en una sola operación de borrado: así el deshacer las
+          // devuelve todas juntas y no de a una.
+          (todas.forEach((x) => (x.fila.cardId = x.real.id)),
+            touchTecnico(),
+            dropCardsWithUndo(todas.map((x) => x.creada.id)),
+            render(),
+            flash("↩ " + todas.length + " deshechas"));
+        },
+      );
+      break;
+    }
     case "tec:fusionar": {
       const queda = state.tecnico.find((f) => f.id === el.dataset.queda),
         va = state.tecnico.find((f) => f.id === el.dataset.va);
@@ -11959,14 +12095,23 @@ document.addEventListener("click", (ev) => {
       break;
     }
     case "val:crearcursos": {
-      const filasCrear = valFilasSinCurso().filter(filaTieneNombre);
-      if (!filasCrear.length) break;
+      const filasCrear = valFilasSinCursoSeguras(),
+        saltadas = valFilasSinCurso().filter(filaTieneNombre).length - filasCrear.length;
+      if (!filasCrear.length) {
+        flash("Ninguna se puede crear sin riesgo de duplicar: resolvelas de a una", true);
+        break;
+      }
       confirmar(
         "¿Crear " +
           filasCrear.length +
           " curso" +
           (filasCrear.length === 1 ? "" : "s") +
-          " en el Mapa, uno por cada fila de Técnico que no tiene tarjeta? Nacen publicados y unidos a su fila. No se borra ni se pisa nada de lo que ya hay.",
+          " en el Mapa, uno por cada fila de Técnico que no tiene tarjeta? Nacen publicados y unidos a su fila. No se borra ni se pisa nada de lo que ya hay." +
+          (saltadas
+            ? " Quedan " +
+              saltadas +
+              " afuera porque ya hay un curso de nombre parecido sin fila y podría ser el mismo: esas conviene mirarlas de a una."
+            : ""),
         () => {
           (filasCrear.forEach((f) => {
             const nueva = cardNuevaParaFila(f);
