@@ -9462,3 +9462,12 @@ button.mat-ct:hover {
   color: var(--ink);
   font-weight: 700;
 }
+
+/* Qué tiene cargado cada fila, debajo de su nombre: es lo que deja decidir
+   una fusión sin abrir las dos y compararlas a ojo. */
+.par-tiene {
+  font-family: var(--texto);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}

@@ -7604,24 +7604,97 @@ function tecNormTitulo(t) {
 }
 // Palabras de menos de tres letras afuera: "de", "la", "y" están en casi todos
 // los títulos y solo sirven para que dos cursos sin nada que ver se parezcan.
+//
+// Los NÚMEROS son la excepción, y esto costó caro: la primera versión los
+// tiraba junto con las palabras cortas, así que «Manual de RRHH – 3», «– 4» y
+// «– 5» quedaban con exactamente las mismas palabras y daban el mismo
+// parecido contra cualquier capítulo. Los ocho capítulos del Manual de
+// Recursos Humanos nunca se ofrecieron como par, y el botón de crear filas en
+// lote terminó abriendo una fila nueva para cada uno, al lado de la que ya
+// existía con otro nombre. En una serie numerada el número ES el curso.
 const parTokenCache = new Map();
 function tecTokens(t) {
   const k = t || "";
   if (parTokenCache.has(k)) return parTokenCache.get(k);
-  const v = Array.from(new Set(tecNormTitulo(k).split(" ").filter((w) => w.length >= 3)));
+  const v = Array.from(
+    new Set(tecNormTitulo(k).split(" ").filter((w) => w.length >= 3 || /^[0-9]+$/.test(w))),
+  );
   // Los mismos títulos se tokenizan una y otra vez al comparar cien filas
   // contra cien tarjetas. El mapa no crece: hay tantas entradas como títulos.
   return (parTokenCache.set(k, v), v);
 }
+function tecNumeros(t) {
+  return tecTokens(t).filter((w) => /^[0-9]+$/.test(w));
+}
 // Coeficiente de Dice: cuántas palabras comparten sobre el total de las dos
 // listas. Da 1 cuando son iguales y baja parejo a medida que se separan, que
 // es lo que hace falta para poder poner un umbral y no una regla por caso.
+//
+// Con una salvedad dura antes de la cuenta: si los dos títulos traen números y
+// no comparten ninguno, son cursos distintos y punto —el capítulo 3 no es el
+// 4, y "Seguridad e Higiene 2025" no es la edición 2026—. Que uno tenga número
+// y el otro no, en cambio, no dice nada: puede ser el mismo curso al que
+// alguien le puso el año de un solo lado.
+// Las palabras que están en medio catálogo no distinguen nada. Acá adentro
+// hay decenas de cursos que terminan en "Conceptos básicos": por esas dos
+// palabras, "Envíos – Conceptos básicos" y "Ventas – Conceptos básicos" se
+// parecen un 67% sin tener nada que ver. Se calcula sobre los títulos que hay
+// de verdad en vez de clavar una lista, porque el vocabulario del área cambia
+// y una lista fija envejece sin que nadie se entere.
+let parComunesCache = null;
+function parComunes() {
+  if (parComunesCache) return parComunesCache;
+  const cuenta = new Map(),
+    titulos = state.tecnico
+      .map((f) => f.curso || "")
+      .concat(state.cards.filter(isCurso).map((c) => c.titulo || ""))
+      .filter(Boolean);
+  titulos.forEach((t) => tecTokens(t).forEach((w) => cuenta.set(w, (cuenta.get(w) || 0) + 1)));
+  // Un 5% del catálogo, con un piso de 5 para que en una base chica no se
+  // marque como genérica una palabra que aparece tres veces.
+  //
+  // Estuvo en 8% y quedaba justo por encima de "conceptos" y "básicos", que
+  // con 12 apariciones sobre 191 títulos son el ejemplo de manual de palabra
+  // que no distingue nada. Calibrar esto a ojo es exactamente el error que
+  // hay que evitar, así que el número se eligió mirando la cuenta real de
+  // cada palabra del catálogo, no de memoria.
+  const tope = Math.max(5, Math.round(titulos.length * 0.05));
+  parComunesCache = new Set(
+    Array.from(cuenta.entries())
+      .filter((e) => e[1] >= tope)
+      .map((e) => e[0]),
+  );
+  return parComunesCache;
+}
+// Coeficiente de Dice: cuántas palabras comparten sobre el total de las dos
+// listas. Da 1 cuando son iguales y baja parejo a medida que se separan, que
+// es lo que hace falta para poder poner un umbral y no una regla por caso.
+//
+// Con dos salvedades duras antes de la cuenta:
+//
+//  - Si los dos títulos traen números y no comparten ninguno, son cursos
+//    distintos y punto: el capítulo 3 no es el 4, y "Seguridad e Higiene 2025"
+//    no es la edición 2026. Que uno tenga número y el otro no, en cambio, no
+//    dice nada: puede ser el mismo curso con el año puesto de un solo lado.
+//  - Si lo único que comparten son palabras genéricas del catálogo, tampoco
+//    dicen nada: tienen que coincidir en al menos una palabra propia.
 function tecParecido(a, b) {
   const ta = tecTokens(a),
     tb = tecTokens(b);
   if (!ta.length || !tb.length) return 0;
-  const comunes = ta.filter((w) => tb.includes(w)).length;
-  return (2 * comunes) / (ta.length + tb.length);
+  const na = tecNumeros(a),
+    nb = tecNumeros(b);
+  if (na.length && nb.length && !na.some((n) => nb.includes(n))) return 0;
+  const compartidas = ta.filter((w) => tb.includes(w));
+  if (!compartidas.length) return 0;
+  const puntaje = (2 * compartidas.length) / (ta.length + tb.length),
+    genericas = parComunes();
+  // Hay cursos cuyo nombre es TODO palabras frecuentes ("Coto Digital –
+  // Conceptos básicos"). Descartarlos de plano los dejaría sin poder
+  // emparejarse nunca con su propia tarjeta, así que en ese caso se les exige
+  // un parecido casi total en vez de una palabra propia que no tienen.
+  if (!compartidas.some((w) => !genericas.has(w))) return puntaje >= 0.85 ? puntaje : 0;
+  return puntaje;
 }
 // Filas y tarjetas que todavía no están comprometidas con nadie. Se calcula
 // una vez y lo usan las dos búsquedas de pares.
@@ -7642,7 +7715,7 @@ function parDescartado(fila, cardId) {
 // al empezar el siguiente render, que es cuando el dato pudo haber cambiado.
 let parCache = null;
 function parInvalidar() {
-  parCache = null;
+  ((parCache = null), (parComunesCache = null));
 }
 function parPares() {
   if (parCache) return parCache;
@@ -7662,6 +7735,22 @@ function valParesExactos() {
 }
 function valParesParecidos() {
   return parPares().parecidos;
+}
+// Los pares donde no hay nada que decidir. La garantía fuerte es la
+// contención —que ninguno de los dos títulos aporte una palabra propia que el
+// otro no tenga—; el puntaje solo saca los casos donde además falta la mitad
+// del nombre. "Curso de Uso Seguro del Montacargas" y "Uso seguro del
+// montacargas" entran: las tres palabras propias son las mismas y lo único que
+// sobra es "curso". "Curso del Contrato de la Tarjeta TCI" y "Uso del
+// aplicativo – Tarjeta TCI" no: uno dice contrato y el otro aplicativo.
+// Vincular es reversible —la ✕ de la columna Mapa en la grilla desvincula— así
+// que acá sí tiene sentido un botón para varios; crear filas no lo era, y por
+// eso ese botón es mucho más desconfiado.
+const PAR_SEGURO = 0.8;
+function parSeguros() {
+  return valParesParecidos().filter(
+    (x) => x.score >= PAR_SEGURO && tecUnoContieneAlOtro(x.fila.curso, x.card.titulo),
+  );
 }
 function parFilasOfrecidas() {
   return parPares().filas;
@@ -7691,7 +7780,8 @@ function parCalcularExactos() {
 function parCalcularParecidos(exactos) {
   const libres = parLibres(),
     yaExactos = new Set(exactos.map((x) => x.fila.id)),
-    tomadas = new Set(),
+    // Las tarjetas que ya tienen su par exacto tampoco vuelven a ofrecerse acá.
+    tomadas = new Set(exactos.map((x) => x.card.id)),
     pares = [];
   libres.filas
     .filter((f) => !yaExactos.has(f.id))
@@ -7700,7 +7790,12 @@ function parCalcularParecidos(exactos) {
       libres.cards.forEach((c) => {
         if (parDescartado(f, c.id)) return;
         const score = tecParecido(f.curso, c.titulo);
-        if (score >= PAR_UMBRAL && score < 1 && (!mejor || score > mejor.score)) mejor = { card: c, score: score };
+        // Antes esto pedía score < 1, para no pisar los pares exactos. Pero el
+        // puntaje llega a 1 también cuando los títulos tienen las mismas
+        // palabras en otro orden —"Relevamiento de clases de NOA" y "NOA -
+        // Relevamiento de clases"—, que no son exactos y son justamente los
+        // que más falta hace ofrecer. Los exactos ya quedaron afuera arriba.
+        if (score >= PAR_UMBRAL && (!mejor || score > mejor.score)) mejor = { card: c, score: score };
       });
       if (mejor) pares.push({ fila: f, card: mejor.card, score: mejor.score });
     });
@@ -7749,6 +7844,17 @@ function valCursosSinTec() {
   const ofrecidas = parCardsOfrecidas();
   return repCursosActivos().filter((c) => !tecFilaParaCard(c) && !ofrecidas.has(c.id)).map((c) => ({ card: c }));
 }
+// Abrir una fila de más es lo que ya salió mal una vez, así que antes de
+// hacerlo en lote se mira de nuevo, y con la vara mucho más baja que la de
+// proponer un par: si hay CUALQUIER fila suelta que se parezca aunque sea un
+// poco al curso, no se le crea nada y se avisa. Perder un minuto abriendo esa
+// fila a mano es infinitamente más barato que dejar el catálogo con el mismo
+// curso dos veces.
+const CREAR_SOSPECHA = 0.35;
+function valCursosSinTecSeguros() {
+  const libres = state.tecnico.filter((f) => !f.cardId && filaTieneNombre(f) && tecFilaActiva(f));
+  return valCursosSinTec().filter((x) => !libres.some((f) => tecParecido(f.curso, x.card.titulo) >= CREAR_SOSPECHA));
+}
 // Filas de Técnico sin vincular y sin ningún curso del Planner con el mismo
 // título — la otra mitad del mismo hueco que valCursosSinTec().
 // Solo las filas VIGENTES: a un curso dado de baja no le falta una tarjeta en
@@ -7762,6 +7868,123 @@ function valFilasSinCurso() {
     const titulo = (f.curso || "").trim().toLowerCase();
     return !titulo || !state.cards.some((c) => (c.titulo || "").trim().toLowerCase() === titulo);
   });
+}
+// ===== Filas repetidas en Técnico =====
+// El mismo curso con dos renglones en la grilla, con nombres distintos. La
+// causa concreta fue el botón de crear filas en lote: como el comparador de
+// nombres tiraba los números (ver tecTokens), los ocho capítulos del Manual de
+// Recursos Humanos no se ofrecieron como par y se les abrió una fila nueva al
+// lado de la que ya tenían.
+//
+// Para proponer una fusión se pide que UNA de las dos esté vacía —sin piezas,
+// sin SCORM, sin mail, sin diseño y sin comentario—: una fila vacía no tiene
+// nada que perder, así que juntarla con la que sí tiene datos no puede borrar
+// trabajo de nadie. Dos filas cargadas que se parecen no se tocan: eso hay que
+// mirarlo a mano, y la app no tiene cómo saber cuál gana.
+// Parecerse no alcanza para fusionar. "Coto Digital – Conceptos básicos" y
+// "Coto Hogar – Conceptos básicos" comparten tres de cuatro palabras y son dos
+// cursos distintos; lo mismo "Curso del Contrato de la Tarjeta TCI" y "Uso del
+// aplicativo – Tarjeta TCI". Un puntaje alto los deja pasar a los dos.
+//
+// Lo que sí los separa: cuando dos títulos son el mismo curso escrito distinto,
+// uno está CONTENIDO en el otro —«Manual de RRHH – 3» no agrega ninguna palabra
+// frente a «Manual de RRHH Capítulo 3», solo le falta una—. Cuando son cursos
+// distintos, cada uno aporta una palabra que el otro no tiene: "digital"
+// contra "hogar", "contrato" contra "aplicativo".
+//
+// Acá se miran TODAS las palabras, también las frecuentes del catálogo. Una
+// primera versión descartaba las genéricas, y así "Coto Digital – Conceptos
+// básicos" y "Coto Hogar – Conceptos básicos" pasaban la prueba: "digital" es
+// frecuente, así que al ignorarla los dos títulos quedaban idénticos. Para
+// medir PARECIDO una palabra frecuente vale poco; para decidir si dos cosas
+// son DISTINTAS, una palabra que está en uno y no en el otro es una diferencia
+// aunque sea la más común del catálogo.
+function tecUnoContieneAlOtro(a, b) {
+  const ta = tecTokens(a),
+    tb = tecTokens(b);
+  if (!ta.length || !tb.length) return false;
+  return !ta.some((w) => !tb.includes(w)) || !tb.some((w) => !ta.includes(w));
+}
+const REPE_UMBRAL = 0.6;
+function tecFilaVacia(fila) {
+  return (
+    !TEC_CHKS.some((k) => fila[k]) &&
+    !(fila.scorm || "").trim() &&
+    !(fila.mail || "").trim() &&
+    !(fila.diseno || "").trim() &&
+    !(fila.estado || "").trim()
+  );
+}
+// Qué tiene cargado una fila, en una línea, para poder decidir sin abrir nada.
+function tecFilaResumen(fila) {
+  const partes = TEC_CHKS.filter((k) => fila[k]).map(tecColLabel);
+  (fila.diseno && partes.push(fila.diseno),
+    fila.publicacion && !tecFechaMala(fila.publicacion) && partes.push("publicado " + tecFechaVer(fila.publicacion)),
+    fila.scorm && partes.push("SCORM"),
+    fila.mail && partes.push("mail"),
+    fila.cardId && partes.push("unida al Mapa"));
+  return partes.length ? partes.join(" · ") : "sin nada cargado";
+}
+function valFilasRepetidas() {
+  const vivas = state.tecnico.filter((f) => tecFilaActiva(f) && filaTieneNombre(f)),
+    usadas = new Set(),
+    pares = [];
+  vivas.forEach((a, i) => {
+    if (usadas.has(a.id)) return;
+    vivas.slice(i + 1).forEach((b) => {
+      if (usadas.has(a.id) || usadas.has(b.id)) return;
+      if (!tecFilaVacia(a) && !tecFilaVacia(b)) return;
+      const score = tecParecido(a.curso, b.curso);
+      if (score < REPE_UMBRAL || !tecUnoContieneAlOtro(a.curso, b.curso)) return;
+      // La que se mantiene es la que tiene datos; con las dos vacías, la más
+      // vieja, que es la que ya venía del Excel del área.
+      const queda = tecFilaVacia(a) && !tecFilaVacia(b) ? b : tecFilaVacia(b) && !tecFilaVacia(a) ? a : (a.updatedAt || 0) <= (b.updatedAt || 0) ? a : b;
+      (usadas.add(a.id), usadas.add(b.id), pares.push({ queda: queda, va: queda === a ? b : a, score: score }));
+    });
+  });
+  return pares;
+}
+// Fusionar no pisa nada: la fila que se mantiene solo recibe los campos que
+// tenía vacíos, y el vínculo con el Mapa viaja si lo traía la otra. Recién
+// entonces se borra la sobrante, con lápida, para que no vuelva en la
+// siguiente sincronización.
+function tecFusionarFilas(queda, va) {
+  (TEC_CHKS.forEach((k) => (queda[k] = queda[k] || !!va[k])),
+    TEC_FECHAS.forEach((k) => {
+      if (!(queda[k] || "").trim() && (va[k] || "").trim()) queda[k] = va[k];
+    }),
+    ["categoria", "diseno", "estado"].forEach((k) => {
+      if (!(queda[k] || "").trim() && (va[k] || "").trim()) queda[k] = va[k];
+    }),
+    !queda.cardId && va.cardId && (queda.cardId = va.cardId),
+    (queda.updatedAt = Date.now()),
+    dropTecnico(va.id),
+    touchTecnico());
+}
+function valRepetidaHTML(x) {
+  return (
+    '<div class="par"><div class="par-lados"><div class="par-lado"><span class="par-de">Se mantiene</span><b>' +
+    esc(x.queda.curso) +
+    '</b><span class="par-tiene">' +
+    esc(tecFilaResumen(x.queda)) +
+    '</span></div><div class="par-signo">+</div><div class="par-lado"><span class="par-de">Se absorbe</span><b>' +
+    esc(x.va.curso) +
+    '</b><span class="par-tiene">' +
+    esc(tecFilaResumen(x.va)) +
+    "</span></div></div>" +
+    '<div class="par-score">se parecen un ' +
+    Math.round(x.score * 100) +
+    "%</div>" +
+    '<div class="par-acc"><button class="btn btn-sm btn-primary" data-action="tec:fusionar" data-queda="' +
+    x.queda.id +
+    '" data-va="' +
+    x.va.id +
+    '">⇢ Fusionar en una sola fila</button><button class="btn btn-ghost btn-sm" data-action="tec:goto" data-id="' +
+    x.queda.id +
+    '">Ver la que se mantiene</button><button class="btn btn-ghost btn-sm" data-action="tec:goto" data-id="' +
+    x.va.id +
+    '">Ver la otra</button></div></div>'
+  );
 }
 // La contraparte de tecNuevaFilaPara(): dada una fila de Técnico, la tarjeta
 // de curso que le corresponde en el Mapa. Nace publicada y finalizada porque
@@ -7899,6 +8122,7 @@ function valTotal() {
     valParesParecidos().length +
     valDuplicadosMapa().reduce((n, g) => n + (g.length - 1), 0) +
     valTareasRepetidas().reduce((n, g) => n + (g.length - 1), 0) +
+    valFilasRepetidas().length +
     valCursosSinTec().length +
     valFilasSinCurso().length +
     valFechas().length +
@@ -7947,6 +8171,8 @@ function tecValidacionHTML() {
     parecidos = valParesParecidos(),
     duplicados = valDuplicadosMapa(),
     repetidas = valTareasRepetidas(),
+    filasRepe = valFilasRepetidas(),
+    seguros = parSeguros(),
     sinTec = valCursosSinTec(),
     filasSueltas = valFilasSinCurso(),
     fechas = valFechas(),
@@ -7966,8 +8192,17 @@ function tecValidacionHTML() {
     valGrupo(
       "El mismo curso, cargado dos veces",
       "Lo que hace que el total de cursos dé distinto según dónde se mire.",
-      exactos.length + parecidos.length + nDup + nRep,
+      exactos.length + parecidos.length + filasRepe.length + nDup + nRep,
       [
+        valSeccion(
+          "El mismo curso con dos filas en Técnico",
+          filasRepe.length,
+          '<div class="val-ayuda"><b>Qué pasa:</b> el mismo curso tiene dos renglones en la grilla, con nombres distintos. Una de las dos está vacía — la abrió de más el botón de «crear filas en lote», porque el comparador de nombres no reconocía los números y no vio que ya existía.' +
+            '<br><b>Qué hacer:</b> <b>Fusionar</b> deja una sola fila: la que tiene datos se queda con todo lo suyo, recibe lo que la otra tuviera y no ella, se lleva el vínculo con el Mapa, y la sobrante se borra. <b>No se pisa ningún dato.</b>' +
+            "<br>Solo se proponen pares donde una de las dos está vacía. Dos filas con datos que se parecen no se tocan: eso hay que mirarlo a mano.</div>" +
+            filasRepe.map(valRepetidaHTML).join(""),
+          "Ningún curso tiene dos filas en la grilla.",
+        ),
         valSeccion(
           "Mismo nombre en el Planner y en Técnico, sin vincular",
           exactos.length,
@@ -7981,7 +8216,13 @@ function tecValidacionHTML() {
         valSeccion(
           "Se parecen mucho: ¿son el mismo curso?",
           parecidos.length,
-          '<div class="val-ayuda">Los nombres no son idénticos, así que esto no lo puede decidir la app. Mirá los dos y elegí. Lo que marques como distinto no vuelve a aparecer.</div>' +
+          '<div class="val-ayuda">Los nombres no son idénticos, así que esto no lo puede decidir la app. Mirá los dos y elegí. Lo que marques como distinto no vuelve a aparecer.' +
+            "<br>Unir es reversible: si te equivocás, en la grilla la columna <b>Mapa</b> tiene una ✕ para desvincular.</div>" +
+            (seguros.length > 1
+              ? '<button class="btn btn-sm btn-primary" data-action="val:vincularseguros" style="margin-bottom:8px">🔗 Unir los ' +
+                seguros.length +
+                " que no dejan dudas</button><div class=\"val-nota\" style=\"display:block;margin-bottom:10px\">Son los que van arriba: un nombre está contenido en el otro, sin ninguna palabra propia de por medio.</div>"
+              : "") +
             parecidos.map((x) => valParHTML(x, false)).join(""),
           "Ningún par quedó en duda.",
         ),
@@ -11674,6 +11915,24 @@ document.addEventListener("click", (ev) => {
     // La contraparte de tec:crearfila, que era la que faltaba: una fila de
     // Técnico sin tarjeta en el Mapa no tenía más salida que buscar una
     // tarjeta que no existe.
+    // Fusionar es la única acción de esta pantalla que borra una fila, así que
+    // se pregunta y se dice exactamente qué se mantiene.
+    case "tec:fusionar": {
+      const queda = state.tecnico.find((f) => f.id === el.dataset.queda),
+        va = state.tecnico.find((f) => f.id === el.dataset.va);
+      if (!queda || !va) break;
+      confirmar(
+        'Queda una sola fila, la de "' +
+          (queda.curso || "") +
+          '". Se lleva todo lo que tenga cargado "' +
+          (va.curso || "") +
+          '" y que a ella le falte, más el vínculo con el Mapa si lo tuviera. Después la segunda fila se borra. ¿Seguimos?',
+        () => {
+          (tecFusionarFilas(queda, va), render(), flash("⇢ Fusionadas en una sola fila"));
+        },
+      );
+      break;
+    }
     case "tec:crearcurso": {
       const filaCrear = state.tecnico.find((f) => f.id === el.dataset.id);
       if (filaCrear && !filaCrear.cardId) {
@@ -11684,6 +11943,21 @@ document.addEventListener("click", (ev) => {
     }
     // Hacerlo de a uno con veinticinco filas es lo que hace que nadie lo
     // termine. Se pregunta antes porque crea tarjetas de verdad en el Mapa.
+    case "val:vincularseguros": {
+      const seg = parSeguros();
+      if (!seg.length) break;
+      confirmar(
+        "¿Unir " +
+          seg.length +
+          " par" +
+          (seg.length === 1 ? "" : "es") +
+          " donde un nombre está contenido en el otro y no hay nada que decidir? No se borra ni se pisa nada, y cualquiera se puede desvincular después desde la columna Mapa de la grilla.",
+        () => {
+          (seg.forEach((x) => (x.fila.cardId = x.card.id)), touchTecnico(), render(), flash("🔗 " + seg.length + " unidos"));
+        },
+      );
+      break;
+    }
     case "val:crearcursos": {
       const filasCrear = valFilasSinCurso().filter(filaTieneNombre);
       if (!filasCrear.length) break;
@@ -11707,14 +11981,23 @@ document.addEventListener("click", (ev) => {
       break;
     }
     case "val:crearfilas": {
-      const cardsCrear = valCursosSinTec();
-      if (!cardsCrear.length) break;
+      const cardsCrear = valCursosSinTecSeguros(),
+        salteadas = valCursosSinTec().length - cardsCrear.length;
+      if (!cardsCrear.length) {
+        flash("Ninguno se puede crear sin riesgo de duplicar: resolvelos de a uno", true);
+        break;
+      }
       confirmar(
         "¿Abrir " +
           cardsCrear.length +
           " fila" +
           (cardsCrear.length === 1 ? "" : "s") +
-          " en la grilla de Técnico, una por cada curso activo que no la tiene? Salen con el nombre y la categoría puestos y el resto en blanco, para completar desde la grilla.",
+          " en la grilla de Técnico? Salen con el nombre y la categoría puestos y el resto en blanco." +
+          (salteadas
+            ? " Quedan " +
+              salteadas +
+              " afuera porque ya hay una fila de nombre parecido y podrían ser el mismo curso: esas conviene mirarlas de a una."
+            : ""),
         () => {
           (cardsCrear.forEach((x) => state.tecnico.push(tecNuevaFilaPara(x.card))),
             touchTecnico(),
