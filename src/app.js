@@ -6230,7 +6230,7 @@ function tecFechaCelda(fila, campo) {
 // había que elegir entre el estado y la nota, y "reemplazado" no puede ser una
 // palabra de baja — habla del contenido, no de si el curso sigue en Moodle.
 function tecBajaSelect(fila) {
-  const deBaja = fila.baja === true || (fila.baja === undefined && tecEstadoSugiereBaja(fila.estado));
+  const deBaja = tecFilaBaja(fila);
   return (
     '<select class="tec-baja-sel' +
     (deBaja ? " off" : "") +
@@ -6590,8 +6590,22 @@ function tecCategoriasUsadas() {
   state.tecnico.forEach((f) => f.categoria && set.add(f.categoria));
   return [...set].sort((a, b) => a.localeCompare(b));
 }
+// Las categorías de Técnico y los sectores del Mapa son dos listas que casi
+// coinciden pero no del todo (Seguridad e Higiene, Pañol y Centro de
+// Distribución existen de un lado y no del otro). Ofrecer los dos conjuntos en
+// el mismo desplegable no fuerza nada, pero hace que escribir una variante
+// nueva sea lo raro y no lo cómodo.
 function tecCategoriasDatalistHTML() {
-  return '<datalist id="tecCategoriasList">' + tecCategoriasUsadas().map((c) => '<option value="' + esc(c) + '">').join("") + "</datalist>";
+  const usadas = tecCategoriasUsadas(),
+    vistas = new Set(usadas.map((c) => c.toLowerCase())),
+    sectores = Object.values(SECTORES)
+      .map((x) => x.nombre)
+      .filter((n) => !vistas.has(n.toLowerCase()));
+  return (
+    '<datalist id="tecCategoriasList">' +
+    usadas.concat(sectores).map((c) => '<option value="' + esc(c) + '">').join("") +
+    "</datalist>"
+  );
 }
 // Reemplaza los dos prompt() nativos que se usaban para crear una fila: acá
 // mismo se puede corregir la categoría (o dejarla vacía) antes de crear.
@@ -6603,8 +6617,22 @@ function tecNuevaFilaModalHTML(catPrefill) {
     '" placeholder="Podés dejarlo vacío"></div>' +
     tecCategoriasDatalistHTML() +
     '<div class="fld"><label>Nombre del curso</label><input id="tecNuevoNombre" placeholder="Ej: Cajas - Apertura del sector"></div>' +
+    '<label class="tec-nueva-chk"><input type="checkbox" id="tecNuevaTarjeta" checked> Crear también su tarjeta en el Planner, unida a esta fila' +
+    '<span>Es lo normal: un curso nuevo es trabajo por hacer. Destildalo solo si el curso ya está publicado en Moodle y solo querés registrarlo.</span></label>' +
     '<div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="tec:add-confirmar">Crear</button></div>'
   );
+}
+// Llevar a una fila recién creada o ya existente, sin repetir el bloque de
+// scroll y resaltado en cada lugar que lo necesita.
+function tecIrAFila(id) {
+  ((state.tecFiltro = ""), (state.tecSubView = "grilla"), (state.view = "tecnico"), render());
+  setTimeout(() => {
+    const fila = document.querySelector('tr[data-tec-row="' + id + '"]');
+    if (fila) {
+      (fila.scrollIntoView({ block: "center", behavior: "smooth" }), fila.classList.add("tec-flash"));
+      setTimeout(() => fila.classList.remove("tec-flash"), 1600);
+    }
+  }, 60);
 }
 // ===== Qué falta =====
 // La grilla contesta "qué dice tal celda". Lo que no contestaba es "por dónde
@@ -8118,9 +8146,43 @@ function valFechas() {
   return state.tecnico.filter((f) => {
     if (tecFechaMalaCampo(f)) return true;
     if (f.publicacion) return false;
+    // Hay cursos viejos cuya fecha de alta en Moodle nadie tiene. Pedirla para
+    // siempre es dejar la pantalla con un pendiente que no se puede resolver,
+    // así que el área puede decir "no la sé" y el aviso se calla. Es un dato
+    // distinto de "todavía no la cargué", y por eso se guarda aparte.
+    if (f.publicacionDesconocida) return false;
     const card = tecCardDeFila(f);
     return !!card && inInventory(card);
   });
+}
+// La fecha se pone en Revisión y no mandando a la grilla: la grilla mide más
+// de 1600 px, así que "andá a corregirlo allá" terminaba en buscar una celda
+// que muchas veces ni entra en pantalla.
+function valFechasHTML(lista) {
+  return (
+    '<div class="carga-list">' +
+    lista
+      .map((f) => {
+        const mal = tecFechaMalaCampo(f);
+        return (
+          '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span style="flex:1;min-width:180px;font-size:13px">' +
+          esc(f.curso || "(sin nombre)") +
+          '</span><span class="val-nota bad">' +
+          esc(valFechaMotivo(f)) +
+          "</span>" +
+          (mal
+            ? '<button class="btn btn-ghost btn-sm" data-action="tec:goto" data-id="' + f.id + '">Corregir en la grilla</button>'
+            : '<input type="date" class="val-fecha" data-val-pub="' +
+              f.id +
+              '" title="Cuándo se publicó en Moodle"><button class="btn btn-ghost btn-sm" data-action="val:sinfechapub" data-id="' +
+              f.id +
+              '" title="El aviso deja de aparecer para este curso">No la sé</button>') +
+          "</div>"
+        );
+      })
+      .join("") +
+    "</div>"
+  );
 }
 // Filas vinculadas a mano donde el nombre ya no coincide con el título
 // actual de la tarjeta — puede pasar cuando cualquiera de los dos lados se
@@ -8131,11 +8193,19 @@ function valTitulosDifieren() {
     .map((f) => ({ fila: f, card: state.cards.find((c) => c.id === f.cardId) }))
     .filter((x) => x.card && (x.fila.curso || "").trim().toLowerCase() !== (x.card.titulo || "").trim().toLowerCase());
 }
-// El Mapa lo sigue contando como activo, pero el campo de estado libre de
-// Técnico ya dice "baja"/"discontinuado" — probablemente alguien avisó la
-// baja en Técnico y se olvidó de reflejarla en el Mapa.
+// El Mapa lo sigue contando como activo, pero el comentario de la fila dice
+// "baja"/"discontinuado". No es que alguien haya decidido dos cosas distintas:
+// es que nadie decidió, y la app lo venía deduciendo de cómo estaba redactada
+// una nota.
+//
+// Por eso solo cuenta como contradicción mientras la fila NO tenga una
+// elección explícita. Antes esta cuenta miraba únicamente el texto del
+// comentario, así que marcar el curso como vigente no la sacaba nunca de la
+// lista: el aviso quedaba pegado para siempre y no había forma de resolverlo.
+// El comentario se conserva —es información del área— pero deja de decidir.
 function valEstadoContradictorio() {
   return state.tecnico
+    .filter((f) => f.baja === undefined)
     .map((f) => ({ fila: f, card: tecCardDeFila(f) }))
     .filter((x) => x.card && tecEstadoSugiereBaja(x.fila.estado) && inInventory(x.card));
 }
@@ -8472,18 +8542,9 @@ function tecValidacionHTML() {
         valSeccion(
           "Fechas dudosas o faltantes",
           fechas.length,
-          valListaHTML(
-            fechas.map(
-              (f) =>
-                '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span style="flex:1;min-width:160px;font-size:13px">' +
-                esc(f.curso || "(sin nombre)") +
-                '</span><span class="val-nota bad">' +
-                esc(valFechaMotivo(f)) +
-                '</span><button class="btn btn-ghost btn-sm" data-action="tec:goto" data-id="' +
-                f.id +
-                '">Corregir</button></div>',
-            ),
-          ),
+          '<div class="val-ayuda"><b>Qué pasa:</b> es la fecha en que el curso se creó en Moodle. Sin ella el curso cuenta en todos los totales, pero no puede aparecer en ningún año ni mes de Reportes.' +
+            '<br><b>Qué hacer:</b> ponela acá mismo. Si es un curso viejo y nadie tiene el dato, <b>No la sé</b> deja de pedirla — es distinto de "todavía no la cargué" y queda anotado así.</div>' +
+            valFechasHTML(fechas),
           "Ninguna fecha pendiente de corregir.",
         ),
       ],
@@ -8496,43 +8557,53 @@ function tecValidacionHTML() {
         valSeccion(
           "Títulos que no coinciden",
           titulos.length,
-          valListaHTML(
-            titulos.map(
-              (x) =>
-                '<div class="lnk" style="flex-wrap:wrap;gap:6px 10px"><div style="flex:1;min-width:220px;font-size:12.5px"><b>Mapa:</b> ' +
-                esc(x.card.titulo) +
-                "<br><b>Técnico:</b> " +
-                esc(x.fila.curso) +
-                '</div><button class="btn btn-ghost btn-sm" data-action="tec:usarnombremapa" data-fila="' +
-                x.fila.id +
-                '" data-card="' +
-                x.card.id +
-                '">Usar el del Mapa</button><button class="btn btn-ghost btn-sm" data-action="tec:usarnombretecnico" data-fila="' +
-                x.fila.id +
-                '" data-card="' +
-                x.card.id +
-                '">Usar el de Técnico</button></div>',
+          '<div class="val-ayuda"><b>Qué pasa:</b> los dos lados son el mismo curso pero se llaman distinto, así que buscarlo por nombre da resultados diferentes según dónde mires.' +
+            '<br><b>Qué hacer:</b> elegí uno de los dos, o escribí el nombre que corresponda: el que quede se usa en los dos lados.</div>' +
+            valListaHTML(
+              titulos.map(
+                (x) =>
+                  '<div class="lnk" style="flex-wrap:wrap;gap:6px 10px"><div style="flex:1;min-width:220px;font-size:12.5px"><b>Mapa:</b> ' +
+                  esc(x.card.titulo) +
+                  "<br><b>Técnico:</b> " +
+                  esc(x.fila.curso) +
+                  '</div><input class="val-nombre" data-val-nombre="' +
+                  x.fila.id +
+                  '" value="' +
+                  esc(x.fila.curso) +
+                  '" placeholder="Nombre definitivo"><button class="btn btn-sm btn-primary" data-action="tec:usarnombre" data-fila="' +
+                  x.fila.id +
+                  '" data-card="' +
+                  x.card.id +
+                  '">Usar este en los dos</button><button class="btn btn-ghost btn-sm" data-action="tec:usarnombremapa" data-fila="' +
+                  x.fila.id +
+                  '" data-card="' +
+                  x.card.id +
+                  '">Copiar el del Mapa</button></div>',
+              ),
             ),
-          ),
           "Los nombres coinciden en todas las filas vinculadas.",
         ),
         valSeccion(
           "Activo en el Mapa pero marcado de baja en Técnico",
           contradiccion.length,
-          valListaHTML(
-            contradiccion.map(
-              (x) =>
-                '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span class="lnk-a" data-action="card:open" data-id="' +
-                x.card.id +
-                '" style="cursor:pointer;flex:1;min-width:160px">' +
-                esc(x.card.titulo) +
-                '</span><span class="val-nota">Técnico: "' +
-                esc(x.fila.estado) +
-                '"</span><button class="btn btn-ghost btn-sm" data-action="curso:bajaid" data-id="' +
-                x.card.id +
-                '" style="color:var(--bad)">Dar de baja</button></div>',
+          '<div class="val-ayuda"><b>Qué pasa:</b> el Mapa lo cuenta como curso activo, pero el comentario de su fila en Técnico dice que está de baja. Nadie eligió todavía cuál de los dos tiene razón — la app venía deduciéndolo del texto del comentario.' +
+            '<br><b>Qué hacer:</b> elegí. Lo que marques queda explícito y no se vuelve a deducir de ningún texto. Desde ahora la vigencia la manda Técnico: lo que decidas acá se aplica también a la tarjeta del Mapa.</div>' +
+            valListaHTML(
+              contradiccion.map(
+                (x) =>
+                  '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span class="lnk-a" data-action="card:open" data-id="' +
+                  x.card.id +
+                  '" style="cursor:pointer;flex:1;min-width:160px">' +
+                  esc(x.card.titulo) +
+                  '</span><span class="val-nota">el comentario dice: "' +
+                  esc(x.fila.estado) +
+                  '"</span><button class="btn btn-ghost btn-sm" data-action="val:vigente" data-id="' +
+                  x.fila.id +
+                  '">✓ Está vigente</button><button class="btn btn-ghost btn-sm" data-action="val:darbaja" data-id="' +
+                  x.fila.id +
+                  '" style="color:var(--bad)">Dar de baja</button></div>',
+              ),
             ),
-          ),
           "Sin contradicciones de estado.",
         ),
       ],
@@ -11849,8 +11920,15 @@ document.addEventListener("click", (ev) => {
         flash("Poné un nombre de curso", true);
         break;
       }
-      const catTec = ($("#tecNuevaCat").value || "").trim();
-      (state.tecnico.push({
+      const catTec = ($("#tecNuevaCat").value || "").trim(),
+        yaExiste = state.tecnico.find((f) => tecNormTitulo(f.curso) === tecNormTitulo(nombreTec));
+      // La causa de todo el enredo fue tener el mismo curso dos veces. Ahora se
+      // avisa antes de crearlo, no después de que el catálogo ya esté sucio.
+      if (yaExiste) {
+        (closeModal(), flash('Ya existe una fila: "' + yaExiste.curso + '"', true), tecIrAFila(yaExiste.id));
+        break;
+      }
+      const filaNueva = {
         id: uid(),
         categoria: catTec,
         curso: nombreTec,
@@ -11865,10 +11943,27 @@ document.addEventListener("click", (ev) => {
         estado: "",
         cardId: null,
         updatedAt: Date.now(),
-      }),
-        touchTecnico(),
-        closeModal(),
-        render());
+      };
+      state.tecnico.push(filaNueva);
+      // Un curso se da de alta acá y nace entero: la fila con su producción y
+      // la tarjeta en el Mapa, unidas desde el minuto cero. Antes había que
+      // acordarse de crear la otra mitad a mano, y no acordarse es exactamente
+      // lo que llenó la app de cursos sueltos y de cuentas que no cerraban.
+      //
+      // La tarjeta nace SIN publicar, al revés que cardNuevaParaFila(): esto es
+      // un curso que recién arranca, no uno que ya está en Moodle. Así entra al
+      // Planner como trabajo pendiente y no al catálogo de publicados.
+      if ($("#tecNuevaTarjeta") && $("#tecNuevaTarjeta").checked) {
+        const sTec = toSector(catTec),
+          tarjetaNueva = newCard("curso", nombreTec, {
+            sectores: sTec && SECTORES[sTec] ? [sTec] : [],
+          });
+        ((tarjetaNueva.nacidaDeFila = filaNueva.id),
+          state.cards.push(tarjetaNueva),
+          (filaNueva.cardId = tarjetaNueva.id),
+          touch());
+      }
+      (touchTecnico(), closeModal(), render(), tecIrAFila(filaNueva.id));
       break;
     }
     case "tec:cat-solo":
@@ -12024,6 +12119,40 @@ document.addEventListener("click", (ev) => {
     // tarjeta que no existe.
     // Fusionar es la única acción de esta pantalla que borra una fila, así que
     // se pregunta y se dice exactamente qué se mantiene.
+    // Las dos salidas de una contradicción de vigencia. Las dos dejan la
+    // respuesta explícita en la fila, que es lo que hace que no se vuelva a
+    // deducir del texto del comentario nunca más.
+    case "val:vigente": {
+      const fv = state.tecnico.find((f) => f.id === el.dataset.id);
+      if (fv) ((fv.baja = false), tecEspejarVigencia(fv), touchTecnico(), render(), flash("✓ Marcado como vigente"));
+      break;
+    }
+    case "val:darbaja": {
+      const fb = state.tecnico.find((f) => f.id === el.dataset.id);
+      if (fb) ((fb.baja = true), tecEspejarVigencia(fb), touchTecnico(), render(), flash("🚫 Dado de baja en los dos lados"));
+      break;
+    }
+    // "No la sé" no es lo mismo que "todavía no la cargué": se guarda aparte
+    // para que el aviso se calle sin inventar una fecha que nadie tiene.
+    case "val:sinfechapub": {
+      const fs = state.tecnico.find((f) => f.id === el.dataset.id);
+      if (fs) ((fs.publicacionDesconocida = true), touchTecnico(), render(), flash("Anotado: no se conoce la fecha"));
+      break;
+    }
+    // El nombre definitivo, escrito por quien sabe: viaja a los dos lados.
+    case "tec:usarnombre": {
+      const fn = state.tecnico.find((f) => f.id === el.dataset.fila),
+        cn = state.cards.find((c) => c.id === el.dataset.card),
+        campo = document.querySelector('[data-val-nombre="' + el.dataset.fila + '"]'),
+        nombre = campo ? campo.value.trim() : "";
+      if (!fn || !cn) break;
+      if (!nombre) {
+        flash("Escribí el nombre que tiene que quedar", true);
+        break;
+      }
+      ((fn.curso = nombre), (cn.titulo = nombre), touchTecnico(), touch(), render(), flash("✓ Mismo nombre en los dos"));
+      break;
+    }
     case "val:repararmapa": {
       const x = valTarjetasDeMas().find((y) => y.fila.id === el.dataset.fila);
       if (x) (valRepararTarjeta(x), render(), flash("↩ Listo: quedó la tarjeta de siempre"));
@@ -12713,13 +12842,35 @@ function toggleArr(arg, txt, sector) {
   else arg[txt].push(sector);
   touch();
 }
+// Seguimiento técnico manda sobre la vigencia del curso: si acá se marca dado
+// de baja, la tarjeta del Mapa se da de baja también, y al revés. Antes cada
+// lado tenía su propio interruptor y el único que se enteraba del otro era el
+// panel de Revisión, avisando de una contradicción que nadie podía resolver
+// más que a mano y de a una.
+//
+// Solo toca la tarjeta si de verdad está en desacuerdo, para no ensuciar la
+// Actividad con una línea por cada vez que alguien abre el desplegable.
+function tecEspejarVigencia(fila) {
+  const card = fila.cardId ? state.cards.find((c) => c.id === fila.cardId) : null;
+  if (!card) return false;
+  const debeEstarActiva = !tecFilaBaja(fila);
+  if (card.activo === debeEstarActiva) return false;
+  (logAct(card, debeEstarActiva ? "volvió a estar vigente (desde Técnico)" : "dio de baja (desde Técnico)"),
+    patch(card, { activo: debeEstarActiva, bajaEl: debeEstarActiva ? null : todayISO() }));
+  return true;
+}
+// Lo mismo que mira el desplegable de la grilla: la elección explícita manda,
+// y si nadie eligió todavía se lee el comentario como hasta ahora.
+function tecFilaBaja(fila) {
+  return fila.baja === true || (fila.baja === undefined && tecEstadoSugiereBaja(fila.estado));
+}
 function applyTecField(id, campo, value) {
   const fila = state.tecnico.find((f) => f.id === id);
   if (!fila) return;
   // "baja" viaja como texto desde el <select> y se guarda como sí/no: lo que
   // manda es la elección de la persona, no lo que diga el comentario.
   if (campo === "baja") {
-    ((fila.baja = value === "si"), touchTecnico(), renderTecList());
+    ((fila.baja = value === "si"), tecEspejarVigencia(fila), touchTecnico(), renderTecList());
     return;
   }
   // Se guarda ISO, pero solo cuando la fecha ya está completa: mientras se
@@ -12909,6 +13060,18 @@ document.addEventListener("click", (ev) => {
     // La fecha que se pone desde Revisión: se guarda y la fila desaparece de
     // la lista, que es lo que hace que la pantalla se vacíe sola a medida que
     // se arregla. Por eso redibuja la vista entera y no solo la tabla.
+    // La fecha de publicación cargada desde Revisión, sin pasar por la grilla.
+    if (ev.target.dataset && ev.target.dataset.valPub) {
+      const filaPub = state.tecnico.find((f) => f.id === ev.target.dataset.valPub);
+      if (filaPub && ev.target.value) {
+        ((filaPub.publicacion = ev.target.value),
+          (filaPub.publicacionDesconocida = false),
+          touchTecnico(),
+          render(),
+          flash("✓ Fecha puesta"));
+      }
+      return;
+    }
     if (ev.target.dataset && ev.target.dataset.valFin) {
       const tarjetaFin = state.cards.find((c) => c.id === ev.target.dataset.valFin);
       if (tarjetaFin && ev.target.value) {

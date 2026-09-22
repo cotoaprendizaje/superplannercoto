@@ -1057,6 +1057,135 @@ await page.evaluate(() => {
     parInvalidar());
 });
 
+// ── Técnico manda sobre la vigencia ───────────────────────────────────────
+// Antes cada lado tenía su interruptor: se podía dar de baja en Técnico y que
+// el Mapa lo siguiera contando como activo. Revisión avisaba de la
+// contradicción pero solo dejaba darle la razón a un lado.
+console.log("\nla vigencia la manda Técnico");
+const vigencia = await page.evaluate(() => {
+  state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id));
+  state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo));
+  const card = newCard("curso", "ZZ Verdulería – Armado de góndola", {});
+  ((card.publicado = true), (card.activo = true), state.cards.push(card));
+  const fila = { id: "zz-vig", curso: "ZZ Verdulería – Armado de góndola", categoria: "ZZ Prueba", cardId: card.id };
+  (state.tecnico.push(fila), parInvalidar());
+  applyTecField("zz-vig", "baja", "si");
+  const trasBaja = { activo: card.activo, fecha: !!card.bajaEl };
+  applyTecField("zz-vig", "baja", "no");
+  return {
+    trasBaja,
+    trasVolver: { activo: card.activo, fecha: card.bajaEl },
+    // Y queda anotado en la Actividad de la tarjeta, no pasa en silencio.
+    anotado: (card.actividad || []).length,
+    cardId: card.id,
+  };
+});
+(check("dar de baja en Técnico da de baja la tarjeta del Mapa", vigencia.trasBaja.activo === false, vigencia),
+  check("y le pone la fecha de baja", vigencia.trasBaja.fecha, vigencia),
+  check("volver a vigente la reactiva", vigencia.trasVolver.activo === true && !vigencia.trasVolver.fecha, vigencia),
+  check("los dos cambios quedan en la Actividad de la tarjeta", vigencia.anotado === 2, vigencia));
+
+// Una contradicción vieja se puede resolver para cualquiera de los dos lados.
+const contra = await page.evaluate(() => {
+  const fila = state.tecnico.find((f) => f.id === "zz-vig"),
+    card = state.cards.find((c) => c.id === fila.cardId);
+  // Así venían los datos del Excel: sin elección explícita y con el comentario
+  // diciendo "Dado de baja". La app lo deducía del texto.
+  (delete fila.baja, (fila.estado = "Dado de baja"), parInvalidar());
+  const figuraba = valEstadoContradictorio().some((x) => x.fila.id === "zz-vig");
+  // "Está vigente": la elección explícita gana sobre el texto del comentario.
+  ((fila.baja = false), tecEspejarVigencia(fila), parInvalidar());
+  return {
+    figuraba,
+    yaNo: !valEstadoContradictorio().some((x) => x.fila.id === "zz-vig"),
+    // El comentario sigue ahí —es información— pero ya no decide nada.
+    comentarioIntacto: fila.estado === "Dado de baja",
+    sigueActiva: card.activo === true,
+  };
+});
+(check("una fila con «Dado de baja» en el comentario figura como contradicción", contra.figuraba, contra),
+  check("marcarla vigente la saca de la lista", contra.yaNo, contra),
+  check("sin borrar el comentario, que es información", contra.comentarioIntacto, contra),
+  check("y la tarjeta sigue activa", contra.sigueActiva, contra));
+
+// ── Arreglar sin salir de Revisión ────────────────────────────────────────
+console.log("\narreglar sin salir de Revisión");
+const arreglos = await page.evaluate(() => {
+  const fila = state.tecnico.find((f) => f.id === "zz-vig");
+  ((fila.publicacion = ""), delete fila.publicacionDesconocida, parInvalidar());
+  const pide = valFechas().some((f) => f.id === "zz-vig");
+  // "No la sé" no es lo mismo que "todavía no la cargué".
+  ((fila.publicacionDesconocida = true), parInvalidar());
+  const calla = !valFechas().some((f) => f.id === "zz-vig");
+  // Y cargar la fecha después la limpia.
+  ((fila.publicacion = "2019-06-01"), (fila.publicacionDesconocida = false), parInvalidar());
+  return { pide, calla, conFecha: !valFechas().some((f) => f.id === "zz-vig") };
+});
+(check("un curso activo sin fecha de publicación se pide", arreglos.pide, arreglos),
+  check("«No la sé» calla el aviso sin inventar una fecha", arreglos.calla, arreglos),
+  check("y cargarla después también", arreglos.conFecha, arreglos));
+
+// El nombre definitivo se escribe, no se elige entre dos opciones fijas.
+const nombre = await page.evaluate(() => {
+  const fila = state.tecnico.find((f) => f.id === "zz-vig"),
+    card = state.cards.find((c) => c.id === fila.cardId);
+  ((card.titulo = "ZZ Verdulería - armado de gondola"), parInvalidar());
+  const figuraba = valTitulosDifieren().some((x) => x.fila.id === "zz-vig");
+  ((state.view = "tecnico"), (state.tecSubView = "revision"), render());
+  const campo = document.querySelector('[data-val-nombre="zz-vig"]');
+  if (!campo) return { hay: false };
+  campo.value = "ZZ Verdulería – Armado de góndola (definitivo)";
+  document.querySelector('[data-action="tec:usarnombre"][data-fila="zz-vig"]').click();
+  return {
+    hay: true,
+    figuraba,
+    fila: state.tecnico.find((f) => f.id === "zz-vig").curso,
+    card: state.cards.find((c) => c.id === card.id).titulo,
+  };
+});
+(check("se puede escribir un nombre que no es ninguno de los dos", nombre.hay && nombre.figuraba, nombre),
+  check("y queda el mismo en Técnico y en el Mapa", nombre.fila === nombre.card && /definitivo/.test(nombre.fila || ""), nombre));
+
+// ── Dar de alta un curso desde Técnico ────────────────────────────────────
+console.log("\ndar de alta un curso desde Técnico");
+const alta = await page.evaluate(() => {
+  const antes = { filas: state.tecnico.length, cards: state.cards.length };
+  openModal(tecNuevaFilaModalHTML(""));
+  ($("#tecNuevoNombre").value = "ZZ Panadería – Horneado de facturas"),
+    ($("#tecNuevaCat").value = "ZZ Prueba");
+  document.querySelector('[data-action="tec:add-confirmar"]').click();
+  const fila = state.tecnico.find((f) => f.curso === "ZZ Panadería – Horneado de facturas"),
+    card = fila && state.cards.find((c) => c.id === fila.cardId);
+  return {
+    filaCreada: !!fila,
+    cardCreada: !!card,
+    unidas: !!card && card.id === fila.cardId && card.nacidaDeFila === fila.id,
+    // Un curso nuevo es trabajo por hacer, no catálogo publicado.
+    sinPublicar: !!card && !card.publicado,
+    filas: state.tecnico.length - antes.filas,
+  };
+});
+(check("dar de alta en Técnico crea la fila", alta.filaCreada, alta),
+  check("y su tarjeta en el Planner, unidas", alta.cardCreada && alta.unidas, alta),
+  check("la tarjeta nace sin publicar: es trabajo por hacer", alta.sinPublicar, alta));
+
+// Y no deja crear dos veces el mismo curso, que fue el origen de todo.
+const repetido = await page.evaluate(() => {
+  const antes = state.tecnico.length;
+  openModal(tecNuevaFilaModalHTML(""));
+  $("#tecNuevoNombre").value = "zz panaderia   horneado de facturas";
+  document.querySelector('[data-action="tec:add-confirmar"]').click();
+  return { creadas: state.tecnico.length - antes };
+});
+check("y avisa en vez de crear el mismo curso dos veces", repetido.creadas === 0, repetido);
+
+await page.evaluate(() => {
+  ((state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id) && !/^ZZ /.test(f.curso || ""))),
+    (state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo))),
+    closeModal(),
+    parInvalidar());
+});
+
 // ── Mover una tarjeta ─────────────────────────────────────────────────────
 console.log("\nmover una tarjeta de columna");
 const movida = await page.evaluate(() => {
