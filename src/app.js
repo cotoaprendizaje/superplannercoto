@@ -6288,10 +6288,11 @@ function tecTarjCuerpoHTML(fila) {
     '">🗑 Borrar esta fila</button></div></div>'
   );
 }
-// La tarjeta cerrada tiene que contestar sola las tres preguntas de siempre:
-// cómo se llama, cuántas piezas lleva y dónde quedó parado el recorrido. Por
-// eso el nombre, los cuatro puntos con su fracción y la línea de fechas están
-// a la vista sin abrir nada.
+// Un curso es un renglón de la lista, no una ficha encerrada en una caja: el
+// nombre a la izquierda con sus chapitas al lado, la línea de fechas a la
+// derecha, y nada de marco —la fila es parte de la página, separada de la de
+// abajo por una línea fina y nada más—. Cerrado ya contesta las tres preguntas
+// de siempre: cómo se llama, cuántas piezas lleva y dónde quedó parado.
 function tecTarjHTML(fila) {
   const abierta = state.tecAbierta === fila.id,
     p = tecPiezas(fila),
@@ -6305,8 +6306,7 @@ function tecTarjHTML(fila) {
     (tecSelMarcada(fila.id) ? " marcada" : "") +
     '" data-tec-row="' +
     fila.id +
-    '"><div class="tct-cab">' +
-    '<label class="tct-mk" title="Marcar para trabajar en lote">' +
+    '"><label class="tct-mk" title="Marcar para trabajar en lote">' +
     tecSelCheckbox(fila.id) +
     "</label>" +
     '<button class="tct-b" data-action="tec:abrir" data-id="' +
@@ -6315,19 +6315,37 @@ function tecTarjHTML(fila) {
     (abierta ? "Cerrar la ficha" : "Abrir la ficha para editar") +
     '"><span class="tct-n">' +
     esc(fila.curso || "(sin nombre)") +
-    '</span><span class="tct-meta">' +
-    (p.total ? '<span class="tct-pz">' + tecSemaforoHTML(fila) + "<b>" + p.hechas + "/" + p.total + "</b></span>" : "") +
-    (fila.diseno ? '<span class="tct-dis">' + esc(fila.diseno) + "</span>" : "") +
+    "</span>" +
     (activa ? "" : '<span class="tct-off">De baja</span>') +
-    (card
-      ? '<span class="tct-map on">📍 ' + esc(card.titulo.length > 22 ? card.titulo.slice(0, 22) + "…" : card.titulo) + "</span>"
-      : '<span class="tct-map">🔗 Sin vincular</span>') +
-    '</span><span class="tct-ar">' +
-    (abierta ? "▲" : "▼") +
-    "</span></button></div>" +
+    "</button>" +
+    // Cada dato en su columna y no pegado al nombre: lo que hacía legible la
+    // tabla era poder barrer una columna de arriba abajo, y eso se pierde si
+    // las chapitas empiezan donde termina cada título. Las celdas vacías se
+    // dibujan igual, con un guión, para que la columna no se corra.
+    '<span class="tct-c tct-pz">' +
+    (p.total ? tecSemaforoHTML(fila) + "<b>" + p.hechas + "/" + p.total + "</b>" : "") +
+    '</span><span class="tct-c tct-dis">' +
+    (fila.diseno ? '<i>' + esc(fila.diseno) + "</i>" : '<span class="tct-nada">—</span>') +
+    '</span><span class="tct-c tct-map' +
+    (card ? " on" : "") +
+    '" title="' +
+    esc(card ? card.titulo : "Sin tarjeta del Mapa") +
+    '">' +
+    (card ? "📍 En el Mapa" : '<span class="tct-nada">sin vincular</span>') +
+    "</span>" +
     '<div class="tct-lin">' +
     tecLineaHTML(fila) +
     "</div>" +
+    // La flecha es su propio botón y no un adorno adentro del otro: en un
+    // renglón que ocupa el ancho de la página, el borde derecho es donde la
+    // mano va a buscar "abrir esto".
+    '<button class="tct-ar" data-action="tec:abrir" data-id="' +
+    fila.id +
+    '" title="' +
+    (abierta ? "Cerrar la ficha" : "Abrir la ficha para editar") +
+    '">' +
+    (abierta ? "▲" : "▼") +
+    "</button>" +
     (abierta ? tecTarjCuerpoHTML(fila) : "") +
     "</article>"
   );
