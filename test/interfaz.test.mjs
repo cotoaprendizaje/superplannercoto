@@ -1271,10 +1271,16 @@ const modo = await page.evaluate(() => {
   document.querySelector('[data-action="tec:modo"][data-m="planilla"]').click();
   const tabla = !!document.querySelector(".tec-table");
   document.querySelector('[data-action="tec:modo"][data-m="fichas"]').click();
-  return { tabla, vuelve: !!document.querySelector(".tf"), guardado: localStorage.getItem("cf.tecModo.v1") };
+  const enFichas = { vuelve: !!document.querySelector(".tf"), guardado: localStorage.getItem("cf.tecModo.v1") };
+  // Y sin nada elegido se entra por la planilla, que es lo que el área pidió
+  // de vuelta después de probar las fichas.
+  ((state.tecModo = null), localStorage.removeItem("cf.tecModo.v1"));
+  const porDefecto = tecModo();
+  return { tabla, ...enFichas, porDefecto };
 });
 (check("la planilla sigue estando a un clic", modo.tabla, modo),
-  check("y se puede volver a fichas", modo.vuelve && modo.guardado === "fichas", modo));
+  check("y se puede volver a fichas", modo.vuelve && modo.guardado === "fichas", modo),
+  check("sin elegir nada se entra por la planilla", modo.porDefecto === "planilla", modo));
 
 // ── Vistas de columnas de la grilla ───────────────────────────────────────
 // Con las doce columnas la tabla mide más que cualquier pantalla del área, y

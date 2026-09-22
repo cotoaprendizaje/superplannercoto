@@ -6856,7 +6856,10 @@ function tecModo() {
     try {
       guardado = localStorage.getItem(TEC_MODO_KEY) || "";
     } catch (e) {}
-    state.tecModo = guardado === "planilla" ? "planilla" : "fichas";
+    // La planilla vuelve a ser la vista de entrada: el área la pidió de vuelta
+    // después de probar las fichas. Las fichas quedan a un clic para quien las
+    // prefiera, pero el que no elige nada ve la grilla de siempre.
+    state.tecModo = guardado === "fichas" ? "fichas" : "planilla";
   }
   return state.tecModo;
 }
