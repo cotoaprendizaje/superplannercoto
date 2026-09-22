@@ -7626,7 +7626,7 @@ function tecParecido(a, b) {
 // Filas y tarjetas que todavía no están comprometidas con nadie. Se calcula
 // una vez y lo usan las dos búsquedas de pares.
 function parLibres() {
-  const filas = state.tecnico.filter((f) => !f.cardId && (f.curso || "").trim()),
+  const filas = state.tecnico.filter((f) => !f.cardId && filaTieneNombre(f)),
     tomadas = new Set(state.tecnico.filter((f) => f.cardId).map((f) => f.cardId)),
     cards = state.cards.filter((c) => isCurso(c) && c.activo !== false && !tomadas.has(c.id));
   return { filas: filas, cards: cards };
@@ -7751,13 +7751,40 @@ function valCursosSinTec() {
 }
 // Filas de Técnico sin vincular y sin ningún curso del Planner con el mismo
 // título — la otra mitad del mismo hueco que valCursosSinTec().
+// Solo las filas VIGENTES: a un curso dado de baja no le falta una tarjeta en
+// el Mapa, y pedírsela era engordar la lista con trabajo que nadie va a hacer
+// nunca. Esa es además la salida para una fila que no corresponde que exista
+// en el Mapa: marcarla de baja en la grilla y deja de figurar acá.
 function valFilasSinCurso() {
   const ofrecidas = parFilasOfrecidas();
   return state.tecnico.filter((f) => {
-    if (f.cardId || ofrecidas.has(f.id)) return false;
+    if (f.cardId || ofrecidas.has(f.id) || !tecFilaActiva(f)) return false;
     const titulo = (f.curso || "").trim().toLowerCase();
     return !titulo || !state.cards.some((c) => (c.titulo || "").trim().toLowerCase() === titulo);
   });
+}
+// La contraparte de tecNuevaFilaPara(): dada una fila de Técnico, la tarjeta
+// de curso que le corresponde en el Mapa. Nace publicada y finalizada porque
+// una fila de Técnico existe justamente para un curso que ya está en Moodle;
+// sin checklist, porque no es trabajo pendiente sino un curso que ya salió.
+// Hay filas en la grilla sin nombre, o con un guión de relleno. De esas no
+// se puede crear un curso: saldría una tarjeta llamada "-" en el Mapa, que es
+// peor que el hueco que venía a tapar. Se listan igual —hay que verlas— pero
+// con el camino a la grilla en vez del botón de crear.
+function filaTieneNombre(fila) {
+  return !!tecNormTitulo(fila.curso);
+}
+function cardNuevaParaFila(fila) {
+  const s = toSector(fila.categoria),
+    sector = s && SECTORES[s] ? s : null,
+    tarjeta = newCard("curso", (fila.curso || "").trim() || "Curso sin título", {
+      publicado: true,
+      estado: "finalizado",
+      sectores: sector ? [sector] : [],
+    });
+  ((tarjeta.checklist = []),
+    fila.publicacion && !tecFechaMala(fila.publicacion) && (tarjeta.publicadoEl = fila.publicacion));
+  return tarjeta;
 }
 // Fecha inválida (tecFechaMala) en cualquier fila, o fecha vacía en una fila
 // que sí representa un curso activo — una fila de un curso que ni siquiera
@@ -7799,10 +7826,13 @@ function valEstadoContradictorio() {
     .filter((x) => x.card && tecEstadoSugiereBaja(x.fila.estado) && inInventory(x.card));
 }
 // Una tarjeta sin fecha de fin no aparece en Calendario ni en Timeline, y deja
-// a Reportes sin poder decir qué está por salir. El área decidió que la fecha
-// se carga siempre (el responsable no), así que esto es un faltante de verdad
-// y no una preferencia. Solo mira el trabajo abierto: a un curso publicado
-// hace tres años pedirle fecha de fin no tiene sentido.
+// a Reportes sin poder decir qué está por salir. Solo mira el trabajo abierto:
+// a un curso publicado hace tres años pedirle fecha de fin no tiene sentido.
+//
+// Esto vivía en Revisión y se mudó a Reportes, abajo de "Lo que está por
+// salir". No era un dato mal cargado —que es lo que Revisión junta— sino la
+// causa directa de que esa lista salga corta, así que el arreglo quedó al
+// lado del síntoma y Revisión dejó de mezclar dos cosas distintas.
 function valSinFecha() {
   return boardCards()
     .filter((c) => !c.fin && c.estado !== "finalizado")
@@ -7873,8 +7903,7 @@ function valTotal() {
     valFilasSinCurso().length +
     valFechas().length +
     valTitulosDifieren().length +
-    valEstadoContradictorio().length +
-    valSinFecha().length
+    valEstadoContradictorio().length
   );
 }
 // Una sección sin nada pendiente no necesita una caja: con una línea en verde
@@ -7923,7 +7952,6 @@ function tecValidacionHTML() {
     fechas = valFechas(),
     titulos = valTitulosDifieren(),
     contradiccion = valEstadoContradictorio(),
-    sinFecha = valSinFecha(),
     nDup = duplicados.reduce((n, g) => n + (g.length - 1), 0),
     nRep = repetidas.reduce((n, g) => n + (g.length - 1), 0),
     total = valTotal();
@@ -8030,47 +8058,68 @@ function tecValidacionHTML() {
     valGrupo(
       "Falta terminar de cargar",
       "Datos que el área ya decidió que van siempre, y todavía no están.",
-      sinFecha.length + sinTec.length + filasSueltas.length + fechas.length,
+      sinTec.length + filasSueltas.length + fechas.length,
       [
-        valSeccion(
-          "Tarjetas sin fecha de fin",
-          sinFecha.length,
-          valSinFechaHTML(sinFecha),
-          "Todas las tarjetas del tablero tienen fecha de fin.",
-        ),
         valSeccion(
           "Cursos activos sin fila en Técnico",
           sinTec.length,
-          valListaHTML(
-            sinTec.map(
-              (x) =>
-                '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span class="lnk-a" data-action="card:open" data-id="' +
-                x.card.id +
-                '" style="cursor:pointer;flex:1;min-width:160px">' +
-                esc(x.card.titulo) +
-                '</span><button class="btn btn-ghost btn-sm" data-action="tec:linkfila" data-id="' +
-                x.card.id +
-                '">🔎 Buscar fila</button><button class="btn btn-ghost btn-sm" data-action="tec:crearfila" data-id="' +
-                x.card.id +
-                '">+ Crear fila</button></div>',
+          '<div class="val-ayuda"><b>Qué pasa:</b> este curso ya está publicado en el Mapa, pero no tiene renglón en la grilla de Técnico. Sin ese renglón no hay dónde anotar si tiene portada, mosaico, evaluación y textos, ni cuándo se actualizó el SCORM — por eso tampoco aparece en «Qué falta».' +
+            '<br><b>Qué hacer:</b> <b>+ Crear fila</b> le abre el renglón, ya unido a la tarjeta y con el nombre y la categoría puestos; después se completa desde la grilla. <b>🔎 Buscar fila</b> es por si el renglón ya existe pero con otro nombre.</div>' +
+            (sinTec.length > 1
+              ? '<button class="btn btn-sm btn-primary" data-action="val:crearfilas" style="margin-bottom:8px">+ Crear las ' +
+                sinTec.length +
+                " filas de una vez</button>"
+              : "") +
+            valListaHTML(
+              sinTec.map(
+                (x) =>
+                  '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span class="lnk-a" data-action="card:open" data-id="' +
+                  x.card.id +
+                  '" style="cursor:pointer;flex:1;min-width:160px">' +
+                  esc(x.card.titulo) +
+                  '</span><button class="btn btn-ghost btn-sm" data-action="tec:linkfila" data-id="' +
+                  x.card.id +
+                  '">🔎 Buscar fila</button><button class="btn btn-ghost btn-sm" data-action="tec:crearfila" data-id="' +
+                  x.card.id +
+                  '">+ Crear fila</button></div>',
+              ),
             ),
-          ),
           "Todos los cursos activos tienen su fila en Técnico.",
         ),
         valSeccion(
           "Filas de Técnico sin curso en el Mapa",
           filasSueltas.length,
-          valListaHTML(
-            filasSueltas.map(
-              (f) =>
-                '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span style="flex:1;min-width:160px;font-size:13px">' +
-                esc(f.curso || "(sin nombre)") +
-                '</span><button class="btn btn-ghost btn-sm" data-action="tec:link" data-id="' +
-                f.id +
-                '">🔗 Vincular</button></div>',
+          '<div class="val-ayuda"><b>Qué pasa:</b> este renglón de la grilla de Técnico es de un curso que no existe como tarjeta en el Mapa. Como Reportes cuenta el Mapa, este curso no entra en ningún total ni aparece en el catálogo del área.' +
+            '<br><b>Qué hacer:</b> <b>+ Crear el curso</b> arma la tarjeta con ese nombre, la marca como publicada, le pone la fecha de publicación que ya tiene el renglón y los deja unidos. <b>🔗 Vincular</b> es por si la tarjeta ya existe con otro nombre.' +
+            '<br><b>Si el curso ya no está vigente</b>, no hace falta crearle nada: marcalo <b>Dado de baja</b> en la columna Estado de la grilla y deja de figurar acá.</div>' +
+            (filasSueltas.filter(filaTieneNombre).length > 1
+              ? '<button class="btn btn-sm btn-primary" data-action="val:crearcursos" style="margin-bottom:8px">+ Crear los ' +
+                filasSueltas.filter(filaTieneNombre).length +
+                " cursos de una vez</button>"
+              : "") +
+            valListaHTML(
+              filasSueltas.map(
+                (f) =>
+                  '<div class="lnk" style="flex-wrap:wrap;gap:4px 10px"><span style="flex:1;min-width:160px;font-size:13px">' +
+                  esc((f.curso || "").trim() || "(sin nombre)") +
+                  '</span>' +
+                  (filaTieneNombre(f)
+                    ? ""
+                    : '<span class="val-nota bad">esta fila no tiene nombre: ponéselo o borrala</span>') +
+                  '<button class="btn btn-ghost btn-sm" data-action="tec:goto" data-id="' +
+                  f.id +
+                  '">Ver la fila</button>' +
+                  (filaTieneNombre(f)
+                    ? '<button class="btn btn-ghost btn-sm" data-action="tec:link" data-id="' +
+                      f.id +
+                      '">🔗 Vincular</button><button class="btn btn-ghost btn-sm" data-action="tec:crearcurso" data-id="' +
+                      f.id +
+                      '">+ Crear el curso</button>'
+                    : "") +
+                  "</div>",
+              ),
             ),
-          ),
-          "Todas las filas de Técnico están vinculadas o coinciden con un curso del Mapa.",
+          "Todas las filas vigentes de Técnico están vinculadas o coinciden con un curso del Mapa.",
         ),
         valSeccion(
           "Fechas dudosas o faltantes",
@@ -8834,8 +8883,8 @@ function repLoQueVieneHTML() {
     hoy = todayISO();
   if (!lista.length)
     return (
-      '<div class="rep-empty">Ninguna tarjeta en desarrollo o revisión tiene fecha de fin, así que no se puede decir qué está por salir.' +
-      '<div style="margin-top:8px"><button class="btn btn-sm" data-action="tec:subview" data-v="revision">Cargar las fechas que faltan →</button></div></div>'
+      '<div class="rep-empty">Ninguna tarjeta en desarrollo o revisión tiene fecha de fin, así que no se puede decir qué está por salir.</div>' +
+      repSinFechaHTML()
     );
   return (
     '<div class="carga-list">' +
@@ -8858,7 +8907,43 @@ function repLoQueVieneHTML() {
         );
       })
       .join("") +
-    "</div>"
+    "</div>" +
+    repSinFechaHTML()
+  );
+}
+// Las tarjetas abiertas sin fecha de fin son, literalmente, las que faltan en
+// la lista de arriba: van plegadas debajo de ella, con el campo para poner la
+// fecha ahí mismo. Plegadas porque la lista buena es la que manda; abiertas
+// de un clic porque son diez segundos de trabajo cada una.
+// Se acuerda de si estaba desplegada: poner una fecha redibuja la pantalla, y
+// sin esto habría que volver a abrirla después de cada una de las veinte.
+//
+// Se mira el DOM que todavía está en pantalla en vez de guardar el estado en
+// una variable: acá el HTML se arma antes de reemplazar el anterior, así que
+// la respuesta ya está ahí. Con una variable habría que mantenerla al día
+// desde el evento "toggle", que llega tarde —es asíncrono— y deja el primer
+// redibujado leyendo un valor viejo.
+function repSinFechaAbierto() {
+  const det = document.querySelector("details.rep-sinfecha");
+  return !!det && det.open;
+}
+function repSinFechaHTML() {
+  const lista = valSinFecha();
+  if (!lista.length) return "";
+  return (
+    '<details class="rep-sinfecha"' +
+    (repSinFechaAbierto() ? " open" : "") +
+    "><summary>" +
+    lista.length +
+    " tarjeta" +
+    (lista.length === 1 ? "" : "s") +
+    " abierta" +
+    (lista.length === 1 ? "" : "s") +
+    " sin fecha de fin: no se sabe cuándo sale" +
+    (lista.length === 1 ? "" : "n") +
+    "</summary>" +
+    valSinFechaHTML(lista) +
+    "</details>"
   );
 }
 
@@ -11584,6 +11669,59 @@ document.addEventListener("click", (ev) => {
         cardId = elFilaPickList && elFilaPickList.dataset.card,
         filaElegida = state.tecnico.find((f) => f.id === el.dataset.fila);
       if (cardId && filaElegida) ((filaElegida.cardId = cardId), touchTecnico(), closeModal(), render());
+      break;
+    }
+    // La contraparte de tec:crearfila, que era la que faltaba: una fila de
+    // Técnico sin tarjeta en el Mapa no tenía más salida que buscar una
+    // tarjeta que no existe.
+    case "tec:crearcurso": {
+      const filaCrear = state.tecnico.find((f) => f.id === el.dataset.id);
+      if (filaCrear && !filaCrear.cardId) {
+        const nueva = cardNuevaParaFila(filaCrear);
+        (state.cards.push(nueva), (filaCrear.cardId = nueva.id), touch(), touchTecnico(), render(), flash("✓ Curso creado en el Mapa"));
+      }
+      break;
+    }
+    // Hacerlo de a uno con veinticinco filas es lo que hace que nadie lo
+    // termine. Se pregunta antes porque crea tarjetas de verdad en el Mapa.
+    case "val:crearcursos": {
+      const filasCrear = valFilasSinCurso().filter(filaTieneNombre);
+      if (!filasCrear.length) break;
+      confirmar(
+        "¿Crear " +
+          filasCrear.length +
+          " curso" +
+          (filasCrear.length === 1 ? "" : "s") +
+          " en el Mapa, uno por cada fila de Técnico que no tiene tarjeta? Nacen publicados y unidos a su fila. No se borra ni se pisa nada de lo que ya hay.",
+        () => {
+          (filasCrear.forEach((f) => {
+            const nueva = cardNuevaParaFila(f);
+            (state.cards.push(nueva), (f.cardId = nueva.id));
+          }),
+            touch(),
+            touchTecnico(),
+            render(),
+            flash("✓ " + filasCrear.length + " cursos creados en el Mapa"));
+        },
+      );
+      break;
+    }
+    case "val:crearfilas": {
+      const cardsCrear = valCursosSinTec();
+      if (!cardsCrear.length) break;
+      confirmar(
+        "¿Abrir " +
+          cardsCrear.length +
+          " fila" +
+          (cardsCrear.length === 1 ? "" : "s") +
+          " en la grilla de Técnico, una por cada curso activo que no la tiene? Salen con el nombre y la categoría puestos y el resto en blanco, para completar desde la grilla.",
+        () => {
+          (cardsCrear.forEach((x) => state.tecnico.push(tecNuevaFilaPara(x.card))),
+            touchTecnico(),
+            render(),
+            flash("✓ " + cardsCrear.length + " filas abiertas en Técnico"));
+        },
+      );
       break;
     }
     case "tec:crearfila": {
