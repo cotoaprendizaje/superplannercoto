@@ -425,31 +425,109 @@ const pestanas = await page.evaluate(() => [...document.querySelectorAll(".mapa-
 (check("la pestaña Validación ya no está en la navegación", !pestanas.some((t) => /Validaci/i.test(t)), pestanas),
   check("y está la de Métodos de matriculación", pestanas.some((t) => /matriculaci/i.test(t)), pestanas));
 
-// El embudo de una columna: se abre, lista los valores reales con cuántas
-// filas tiene cada uno, y al marcar uno la tabla queda con esas filas.
-// El encabezado de la grilla se queda a la vista al scrollear: el contenedor
-// ya era el que scrolleaba (lo obliga el scroll horizontal de las once
-// columnas) pero medía los 8700 px de la tabla entera, así que el encabezado
-// se pegaba a un borde que nunca se movía y se iba con la página.
-const grilla = await page.evaluate(() => {
-  const w = document.querySelector(".tec-table-wrap");
-  return { caja: w.clientHeight, tabla: w.scrollHeight, ventana: window.innerHeight };
+// Técnico dejó de ser una planilla incrustada: cada curso es una tarjeta de
+// la página, como las del Mapa, y no queda ni una tabla ni scroll de costado.
+const lista = await page.evaluate(() => ({
+  tablas: document.querySelectorAll(".tec-table, .tec-table-wrap").length,
+  tarjetas: document.querySelectorAll(".tct").length,
+  filas: tecRows().length,
+  anchoPagina: document.documentElement.scrollWidth,
+  ventana: window.innerWidth,
+}));
+(check("Técnico ya no dibuja ninguna tabla", lista.tablas === 0, lista),
+  check("cada curso es una tarjeta", lista.tarjetas === lista.filas && lista.tarjetas > 0, lista),
+  check("y la página no se va de ancho", lista.anchoPagina <= lista.ventana + 1, lista));
+
+// Los embudos de columna sobrevivieron a la tabla: ahora cuelgan de una barra
+// propia, donde se ven los doce de una en vez de a la derecha del borde.
+const barra = await page.evaluate(() => ({
+  embudos: [...document.querySelectorAll('.tbar-f[data-action="tec:filtcol"]')].map((b) => b.dataset.campo),
+  ordenar: !!document.querySelector('.tbar-sel[data-action="tec:orden-sel"]'),
+}));
+(check("los embudos de columna siguen estando, ahora en su propia barra", barra.embudos.includes("diseno") && barra.embudos.length >= 8, barra),
+  check("y el orden se elige de un desplegable", barra.ordenar === true, barra));
+
+// Una tarjeta cerrada ya contesta sola cómo viene el curso: no hay que
+// abrirla para ver las piezas ni la línea de fechas.
+const cerrada = await page.evaluate(() => {
+  const t = document.querySelector(".tct");
+  return {
+    nombre: !!t.querySelector(".tct-n"),
+    piezas: !!t.querySelector(".tct-pz .tec-sem-p"),
+    fechas: t.querySelectorAll(".tct-lin .tlin-paso").length,
+    cuerpo: !!t.querySelector(".tct-cuerpo"),
+  };
 });
-(check("la grilla scrollea adentro de su propia caja", grilla.caja < grilla.tabla, grilla),
-  check("y esa caja no es más alta que la ventana", grilla.caja <= grilla.ventana, grilla));
-await page.evaluate(() => window.scrollTo(0, 99999));
+(check("la tarjeta cerrada muestra nombre, piezas y las tres fechas", cerrada.nombre && cerrada.piezas && cerrada.fechas === 3, cerrada),
+  check("y no despliega la ficha hasta que se la abre", cerrada.cuerpo === false, cerrada));
+
+// Abrirla la estira al ancho completo con todos los campos adentro.
+await page.click(".tct .tct-b");
+await page.waitForTimeout(350);
+const fichaAbierta = await page.evaluate(() => {
+  const t = document.querySelector(".tct.abierta");
+  if (!t) return { sinAbrir: true };
+  return {
+    abiertas: document.querySelectorAll(".tct.abierta").length,
+    curso: !!t.querySelector('[data-tec-field="curso"]'),
+    categoria: !!t.querySelector('[data-tec-field="categoria"]'),
+    fechas: t.querySelectorAll('.tct-cuerpo [data-tec-field="publicacion"], .tct-cuerpo [data-tec-field="scorm"], .tct-cuerpo [data-tec-field="mail"]').length,
+    piezas: t.querySelectorAll(".tct-cuerpo .falta-pz").length,
+    borrar: !!t.querySelector('[data-action="tec:del"]'),
+    ancha: Math.round(t.getBoundingClientRect().width) > Math.round(document.querySelector(".tgrid").getBoundingClientRect().width) - 8,
+  };
+});
+(check("abrir una tarjeta la estira al ancho de la grilla", fichaAbierta.ancha === true, fichaAbierta),
+  check("con el nombre, la categoría, las tres fechas y las piezas adentro", fichaAbierta.curso && fichaAbierta.categoria && fichaAbierta.fechas === 3 && fichaAbierta.piezas === 4, fichaAbierta),
+  check("y con dónde borrarla", fichaAbierta.borrar === true, fichaAbierta),
+  check("solo una ficha abierta por vez", fichaAbierta.abiertas === 1, fichaAbierta));
+await page.evaluate(() => ((state.tecAbierta = null), renderTecList()));
+await page.waitForTimeout(250);
+
+// Selección múltiple: poner "Portada hecha" en doce cursos eran doce clics en
+// doce lugares distintos de la planilla. Marcadas las tarjetas, es uno.
+await page.evaluate(() => ((state.tecSel = []), renderTecList()));
+await page.waitForTimeout(250);
+const tresIds = await page.evaluate(() => tecRows().slice(0, 3).map((f) => f.id));
+for (const id of tresIds) await page.click('.tct[data-tec-row="' + id + '"] .tct-mk input');
+await page.waitForTimeout(350);
+const marcadas = await page.evaluate(() => ({
+  enEstado: (state.tecSel || []).length,
+  barra: (document.querySelector(".tsel-n") || {}).textContent || "",
+  resaltadas: document.querySelectorAll(".tct.marcada").length,
+}));
+(check("marcar tarjetas arma la barra del lote", marcadas.enEstado === 3 && /3 cursos marcados/.test(marcadas.barra), marcadas),
+  check("y las marcadas se ven marcadas", marcadas.resaltadas === 3, marcadas));
+
+await page.click('.tsel [data-action="tec:selpieza"][data-campo="portada"][data-val="1"]');
 await page.waitForTimeout(400);
-const pegado = await page.evaluate(() => {
-  const th = document.querySelector(".tec-head-c th"),
-    barra = document.querySelector(".topbar");
-  if (!th) return { sinEncabezado: true };
-  const r = th.getBoundingClientRect(),
-    piso = barra ? barra.getBoundingClientRect().bottom - 2 : 0;
-  return { top: Math.round(r.top), piso: Math.round(piso), visible: r.top >= piso && r.top < window.innerHeight };
-});
-check("el encabezado con los embudos sigue a la vista con la página abajo de todo", pegado.visible === true, pegado);
-await page.evaluate(() => window.scrollTo(0, 0));
-await page.waitForTimeout(300);
+const lotePieza = await page.evaluate((ids) => ({
+  conPortada: ids.filter((id) => state.tecnico.find((f) => f.id === id).portada).length,
+  otras: state.tecnico.filter((f) => !ids.includes(f.id) && f.portada).length,
+}), tresIds);
+check("el lote pone la pieza en las tres de una vez", lotePieza.conPortada === 3, lotePieza);
+
+await page.click('.tsel [data-action="tec:selbaja"][data-val="si"]');
+await page.waitForTimeout(400);
+const loteBaja = await page.evaluate((ids) => ids.map((id) => state.tecnico.find((f) => f.id === id).baja), tresIds);
+check("y las da de baja a las tres", loteBaja.every((b) => b === true), loteBaja);
+
+await page.click('.tsel [data-action="tec:selclear"]');
+await page.waitForTimeout(350);
+const sinMarca = await page.evaluate(() => ({
+  enEstado: (state.tecSel || []).length,
+  barra: !!document.querySelector(".tsel"),
+}));
+(check("«Quitar la marca» limpia la selección", sinMarca.enEstado === 0, sinMarca),
+  check("y la barra del lote deja de ocupar lugar", sinMarca.barra === false, sinMarca));
+// Se devuelven a como estaban para no ensuciar lo que viene después.
+await page.evaluate((ids) => {
+  (ids.forEach((id) => {
+    const f = state.tecnico.find((x) => x.id === id);
+    ((f.portada = false), delete f.baja);
+  }), renderTecList());
+}, tresIds);
+await page.waitForTimeout(250);
 
 const antesFilas = await page.evaluate(() => tecRows().length);
 await page.click('[data-action="tec:filtcol"][data-campo="diseno"]');
