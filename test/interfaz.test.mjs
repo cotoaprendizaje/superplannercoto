@@ -1207,6 +1207,48 @@ const movida = await page.evaluate(() => {
   check("sella desde cuándo está en revisión", movida.sello, movida),
   check("y mover a la misma columna no hace nada", movida.sinCambio === false && movida.anotado === 1, movida));
 
+// ── Vistas de columnas de la grilla ───────────────────────────────────────
+// Con las doce columnas la tabla mide más que cualquier pantalla del área, y
+// lo primero que se cae del borde es la columna de comentarios, que es la que
+// más se usa. Las vistas no sacan columnas: eligen cuál de las tres preguntas
+// se está haciendo.
+console.log("\nvistas de columnas");
+const vistas = await page.evaluate(() => {
+  ((state.view = "tecnico"), (state.tecSubView = "grilla"), (state.tecColsOcultas = []), render());
+  const ancho = () => {
+    const w = document.querySelector(".tec-table-wrap"),
+      t = document.querySelector(".tec-table");
+    return { util: Math.round(w.clientWidth), tabla: Math.round(t.scrollWidth) };
+  };
+  const todo = ancho();
+  const medir = (id) => {
+    document.querySelector('[data-action="tec:vista"][data-v="' + id + '"]').click();
+    return { a: ancho(), activa: tecVistaActual(), cols: tecColsVisibles().length };
+  };
+  const prod = medir("produccion"),
+    pub = medir("publicacion"),
+    seg = medir("seguimiento");
+  // Volver a "Todo" tiene que devolver las doce.
+  document.querySelector('[data-action="tec:vista"][data-v="todo"]').click();
+  return {
+    todo,
+    prod,
+    pub,
+    seg,
+    volvio: tecColsVisibles().length === TEC_COLS.length,
+    // Una combinación propia no miente diciendo que es una de las vistas.
+    propia: (tecColToggle("mapa"), tecVistaActual()),
+  };
+});
+(check("con todas las columnas la tabla no entra en la pantalla", vistas.todo.tabla > vistas.todo.util, vistas.todo),
+  check("la vista Producción entra entera", vistas.prod.a.tabla <= vistas.prod.a.util + 1, vistas.prod),
+  check("la de Publicación también", vistas.pub.a.tabla <= vistas.pub.a.util + 1, vistas.pub),
+  check("y la de Seguimiento", vistas.seg.a.tabla <= vistas.seg.a.util + 1, vistas.seg),
+  check("cada vista se marca como la activa", vistas.prod.activa === "produccion" && vistas.seg.activa === "seguimiento", vistas),
+  check("«Todo» devuelve las doce columnas", vistas.volvio, vistas),
+  check("y una combinación propia no se hace pasar por una vista", vistas.propia === "", vistas));
+await page.evaluate(() => ((state.tecColsOcultas = []), tecColsGuardar(), render()));
+
 // ── Navegación ────────────────────────────────────────────────────────────
 console.log("\nnavegación");
 const paleta = await page.evaluate(() => {

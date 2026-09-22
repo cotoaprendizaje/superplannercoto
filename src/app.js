@@ -5901,17 +5901,17 @@ const TEC_FECHAS = ["publicacion", "scorm", "mail"];
 // sabe qué fila se está editando, y sin la ✕ no habría cómo borrarla.
 // El orden de esta lista es el orden de la tabla.
 const TEC_COLS = [
-  { k: "publicacion", label: "Publicación", grupo: "Fechas", tit: "Cuándo se creó el curso en Moodle" },
-  { k: "scorm", label: "SCORM actualizado", grupo: "Fechas", tit: "Última vez que se subió el paquete SCORM" },
-  { k: "mail", label: "Mail publicado", grupo: "Fechas", tit: "Cuándo salió el mail avisando el curso" },
+  { k: "publicacion", label: "Publicación", corto: "Publicado", grupo: "Fechas", tit: "Cuándo se creó el curso en Moodle" },
+  { k: "scorm", label: "SCORM actualizado", corto: "SCORM", grupo: "Fechas", tit: "Última vez que se subió el paquete SCORM" },
+  { k: "mail", label: "Mail publicado", corto: "Mail", grupo: "Fechas", tit: "Cuándo salió el mail avisando el curso" },
   // Los grupos son los que arman el encabezado de dos pisos de la grilla.
   // "Producción" abarcaba siete columnas de naturaleza muy distinta —cuatro
   // tildes, un desplegable, un comentario libre y un vínculo—, así que el
   // piso de arriba decía tan poco como no estar.
-  { k: "portada", label: "Portada", grupo: "Piezas" },
-  { k: "mosaico", label: "Mosaico", grupo: "Piezas" },
-  { k: "evaluacion", label: "Evaluación", grupo: "Piezas" },
-  { k: "textos", label: "Textos", grupo: "Piezas" },
+  { k: "portada", label: "Portada", corto: "Port.", grupo: "Piezas" },
+  { k: "mosaico", label: "Mosaico", corto: "Mos.", grupo: "Piezas" },
+  { k: "evaluacion", label: "Evaluación", corto: "Eval.", grupo: "Piezas" },
+  { k: "textos", label: "Textos", corto: "Text.", grupo: "Piezas" },
   { k: "diseno", label: "Diseño", grupo: "Formato" },
   { k: "baja", label: "Estado", grupo: "Seguimiento", tit: "Si el curso sigue vigente o está dado de baja" },
   { k: "estado", label: "Comentario", grupo: "Seguimiento", tit: "Notas de trabajo sobre el curso" },
@@ -5967,11 +5967,15 @@ function tecColsTodas() {
 // Ancho mínimo de la tabla según lo que esté a la vista: con las quince
 // columnas hay scroll horizontal sí o sí, con cinco no tiene por qué haberlo.
 function tecTableMin() {
-  const ancho = { estado: 210, mapa: 150, diseno: 130, baja: 130 };
+  // Medidas apretadas a mano contra lo que de verdad entra en cada celda: una
+  // fecha DD/MM/AAAA, un tilde, un desplegable de dos opciones. Antes sobraba
+  // aire en las columnas angostas y eso empujaba la de comentarios fuera de
+  // pantalla.
+  const ancho = { estado: 190, mapa: 92, diseno: 116, baja: 116 };
   return (
-    320 +
-    (tecPlano() ? 120 : 0) +
-    tecColsVisibles().reduce((n, c) => n + (ancho[c.k] || (TEC_CHKS.includes(c.k) ? 74 : 132)), 0)
+    252 +
+    (tecPlano() ? 110 : 0) +
+    tecColsVisibles().reduce((n, c) => n + (ancho[c.k] || (TEC_CHKS.includes(c.k) ? 62 : 106)), 0)
   );
 }
 function tecFechaVer(iso) {
@@ -6574,9 +6578,14 @@ function tecHeadHTML() {
     tecTh("curso", "Curso") +
     tecColsVisibles()
       .map((col) =>
+        // El rótulo corto es solo para el encabezado de la grilla: "SCORM
+        // actualizado" en mayúsculas ocupaba 173 px para mostrar una fecha, y
+        // ese ancho era el que empujaba la columna de comentarios fuera de
+        // pantalla. El nombre entero sigue en el tooltip y en el selector de
+        // columnas, que es donde hace falta que no sea ambiguo.
         TEC_CHKS.includes(col.k) || col.k === "mapa" || col.k === "baja"
-          ? tecThSoloFiltro(col.k, col.label, col.tit)
-          : tecTh(col.k, col.label, col.tit),
+          ? tecThSoloFiltro(col.k, col.corto || col.label, col.tit || col.label)
+          : tecTh(col.k, col.corto || col.label, col.tit || col.label),
       )
       .join("") +
     "<th></th></tr></thead>"
@@ -7015,6 +7024,69 @@ function tecCategoriaFiltroHTML() {
 // Selector de columnas. Mismo patrón que el popover de "☰ Filtros" del
 // Planner: se abre sobre el botón, se cierra al tocar afuera, y lo que se
 // marca queda guardado en este navegador.
+// ===== Vistas de columnas =====
+// Con las doce columnas puestas la tabla mide más de 1600 px y en una pantalla
+// de 1400 hay que scrollear de costado sí o sí — justo hasta la columna de
+// comentarios, que es la que más se usa (la tiene escrita la mitad del
+// catálogo). Achicar los anchos ayuda pero no alcanza: doce columnas de datos
+// distintos no entran legibles en un ancho de pantalla, y apretarlas hasta que
+// entren es cambiar un problema por otro.
+//
+// La salida no es sacar columnas sino dejar de mirarlas todas a la vez. Cada
+// vista es una pregunta: cómo viene la producción, cuándo salió cada cosa, en
+// qué estado está. Son las mismas columnas del selector de siempre, que sigue
+// estando para el que quiera una combinación propia; esto solo pone las tres
+// combinaciones que el área usa a un clic.
+const TEC_VISTAS = [
+  { id: "todo", nombre: "Todo", cols: null, tit: "Las doce columnas (hay que scrollear de costado)" },
+  {
+    id: "produccion",
+    nombre: "Producción",
+    cols: ["portada", "mosaico", "evaluacion", "textos", "diseno"],
+    tit: "Las cuatro piezas y el formato",
+  },
+  {
+    id: "publicacion",
+    nombre: "Publicación",
+    cols: ["publicacion", "scorm", "mail"],
+    tit: "Cuándo se publicó, se actualizó el SCORM y salió el mail",
+  },
+  {
+    id: "seguimiento",
+    nombre: "Seguimiento",
+    cols: ["baja", "estado", "mapa"],
+    tit: "Vigencia, comentarios y vínculo con el Mapa",
+  },
+];
+// Cuál de las vistas describe lo que hay puesto ahora, o ninguna si la persona
+// armó su propia combinación desde el selector de columnas.
+function tecVistaActual() {
+  const visibles = TEC_COLS.filter((c) => tecColVisible(c.k)).map((c) => c.k).sort().join(",");
+  const v = TEC_VISTAS.find((x) =>
+    x.cols ? x.cols.slice().sort().join(",") === visibles : TEC_COLS.map((c) => c.k).sort().join(",") === visibles,
+  );
+  return v ? v.id : "";
+}
+function tecVistasHTML() {
+  const actual = tecVistaActual();
+  return (
+    '<div class="tec-vistas"><span class="tec-vistas-lbl">Ver</span>' +
+    TEC_VISTAS.map(
+      (v) =>
+        '<button class="tec-vista' +
+        (actual === v.id ? " on" : "") +
+        '" data-action="tec:vista" data-v="' +
+        v.id +
+        '" title="' +
+        esc(v.tit) +
+        '">' +
+        esc(v.nombre) +
+        "</button>",
+    ).join("") +
+    (actual ? "" : '<span class="tec-vistas-propia">combinación propia</span>') +
+    "</div>"
+  );
+}
 function tecColsPopHTML() {
   const ocultas = tecColsOcultas().length,
     grupos = [...new Set(TEC_COLS.map((c) => c.grupo))];
@@ -7412,6 +7484,7 @@ function renderTecnico() {
         (tecFiltrando() ? "" : " hidden") +
         ">✕ Limpiar filtros</button></div>" +
         tecKpisHTML() +
+        (sub === "grilla" ? tecVistasHTML() : "") +
         '<div id="tecList">' +
         (sub === "falta" ? tecFaltaHTML() : tecListHTML()) +
         "</div>")
@@ -11681,6 +11754,16 @@ document.addEventListener("click", (ev) => {
     case "tec:cols-toggle": {
       const elCols = $("#tecColsPop");
       if (elCols) elCols.classList.toggle("hidden");
+      break;
+    }
+    // Una vista no borra nada: apaga y prende columnas del mismo selector de
+    // siempre, y queda guardada igual que si se hubieran tildado a mano.
+    case "tec:vista": {
+      const v = TEC_VISTAS.find((x) => x.id === el.dataset.v);
+      if (!v) break;
+      ((state.tecColsOcultas = v.cols ? TEC_COLS.map((c) => c.k).filter((k) => !v.cols.includes(k)) : []),
+        tecColsGuardar(),
+        render());
       break;
     }
     case "tec:cols-todas": {

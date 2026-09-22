@@ -6583,11 +6583,14 @@ html {
 }
 .tec-head-c th {
   top: var(--tec-h-g);
-  padding: 8px 10px;
-  font-size: 10.5px;
+  /* Apretado a propósito: el ancho de estos rótulos es lo que fija el ancho de
+     toda la columna, y con doce columnas cada píxel de más acá son doce de
+     más en la tabla. */
+  padding: 8px 7px;
+  font-size: 10px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   color: var(--ink-soft);
   border-bottom: 1px solid var(--line);
 }
@@ -6597,7 +6600,7 @@ html {
    tiene que ser, pero se lee como parte de la app y no como un Excel
    incrustado. */
 .tec-table td {
-  padding: 7px 8px;
+  padding: 7px 6px;
   border-bottom: 1px solid var(--line-soft);
   vertical-align: middle;
 }
@@ -9514,5 +9517,58 @@ button.mat-ct:hover {
   font-size: 11.5px;
   font-weight: 400;
   line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+/* ===== Técnico · vistas de columnas =====
+   Doce columnas de datos distintos no entran legibles en un ancho de pantalla.
+   En vez de sacar columnas, se elige qué pregunta se está haciendo: cómo viene
+   la producción, cuándo salió cada cosa, en qué estado está. El selector de
+   columnas de siempre sigue ahí para armarse una combinación propia. */
+.tec-vistas {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 var(--sp-3);
+}
+.tec-vistas-lbl {
+  font-family: var(--texto);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-right: 2px;
+}
+.tec-vista {
+  padding: 5px 13px;
+  border-radius: var(--pill);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  font-family: var(--texto);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  transition:
+    background 0.14s,
+    color 0.14s,
+    border-color 0.14s;
+}
+.tec-vista:hover {
+  border-color: var(--coto-blue);
+  color: var(--ink);
+}
+.tec-vista.on {
+  background: var(--coto-blue);
+  border-color: var(--coto-blue);
+  color: #fff;
+  font-weight: 700;
+}
+.tec-vistas-propia {
+  font-family: var(--texto);
+  font-size: 11.5px;
+  font-style: italic;
   color: var(--ink-soft);
 }
