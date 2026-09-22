@@ -6209,6 +6209,57 @@ function tecBajaSelect(fila) {
 // Una fecha de la ficha abierta. La celda de la tabla ponía el aviso de fecha
 // ilegible arriba y apretado; acá hay lugar para decir qué decía y por qué no
 // se entiende.
+// Las cuatro piezas de producción, dichas por su nombre y tildables sin abrir
+// nada. Respeta el selector de columnas: si alguien escondió "Mosaico" porque a
+// su área no le corresponde, tampoco se le pide acá.
+function tecPiezasFilaHTML(fila) {
+  const piden = TEC_CHKS.filter(tecColVisible);
+  if (!piden.length) return "";
+  return piden
+    .map(
+      (k) =>
+        '<label class="tpz' +
+        (fila[k] ? " on" : "") +
+        '" title="' +
+        esc(tecColLabel(k) + (fila[k] ? ": hecha" : ": falta")) +
+        '"><input type="checkbox" data-tec-id="' +
+        fila.id +
+        '" data-tec-field="' +
+        k +
+        '"' +
+        (fila[k] ? " checked" : "") +
+        "><span>" +
+        esc(tecColLabel(k)) +
+        "</span></label>",
+    )
+    .join("");
+}
+// Tildar una pieza cambia dos cosas fuera de la casilla: si el renglón pasa a
+// estar completo (canto verde) y el avance de su categoría. Se tocan a mano en
+// vez de redibujar la lista entera: con ciento catorce renglones, volver a
+// armarla por cada tilde es tirar el trabajo del navegador a la basura y
+// además sacarle el foco a la casilla que se acaba de tocar.
+function tecFilaSync(id) {
+  const fila = state.tecnico.find((f) => f.id === id),
+    el = document.querySelector('.tct[data-tec-row="' + id + '"]');
+  if (!fila || !el) return;
+  const p = tecPiezas(fila);
+  el.classList.toggle("llena", tecFilaActiva(fila) && !!p.total && p.hechas === p.total);
+  TEC_CHKS.forEach((k) => {
+    const lbl = el.querySelector('.tpz input[data-tec-field="' + k + '"]');
+    if (lbl && lbl.parentElement) lbl.parentElement.classList.toggle("on", !!fila[k]);
+  });
+  // El encabezado de la categoría dice "9 completos · 3 con algo pendiente":
+  // si no se refresca, queda mintiendo hasta el próximo dibujado.
+  const seccion = el.closest(".tcat"),
+    avance = seccion && seccion.querySelector(".tec-cat-av");
+  if (avance) {
+    const ids = [...seccion.querySelectorAll(".tct[data-tec-row]")].map((n) => n.dataset.tecRow),
+      filas = state.tecnico.filter((f) => ids.includes(f.id)),
+      nuevo = tecCatAvanceHTML(filas);
+    if (nuevo) avance.outerHTML = nuevo;
+  }
+}
 function tecTarjFechaHTML(fila, campo) {
   const val = fila[campo] || "",
     mala = tecFechaMala(val);
@@ -6321,7 +6372,7 @@ function tecTarjHTML(fila) {
     // las chapitas empiezan donde termina cada título. Las celdas vacías se
     // dibujan igual, con un guión, para que la columna no se corra.
     '<span class="tct-c tct-pz">' +
-    (p.total ? tecSemaforoHTML(fila) + "<b>" + p.hechas + "/" + p.total + "</b>" : "") +
+    tecPiezasFilaHTML(fila) +
     '</span><span class="tct-c tct-dis">' +
     (fila.diseno ? '<i>' + esc(fila.diseno) + "</i>" : '<span class="tct-nada">—</span>') +
     '</span><span class="tct-c tct-map">' +
@@ -6377,16 +6428,28 @@ function tecCatSeccionHTML(grupo) {
 // vez de un <th>: así se ven los doce de una, sin scrollear la planilla de
 // costado para descubrir que existían.
 const TEC_ORDEN_OPTS = [
-  { k: "", label: "Por categoría (agrupado)" },
-  { k: "curso", label: "Nombre del curso" },
-  { k: "categoria", label: "Categoría" },
-  { k: "publicacion", label: "Publicación" },
-  { k: "scorm", label: "SCORM actualizado" },
-  { k: "mail", label: "Mail publicado" },
-  { k: "diseno", label: "Diseño" },
-  { k: "baja", label: "Estado" },
-  { k: "estado", label: "Comentario" },
+  { k: "", dir: 1, label: "Por categoría (agrupado)" },
+  { k: "curso", dir: 1, label: "Nombre: de la A a la Z" },
+  { k: "curso", dir: -1, label: "Nombre: de la Z a la A" },
+  { k: "categoria", dir: 1, label: "Categoría: de la A a la Z" },
+  { k: "categoria", dir: -1, label: "Categoría: de la Z a la A" },
+  { k: "publicacion", dir: -1, label: "Publicación: de la más nueva a la más vieja" },
+  { k: "publicacion", dir: 1, label: "Publicación: de la más vieja a la más nueva" },
+  { k: "scorm", dir: -1, label: "SCORM: del más nuevo al más viejo" },
+  { k: "scorm", dir: 1, label: "SCORM: del más viejo al más nuevo" },
+  { k: "mail", dir: -1, label: "Mail publicado: del más nuevo al más viejo" },
+  { k: "mail", dir: 1, label: "Mail publicado: del más viejo al más nuevo" },
+  { k: "diseno", dir: 1, label: "Diseño: de la A a la Z" },
+  { k: "baja", dir: 1, label: "Estado: vigentes primero" },
+  { k: "baja", dir: -1, label: "Estado: dados de baja primero" },
+  { k: "estado", dir: 1, label: "Comentario: de la A a la Z" },
 ];
+// Las fechas sin cargar quedan al final ordene como ordene (lo hace tecRows),
+// así "la más nueva primero" arranca por una fecha de verdad y no por treinta
+// renglones vacíos.
+function tecOrdenValor(o) {
+  return o.k ? o.k + "|" + o.dir : "";
+}
 function tecFiltBtnHTML(k) {
   const sel = tecColFiltro(k),
     label = k === "categoria" ? "Categoría" : tecColLabel(k);
@@ -6430,14 +6493,18 @@ function tecBarraHTML(sub) {
     '<span class="tbar-g"><span class="tbar-lbl">Ordenar</span>' +
     '<select class="tbar-sel" data-action="tec:orden-sel">' +
     TEC_ORDEN_OPTS.filter((o) => !o.k || o.k === "curso" || o.k === "categoria" || tecColVisible(o.k))
-      .map((o) => '<option value="' + o.k + '"' + (orden === o.k ? " selected" : "") + ">" + esc(o.label) + "</option>")
+      .map(
+        (o) =>
+          '<option value="' +
+          tecOrdenValor(o) +
+          '"' +
+          (orden === o.k && (!o.k || state.tecOrdenDir === o.dir) ? " selected" : "") +
+          ">" +
+          esc(o.label) +
+          "</option>",
+      )
       .join("") +
     "</select>" +
-    (orden
-      ? '<button class="tbar-dir" data-action="tec:orden-dir" title="Dar vuelta el orden">' +
-        (state.tecOrdenDir === 1 ? "▲ A-Z" : "▼ Z-A") +
-        "</button>"
-      : "") +
     '</span><span class="tbar-g tbar-embudos"><span class="tbar-lbl">Filtrar por</span>' +
     TEC_FILT_COLS.filter((k) => k === "categoria" || tecColVisible(k)).map(tecFiltBtnHTML).join("") +
     '</span><span class="tbar-g tbar-fin"><span class="tec-top-n" id="tecTopN">' +
@@ -6481,23 +6548,6 @@ function tecCatAvanceHTML(filas) {
     (completos === 1 ? "" : "s") +
     (faltan ? " · " + faltan + " con algo pendiente" : "") +
     "</span></span>"
-  );
-}
-// El semáforo de una fila: un punto por pieza, prendido o apagado. Cuatro
-// casillas de formulario en cuatro columnas obligan a mirar cuatro veces;
-// cuatro puntos juntos se leen de un vistazo, y el título dice cuál es cuál.
-function tecSemaforoHTML(fila) {
-  const piden = TEC_CHKS.filter((k) => tecColVisible(k));
-  if (!piden.length) return "";
-  const p = tecPiezas(fila);
-  return (
-    '<span class="tec-sem' +
-    (p.hechas === p.total ? " full" : "") +
-    '" title="' +
-    esc(piden.map((k) => tecColLabel(k) + ": " + (fila[k] ? "sí" : "no")).join(" · ")) +
-    '">' +
-    piden.map((k) => '<i class="tec-sem-p' + (fila[k] ? " on" : "") + '"></i>').join("") +
-    "</span>"
   );
 }
 // El popover del embudo va suelto y en position:fixed: se abre contra el botón
@@ -12013,9 +12063,6 @@ document.addEventListener("click", (ev) => {
       // quedar filtrado sin darse cuenta de por qué faltan filas.
       ((state.tecPendiente = state.tecPendiente === el.dataset.cual ? "" : el.dataset.cual || ""), render());
       break;
-    case "tec:orden-dir":
-      ((state.tecOrdenDir = state.tecOrdenDir === 1 ? -1 : 1), render());
-      break;
     // Abrir una ficha cierra la anterior: con noventa cursos, dos fichas
     // abiertas ya obligan a scrollear para comparar, que es justo lo que la
     // tarjeta cerrada vino a evitar.
@@ -13104,7 +13151,8 @@ document.addEventListener("click", (ev) => {
       return;
     }
     if (accion === "tec:orden-sel") {
-      ((state.tecOrden = ev.target.value), (state.tecOrdenDir = 1), render());
+      const [campoOrd, dirOrd] = (ev.target.value || "").split("|");
+      ((state.tecOrden = campoOrd || ""), (state.tecOrdenDir = dirOrd === "-1" ? -1 : 1), render());
       return;
     }
     // Marcar o desmarcar una tarjeta para el lote. No redibuja la lista: la
@@ -13172,10 +13220,13 @@ document.addEventListener("click", (ev) => {
       const value = ev.target.type === "checkbox" ? ev.target.checked : ev.target.value;
       (applyTecField(ev.target.dataset.tecId, ev.target.dataset.tecField, value),
         ev.target.type === "date" && ev.target.classList.toggle("vacia", !ev.target.value));
-      // En la grilla el tilde se queda donde está; en "Qué falta" además mueve
-      // el curso de banda y cambia la cuenta de arriba, así que hay que
-      // redibujar o la pantalla queda mintiendo.
-      if (state.tecSubView === "falta" && ev.target.type === "checkbox") renderTecList();
+      // En "Qué falta" el tilde mueve el curso de banda y cambia la cuenta de
+      // arriba, así que hay que redibujar o la pantalla queda mintiendo. En la
+      // lista el renglón se queda donde está y solo cambian su canto y el
+      // avance de la categoría: eso se toca a mano.
+      if (ev.target.type === "checkbox" && TEC_CHKS.includes(ev.target.dataset.tecField)) {
+        state.tecSubView === "falta" ? renderTecList() : tecFilaSync(ev.target.dataset.tecId);
+      }
       return;
     }
     if (ev.target.dataset && ev.target.dataset.eduId) {
