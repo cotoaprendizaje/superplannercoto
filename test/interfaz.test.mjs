@@ -585,41 +585,121 @@ console.log("\nla pestaña Revisión");
 const rev = await page.evaluate(() => {
   const c = newCard("libre", "TARJETA SIN FECHA DE FIN", {});
   ((c.estado = "en-desarrollo"), (c.fin = null), state.cards.push(c));
-  ((state.tecSubView = "revision"), render());
+  ((state.view = "tecnico"), (state.tecSubView = "revision"), render());
   return {
     pestaña: [...document.querySelectorAll(".mapa-sec")].map((x) => x.textContent.trim()),
     // El número de la pestaña y el del encabezado salen del mismo lugar: si
     // cada uno contara por su cuenta, tarde o temprano dirían cosas distintas.
     total: valTotal(),
     enLaPestaña: +(document.querySelector('[data-v="revision"] b').textContent.match(/\d+/) || [0])[0],
-    // Cada cosa se arregla sin salir: acá, poniéndole la fecha.
-    campos: document.querySelectorAll("[data-val-fin]").length,
     secciones: document.querySelectorAll(".rep-sec").length,
+    // Las tarjetas sin fecha de fin se fueron de acá a Reportes: no eran un
+    // dato mal cargado sino la causa de que "Lo que está por salir" salga
+    // corta, y mezclarlas hacía que la pantalla nunca se vaciara.
+    camposDeFecha: document.querySelectorAll("[data-val-fin]").length,
     id: c.id,
   };
 });
 (check("Revisión es una pestaña de Técnico, con el número de pendientes", rev.pestaña.some((t) => /Revisi/.test(t)), rev),
   check("y ese número es el mismo que cuenta el panel", rev.enLaPestaña === rev.total, rev),
-  check("junta todo lo suelto en una sola pantalla", rev.secciones >= 6, rev),
-  check("y las tarjetas sin fecha traen el campo para ponerla", rev.campos > 0, rev));
+  check("junta todo lo suelto en una sola pantalla", rev.secciones >= 4, rev),
+  check("y las fechas de fin ya no se piden acá", rev.camposDeFecha === 0, rev));
 
-const arreglo = await page.evaluate((id) => {
-  const antes = valTotal(),
+// Las fechas de fin ahora se cargan donde se notan que faltan.
+const enReportes = await page.evaluate((id) => {
+  ((state.view = "reportes"), render());
+  const det = document.querySelector("details.rep-sinfecha");
+  if (det) det.open = true;
+  const antes = valSinFecha().length,
     inp = document.querySelector('[data-val-fin="' + id + '"]');
+  if (!inp) return { hay: false };
   ((inp.value = "2026-10-15"), inp.dispatchEvent(new Event("change", { bubbles: true })));
-  const d = state.cards.find((c) => c.id === id);
   return {
+    hay: true,
     antes,
-    despues: valTotal(),
-    guardada: d.fin,
-    // Arreglada, desaparece de la lista: es lo que hace que la pantalla se
-    // vacíe sola a medida que se trabaja.
+    despues: valSinFecha().length,
+    guardada: state.cards.find((c) => c.id === id).fin,
+    // Arreglada, desaparece de la lista: es lo que hace que se vacíe sola a
+    // medida que se trabaja.
     sigueEnLaLista: !!document.querySelector('[data-val-fin="' + id + '"]'),
+    // Y la lista se queda abierta, o habría que volver a desplegarla después
+    // de cada una de las veinte fechas.
+    sigueAbierta: !!(document.querySelector("details.rep-sinfecha") || {}).open,
   };
 }, rev.id);
-(check("poner la fecha ahí mismo la guarda en la tarjeta", arreglo.guardada === "2026-10-15", arreglo),
-  check("baja el contador de pendientes", arreglo.despues === arreglo.antes - 1, arreglo),
-  check("y la fila arreglada desaparece de la lista", arreglo.sigueEnLaLista === false, arreglo));
+(check("las tarjetas sin fecha de fin se cargan desde Reportes", enReportes.hay, enReportes),
+  check("poner la fecha ahí mismo la guarda en la tarjeta", enReportes.guardada === "2026-10-15", enReportes),
+  check("y una menos en la lista", enReportes.despues === enReportes.antes - 1, enReportes),
+  check("la arreglada desaparece", enReportes.sigueEnLaLista === false, enReportes),
+  check("y la lista no se vuelve a plegar sola", enReportes.sigueAbierta === true, enReportes));
+
+// ── Las dos mitades del mismo hueco ───────────────────────────────────────
+console.log("\nfilas sin curso y cursos sin fila");
+const huecos = await page.evaluate(() => {
+  state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id));
+  state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo));
+  const suelta = {
+      id: "zz-suelta",
+      curso: "ZZ Curso solo en Técnico",
+      categoria: "ZZ Prueba",
+      publicacion: "2023-04-05",
+    },
+    // Una fila de baja no necesita tarjeta en el Mapa: no tiene que figurar.
+    deBaja = { id: "zz-baja", curso: "ZZ Curso viejo dado de baja", categoria: "ZZ Prueba", baja: true },
+    // Una fila sin nombre real: figura, pero no se le puede crear un curso.
+    sinNombre = { id: "zz-sinnombre", curso: " - ", categoria: "ZZ Prueba" };
+  (state.tecnico.push(suelta, deBaja, sinNombre), parInvalidar(), (state.view = "tecnico"), (state.tecSubView = "revision"), render());
+  const sueltas = valFilasSinCurso();
+  return {
+    apareceLaViva: sueltas.some((f) => f.id === "zz-suelta"),
+    apareceLaDeBaja: sueltas.some((f) => f.id === "zz-baja"),
+    // La acción que faltaba: antes solo se podía "vincular" con una tarjeta
+    // que no existe, que era una vía muerta.
+    hayCrearCurso: !!document.querySelector('[data-action="tec:crearcurso"]'),
+    // Y explica en castellano qué es cada cosa y qué hacer.
+    hayAyuda: document.querySelectorAll(".val-ayuda").length >= 2,
+    // La fila sin nombre se ve, pero sin el botón de crear: una tarjeta
+    // llamada "-" en el Mapa sería peor que el hueco.
+    apareceSinNombre: sueltas.some((f) => f.id === "zz-sinnombre"),
+    ofreceCrearSinNombre: !!document.querySelector('[data-action="tec:crearcurso"][data-id="zz-sinnombre"]'),
+  };
+});
+(check("una fila de Técnico sin tarjeta figura como suelta", huecos.apareceLaViva, huecos),
+  check("pero una dada de baja no: no le falta nada", huecos.apareceLaDeBaja === false, huecos),
+  check("cada sección explica qué pasa y qué hacer", huecos.hayAyuda, huecos),
+  check("y se puede crear el curso que falta, no solo buscarlo", huecos.hayCrearCurso, huecos),
+  check("una fila sin nombre se ve", huecos.apareceSinNombre, huecos),
+  check("pero no deja crear un curso llamado «-»", huecos.ofreceCrearSinNombre === false, huecos));
+
+const creado = await page.evaluate(() => {
+  const b = document.querySelector('[data-action="tec:crearcurso"][data-id="zz-suelta"]');
+  if (!b) return { hay: false };
+  b.click();
+  const fila = state.tecnico.find((f) => f.id === "zz-suelta"),
+    card = state.cards.find((c) => c.id === fila.cardId);
+  return {
+    hay: true,
+    unidos: !!card,
+    titulo: card && card.titulo,
+    // Nace publicado: una fila de Técnico existe para un curso que ya está en
+    // Moodle, así que tiene que contar en Reportes desde el minuto cero.
+    cuentaEnReportes: !!card && repCursosActivos().some((c) => c.id === card.id),
+    // Y se lleva la fecha de publicación que la fila ya tenía.
+    fecha: card && card.publicadoEl,
+    yaNoEstaSuelta: !valFilasSinCurso().some((f) => f.id === "zz-suelta"),
+  };
+});
+(check("crear el curso deja la fila y la tarjeta unidas", creado.hay && creado.unidos, creado),
+  check("con el mismo nombre", creado.titulo === "ZZ Curso solo en Técnico", creado),
+  check("contando ya en Reportes", creado.cuentaEnReportes, creado),
+  check("y con la fecha de publicación que traía la fila", creado.fecha === "2023-04-05", creado),
+  check("la fila deja de figurar como suelta", creado.yaNoEstaSuelta, creado));
+
+await page.evaluate(() => {
+  ((state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id))),
+    (state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo))),
+    parInvalidar());
+});
 
 // ── Métodos de matriculación ──────────────────────────────────────────────
 console.log("\nmétodos de matriculación");
