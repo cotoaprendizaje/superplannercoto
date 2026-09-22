@@ -4236,7 +4236,6 @@ const state = {
   // Filtros y orden de Seguimiento técnico. Son de pantalla, no de datos: no
   // viajan al backend ni se guardan, cada uno ordena la grilla como le sirve.
   tecPendiente: "",
-  tecDiseno: "",
   tecCategoria: "",
   tecOrden: "",
   tecOrdenDir: 1,
@@ -6071,7 +6070,6 @@ function tecRows(salvo) {
   let lista = state.tecnico.filter((fila) => {
     if (filtro && !(fila.curso || "").toLowerCase().includes(filtro) && !(fila.categoria || "").toLowerCase().includes(filtro))
       return false;
-    if (state.tecDiseno && (fila.diseno || "") !== state.tecDiseno) return false;
     if (state.tecCategoria && (fila.categoria || "") !== state.tecCategoria) return false;
     if (state.tecPendiente && !tecPendientePasa(fila, state.tecPendiente)) return false;
     for (const k of TEC_FILT_COLS) {
@@ -6127,7 +6125,7 @@ function tecGroups() {
   // Una categoría puede tener archivos de Edu Point y todavía ningún curso
   // cargado (pasa con las que vinieron del Excel de Edu Point). Si no se
   // agregaran acá, esos archivos no tendrían por dónde aparecer.
-  if (!state.tecDiseno && !state.tecPendiente) {
+  if (!state.tecPendiente) {
     const archivos = eduPorCategoria();
     Object.keys(archivos).forEach((k) => {
       const nombre = eduCatDe(archivos[k][0]);
@@ -6326,12 +6324,8 @@ function tecTarjHTML(fila) {
     (p.total ? tecSemaforoHTML(fila) + "<b>" + p.hechas + "/" + p.total + "</b>" : "") +
     '</span><span class="tct-c tct-dis">' +
     (fila.diseno ? '<i>' + esc(fila.diseno) + "</i>" : '<span class="tct-nada">—</span>') +
-    '</span><span class="tct-c tct-map' +
-    (card ? " on" : "") +
-    '" title="' +
-    esc(card ? card.titulo : "Sin tarjeta del Mapa") +
-    '">' +
-    (card ? "📍 En el Mapa" : '<span class="tct-nada">sin vincular</span>') +
+    '</span><span class="tct-c tct-map">' +
+    (card ? '<i title="' + esc(card.titulo) + '">📍 En el Mapa</i>' : "") +
     "</span>" +
     '<div class="tct-lin">' +
     tecLineaHTML(fila) +
@@ -6393,10 +6387,47 @@ const TEC_ORDEN_OPTS = [
   { k: "baja", label: "Estado" },
   { k: "estado", label: "Comentario" },
 ];
-function tecBarraHTML() {
+function tecFiltBtnHTML(k) {
+  const sel = tecColFiltro(k),
+    label = k === "categoria" ? "Categoría" : tecColLabel(k);
+  return (
+    '<button class="tbar-f' +
+    (sel ? " on" : "") +
+    '" data-action="tec:filtcol" data-campo="' +
+    k +
+    '" title="' +
+    esc(sel ? "Filtrando " + label + ": " + sel.map((v) => tecValorColLabel(k, v)).join(", ") : "Filtrar por " + label) +
+    '">' +
+    esc(label) +
+    (sel ? '<span class="tbar-f-n">' + sel.length + "</span>" : "<i>▾</i>") +
+    "</button>"
+  );
+}
+// Refresca un solo embudo sin tocar el nodo: reemplazar el botón cerraría el
+// popover que cuelga de él.
+function tecFiltBtnSync(campo) {
+  const btn = document.querySelector('.tbar-f[data-campo="' + campo + '"]');
+  if (!btn) return;
+  const sel = tecColFiltro(campo),
+    label = campo === "categoria" ? "Categoría" : tecColLabel(campo);
+  ((btn.className = "tbar-f" + (sel ? " on" : "")),
+    (btn.title = sel
+      ? "Filtrando " + label + ": " + sel.map((v) => tecValorColLabel(campo, v)).join(", ")
+      : "Filtrar por " + label),
+    (btn.innerHTML = esc(label) + (sel ? '<span class="tbar-f-n">' + sel.length + "</span>" : "<i>▾</i>")));
+}
+function tecBarraHTML(sub) {
   const orden = state.tecOrden || "";
   return (
-    '<div class="tbar"><span class="tbar-g"><span class="tbar-lbl">Ordenar</span>' +
+    '<div class="tbar"><span class="tbar-g tbar-buscar"><span class="filt">🔎<input id="tecSearch" placeholder="Buscar curso o categoría..." value="' +
+    esc(state.tecFiltro || "") +
+    '"></span></span>' +
+    '<span class="tbar-g">' +
+    tecCategoriaFiltroHTML() +
+    (sub === "grilla" ? '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' : "") +
+    tecColsPopHTML() +
+    "</span>" +
+    '<span class="tbar-g"><span class="tbar-lbl">Ordenar</span>' +
     '<select class="tbar-sel" data-action="tec:orden-sel">' +
     TEC_ORDEN_OPTS.filter((o) => !o.k || o.k === "curso" || o.k === "categoria" || tecColVisible(o.k))
       .map((o) => '<option value="' + o.k + '"' + (orden === o.k ? " selected" : "") + ">" + esc(o.label) + "</option>")
@@ -6407,30 +6438,15 @@ function tecBarraHTML() {
         (state.tecOrdenDir === 1 ? "▲ A-Z" : "▼ Z-A") +
         "</button>"
       : "") +
-    '</span><span class="tbar-g"><span class="tbar-lbl">Filtrar por</span>' +
-    TEC_FILT_COLS.filter((k) => k === "categoria" || tecColVisible(k))
-      .map((k) => {
-        const sel = tecColFiltro(k),
-          label = k === "categoria" ? "Categoría" : tecColLabel(k);
-        return (
-          '<button class="tbar-f' +
-          (sel ? " on" : "") +
-          '" data-action="tec:filtcol" data-campo="' +
-          k +
-          '" title="' +
-          esc(
-            sel
-              ? "Filtrando " + label + ": " + sel.map((v) => tecValorColLabel(k, v)).join(", ")
-              : "Filtrar por " + label,
-          ) +
-          '">' +
-          esc(label) +
-          (sel ? '<span class="tbar-f-n">' + sel.length + "</span>" : "<i>▾</i>") +
-          "</button>"
-        );
-      })
-      .join("") +
-    "</span></div>"
+    '</span><span class="tbar-g tbar-embudos"><span class="tbar-lbl">Filtrar por</span>' +
+    TEC_FILT_COLS.filter((k) => k === "categoria" || tecColVisible(k)).map(tecFiltBtnHTML).join("") +
+    '</span><span class="tbar-g tbar-fin"><span class="tec-top-n" id="tecTopN">' +
+    tecRows().length +
+    " de " +
+    state.tecnico.length +
+    '</span><button class="btn btn-ghost btn-sm" id="tecLimpiar" data-action="tec:limpiar"' +
+    (tecFiltrando() ? "" : " hidden") +
+    ">✕ Limpiar filtros</button></span></div>"
   );
 }
 // El encabezado de una columna hace dos cosas distintas y por eso son dos
@@ -6920,7 +6936,6 @@ function tecListHTML() {
     );
   return (
     tecCategoriasDatalistHTML() +
-    tecBarraHTML() +
     '<div id="tecSelBar">' +
     tecSelBarHTML() +
     '</div><div class="tec-lista">' +
@@ -6996,8 +7011,7 @@ function tecKpisHTML() {
     // catálogo quedó en HTML, que es lo que hay que rediseñar.
     tecKpi(html, "En HTML · a rediseñar", "neutro", "html") +
     tecKpi(lista.filter((f) => f.cardId).length, "Vinculados al Mapa", "neutro", "vinculados") +
-    "</div>" +
-    tecDisenoChipsHTML()
+    "</div>"
   );
 }
 // Un curso "activo" es el que sigue vigente: ni la tarjeta vinculada dada de
@@ -7013,43 +7027,6 @@ function tecFilaActiva(fila) {
   if (tecEstadoSugiereBaja(fila.estado)) return false;
   const card = fila.cardId ? state.cards.find((c) => c.id === fila.cardId) : null;
   return !(card && card.activo === false);
-}
-// Desglose por diseño, en chips y sobre cursos activos: contesta de un vistazo
-// "cuántos son HTML" y "cuántos hay que pasar de Storyline V1 a V2", que es lo
-// que decide el trabajo de rediseño del año. Cada chip filtra la tabla.
-function tecDisenoChipsHTML() {
-  const conteo = {};
-  state.tecnico.filter(tecFilaActiva).forEach((f) => {
-    const k = f.diseno || "";
-    conteo[k] = (conteo[k] || 0) + 1;
-  });
-  const claves = Object.keys(conteo)
-    .filter(Boolean)
-    .sort((a, b) => conteo[b] - conteo[a]);
-  if (!claves.length) return "";
-  return (
-    '<div class="tec-diseno-chips"><span class="tec-diseno-lbl">Diseño de los cursos activos</span>' +
-    claves
-      .map(
-        (k) =>
-          '<button class="qchip' +
-          (state.tecDiseno === k ? " on" : "") +
-          '" data-action="tec:diseno" data-diseno="' +
-          esc(k) +
-          '" title="Ver solo los de ' +
-          esc(k) +
-          '">' +
-          esc(k) +
-          " <b>" +
-          conteo[k] +
-          "</b></button>",
-      )
-      .join("") +
-    (state.tecDiseno
-      ? '<button class="btn btn-ghost btn-sm" data-action="tec:diseno" data-diseno="">Ver todos</button>'
-      : "") +
-    "</div>"
-  );
 }
 // Filtro por categoría real (las que ya existen en alguna fila), mismo
 // patrón que el de diseño — el Mapa filtra por sector, esto es su
@@ -7141,7 +7118,7 @@ function tecColsBadgeSync() {
   if (todas) todas.hidden = !ocultas;
 }
 function tecFiltrando() {
-  return !!(state.tecFiltro || state.tecDiseno || state.tecCategoria || state.tecPendiente || state.tecOrden || tecColFiltroN());
+  return !!(state.tecFiltro || state.tecCategoria || state.tecPendiente || state.tecOrden || tecColFiltroN());
 }
 // El contador y el "limpiar" se dibujan siempre y se actualizan aparte: si
 // aparecieran y desaparecieran con cada tecla habría que redibujar la barra
@@ -7472,19 +7449,7 @@ function renderTecnico() {
       ? renderMatri()
       : sub === "revision"
         ? tecValidacionHTML()
-        : '<div class="tec-top"><div class="filt">🔎<input id="tecSearch" placeholder="Buscar curso o categoría..." value="' +
-        esc(state.tecFiltro || "") +
-        '"></div>' +
-        tecCategoriaFiltroHTML() +
-        (sub === "grilla" ? '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' : "") +
-        tecColsPopHTML() +
-        '<span class="tec-top-n" id="tecTopN">' +
-        tecRows().length +
-        " de " +
-        state.tecnico.length +
-        '</span><button class="btn btn-ghost btn-sm" id="tecLimpiar" data-action="tec:limpiar"' +
-        (tecFiltrando() ? "" : " hidden") +
-        ">✕ Limpiar filtros</button></div>" +
+        : tecBarraHTML(sub) +
         tecKpisHTML() +
         '<div id="tecList">' +
         (sub === "falta" ? tecFaltaHTML() : tecListHTML()) +
@@ -12048,11 +12013,8 @@ document.addEventListener("click", (ev) => {
       // quedar filtrado sin darse cuenta de por qué faltan filas.
       ((state.tecPendiente = state.tecPendiente === el.dataset.cual ? "" : el.dataset.cual || ""), render());
       break;
-    case "tec:diseno":
-      ((state.tecDiseno = el.dataset.diseno || ""), render());
-      break;
     case "tec:orden-dir":
-      ((state.tecOrdenDir = state.tecOrdenDir === 1 ? -1 : 1), renderTecList());
+      ((state.tecOrdenDir = state.tecOrdenDir === 1 ? -1 : 1), render());
       break;
     // Abrir una ficha cierra la anterior: con noventa cursos, dos fichas
     // abiertas ya obligan a scrollear para comparar, que es justo lo que la
@@ -12151,7 +12113,6 @@ document.addEventListener("click", (ev) => {
       break;
     case "tec:limpiar":
       ((state.tecFiltro = ""),
-        (state.tecDiseno = ""),
         (state.tecCategoria = ""),
         (state.tecPendiente = ""),
         (state.tecOrden = ""),
@@ -13143,7 +13104,7 @@ document.addEventListener("click", (ev) => {
       return;
     }
     if (accion === "tec:orden-sel") {
-      ((state.tecOrden = ev.target.value), (state.tecOrdenDir = 1), renderTecList());
+      ((state.tecOrden = ev.target.value), (state.tecOrdenDir = 1), render());
       return;
     }
     // Marcar o desmarcar una tarjeta para el lote. No redibuja la lista: la
@@ -13179,7 +13140,10 @@ document.addEventListener("click", (ev) => {
     // del dedo. Los contadores de al lado sí se refrescan.
     if (ev.target.dataset && ev.target.dataset.tecFv !== undefined) {
       const campoFv = ev.target.dataset.campo;
-      (tecColFiltroToggle(campoFv, ev.target.dataset.tecFv), renderTecList(), tecFiltPopSync(campoFv));
+      (tecColFiltroToggle(campoFv, ev.target.dataset.tecFv),
+        renderTecList(),
+        tecFiltBtnSync(campoFv),
+        tecFiltPopSync(campoFv));
       return;
     }
     // La fecha que se pone desde Revisión: se guarda y la fila desaparece de

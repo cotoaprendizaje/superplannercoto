@@ -6806,7 +6806,7 @@ html {
   }
 }
 @media (max-width: 760px) {
-  .tec-top .filt input {
+  .tbar .filt input {
     min-width: 0;
     width: 100%;
   }
@@ -9298,7 +9298,7 @@ button.mat-ct:hover {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding: 9px 8px;
+  padding: 6px 8px;
   border: 0;
   background: 0 0;
   font: inherit;
@@ -9357,12 +9357,11 @@ button.mat-ct:hover {
   font-size: 11px;
   font-weight: 700;
 }
-.tct-map {
+.tct-map i {
+  font-style: normal;
   font-weight: 600;
-  white-space: nowrap;
-}
-.tct-map.on {
   color: var(--coto-blue);
+  white-space: nowrap;
 }
 .tct-ar {
   border: 0;
@@ -9372,7 +9371,7 @@ button.mat-ct:hover {
   color: var(--ink-soft);
   opacity: 0.4;
   cursor: pointer;
-  padding: 10px 12px;
+  padding: 8px 12px;
   transition: opacity 0.14s;
 }
 .tct:hover .tct-ar,
@@ -9386,7 +9385,7 @@ button.mat-ct:hover {
    la columna con la que se compara un curso contra el de abajo, así que los
    tres puntos tienen que caer siempre en el mismo lugar. */
 .tct-lin {
-  padding: 4px 4px 4px 0;
+  padding: 3px 4px 3px 0;
 }
 .tct-lin .tlin {
   flex: none;
@@ -9399,8 +9398,11 @@ button.mat-ct:hover {
   padding: 2px 1px;
 }
 .tct-lin .tlin-lbl {
-  font-size: 9px;
+  font-size: 8.5px;
   white-space: nowrap;
+}
+.tct-lin .tlin-paso {
+  gap: 1px;
 }
 .tct-lin .tlin-fec {
   font-size: 11px;
@@ -9496,10 +9498,10 @@ button.mat-ct:hover {
 .tbar {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
+  gap: var(--sp-2) var(--sp-4);
   flex-wrap: wrap;
   padding: var(--sp-2) var(--sp-3);
-  margin-bottom: var(--sp-4);
+  margin-bottom: var(--sp-3);
   background: var(--surface);
   border: 1px solid var(--brd-card);
   border-radius: var(--r-l);
@@ -9509,6 +9511,24 @@ button.mat-ct:hover {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+}
+.tbar-buscar {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+.tbar-buscar .filt {
+  flex: 1;
+}
+/* Los embudos son doce y se llevan la mayor parte del ancho: van en su propio
+   renglón de la barra en cuanto no entran al lado del resto. */
+.tbar-embudos {
+  flex: 1 1 560px;
+}
+/* Cuántos se ven y cómo sacarse los filtros de encima: al final de todo, que
+   es donde se mira después de filtrar y no antes. */
+.tbar-fin {
+  margin-left: auto;
+  gap: var(--sp-3);
 }
 .tbar-lbl {
   font-size: 10.5px;
