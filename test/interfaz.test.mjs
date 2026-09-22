@@ -425,12 +425,6 @@ const pestanas = await page.evaluate(() => [...document.querySelectorAll(".mapa-
 (check("la pestaña Validación ya no está en la navegación", !pestanas.some((t) => /Validaci/i.test(t)), pestanas),
   check("y está la de Métodos de matriculación", pestanas.some((t) => /matriculaci/i.test(t)), pestanas));
 
-// Todo lo que sigue es de la PLANILLA, que desde que Técnico se muestra en
-// fichas dejó de ser la vista principal y pasó a ser la opción para cargar
-// muchos datos seguidos. Hay que entrar a ella para probarla.
-await page.evaluate(() => ((state.tecModo = "planilla"), tecModoGuardar(), render()));
-await page.waitForTimeout(400);
-
 // El embudo de una columna: se abre, lista los valores reales con cuántas
 // filas tiene cada uno, y al marcar uno la tabla queda con esas filas.
 // El encabezado de la grilla se queda a la vista al scrollear: el contenedor
@@ -1212,118 +1206,6 @@ const movida = await page.evaluate(() => {
   check("lo anota en la actividad", movida.anotado === 1, movida),
   check("sella desde cuándo está en revisión", movida.sello, movida),
   check("y mover a la misma columna no hace nada", movida.sinCambio === false && movida.anotado === 1, movida));
-
-// ── Técnico en fichas ─────────────────────────────────────────────────────
-// La grilla nació como reemplazo del Excel y se quedó siendo un Excel. Cada
-// curso pasa a ser una ficha que entra siempre en el ancho de la pantalla.
-console.log("\nTécnico en fichas");
-const fichas = await page.evaluate(() => {
-  ((state.view = "tecnico"), (state.tecSubView = "grilla"), (state.tecModo = "fichas"), (state.tecFiltro = ""), render());
-  const f = document.querySelector(".tf");
-  return {
-    cuantas: document.querySelectorAll(".tf").length,
-    filas: tecRows().length,
-    // Lo que importa: nunca hay que scrollear de costado, ni en escritorio.
-    desborda: document.documentElement.scrollWidth > window.innerWidth + 1,
-    // Y cada ficha trae todo lo que la planilla tenía repartido en doce columnas.
-    piezas: f.querySelectorAll('[data-tec-field="portada"],[data-tec-field="mosaico"],[data-tec-field="evaluacion"],[data-tec-field="textos"]').length,
-    fechas: f.querySelectorAll('input[type="date"]').length,
-    nombre: !!f.querySelector('[data-tec-field="curso"]'),
-    comentario: !!f.querySelector('[data-tec-field="estado"]'),
-    diseno: !!f.querySelector('[data-tec-field="diseno"]'),
-    vigencia: !!f.querySelector('[data-tec-field="baja"]'),
-    semaforo: !!f.querySelector(".tec-sem"),
-  };
-});
-(check("hay una ficha por cada curso de la lista", fichas.cuantas === fichas.filas && fichas.cuantas > 50, fichas),
-  check("y nunca hay que scrollear de costado", fichas.desborda === false, fichas),
-  check("cada ficha trae las cuatro piezas", fichas.piezas === 4, fichas),
-  check("las tres fechas", fichas.fechas === 3, fichas),
-  check("el nombre, el comentario, el diseño y la vigencia", fichas.nombre && fichas.comentario && fichas.diseno && fichas.vigencia, fichas),
-  check("y el semáforo de cómo viene", fichas.semaforo, fichas));
-
-// Tildar una pieza actualiza el semáforo sin redibujar: redibujar tiraría el
-// foco del campo de texto donde se está escribiendo.
-const tilde = await page.evaluate(() => {
-  const fila = tecRows().find((f) => !f.portada);
-  if (!fila) return { hay: false };
-  const ficha = document.querySelector('.tf[data-tec-row="' + fila.id + '"]'),
-    antes = ficha.querySelectorAll(".tec-sem-p.on").length,
-    chk = ficha.querySelector('[data-tec-field="portada"]');
-  // Se escribe en el comentario primero: si redibujara, se perdería el foco.
-  const com = ficha.querySelector('[data-tec-field="estado"]');
-  com.focus();
-  ((chk.checked = true), chk.dispatchEvent(new Event("change", { bubbles: true })));
-  return {
-    hay: true,
-    guardado: !!state.tecnico.find((f) => f.id === fila.id).portada,
-    antes,
-    despues: document.querySelector('.tf[data-tec-row="' + fila.id + '"] .tec-sem').querySelectorAll(".tec-sem-p.on").length,
-    foco: document.activeElement === com,
-  };
-});
-(check("tildar una pieza la guarda", tilde.hay && tilde.guardado, tilde),
-  check("y prende un punto más del semáforo", tilde.despues === tilde.antes + 1, tilde),
-  check("sin perder el foco de lo que se estaba escribiendo", tilde.foco, tilde));
-
-// La planilla no se va: queda a un clic y se recuerda la elección.
-const modo = await page.evaluate(() => {
-  document.querySelector('[data-action="tec:modo"][data-m="planilla"]').click();
-  const tabla = !!document.querySelector(".tec-table");
-  document.querySelector('[data-action="tec:modo"][data-m="fichas"]').click();
-  const enFichas = { vuelve: !!document.querySelector(".tf"), guardado: localStorage.getItem("cf.tecModo.v1") };
-  // Y sin nada elegido se entra por la planilla, que es lo que el área pidió
-  // de vuelta después de probar las fichas.
-  ((state.tecModo = null), localStorage.removeItem("cf.tecModo.v1"));
-  const porDefecto = tecModo();
-  return { tabla, ...enFichas, porDefecto };
-});
-(check("la planilla sigue estando a un clic", modo.tabla, modo),
-  check("y se puede volver a fichas", modo.vuelve && modo.guardado === "fichas", modo),
-  check("sin elegir nada se entra por la planilla", modo.porDefecto === "planilla", modo));
-
-// ── Vistas de columnas de la grilla ───────────────────────────────────────
-// Con las doce columnas la tabla mide más que cualquier pantalla del área, y
-// lo primero que se cae del borde es la columna de comentarios, que es la que
-// más se usa. Las vistas no sacan columnas: eligen cuál de las tres preguntas
-// se está haciendo.
-console.log("\nvistas de columnas");
-const vistas = await page.evaluate(() => {
-  // Las vistas de columnas son de la planilla: en fichas no hay columnas.
-  ((state.view = "tecnico"), (state.tecSubView = "grilla"), (state.tecModo = "planilla"), (state.tecColsOcultas = []), render());
-  const ancho = () => {
-    const w = document.querySelector(".tec-table-wrap"),
-      t = document.querySelector(".tec-table");
-    return { util: Math.round(w.clientWidth), tabla: Math.round(t.scrollWidth) };
-  };
-  const todo = ancho();
-  const medir = (id) => {
-    document.querySelector('[data-action="tec:vista"][data-v="' + id + '"]').click();
-    return { a: ancho(), activa: tecVistaActual(), cols: tecColsVisibles().length };
-  };
-  const prod = medir("produccion"),
-    pub = medir("publicacion"),
-    seg = medir("seguimiento");
-  // Volver a "Todo" tiene que devolver las doce.
-  document.querySelector('[data-action="tec:vista"][data-v="todo"]').click();
-  return {
-    todo,
-    prod,
-    pub,
-    seg,
-    volvio: tecColsVisibles().length === TEC_COLS.length,
-    // Una combinación propia no miente diciendo que es una de las vistas.
-    propia: (tecColToggle("mapa"), tecVistaActual()),
-  };
-});
-(check("con todas las columnas la tabla no entra en la pantalla", vistas.todo.tabla > vistas.todo.util, vistas.todo),
-  check("la vista Producción entra entera", vistas.prod.a.tabla <= vistas.prod.a.util + 1, vistas.prod),
-  check("la de Publicación también", vistas.pub.a.tabla <= vistas.pub.a.util + 1, vistas.pub),
-  check("y la de Seguimiento", vistas.seg.a.tabla <= vistas.seg.a.util + 1, vistas.seg),
-  check("cada vista se marca como la activa", vistas.prod.activa === "produccion" && vistas.seg.activa === "seguimiento", vistas),
-  check("«Todo» devuelve las doce columnas", vistas.volvio, vistas),
-  check("y una combinación propia no se hace pasar por una vista", vistas.propia === "", vistas));
-await page.evaluate(() => ((state.tecColsOcultas = []), tecColsGuardar(), (state.tecModo = "fichas"), tecModoGuardar(), render()));
 
 // ── Navegación ────────────────────────────────────────────────────────────
 console.log("\nnavegación");
