@@ -6357,15 +6357,13 @@ function tecTarjHTML(fila) {
     '"><label class="tct-mk" title="Marcar para trabajar en lote">' +
     tecSelCheckbox(fila.id) +
     "</label>" +
-    '<button class="tct-b" data-action="tec:abrir" data-id="' +
+    '<span class="tct-b"><input class="tct-n" type="text" data-tec-id="' +
     fila.id +
-    '" title="' +
-    (abierta ? "Cerrar la ficha" : "Abrir la ficha para editar") +
-    '"><span class="tct-n">' +
-    esc(fila.curso || "(sin nombre)") +
-    "</span>" +
+    '" data-tec-field="curso" value="' +
+    esc(fila.curso) +
+    '" placeholder="(sin nombre)">' +
     (activa ? "" : '<span class="tct-off">De baja</span>') +
-    "</button>" +
+    "</span>" +
     // Cada dato en su columna y no pegado al nombre: lo que hacía legible la
     // tabla era poder barrer una columna de arriba abajo, y eso se pierde si
     // las chapitas empiezan donde termina cada título. Las celdas vacías se
@@ -6373,12 +6371,12 @@ function tecTarjHTML(fila) {
     '<span class="tct-c tct-pz">' +
     tecPiezasFilaHTML(fila) +
     '</span><span class="tct-c tct-dis">' +
-    (fila.diseno ? '<i>' + esc(fila.diseno) + "</i>" : '<span class="tct-nada">—</span>') +
+    tecDisenoSelect(fila) +
     '</span><span class="tct-c tct-map">' +
     (card ? '<i title="' + esc(card.titulo) + '">📍 En el Mapa</i>' : "") +
     "</span>" +
     '<div class="tct-lin">' +
-    tecLineaHTML(fila) +
+    tecLineaHTML(fila, true) +
     "</div>" +
     // La flecha es su propio botón y no un adorno adentro del otro: en un
     // renglón que ocupa el ancho de la página, el borde derecho es donde la
@@ -6749,9 +6747,11 @@ function tecPendientes(fila) {
 // recorrido, y en ese orden. Dibujadas como pasos se ve de una dónde se cortó
 // —un curso publicado en Moodle al que nunca le salió el mail es un problema
 // distinto de uno que ni se publicó— y eso en tres celdas de tabla no se ve.
-function tecLineaHTML(fila) {
+function tecLineaHTML(fila, editable) {
   return (
-    '<div class="tlin">' +
+    '<div class="tlin' +
+    (editable ? " edit" : "") +
+    '">' +
     TEC_FECHAS.map((k, i) => {
       const v = (fila[k] || "").trim(),
         mala = v && tecFechaMala(v),
@@ -6764,9 +6764,21 @@ function tecLineaHTML(fila) {
         esc(tecColLabel(k) + ": " + (mala ? 'no se entiende "' + v + '"' : v ? tecFechaVer(v) : "sin cargar")) +
         '"><i class="tlin-punto"></i><span class="tlin-lbl">' +
         esc(tecColLabel(k)) +
-        '</span><span class="tlin-fec">' +
-        (mala ? "?" : v ? esc(tecFechaVer(v)) : "—") +
-        "</span></span>"
+        "</span>" +
+        (editable
+          ? '<input type="date" class="tlin-fec tec-date' +
+            (v && !mala ? "" : " vacia") +
+            '" data-tec-id="' +
+            fila.id +
+            '" data-tec-field="' +
+            k +
+            '" value="' +
+            (mala ? "" : esc(v)) +
+            '" title="' +
+            esc(tecColLabel(k)) +
+            '">'
+          : '<span class="tlin-fec">' + (mala ? "?" : v ? esc(tecFechaVer(v)) : "—") + "</span>") +
+        "</span>"
       );
     }).join("") +
     "</div>"
