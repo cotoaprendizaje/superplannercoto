@@ -5897,7 +5897,7 @@ function renderMapa() {
 // mismo que "SCORM actualizado" y "Publicación". Se sacaron de la grilla; lo
 // que alguien haya llegado a cargar en esos campos sigue en el dato, sin
 // mostrarse, por si hiciera falta recuperarlo.
-const TEC_FECHAS = ["publicacion", "scorm", "mail"];
+const TEC_FECHAS = ["publicacion", "scorm"];
 // Columnas que se pueden mostrar u ocultar, con el grupo bajo el que se
 // eligen. "Curso" y la papelera no están acá a propósito: sin el nombre no se
 // sabe qué fila se está editando, y sin la ✕ no habría cómo borrarla.
@@ -5905,7 +5905,6 @@ const TEC_FECHAS = ["publicacion", "scorm", "mail"];
 const TEC_COLS = [
   { k: "publicacion", label: "Publicación", grupo: "Fechas", tit: "Cuándo se creó el curso en Moodle" },
   { k: "scorm", label: "SCORM actualizado", grupo: "Fechas", tit: "Última vez que se subió el paquete SCORM" },
-  { k: "mail", label: "Mail publicado", grupo: "Fechas", tit: "Cuándo salió el mail avisando el curso" },
   // Los grupos son los que arman el encabezado de dos pisos de la grilla.
   // "Producción" abarcaba siete columnas de naturaleza muy distinta —cuatro
   // tildes, un desplegable, un comentario libre y un vínculo—, así que el
@@ -5992,7 +5991,7 @@ function tecFechaISO(txt) {
 // Columnas que se pueden filtrar por valor. "Curso" queda afuera a propósito:
 // son 95 nombres distintos, o sea una lista tan larga como la tabla — para eso
 // está el buscador de arriba.
-const TEC_FILT_COLS = ["categoria", "publicacion", "scorm", "mail", "portada", "mosaico", "evaluacion", "textos", "diseno", "baja", "estado", "mapa"];
+const TEC_FILT_COLS = ["categoria", "publicacion", "scorm", "portada", "mosaico", "evaluacion", "textos", "diseno", "baja", "estado", "mapa"];
 function tecColFiltrable(k) {
   return TEC_FILT_COLS.includes(k);
 }
@@ -6437,8 +6436,6 @@ const TEC_ORDEN_OPTS = [
   { k: "publicacion", dir: 1, label: "Publicación: de la más vieja a la más nueva" },
   { k: "scorm", dir: -1, label: "SCORM: del más nuevo al más viejo" },
   { k: "scorm", dir: 1, label: "SCORM: del más viejo al más nuevo" },
-  { k: "mail", dir: -1, label: "Mail publicado: del más nuevo al más viejo" },
-  { k: "mail", dir: 1, label: "Mail publicado: del más viejo al más nuevo" },
   { k: "diseno", dir: 1, label: "Diseño: de la A a la Z" },
   { k: "baja", dir: 1, label: "Estado: vigentes primero" },
   { k: "baja", dir: -1, label: "Estado: dados de baja primero" },
@@ -8104,7 +8101,6 @@ function tecFilaVacia(fila) {
   return (
     !TEC_CHKS.some((k) => fila[k]) &&
     !(fila.scorm || "").trim() &&
-    !(fila.mail || "").trim() &&
     !(fila.diseno || "").trim() &&
     !(fila.estado || "").trim()
   );
@@ -8115,7 +8111,6 @@ function tecFilaResumen(fila) {
   (fila.diseno && partes.push(fila.diseno),
     fila.publicacion && !tecFechaMala(fila.publicacion) && partes.push("publicado " + tecFechaVer(fila.publicacion)),
     fila.scorm && partes.push("SCORM"),
-    fila.mail && partes.push("mail"),
     fila.cardId && partes.push("unida al Mapa"));
   return partes.length ? partes.join(" · ") : "sin nada cargado";
 }
@@ -9455,6 +9450,187 @@ function repSinFechaHTML() {
   );
 }
 
+// ===== El catálogo en detalle =====
+// Lo de arriba mira las tarjetas del Mapa y contesta "cuánto publicamos".
+// Esto mira las filas de Seguimiento técnico y contesta la otra mitad: de qué
+// está hecho el catálogo y qué le falta. Va debajo a propósito — lo que el
+// área mira primero sigue siendo lo de siempre.
+//
+// Todo lo de acá cuenta SOLO cursos vigentes: a uno dado de baja no le falta
+// nada y no hay que rediseñarlo.
+function repTecVigentes() {
+  return state.tecnico.filter(tecFilaActiva);
+}
+// Cada número de esta sección lleva a la lista de Técnico ya filtrada. Si no,
+// serían gráficos lindos que terminan en "y ahora cómo veo cuáles son".
+function repIrATecnico(campo, valor) {
+  ((state.tecColFiltros = {}),
+    (state.tecColFiltros[campo] = [valor]),
+    (state.tecFiltro = ""),
+    (state.tecCategoria = ""),
+    (state.tecPendiente = ""),
+    (state.tecAbierta = null),
+    (state.tecSubView = "grilla"),
+    (state.view = "tecnico"),
+    closePanel(),
+    pushNav(),
+    render());
+}
+// Las cuatro piezas de producción, cada una con cuánto lleva del total. Es la
+// pregunta que el área hace todas las semanas y que hasta ahora había que
+// contestar contando a mano en la lista.
+function repPiezasHTML() {
+  const vivas = repTecVigentes(),
+    total = vivas.length;
+  if (!total) return '<div class="rep-empty">No hay cursos vigentes en Seguimiento técnico.</div>';
+  const piden = TEC_CHKS.filter(tecColVisible);
+  if (!piden.length) return '<div class="rep-empty">Están todas las piezas escondidas en el selector de columnas.</div>';
+  const completos = vivas.filter((f) => piden.every((k) => f[k])).length;
+  return (
+    '<div class="rep-piezas">' +
+    piden
+      .map((k) => {
+        const hechas = vivas.filter((f) => f[k]).length,
+          faltan = total - hechas,
+          pct = Math.round((hechas / total) * 100);
+        return (
+          '<button class="rep-pieza" data-action="rep:tec" data-campo="' +
+          k +
+          '" data-val="no" title="Ver los ' +
+          faltan +
+          " que no tienen " +
+          esc(tecColLabel(k).toLowerCase()) +
+          '"><span class="rep-pieza-h"><b>' +
+          esc(tecColLabel(k)) +
+          "</b><i>" +
+          hechas +
+          " de " +
+          total +
+          '</i></span><span class="rep-pieza-riel"><i class="' +
+          (pct >= 90 ? "alto" : pct >= 40 ? "medio" : "bajo") +
+          '" style="width:' +
+          Math.max(pct, pct ? 1.5 : 0) +
+          '%"></i></span><span class="rep-pieza-pie">' +
+          (faltan ? "faltan " + faltan : "completa") +
+          "</span></button>"
+        );
+      })
+      .join("") +
+    '</div><div class="rep-piezas-pie">' +
+    (completos
+      ? "<b>" + completos + "</b> curso" + (completos === 1 ? "" : "s") + " con las " + piden.length + " piezas terminadas"
+      : "Todavía <b>ningún</b> curso tiene las " + piden.length + " piezas terminadas") +
+    "</div>"
+  );
+}
+// De qué está hecho el catálogo. El área lo usa para dimensionar el rediseño
+// del año: lo que está en HTML es lo que hay que rehacer.
+function repDisenoHTML() {
+  const vivas = repTecVigentes(),
+    cuenta = new Map();
+  vivas.forEach((f) => {
+    const k = (f.diseno || "").trim();
+    cuenta.set(k, (cuenta.get(k) || 0) + 1);
+  });
+  const filas = [...cuenta.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"));
+  if (!filas.length) return '<div class="rep-empty">Ninguna fila vigente tiene diseño cargado.</div>';
+  const max = Math.max(...filas.map((f) => f[1]));
+  return (
+    '<div class="rep-rank">' +
+    filas
+      .map(
+        (f) =>
+          '<button class="rep-rank-f" data-action="rep:tec" data-campo="diseno" data-val="' +
+          esc(f[0]) +
+          '" title="Ver los ' +
+          f[1] +
+          " de " +
+          esc(f[0] || "sin diseño cargado") +
+          '"><span class="rep-rank-l">' +
+          esc(f[0] || "Sin cargar") +
+          '</span><span class="rep-rank-r"><i class="' +
+          (/html/i.test(f[0]) ? "ojo" : "") +
+          '" style="width:' +
+          Math.round((f[1] / max) * 100) +
+          '%"></i></span><b>' +
+          f[1] +
+          "</b></button>",
+      )
+      .join("") +
+    "</div>"
+  );
+}
+// Cuándo se publicó lo que hoy está vigente, en tres tramos. Contesta "qué
+// tan viejo es el catálogo" sin tener que leer dieciséis barras de un año
+// cada una — para eso ya está el gráfico histórico de arriba.
+const REP_TRAMOS = [
+  { hasta: 2020, label: "2020 o antes", tono: "ojo" },
+  { hasta: 2023, label: "2021 a 2023", tono: "" },
+  { hasta: 9999, label: "2024 en adelante", tono: "bien" },
+];
+function repAntiguedadHTML() {
+  const vivas = repTecVigentes(),
+    anio = (f) => {
+      const v = (f.publicacion || "").trim();
+      return v && !tecFechaMala(v) ? +v.slice(0, 4) : null;
+    },
+    conFecha = vivas.filter((f) => anio(f)),
+    sinFecha = vivas.length - conFecha.length;
+  if (!conFecha.length) return '<div class="rep-empty">Ninguna fila vigente tiene fecha de publicación cargada.</div>';
+  let piso = 0;
+  const tramos = REP_TRAMOS.map((t) => {
+    const n = conFecha.filter((f) => anio(f) > piso && anio(f) <= t.hasta).length;
+    piso = t.hasta;
+    return { label: t.label, tono: t.tono, n: n };
+  });
+  const max = Math.max(1, ...tramos.map((t) => t.n));
+  return (
+    '<div class="rep-rank">' +
+    tramos
+      .map(
+        (t) =>
+          '<div class="rep-rank-f estatica"><span class="rep-rank-l">' +
+          esc(t.label) +
+          '</span><span class="rep-rank-r"><i class="' +
+          t.tono +
+          '" style="width:' +
+          Math.round((t.n / max) * 100) +
+          '%"></i></span><b>' +
+          t.n +
+          "</b></div>",
+      )
+      .join("") +
+    "</div>" +
+    (sinFecha
+      ? '<div class="rep-rank-nota">' + sinFecha + " curso" + (sinFecha === 1 ? "" : "s") + " vigente" + (sinFecha === 1 ? "" : "s") + " sin fecha de publicación cargada</div>"
+      : "")
+  );
+}
+// Cuánto del catálogo dejó de estar vigente. Sirve para dos cosas: saber con
+// cuánto se cuenta de verdad, y notar si algo se dio de baja por error.
+function repBajasHTML() {
+  const todas = state.tecnico,
+    vivas = todas.filter(tecFilaActiva).length,
+    bajas = todas.length - vivas;
+  if (!todas.length) return '<div class="rep-empty">Seguimiento técnico está vacío.</div>';
+  return (
+    '<div class="rep-split"><button data-action="rep:tec" data-campo="baja" data-val="no" class="viva" style="flex:' +
+    Math.max(vivas, 1) +
+    '" title="Ver los vigentes"><b>' +
+    vivas +
+    "</b> vigente" +
+    (vivas === 1 ? "" : "s") +
+    "</button>" +
+    (bajas
+      ? '<button data-action="rep:tec" data-campo="baja" data-val="si" class="muerta" style="flex:' +
+        bajas +
+        '" title="Ver los dados de baja"><b>' +
+        bajas +
+        "</b> de baja</button>"
+      : "") +
+    "</div>"
+  );
+}
 function renderReportes() {
   // Antes era una pila: cuatro cajas, gráfico, gráfico, lista, lista — todo
   // del mismo ancho y del mismo peso, más de 2.500 px de scroll. Ahora hay
@@ -9487,6 +9663,16 @@ function renderReportes() {
     repSeccion("Lo que está por salir", "En desarrollo o en revisión, con fecha", repLoQueVieneHTML()) +
     repSeccion("Las que más esperan revisión", "Cuánto hace que están frenadas", repRevisionHTML()) +
     "</div>" +
+    // A partir de acá se cambia de fuente: lo de arriba son tarjetas del Mapa,
+    // lo de abajo son filas de Seguimiento técnico. El corte va dicho, porque
+    // si no los totales de una mitad y la otra parecen contradecirse.
+    '<div class="rep-corte"><h2>El catálogo en detalle</h2><p>De qué está hecho y qué le falta, según Seguimiento técnico. Solo cursos vigentes. Cada número abre la lista ya filtrada.</p></div>' +
+    repSeccion("Piezas de producción", "Cuánto lleva cada pieza sobre el total vigente", repPiezasHTML()) +
+    '<div class="rep-cols">' +
+    repSeccion("Catálogo por diseño", "Lo que está en HTML es lo que hay que rediseñar", repDisenoHTML()) +
+    repSeccion("Antigüedad de lo publicado", "Cuándo salió lo que hoy sigue vigente", repAntiguedadHTML()) +
+    "</div>" +
+    repSeccion("Vigentes y dados de baja", "Sobre las " + state.tecnico.length + " filas de Seguimiento técnico", repBajasHTML()) +
     repFuenteHTML()
   );
 }
@@ -11938,6 +12124,9 @@ document.addEventListener("click", (ev) => {
       break;
     case "reportes:csv":
       exportReportesCSV();
+      break;
+    case "rep:tec":
+      repIrATecnico(el.dataset.campo, el.dataset.val);
       break;
     case "rep:activos":
       repAbrirActivos();

@@ -9715,3 +9715,234 @@ button.mat-ct:hover {
     position: static;
   }
 }
+
+/* ===== Reportes · El catálogo en detalle =====
+   Lo de arriba cuenta tarjetas del Mapa; esto cuenta filas de Seguimiento
+   técnico. Son dos fuentes distintas para dos preguntas distintas —cuánto
+   publicamos, y de qué está hecho lo que tenemos— así que el corte se dice
+   con un título y no se disimula: si no, los totales de una mitad y la otra
+   parecen contradecirse. */
+.rep-corte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: var(--sp-7) 0 var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 2px solid color-mix(in srgb, var(--coto-blue) 22%, transparent);
+}
+.rep-corte h2 {
+  margin: 0;
+  font-family: var(--titulo);
+  font-size: 21px;
+  font-weight: 800;
+}
+.rep-corte p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  max-width: 68ch;
+}
+
+/* Las cuatro piezas, una al lado de la otra. Cada una es un botón: el número
+   sin salida —"faltan 81"— obliga a ir a buscarlos a mano a la lista. */
+.rep-piezas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: var(--sp-3);
+}
+.rep-pieza {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-s);
+  background: var(--surface);
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.14s,
+    transform 0.14s,
+    box-shadow 0.14s;
+}
+.rep-pieza:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--coto-blue) 45%, var(--line));
+  box-shadow: var(--shadow);
+}
+.rep-pieza-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rep-pieza-h b {
+  font-size: 13px;
+  font-weight: 700;
+}
+.rep-pieza-h i {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rep-pieza-riel {
+  display: block;
+  height: 7px;
+  border-radius: var(--pill);
+  background: var(--line);
+  overflow: hidden;
+}
+.rep-pieza-riel i {
+  display: block;
+  height: 100%;
+  border-radius: var(--pill);
+  background: var(--coto-blue);
+}
+/* El color dice cuánto falta, no cuál pieza es: verde lo que está cerrado,
+   rojo lo que casi no arrancó. */
+.rep-pieza-riel i.alto {
+  background: var(--ok);
+}
+.rep-pieza-riel i.medio {
+  background: var(--coto-blue);
+}
+.rep-pieza-riel i.bajo {
+  background: var(--bad);
+}
+.rep-pieza-pie {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.rep-piezas-pie {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--line-soft);
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.rep-piezas-pie b {
+  color: var(--ink);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Un ranking: rótulo, barra proporcional y número. Mismo dibujo para el
+   desglose por diseño y para la antigüedad, así una vez que se lee uno se
+   lee el otro gratis. */
+.rep-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.rep-rank-f {
+  display: grid;
+  grid-template-columns: 118px 1fr 34px;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: 0 0;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.13s;
+}
+.rep-rank-f.estatica {
+  cursor: default;
+}
+.rep-rank-f:not(.estatica):hover {
+  background: color-mix(in srgb, var(--coto-blue) 8%, transparent);
+}
+.rep-rank-l {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rep-rank-r {
+  display: block;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--line-soft);
+  overflow: hidden;
+}
+.rep-rank-r i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--coto-blue);
+}
+.rep-rank-r i.ojo {
+  background: var(--warn-ink);
+}
+.rep-rank-r i.bien {
+  background: var(--ok);
+}
+.rep-rank-f b {
+  font-weight: 800;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.rep-rank-nota {
+  margin-top: var(--sp-2);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+@media (max-width: 520px) {
+  .rep-rank-f {
+    grid-template-columns: 92px 1fr 30px;
+    font-size: 12px;
+  }
+}
+
+/* Vigentes contra dados de baja: una sola barra partida, porque la pregunta
+   es la proporción y no los dos números por separado. */
+.rep-split {
+  display: flex;
+  height: 40px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.rep-split button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding-inline: 14px;
+  border: 0;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: filter 0.14s;
+}
+.rep-split button:hover {
+  filter: brightness(1.08);
+}
+.rep-split button b {
+  font-size: 15px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.rep-split .viva {
+  background: var(--ok);
+  color: #fff;
+}
+.rep-split .muerta {
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  box-shadow: inset 1px 0 0 var(--line);
+}

@@ -458,7 +458,7 @@ const cerrada = await page.evaluate(() => {
     cuerpo: !!t.querySelector(".tct-cuerpo"),
   };
 });
-(check("el renglón cerrado muestra nombre, las cuatro piezas y las tres fechas", cerrada.nombre && cerrada.piezas && cerrada.fechas === 3, cerrada),
+(check("el renglón cerrado muestra nombre, las cuatro piezas y las dos fechas", cerrada.nombre && cerrada.piezas && cerrada.fechas === 2, cerrada),
   check("y no despliega la ficha hasta que se la abre", cerrada.cuerpo === false, cerrada));
 
 // Abrirla la estira al ancho completo con todos los campos adentro.
@@ -471,14 +471,14 @@ const fichaAbierta = await page.evaluate(() => {
     abiertas: document.querySelectorAll(".tct.abierta").length,
     curso: !!t.querySelector('[data-tec-field="curso"]'),
     categoria: !!t.querySelector('[data-tec-field="categoria"]'),
-    fechas: t.querySelectorAll('.tct-cuerpo [data-tec-field="publicacion"], .tct-cuerpo [data-tec-field="scorm"], .tct-cuerpo [data-tec-field="mail"]').length,
+    fechas: t.querySelectorAll('.tct-cuerpo [data-tec-field="publicacion"], .tct-cuerpo [data-tec-field="scorm"]').length,
     piezas: t.querySelectorAll(".tct-cuerpo .falta-pz").length,
     borrar: !!t.querySelector('[data-action="tec:del"]'),
     ancha: Math.round(t.getBoundingClientRect().width) > Math.round(document.querySelector(".tgrid").getBoundingClientRect().width) - 8,
   };
 });
 (check("abrir una tarjeta la estira al ancho de la grilla", fichaAbierta.ancha === true, fichaAbierta),
-  check("con el nombre, la categoría, las tres fechas y las piezas adentro", fichaAbierta.curso && fichaAbierta.categoria && fichaAbierta.fechas === 3 && fichaAbierta.piezas === 4, fichaAbierta),
+  check("con el nombre, la categoría, las dos fechas y las piezas adentro", fichaAbierta.curso && fichaAbierta.categoria && fichaAbierta.fechas === 2 && fichaAbierta.piezas === 4, fichaAbierta),
   check("y con dónde borrarla", fichaAbierta.borrar === true, fichaAbierta),
   check("solo una ficha abierta por vez", fichaAbierta.abiertas === 1, fichaAbierta));
 await page.evaluate(() => ((state.tecAbierta = null), renderTecList()));
@@ -902,7 +902,6 @@ await page.evaluate(() => {
       textos: true,
       publicacion: "2024-03-01",
       scorm: "2024-03-02",
-      mail: "2024-03-03",
       cardId: state.cards[0].id,
     },
     vacio = { id: "zz-vacio", curso: "ZZ Curso sin nada", categoria: "ZZ Prueba" };
@@ -931,10 +930,10 @@ const falta = await page.evaluate(() => {
 });
 (check("«Qué falta» lista los cursos con algo pendiente", falta.items >= 1, falta),
   check("al que no le falta nada queda plegado aparte", falta.plegados === 1, falta),
-  check("un curso sin nada cargado tiene 8 pendientes", falta.pendientesVacio === 8, falta),
+  check("un curso sin nada cargado tiene 7 pendientes", falta.pendientesVacio === 7, falta),
   check("y uno completo, ninguno", falta.pendientesLleno === 0, falta),
-  check("las tres fechas se dibujan como tres pasos", falta.pasosLinea >= 3, falta),
-  check("y los pasos cargados se ven hechos", falta.pasosHechos >= 3, falta));
+  check("las dos fechas se dibujan como dos pasos", falta.pasosLinea >= 2, falta),
+  check("y los pasos cargados se ven hechos", falta.pasosHechos >= 2, falta));
 
 // Tildar una pieza acá mismo baja la cuenta y redibuja la lista.
 const tildeAntes = await page.evaluate(
@@ -945,8 +944,52 @@ await page.click('.falta-item [data-tec-field="portada"]');
 await page.waitForTimeout(350);
 check(
   "y al tildarla baja lo que le falta al curso",
-  await page.evaluate(() => tecPendientes(state.tecnico.find((f) => f.id === "zz-vacio")).length === 7),
+  await page.evaluate(() => tecPendientes(state.tecnico.find((f) => f.id === "zz-vacio")).length === 6),
 );
+
+// ── Reportes: el catálogo en detalle ──────────────────────────────────────
+// Lo de arriba cuenta tarjetas del Mapa; el bloque nuevo cuenta filas de
+// Seguimiento técnico. Son dos fuentes distintas y por eso el corte va dicho.
+console.log("\nReportes · el catálogo en detalle");
+await page.evaluate(() => ((state.view = "reportes"), render()));
+await page.waitForTimeout(700);
+const repNuevo = await page.evaluate(() => {
+  const vivas = state.tecnico.filter(tecFilaActiva);
+  return {
+    corte: !!document.querySelector(".rep-corte"),
+    // lo de siempre sigue arriba del corte
+    heroAntes: document.querySelector(".rep-hero").compareDocumentPosition(document.querySelector(".rep-corte")) & Node.DOCUMENT_POSITION_FOLLOWING,
+    piezas: [...document.querySelectorAll(".rep-pieza")].map((b) => b.dataset.campo),
+    portadaDice: (document.querySelector('.rep-pieza[data-campo="portada"] .rep-pieza-h i') || {}).textContent,
+    portadaReal: vivas.filter((f) => f.portada).length + " de " + vivas.length,
+    disenos: document.querySelectorAll('.rep-rank-f[data-campo="diseno"]').length,
+    disenosReales: new Set(vivas.map((f) => (f.diseno || "").trim())).size,
+    tramos: document.querySelectorAll(".rep-rank-f.estatica").length,
+    split: document.querySelectorAll(".rep-split button").length,
+  };
+});
+(check("el bloque nuevo va DEBAJO de lo que ya estaba", repNuevo.corte === true && repNuevo.heroAntes > 0, repNuevo),
+  check("están las cuatro piezas de producción", repNuevo.piezas.join("|") === "portada|mosaico|evaluacion|textos", repNuevo),
+  check("y cada una dice cuántas van sobre el total vigente", repNuevo.portadaDice === repNuevo.portadaReal, repNuevo),
+  check("el desglose por diseño lista todos los valores reales", repNuevo.disenos === repNuevo.disenosReales, repNuevo),
+  check("la antigüedad va en tres tramos", repNuevo.tramos === 3, repNuevo));
+
+// Cada número tiene salida: lleva a Técnico con el filtro ya puesto.
+await page.click('.rep-pieza[data-campo="evaluacion"]');
+await page.waitForTimeout(600);
+const salida = await page.evaluate(() => ({
+  vista: state.view,
+  filtro: JSON.parse(JSON.stringify(state.tecColFiltros)),
+  filas: tecRows().length,
+  todasSinEvaluacion: tecRows().every((f) => !f.evaluacion),
+}));
+(check("tocar una pieza lleva a Técnico", salida.vista === "tecnico", salida),
+  check("con el filtro ya puesto en los que le falta", JSON.stringify(salida.filtro) === '{"evaluacion":["no"]}', salida),
+  check("y la lista muestra solo esos", salida.todasSinEvaluacion === true && salida.filas > 0, salida));
+await page.evaluate(() => {
+  ((state.tecColFiltros = {}), (state.tecSubView = "grilla"), (state.view = "tecnico"), render());
+});
+await page.waitForTimeout(300);
 
 // ── Un curso, un registro ─────────────────────────────────────────────────
 console.log("\nun curso, un registro");
