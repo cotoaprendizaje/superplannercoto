@@ -989,6 +989,79 @@ check(
   await page.evaluate(() => tecPendientes(state.tecnico.find((f) => f.id === "zz-vacio")).length === 6),
 );
 
+// ── Escribir mientras entra un cambio de otra persona ─────────────────────
+// El polling redibuja la vista cuando alguien más toca algo. Si eso pasa con
+// el cursor puesto en un campo, el <input> deja de existir y la palabra se
+// corta a la mitad. Pasaba en el buscador de Técnico, en el de Matriculación
+// y en los campos del renglón: focoDeLaVista() solo sabía devolver el foco a
+// los dos buscadores con data-filter.
+const state1Total = await page.evaluate(() => state.tecnico.length);
+console.log("\nescribir sin que te corten");
+await page.evaluate(() => ((state.view = "tecnico"), (state.tecSubView = "grilla"), (state.tecFiltro = ""), render()));
+await page.waitForTimeout(500);
+await page.click("#tecSearch");
+await page.keyboard.type("caj", { delay: 70 });
+// En medio de la palabra, el redibujado que dispara el polling.
+await page.evaluate(() => render());
+await page.waitForTimeout(150);
+await page.keyboard.type("as", { delay: 70 });
+await page.waitForTimeout(400);
+const buscTec = await page.evaluate(() => {
+  const el = document.querySelector("#tecSearch");
+  return { valor: el ? el.value : null, enfocado: document.activeElement === el, filas: tecRows().length };
+});
+(check("un redibujado en medio no corta lo que estás escribiendo", buscTec.valor === "cajas", buscTec),
+  check("y el cursor se queda donde estaba", buscTec.enfocado === true, buscTec),
+  check("la lista acompaña lo escrito", buscTec.filas > 0 && buscTec.filas < state1Total, buscTec));
+
+// Lo mismo escribiendo el nombre de un curso en el renglón.
+await page.evaluate(() => ((state.tecFiltro = ""), render()));
+await page.waitForTimeout(400);
+const idFoco = await page.evaluate(() => tecRows()[0].id);
+await page.click('.tct[data-tec-row="' + idFoco + '"] input.tct-n');
+await page.evaluate(() => {
+  const el = document.querySelector("input.tct-n");
+  ((el.value = ""), el.dispatchEvent(new Event("input", { bubbles: true })));
+});
+await page.keyboard.type("ZZ Nom", { delay: 70 });
+await page.evaluate(() => render());
+await page.waitForTimeout(150);
+await page.keyboard.type("bre", { delay: 70 });
+await page.waitForTimeout(400);
+const campoFila = await page.evaluate((id) => {
+  const el = document.querySelector('.tct[data-tec-row="' + id + '"] input.tct-n');
+  return { valor: el ? el.value : null, enfocado: document.activeElement === el, guardado: state.tecnico.find((f) => f.id === id).curso };
+}, idFoco);
+(check("y tampoco corta el nombre que escribís en el renglón", campoFila.valor === "ZZ Nombre", campoFila),
+  check("lo que quedó escrito es lo que se guardó", campoFila.guardado === "ZZ Nombre", campoFila));
+
+// El polling directamente no redibuja mientras hay un campo con el cursor.
+const esperaAEscribir = await page.evaluate(() => {
+  document.querySelector("input.tct-n").focus();
+  return escribiendo();
+});
+check("y el sincronizado espera a que sueltes el campo", esperaAEscribir === true);
+await page.evaluate(() => document.activeElement.blur());
+
+// ── El buscador trae lo relacionado, no solo lo que coincide de nombre ────
+console.log("\nbuscar por sector, no solo por nombre");
+const porSector = await page.evaluate(() => {
+  const sec = Object.keys(SECTORES).find((k) => /caja/i.test(SECTORES[k].nombre));
+  if (!sec) return { sinSector: true };
+  const nombre = SECTORES[sec].nombre.toLowerCase(),
+    cursos = state.cards.filter((c) => c.tipo === "curso"),
+    delSector = cursos.filter((c) => (c.sectores || []).includes(sec)),
+    porNombre = delSector.filter((c) => c.titulo.toLowerCase().includes(nombre));
+  return {
+    nombre: nombre,
+    delSector: delSector.length,
+    porNombre: porNombre.length,
+    losEncuentraATodos: delSector.every((c) => cardCoincideTexto(c, nombre)),
+  };
+});
+(check("hay cursos de un sector que no lo dicen en el nombre", porSector.sinSector || porSector.delSector > porSector.porNombre, porSector),
+  check("y el buscador los trae igual", porSector.sinSector || porSector.losEncuentraATodos === true, porSector));
+
 // ── Reportes: el catálogo en detalle ──────────────────────────────────────
 // Lo de arriba cuenta tarjetas del Mapa; el bloque nuevo cuenta filas de
 // Seguimiento técnico. Son dos fuentes distintas y por eso el corte va dicho.
