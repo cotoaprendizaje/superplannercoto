@@ -4330,6 +4330,17 @@ function setChecklistOverride(tipo, items) {
     touch());
 }
 const current = () => state.cards.find((tarjeta) => tarjeta.id === state.selectedId);
+// Qué mira el buscador de una tarjeta: el nombre, el sector al que pertenece
+// y la bajada del catálogo. Buscar por sector es la mitad de las búsquedas
+// reales ("mostrame lo de Cajas") y era justo lo que no encontraba.
+function cardCoincideTexto(tarjeta, texto) {
+  const q = (texto || "").trim().toLowerCase();
+  if (!q) return true;
+  if ((tarjeta.titulo || "").toLowerCase().includes(q)) return true;
+  if ((tarjeta.sectores || []).some((sec) => (sectorName(sec) || sec || "").toLowerCase().includes(q))) return true;
+  const cat = tarjeta.catalogo || {};
+  return ((cat.categoria || "") + " " + (cat.bajada || "")).toLowerCase().includes(q);
+}
 function newCard(txt, txt2, obj) {
   const tarjeta = tplFor(txt);
   const nueva = Object.assign(
@@ -4649,7 +4660,7 @@ function passBoard(tarjeta) {
   if (tarjeta2.tipo && tarjeta.tipo !== tarjeta2.tipo) return false;
   if (tarjeta2.sector && !(tarjeta.sectores || []).includes(tarjeta2.sector)) return false;
   if (tarjeta2.estado && tarjeta.estado !== tarjeta2.estado) return false;
-  if (tarjeta2.texto && !tarjeta.titulo.toLowerCase().includes(tarjeta2.texto.toLowerCase())) return false;
+  if (tarjeta2.texto && !cardCoincideTexto(tarjeta, tarjeta2.texto)) return false;
   return true;
 }
 function filteredBoard() {
@@ -4921,6 +4932,7 @@ function render() {
     renderFilters(),
     updateBell(),
     aplicarPermisos(),
+    medirTopbar(),
     repFranjaArrancar(),
     devolverFoco(foco));
 }
@@ -4936,6 +4948,16 @@ let ultimaVistaRenderizada = null;
 // <input> en el que estabas escribiendo deja de existir y nace uno nuevo, así
 // que el foco se pierde: había que volver a hacer clic para escribir la
 // segunda letra. Escribir "seguridad" eran nueve clics.
+// ¿Hay alguien con el cursor puesto en un campo de texto? Lo que llegue del
+// backend ya está guardado en state: redibujar puede esperar al próximo
+// pulso, y así nadie pierde la palabra que estaba escribiendo.
+function escribiendo() {
+  const el = document.activeElement;
+  if (!el || !el.tagName) return false;
+  if (el.tagName === "TEXTAREA") return true;
+  if (el.tagName !== "INPUT") return false;
+  return ["text", "search", "date", "email", "password", "number", "url", "tel"].includes(el.type);
+}
 function focoDeLaVista() {
   const el = document.activeElement;
   if (!el || !el.dataset) return null;
@@ -4943,7 +4965,14 @@ function focoDeLaVista() {
     ? '[data-filter="' + el.dataset.filter + '"]'
     : el.dataset.quickadd
       ? '[data-quickadd="' + el.dataset.quickadd + '"]'
-      : "";
+      : // Un campo de una fila de Técnico: fila + columna lo identifican.
+        el.dataset.tecId && el.dataset.tecField
+        ? '[data-tec-id="' + el.dataset.tecId + '"][data-tec-field="' + el.dataset.tecField + '"]'
+        : // Y cualquier campo con id propio, que es como se llaman los
+          // buscadores de Técnico y de Matriculación.
+          el.id
+          ? "#" + el.id
+          : "";
   if (!sel || !$("#view").contains(el)) return null;
   let ini = null,
     fin = null;
@@ -5681,7 +5710,7 @@ function mapaFilter(lista) {
     } else if (val.sector && !(tarjeta.sectores || []).includes(val.sector)) return false;
     if (val.cursoEstado === "activo" && tarjeta.enActualizacion) return false;
     if (val.cursoEstado === "actualizando" && !tarjeta.enActualizacion) return false;
-    if (val.texto && !tarjeta.titulo.toLowerCase().includes(val.texto.toLowerCase())) return false;
+    if (val.texto && !cardCoincideTexto(tarjeta, val.texto)) return false;
     return true;
   });
 }
@@ -6085,10 +6114,16 @@ function tecRows(salvo) {
     // el lugar cambiaría el orden con el que se guarda y se sincroniza.
     // Una fecha mal escrita ordena como si estuviera vacía (al final) en vez de
     // colarse arriba de todo: un typo no puede descolocar la tabla entera.
-    const clave = (fila) =>
-      TEC_FECHAS.includes(campo) && tecFechaMala(fila[campo])
+    // Dos claves que no son un campo de la fila sino una cuenta: cuántas
+    // piezas lleva hechas, y si está unida al Mapa. Se ordenan igual que el
+    // resto porque son igual de preguntables.
+    const clave = (fila) => {
+      if (campo === "piezas") return String(tecPiezas(fila).hechas).padStart(2, "0");
+      if (campo === "mapa") return fila.cardId ? "1" : "";
+      return TEC_FECHAS.includes(campo) && tecFechaMala(fila[campo])
         ? ""
         : (fila[campo] || "").toString().toLowerCase();
+    };
     lista = lista.slice().sort((a, b) => {
       const va = clave(a),
         vb = clave(b);
@@ -6258,6 +6293,75 @@ function tecFilaSync(id) {
       nuevo = tecCatAvanceHTML(filas);
     if (nuevo) avance.outerHTML = nuevo;
   }
+}
+function tecGridCols() {
+  const piezas = TEC_CHKS.filter(tecColVisible).length,
+    fechas = TEC_FECHAS.filter(tecColVisible).length;
+  return (
+    "34px minmax(0,1fr) " +
+    (piezas ? piezas * 78 + "px " : "0px ") +
+    (tecColVisible("diseno") ? "112px " : "0px ") +
+    (tecColVisible("mapa") ? "118px " : "0px ") +
+    (fechas ? fechas * 130 + 50 + "px " : "0px ") +
+    "34px"
+  );
+}
+// La cabecera: el nombre de cada columna, y tocarlo ordena por ella. Va una
+// sola vez arriba de la lista y se queda pegada al scrollear, así no hay que
+// volver arriba para acordarse de qué es cada cosa ni para cambiar el orden.
+//
+// El orden cicla ascendente → descendente → sin orden, que devuelve el
+// agrupado por categoría: siempre hay forma de volver a como estaba.
+const TEC_CABECERA = [
+  { k: "curso", label: "Curso" },
+  { k: "piezas", label: "Piezas" },
+  { k: "diseno", label: "Diseño" },
+  { k: "mapa", label: "Mapa" },
+];
+const TEC_CAB_CORTO = { publicacion: "Publicación", scorm: "SCORM" };
+function tecCabBotonHTML(campo, label, clase) {
+  const activo = state.tecOrden === campo;
+  return (
+    '<button class="thead-b' +
+    (activo ? " on" : "") +
+    (clase ? " " + clase : "") +
+    '" data-action="tec:sortcol" data-campo="' +
+    campo +
+    '" title="Ordenar por ' +
+    esc(label) +
+    '">' +
+    esc(label) +
+    "<i>" +
+    (activo ? (state.tecOrdenDir === 1 ? "▲" : "▼") : "↕") +
+    "</i></button>"
+  );
+}
+function medirTopbar() {
+  const bar = document.querySelector(".topbar");
+  if (bar)
+    document.documentElement.style.setProperty(
+      "--topbar-h",
+      Math.round(bar.getBoundingClientRect().height) + "px",
+    );
+}
+window.addEventListener("resize", medirTopbar);
+function tecCabeceraHTML() {
+  const piezas = TEC_CHKS.filter(tecColVisible).length,
+    fechas = TEC_FECHAS.filter(tecColVisible);
+  return (
+    '<div class="thead"><span></span>' +
+    TEC_CABECERA.filter((c) => c.k === "curso" || (c.k === "piezas" ? piezas : tecColVisible(c.k)))
+      .map((c) => tecCabBotonHTML(c.k, c.label))
+      .join("") +
+    // Las dos fechas comparten columna porque comparten la línea de tiempo del
+    // renglón: cada rótulo cae justo encima de su punto.
+    (fechas.length
+      ? '<span class="thead-fechas">' +
+        fechas.map((k, i) => (i ? '<i class="thead-arco"></i>' : "") + tecCabBotonHTML(k, TEC_CAB_CORTO[k] || tecColLabel(k), "fecha")).join("") +
+        "</span>"
+      : "") +
+    "<span></span></div>"
+  );
 }
 function tecTarjFechaHTML(fila, campo) {
   const val = fila[campo] || "",
@@ -6434,6 +6538,9 @@ const TEC_ORDEN_OPTS = [
   { k: "publicacion", dir: 1, label: "Publicación: de la más vieja a la más nueva" },
   { k: "scorm", dir: -1, label: "SCORM: del más nuevo al más viejo" },
   { k: "scorm", dir: 1, label: "SCORM: del más viejo al más nuevo" },
+  { k: "piezas", dir: -1, label: "Piezas: de más hechas a menos" },
+  { k: "piezas", dir: 1, label: "Piezas: de menos hechas a más" },
+  { k: "mapa", dir: 1, label: "Mapa: vinculados primero" },
   { k: "diseno", dir: 1, label: "Diseño: de la A a la Z" },
   { k: "baja", dir: 1, label: "Estado: vigentes primero" },
   { k: "baja", dir: -1, label: "Estado: dados de baja primero" },
@@ -6762,9 +6869,8 @@ function tecLineaHTML(fila, editable) {
         estado +
         '" title="' +
         esc(tecColLabel(k) + ": " + (mala ? 'no se entiende "' + v + '"' : v ? tecFechaVer(v) : "sin cargar")) +
-        '"><i class="tlin-punto"></i><span class="tlin-lbl">' +
-        esc(tecColLabel(k)) +
-        "</span>" +
+        '"><i class="tlin-punto"></i>' +
+        (editable ? "" : '<span class="tlin-lbl">' + esc(tecColLabel(k)) + "</span>") +
         (editable
           ? '<input type="date" class="tlin-fec tec-date' +
             (v && !mala ? "" : " vacia") +
@@ -6997,7 +7103,10 @@ function tecListHTML() {
     tecCategoriasDatalistHTML() +
     '<div id="tecSelBar">' +
     tecSelBarHTML() +
-    '</div><div class="tec-lista">' +
+    '</div><div class="tec-lista" style="--tec-cols:' +
+    tecGridCols() +
+    '">' +
+    tecCabeceraHTML() +
     grupos.map(tecCatSeccionHTML).join("") +
     "</div>"
   );
@@ -12267,6 +12376,16 @@ document.addEventListener("click", (ev) => {
     // Abrir una ficha cierra la anterior: con noventa cursos, dos fichas
     // abiertas ya obligan a scrollear para comparar, que es justo lo que la
     // tarjeta cerrada vino a evitar.
+    // Ordenar desde la cabecera: ascendente → descendente → sin orden, que
+    // devuelve el agrupado por categoría. Siempre hay forma de volver.
+    case "tec:sortcol": {
+      const campoCab = el.dataset.campo;
+      if (state.tecOrden !== campoCab) ((state.tecOrden = campoCab), (state.tecOrdenDir = 1));
+      else if (state.tecOrdenDir === 1) state.tecOrdenDir = -1;
+      else ((state.tecOrden = ""), (state.tecOrdenDir = 1));
+      render();
+      break;
+    }
     case "tec:abrir":
       ((state.tecAbierta = state.tecAbierta === el.dataset.id ? null : el.dataset.id), renderTecList());
       break;
@@ -16363,7 +16482,10 @@ function startPolling() {
         state.lastSyncTs = Date.now();
         return;
       }
-      const editing = $("#panel").classList.contains("open") || !$("#modal").classList.contains("hidden"),
+      const editing =
+          $("#panel").classList.contains("open") ||
+          !$("#modal").classList.contains("hidden") ||
+          escribiendo(),
         changed = await mergeRemoteIntoState();
       state.lastSyncTs = Date.now();
       if (!changed.length) return;
