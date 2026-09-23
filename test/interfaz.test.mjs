@@ -461,8 +461,9 @@ const cerrada = await page.evaluate(() => {
 (check("el renglón cerrado muestra nombre, las cuatro piezas y las dos fechas", cerrada.nombre && cerrada.piezas && cerrada.fechas === 2, cerrada),
   check("y no despliega la ficha hasta que se la abre", cerrada.cuerpo === false, cerrada));
 
-// Abrirla la estira al ancho completo con todos los campos adentro.
-await page.click(".tct .tct-b");
+// Abrirla la estira al ancho completo con todos los campos adentro. Se abre
+// con la flecha: el nombre es un campo y clickearlo pone el cursor.
+await page.click(".tct .tct-ar");
 await page.waitForTimeout(350);
 const fichaAbierta = await page.evaluate(() => {
   const t = document.querySelector(".tct.abierta");
@@ -557,6 +558,47 @@ await page.waitForTimeout(400);
 check(
   "y se vuelve al agrupado por categoría",
   await page.evaluate(() => !state.tecOrden && !!document.querySelector(".tcat")),
+);
+
+// Lo que está a la vista en el renglón se escribe en el renglón. Mandar a
+// abrir una ficha por curso para cargar una fecha es la planilla otra vez,
+// pero peor: son ciento catorce aperturas.
+const idEd = await page.evaluate(() => tecRows()[0].id);
+const campos = await page.evaluate(
+  (id) => [...document.querySelectorAll('.tct[data-tec-row="' + id + '"] > * [data-tec-field], .tct[data-tec-row="' + id + '"] [data-tec-field]')]
+    .filter((n) => !n.closest(".tct-cuerpo"))
+    .map((n) => n.dataset.tecField),
+  idEd,
+);
+check(
+  "sin abrir nada, el renglón deja editar nombre, piezas, diseño y las dos fechas",
+  ["curso", "portada", "mosaico", "evaluacion", "textos", "diseno", "publicacion", "scorm"].every((k) => campos.includes(k)),
+  campos,
+);
+await page.fill('.tct[data-tec-row="' + idEd + '"] input.tct-n', "ZZ Escrito en el renglón");
+await page.waitForTimeout(350);
+await page.selectOption('.tct[data-tec-row="' + idEd + '"] .tct-dis select', "Storyline V2");
+await page.waitForTimeout(350);
+await page.fill('.tct[data-tec-row="' + idEd + '"] [data-tec-field="scorm"]', "2026-02-10");
+await page.waitForTimeout(400);
+const guardado = await page.evaluate((id) => {
+  const f = state.tecnico.find((x) => x.id === id);
+  return { curso: f.curso, diseno: f.diseno, scorm: f.scorm, sigueAbiertaNinguna: state.tecAbierta === null };
+}, idEd);
+(check("lo que se escribe en el renglón se guarda", guardado.curso === "ZZ Escrito en el renglón" && guardado.diseno === "Storyline V2", guardado),
+  check("y la fecha también, sin abrir la ficha", guardado.scorm === "2026-02-10" && guardado.sigueAbiertaNinguna, guardado));
+
+// El nombre viaja a la tarjeta del Mapa si está vinculada, como siempre.
+const espejo = await page.evaluate((id) => {
+  const f = state.tecnico.find((x) => x.id === id);
+  if (!f.cardId) return "sin vínculo";
+  const c = state.cards.find((x) => x.id === f.cardId);
+  return c ? c.titulo : "sin tarjeta";
+}, idEd);
+check(
+  "y si el curso está vinculado, el nombre viaja al Mapa",
+  espejo === "sin vínculo" || espejo === "ZZ Escrito en el renglón",
+  espejo,
 );
 
 // Selección múltiple: poner "Portada hecha" en doce cursos eran doce clics en

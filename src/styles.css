@@ -9278,21 +9278,32 @@ button.mat-ct:hover {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
   padding: 6px 8px;
-  border: 0;
-  background: 0 0;
-  font: inherit;
-  color: var(--ink);
-  text-align: left;
-  cursor: pointer;
 }
 .tct-n {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
   font-family: var(--titulo);
   font-size: 14px;
   font-weight: 700;
   line-height: 1.3;
-  overflow-wrap: break-word;
+  color: var(--ink);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: 0 0;
+  padding: 3px 6px;
+  margin-left: -6px;
+  text-overflow: ellipsis;
+}
+.tct-n:hover {
+  border-color: var(--line-soft);
+}
+.tct-n:focus {
+  border-color: var(--coto-blue);
+  background: var(--surface);
+  outline: 0;
+  text-overflow: clip;
 }
 .tct.abierta .tct-n {
   font-size: 15.5px;
@@ -9346,15 +9357,33 @@ button.mat-ct:hover {
 .tpz.on {
   color: var(--ok);
 }
-.tct-dis i {
-  font-style: normal;
-  padding: 1px 7px;
+.tct-dis {
+  min-width: 0;
+}
+.tct-dis select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid transparent;
   border-radius: var(--pill);
   background: var(--surface-2);
-  border: 1px solid var(--line-soft);
-  white-space: nowrap;
-  overflow: hidden;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  cursor: pointer;
   text-overflow: ellipsis;
+}
+.tct-dis select:hover {
+  border-color: var(--line);
+  color: var(--coto-blue);
+}
+.tct-dis select:focus {
+  border-color: var(--coto-blue);
+  background: var(--surface);
+  color: var(--ink);
+  outline: 0;
 }
 .tct-off {
   padding: 1px 7px;
@@ -9413,6 +9442,54 @@ button.mat-ct:hover {
 }
 .tct-lin .tlin-fec {
   font-size: 11px;
+}
+.tlin.edit .tlin-fec {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: 0 0;
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  padding: 1px 2px;
+}
+.tlin.edit .tlin-fec:hover {
+  border-color: var(--line-soft);
+}
+.tlin.edit .tlin-fec:focus {
+  border-color: var(--coto-blue);
+  background: var(--surface);
+  outline: 0;
+}
+.tlin.edit .tlin-paso {
+  position: relative;
+}
+.tlin.edit .tlin-fec.vacia:not(:focus)::-webkit-datetime-edit {
+  color: transparent;
+}
+.tlin.edit .tlin-paso:has(.tlin-fec.vacia:not(:focus))::after {
+  content: "—";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-soft);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.tlin.edit .tlin-fec::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  margin-left: 0;
+}
+.tct:hover .tlin.edit .tlin-fec::-webkit-calendar-picker-indicator,
+.tlin.edit .tlin-fec:focus::-webkit-calendar-picker-indicator {
+  opacity: 0.5;
 }
 .tct-lin .tlin-arco {
   min-width: 8px;
