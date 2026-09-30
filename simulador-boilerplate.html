@@ -1,0 +1,865 @@
+<!-- ==============================================================
+     simulador-boilerplate.html · EL MARCADO DE UN CURSO-SIMULADOR
+     kit-base v1.9.81 — ver CLAUDE.md §7.27 y `js/coto-simulador.js`
+     ==============================================================
+
+     CÓMO SE USA
+     Este archivo NO se copia entero a ningún lado. Es la fuente de
+     verdad del marcado que `coto-simulador.js` espera encontrar:
+     se copian las piezas que el simulador use, al lugar que les
+     corresponde en el `index.html` del curso.
+
+     ⚠️ DE DÓNDE SALE EL DISEÑO: DEL PDF DEL DISEÑADOR
+     Un simulador arranca igual que cualquier otro curso de este molde
+     (CLAUDE.md §3): del PDF que entrega el diseñador. Las piezas de
+     abajo están CALCADAS del PDF del primer simulador —el riel, las
+     dos cáscaras de pop-up, la pantalla de "¡Ups!", las proporciones
+     del monitor— y ESO es lo que hay que rehacer contra el PDF nuevo,
+     no reusarlas a ciegas porque "ya funcionan".
+
+     En concreto, cada vez:
+       1. Leer el PDF entero ANTES de tocar marcado. Las últimas
+          páginas suelen ser las cáscaras de los pop-ups; en el primer
+          simulador se leyeron como "pantallas vacías" y los pop-ups
+          se armaron con el modal genérico del kit — el diseñador ya
+          los había dibujado y hubo que rehacerlos.
+       2. Contar ESTADOS, no páginas (§7 paso 4). Tres páginas con el
+          mismo menú desplegándose son UNA diapositiva con tres
+          estados, no tres diapositivas.
+       3. Decidir por pantalla: captura íntegra (`.d-shot-slide`) vs.
+          HTML real. Las pantallas del sistema van en HTML real
+          siempre — tienen que ser interactivas— y las ilustraciones
+          (portada, "¡Ups!", cierre) van como captura.
+       4. MEDIR sobre el arte, no estimar (§6.70): proporciones,
+          posiciones y colores salen de la imagen, y se verifican
+          (`npm run verify-hitboxes`). Lo recreado en CSS puede —y
+          debe— tener más terminación que el plano del arte (§6.30),
+          pero la COMPOSICIÓN es la del arte.
+
+     LO QUE ESTE ARCHIVO SÍ RESUELVE: los `data-*` del contrato. Esos
+     no son de diseño y no cambian de un simulador a otro — si los
+     renombrás, el motor deja de encontrarlos.
+     ============================================================== -->
+
+
+
+<!-- ========== 1 · HOJA DE RUTA + RIEL DE AYUDAS
+     Los dos son HIJOS DE `.d-stage`, no de una diapositiva: un solo
+     contador y un solo lugar donde se pintan. Repetirlos por
+     diapositiva sería tener N estados que sincronizar a mano, que es
+     la forma de bug de §6.25.
+     Un `<li data-sim-ruta-i>` por paso del escenario, con el `id` del
+     paso: los rótulos los escribe `coto-simulador.js` desde
+     `ESCENARIO.pasos[].rotulo`.
+
+       Por qué existe: el simulador tiene tres pantallas encadenadas y,
+       adentro de la segunda, el alumno no tenía forma de saber cuántas
+       faltaban ni qué venía después. Un procedimiento se aprende mejor
+       cuando se ve entero: la hoja de ruta es el índice del
+       PROCEDIMIENTO, no del curso.
+       Espeja al riel de ayudas: ruta a la izquierda, ayudas a la
+       derecha. Los rótulos salen de `ESCENARIO.pasos[].rotulo`.
+       ============================================================== -->
+  <p class="sr-only" data-sim-ruta-sr role="status"></p>
+  <aside class="sim-ruta" data-sim-ruta hidden aria-label="Los tres pasos del procedimiento">
+    <div class="sim-rail-card sim-ruta-card">
+      <b>Tu camino</b>
+      <ol>
+        <li class="sim-ruta-i" data-sim-ruta-i="login"><b>1</b><span></span></li>
+        <li class="sim-ruta-i" data-sim-ruta-i="menu"><b>2</b><span></span></li>
+        <li class="sim-ruta-i" data-sim-ruta-i="impresion"><b>3</b><span></span></li>
+      </ol>
+    </div>
+  </aside>
+
+  <aside class="sim-rail" data-sim-rail hidden aria-label="Ayudas del simulador">
+    <!-- Globito del nudge: aparece solo si el alumno se queda quieto.
+         `role="status"` para que también llegue por voz; `hidden` real
+         para que no se narre mientras no corresponde. -->
+    <p class="sim-nudge" data-sim-nudge role="status" hidden></p>
+
+    <div class="sim-rail-card sim-rail-card--pistas">
+      <b data-sim-lupas-rot>Pistas</b>
+      <ul class="sim-lupas" data-sim-lupas>
+        <li><button class="sim-lupa" type="button" data-sim-pista="1" aria-label="Usar pista 1 de 3">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 L20.5 20.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>
+        </button></li>
+        <li><button class="sim-lupa" type="button" data-sim-pista="2" aria-label="Usar pista 2 de 3">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 L20.5 20.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>
+        </button></li>
+        <li><button class="sim-lupa" type="button" data-sim-pista="3" aria-label="Usar pista 3 de 3">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 L20.5 20.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg>
+        </button></li>
+      </ul>
+    </div>
+
+    <!-- LUPA DE LA PANTALLA · aparece sola en lienzos bajos.
+         Va en el riel y NO encima del monitor: probada sobre un
+         teléfono acostado de verdad, la versión anterior tapaba la
+         casilla "Sin precio" con el botón de acercar. El riel es la
+         columna de herramientas del simulador; la lupa es una
+         herramienta más, y ahí no tapa nada. -->
+    <div class="sim-rail-card sim-rail-card--zoom" data-sim-zoom-box hidden>
+      <button class="sim-zoom-b" type="button" data-sim-zoom="1" aria-label="Acercar la pantalla">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12M12 6v12" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+      </button>
+      <b data-sim-zoom-lbl>100%</b>
+      <button class="sim-zoom-b" type="button" data-sim-zoom="-1" aria-label="Alejar la pantalla">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 12h12" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="sim-rail-card sim-rail-card--reglas">
+      <b>Reglas</b>
+      <button class="sim-info" type="button" data-popup-trigger="reglas" aria-label="Ver las reglas del simulador">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5.6" r="1.9" fill="currentColor"/><rect x="10.1" y="9.4" width="3.8" height="11" rx="1.9" fill="currentColor"/></svg>
+      </button>
+    </div>
+
+    <!-- Reloj: aparece recién cuando se gastó la última pista. Hasta
+         ese momento no existe visualmente (no es un contador apagado:
+         mostrarlo en 30 todo el juego sería prometer una cuenta
+         regresiva que todavía no corre). `role="timer"` + aria-live
+         off: se anuncia al arrancar y al terminar, no cada segundo. -->
+    <div class="sim-reloj" data-sim-reloj hidden role="timer" aria-live="off">
+      <svg viewBox="0 0 44 44" aria-hidden="true">
+        <circle class="sim-reloj-bg" cx="22" cy="22" r="19"/>
+        <circle class="sim-reloj-fg" cx="22" cy="22" r="19" data-sim-reloj-aro/>
+      </svg>
+      <b data-sim-reloj-num>30</b>
+      <span class="sr-only" data-sim-reloj-sr></span>
+    </div>
+  </aside>
+
+
+<!-- ========== 2 · UNA DIAPOSITIVA DE SIMULADOR
+     El esqueleto: consigna, orden de trabajo (el "papel" que le dan
+     al alumno), monitor con la pantalla adentro. Lo que va dentro de
+     `.sim-screen` es la pantalla recreada del sistema — acá va la de
+     GESCOM como ejemplo (ver `css/coto-gescom.css`).
+     `data-sim-zona` marca qué resaltar cuando el alumno compra la
+     última pista de esa pantalla. ========== -->
+  <section class="slide slide-sim" data-slide="login" data-slide-index="1">
+    <h2 class="sr-only" data-slide-title>Entrar a GESCOM</h2>
+    <p class="sim-resuelto" data-sim-resuelto hidden><span aria-hidden="true">✓</span>Ya resolviste esta pantalla</p>
+    <p class="sim-consigna">
+      <i class="sim-dots" aria-hidden="true"></i>
+      <span>Entrá a GESCOM con el <b>usuario de etiquetas</b> de tu sucursal.</span>
+      <i class="sim-dots" aria-hidden="true"></i>
+    </p>
+
+    <div class="sim-orden" role="group" aria-label="Tu puesto">
+      <span class="sim-orden-tag" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"
+          fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M9.5 21v-6h5v6" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </span>
+      <b class="sim-orden-lbl">Tu puesto</b>
+      <!-- El nombre sale del LMS (`cmi.core.student_name`), no de un
+           campo del curso: el alumno ya se identificó al entrar y
+           volver a pedírselo es pedirle dos veces lo mismo. Arranca
+           `hidden` porque fuera de un LMS —probando el SCORM suelto—
+           ese dato no existe, y un rótulo "Vos sos" vacío se lee como
+           un error del curso. `curso.js` lo destapa solo si hay nombre. -->
+      <span class="sim-orden-chip" data-sim-chip-alumno hidden><i>Vos sos</i><em data-var="alumno"></em></span>
+      <span class="sim-orden-chip"><i>Sucursal</i><em data-var="sucursal">124</em></span>
+      <small class="sim-orden-nota">Vas a necesitar este número para entrar</small>
+      <p class="sr-only" data-var-frase="puesto">Estás trabajando en la sucursal 124.</p>
+    </div>
+
+
+    <div class="sim-monitor">
+      <div class="sim-screen">
+        <div class="gx-login">
+          <div class="gx-login-art" aria-hidden="true">
+            <svg viewBox="0 0 320 380" preserveAspectRatio="xMidYMid slice" role="img">
+              <defs>
+                <linearGradient id="gxbg" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#2FA8E8"/><stop offset="1" stop-color="#1E7FC0"/>
+                </linearGradient>
+              </defs>
+              <rect width="320" height="380" fill="url(#gxbg)"/>
+              <path d="M0 40 L320 250 L320 380 L0 380 Z" fill="#2E86C8" opacity=".55"/>
+              <g transform="translate(60,110)">
+                <path d="M100 0 L196 40 L100 80 L4 40 Z" fill="#F59B1E"/>
+                <path d="M4 40 L100 80 L100 178 L4 138 Z" fill="#5FC0F0"/>
+                <path d="M100 80 L196 40 L196 138 L100 178 Z" fill="#8CC63E"/>
+                <path d="M4 40 L100 80 L196 40" fill="none" stroke="#123A5C" stroke-width="3" opacity=".35"/>
+              </g>
+            </svg>
+          </div>
+
+          <form class="gx-login-form" data-sim-login novalidate>
+            <button class="gx-x" type="button" data-sim-noop="cerrar GESCOM"
+                    aria-label="Cerrar">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#D0202C"/><path d="M8 8l8 8M16 8l-8 8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+
+            <div class="gx-field" data-sim-zona>
+              <label for="gx-user">Usuario</label>
+              <input id="gx-user" type="text" data-sim-user maxlength="12"
+                     name="sim-eti-a" autocomplete="off" autocapitalize="characters"
+                     spellcheck="false" autocorrect="off" data-lpignore="true"
+                     data-1p-ignore data-form-type="other">
+            </div>
+            <div class="gx-field gx-field--pass" data-sim-zona>
+              <label for="gx-pass">Contraseña</label>
+              <input id="gx-pass" type="text" class="is-oculta" data-sim-pass maxlength="12"
+                     name="sim-eti-b" autocomplete="off" autocapitalize="characters"
+                     spellcheck="false" autocorrect="off" data-lpignore="true"
+                     data-1p-ignore data-form-type="other"
+                     aria-label="Contraseña">
+              <!-- Ver/ocultar la contraseña. Lo cablea `coto-simulador.js`
+                   solo, por `[data-sim-ver-clave]` + `[data-sim-pass]` +
+                   `[data-sim-ojo="on|off"]`: el curso no escribe nada.
+
+                   ⚠️ EL CAMPO NO ES `type="password"`, Y ES A PROPÓSITO.
+                   Chrome ignora `autocomplete="off"` en cualquier
+                   formulario que huela a login, y lo que lo delata es ese
+                   `type`: aparecía el desplegable con las credenciales
+                   GUARDADAS DEL ALUMNO encima del campo de usuario. El
+                   enmascarado lo hace la clase `.is-oculta` por CSS
+                   (`-webkit-text-security`), que cubre Chrome/Edge/Safari
+                   — todo lo que corre en sucursal. Firefox no, y queda
+                   dicho acá en vez de escondido.
+                   `aria-pressed` porque es un interruptor, no una acción. -->
+              <button class="gx-ojo" type="button" data-sim-ver-clave
+                      aria-pressed="false" aria-label="Mostrar la contraseña">
+                <svg data-sim-ojo="on" hidden viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M1.8 12S6 5.6 12 5.6 22.2 12 22.2 12 18 18.4 12 18.4 1.8 12 1.8 12Z"
+                        fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                </svg>
+                <svg data-sim-ojo="off" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M1.8 12S6 5.6 12 5.6 22.2 12 22.2 12 18 18.4 12 18.4 1.8 12 1.8 12Z"
+                        fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/>
+                  <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                  <path d="M4.6 3.6 19.4 20.4" stroke="#FFFFFF" stroke-width="4.2"
+                        stroke-linecap="round"/>
+                  <path d="M4.6 3.6 19.4 20.4" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <button class="gx-btn" type="submit" data-sim-ingresar>Ingresar</button>
+          </form>
+        </div>
+      </div>
+      <div class="sim-monitor-neck" aria-hidden="true"></div>
+      <div class="sim-monitor-foot" aria-hidden="true"></div>
+    </div>
+  </section>
+
+
+<!-- ========== 2b · GESCOM · ÁRBOL DE MENÚ ==========
+     Segunda pantalla del ejemplo. El árbol es un `<div role="tree">` y
+     NO un `<ul>/<li>`: con lista real, `Narrador.textOf()` lee el menú
+     entero —incluidas las barras de "Codificacion/Datos", que el
+     sintetizador pronuncia "barra diagonal"— encima de la consigna.
+     Los `data-sim-node` los cablea el curso: qué rama es correcta y
+     qué dice cada una de las equivocadas es contenido, no mecánica. -->
+  <section class="slide slide-sim" data-slide="menu" data-slide-index="2">
+    <h2 class="sr-only" data-slide-title>Buscar en el menú</h2>
+    <p class="sim-resuelto" data-sim-resuelto hidden><span aria-hidden="true">✓</span>Ya resolviste esta pantalla</p>
+    <p class="sim-consigna">
+      <i class="sim-dots" aria-hidden="true"></i>
+      <span>Recorré el menú hasta la pantalla donde se <b>imprimen las obleas de precios</b>.</span>
+      <i class="sim-dots" aria-hidden="true"></i>
+    </p>
+
+
+    <div class="sim-monitor">
+      <div class="sim-screen">
+        <div class="gx-win">
+          <div class="gx-titlebar">
+            <span class="gx-titlebar-ic" aria-hidden="true"></span>
+            <b>MENU PRINCIPAL</b>
+            <span class="gx-winbtns" aria-hidden="true"><i>&#8211;</i><i>&#9723;</i><i>&#10005;</i></span>
+          </div>
+
+          <div class="gx-body">
+            <nav class="gx-side" aria-label="Menú de GESCOM">
+              <div class="gx-user">
+                <span class="gx-avatar" aria-hidden="true">
+                  <svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="20" fill="#C9D2E2"/><circle cx="20" cy="15" r="7" fill="#55627A"/><path d="M6 40c0-8 6.3-12 14-12s14 4 14 12z" fill="#55627A"/></svg>
+                </span>
+                <span class="gx-user-txt">
+                  <b data-var="usuario2">ETI124 ETI124</b>
+                  <i data-var="legajo">Legajo: 124 - Sucursal: 124</i>
+                  <i data-var="conec">Usuario: ETI124 - Conec: ws01</i>
+                </span>
+              </div>
+
+              <div class="gx-tree" data-sim-tree role="tree" aria-label="Menú de GESCOM">
+                <div class="gx-branch" role="none">
+                  <button class="gx-node" type="button" role="treeitem" aria-expanded="false"
+                          data-sim-node="codificacion">
+                    <span class="gx-caret" aria-hidden="true"></span>
+                    <span class="gx-node-ic" aria-hidden="true"></span>
+                    Codificacion/Datos de productos
+                  </button>
+                </div>
+
+                <div class="gx-branch" role="none">
+                  <button class="gx-node" type="button" role="treeitem" data-sim-node="precios"
+                          aria-expanded="false" aria-controls="gx-sub-precios">
+                    <span class="gx-caret" aria-hidden="true"></span>
+                    <span class="gx-node-ic" aria-hidden="true"></span>
+                    Precios, Promociones y Ofertas
+                  </button>
+
+                  <div class="gx-tree gx-tree--sub" id="gx-sub-precios" role="group" hidden>
+                    <div class="gx-branch" role="none">
+                      <button class="gx-node" type="button" role="treeitem"
+                              data-sim-node="carteleria"
+                              aria-expanded="false" aria-controls="gx-sub-carteleria">
+                        <span class="gx-caret" aria-hidden="true"></span>
+                        <span class="gx-node-ic" aria-hidden="true"></span>
+                        Carteleria
+                      </button>
+
+                      <div class="gx-tree gx-tree--sub" id="gx-sub-carteleria" role="group" hidden>
+                        <button class="gx-node gx-node--leaf" type="button" role="treeitem" data-sim-node="etiquetas">
+                          <span class="gx-leaf-ic" aria-hidden="true"></span>Impresion de Etiquetas</button>
+                        <button class="gx-node gx-node--leaf" type="button" role="treeitem" data-sim-node="ofertas-vigentes">
+                          <span class="gx-leaf-ic" aria-hidden="true"></span>Consulta de Ofertas Vigentes</button>
+                        <button class="gx-node gx-node--leaf" type="button" role="treeitem" data-sim-node="fin-ofertas">
+                          <span class="gx-leaf-ic" aria-hidden="true"></span>Consulta de Fin Ofertas</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </nav>
+
+            <div class="gx-main">
+              <div class="gx-topbar">
+                <span class="gx-logo" aria-hidden="true">
+                  <svg viewBox="0 0 28 28"><path d="M14 2 L26 8 L14 14 L2 8 Z" fill="#F59B1E"/><path d="M2 8 L14 14 L14 26 L2 20 Z" fill="#5FC0F0"/><path d="M14 14 L26 8 L26 20 L14 26 Z" fill="#8CC63E"/></svg>
+                </span>
+                <b>GESCOM</b>
+                <span class="gx-search" aria-hidden="true"></span>
+              </div>
+              <div class="gx-canvas"></div>
+              <div class="gx-apps">
+                <span class="gx-apps-lbl">Apps mas utilizadas</span>
+                <div class="gx-apps-row">
+                  <button class="gx-app" type="button" data-sim-node="app-carteleria">
+                    <span class="gx-leaf-ic" aria-hidden="true"></span>Impresion de<br>Carteleria</button>
+                  <button class="gx-app" type="button" data-sim-node="app-etiquetas">
+                    <span class="gx-leaf-ic" aria-hidden="true"></span>Impresion de<br>Etiquetas</button>
+                  <button class="gx-app" type="button" data-sim-node="app-plu">
+                    <span class="gx-leaf-ic" aria-hidden="true"></span>Consulta de Plu<br>- Sucursal</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sim-monitor-neck" aria-hidden="true"></div>
+      <div class="sim-monitor-foot" aria-hidden="true"></div>
+    </div>
+  </section>
+
+<!-- ========== 2c · GESCOM · FORMULARIO ==========
+     Tercera pantalla del ejemplo, y la que más enseña sobre el molde:
+     ~20 controles de los que solo CUATRO son del alumno.
+       · `--ask`          las casillas que le tocan (halo del curso)
+       · `is-preset`      lo que el sistema ya trae cargado
+       · `data-sim-trap`  controles que penalizan, con su explicación
+       · `data-sim-inerte` controles que NO penalizan: se tocan, quedan
+                          como están y avisan una vez que dan igual
+     La grilla de resultados arranca VACÍA: sus filas (`.gx-trow`) las
+     dibuja el curso al imprimir. En el sistema real esa grilla se
+     llena antes de mandar a la impresora, y sin ese paso la pantalla
+     se siente como un formulario que no hace nada.
+     Esa última distinción es importante: un control que responde al
+     clic y no hace nada es un control roto (§7.3), y uno que castiga
+     por algo que el curso nunca explicó es una trampa que no enseña.
+     `data-sim-zona` marca qué resaltar con la última pista. -->
+  <section class="slide slide-sim" data-slide="impresion" data-slide-index="3">
+    <h2 class="sr-only" data-slide-title>Imprimir las obleas</h2>
+    <p class="sim-resuelto" data-sim-resuelto hidden><span aria-hidden="true">✓</span>Ya resolviste esta pantalla</p>
+    <p class="sim-consigna">
+      <i class="sim-dots" aria-hidden="true"></i>
+      <span>Completá las <b>cuatro casillas resaltadas</b> con lo que te pidieron y tocá Imprimir.</span>
+      <i class="sim-dots" aria-hidden="true"></i>
+    </p>
+
+    <div class="sim-orden" role="group" aria-label="Lo que te pidieron">
+      <span class="sim-orden-tag" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="4.5" y="3" width="15" height="18" rx="2.5"
+          fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 3.5h6v2.6H9z"
+          fill="currentColor"/><path d="M8.5 11h7M8.5 15h4.5" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round"/></svg>
+      </span>
+      <b class="sim-orden-lbl">Te pidieron</b>
+      <span class="sim-orden-chip"><i>Producto</i><em data-var="plu">PLU 248891</em></span>
+      <span class="sim-orden-chip"><i>Stock</i><em>Solo con stock</em></span>
+      <span class="sim-orden-chip"><i>Etiqueta</i><em>Tamaño medio</em></span>
+      <small class="sim-orden-nota">También sirve el código de barras</small>
+      <p class="sr-only">Te pidieron las obleas del PLU 2-4-8-8-9-1 —también sirve su código de
+        barras—, solo de lo que tiene stock, en tamaño de etiqueta medio.</p>
+    </div>
+
+
+    <div class="sim-monitor">
+      <div class="sim-screen">
+        <div class="gx-win">
+          <div class="gx-titlebar">
+            <span class="gx-titlebar-ic gx-titlebar-ic--lupa" aria-hidden="true"></span>
+            <b>Impresion de Etiquetas | Fecha: 08/09/2026 16:36:00 | IDAplicación: 1043 | Usuario: ETI124 | 124 - ETI124 ETI124</b>
+            <span class="gx-winbtns" aria-hidden="true"><i>&#8211;</i><i>&#9723;</i><i>&#10005;</i></span>
+          </div>
+
+          <form class="gx-form" data-sim-form novalidate>
+            <!-- fila 1 -->
+            <div class="gx-row">
+              <span class="gx-lbl">Precios a obtener:</span>
+              <label class="gx-chk is-preset"><input type="checkbox" checked disabled><span>Actuales</span></label>
+              <label class="gx-chk"><input type="checkbox" data-sim-trap="online"><span>Online</span></label>
+              <label class="gx-chk"><input type="checkbox" data-sim-inerte="novedades"><span>Novedades</span></label>
+              <label class="gx-chk"><input type="checkbox" data-sim-inerte="pda"><span>Tomado PDA Fecha:</span></label>
+              <span class="gx-input gx-input--date is-preset">08/09/2026<i class="gx-caret-dn" aria-hidden="true"></i></span>
+              <label class="gx-chk"><input type="checkbox" data-sim-inerte="surtido"><span>Plu en Surtido</span></label>
+              <!-- ✔ casilla pedida (recuadro rojo 1 del Word) -->
+              <label class="gx-chk gx-chk--ask" data-sim-zona><input type="checkbox" data-sim-campo="eanPrincipal"><span>Ean Principal?</span></label>
+              <span class="gx-lupa" aria-hidden="true"></span>
+            </div>
+
+            <!-- fila 2 -->
+            <div class="gx-row">
+              <span class="gx-lbl gx-lbl--w">Sucursal:</span>
+              <span class="gx-input gx-input--suc is-preset">124-SAN JUAN</span>
+            </div>
+
+            <!-- fila 3 -->
+            <div class="gx-row">
+              <span class="gx-lbl gx-lbl--w">Departamento:</span>
+              <span class="gx-input gx-input--grow"></span>
+              <i class="gx-caret-dn" aria-hidden="true"></i>
+              <!-- ✔ casillas pedidas (recuadro rojo 2 del Word) -->
+              <label class="gx-lbl gx-lbl--ask" for="gx-plu" data-sim-zona>Plu</label>
+              <input id="gx-plu" class="gx-input gx-input--txt gx-input--ask" type="text"
+                     inputmode="numeric" autocomplete="off" data-sim-campo="plu" maxlength="8"
+                     placeholder="248891" data-var-ph="plu" data-sim-zona>
+              <i class="gx-caret-dn" aria-hidden="true"></i>
+              <label class="gx-lbl gx-lbl--ask" for="gx-ean" data-sim-zona>EAN</label>
+              <input id="gx-ean" class="gx-input gx-input--txt gx-input--ask" type="text"
+                     inputmode="numeric" autocomplete="off" data-sim-campo="ean" maxlength="14"
+                     placeholder="7791113002663" data-var-ph="ean" data-sim-zona>
+              <i class="gx-caret-dn" aria-hidden="true"></i>
+            </div>
+
+            <!-- fila 4 -->
+            <div class="gx-row">
+              <span class="gx-lbl gx-lbl--w">Clase:</span>
+              <span class="gx-input gx-input--grow"></span>
+              <i class="gx-caret-dn" aria-hidden="true"></i>
+              <label class="gx-rad is-off"><input type="radio" name="gx-mm" disabled checked><span>Minorista</span></label>
+              <label class="gx-rad is-off"><input type="radio" name="gx-mm" disabled><span>Mayorista</span></label>
+              <!-- ✔ casillas pedidas (recuadro rojo 3 del Word) -->
+              <span class="gx-group gx-group--ask" data-sim-zona role="radiogroup" aria-label="Stock">
+                <label class="gx-rad"><input type="radio" name="gx-stock" value="sin" data-sim-campo="stock"><span>Sin Stock</span></label>
+                <label class="gx-rad"><input type="radio" name="gx-stock" value="con" data-sim-campo="stock"><span>Con Stock</span></label>
+                <label class="gx-rad"><input type="radio" name="gx-stock" value="todos" data-sim-campo="stock"><span>Todos</span></label>
+              </span>
+            </div>
+
+            <!-- fila 5 -->
+            <div class="gx-row">
+              <span class="gx-lbl gx-lbl--w">Condicion:</span>
+              <span class="gx-input gx-input--grow gx-input--sel is-preset">Seleccionar...<i class="gx-caret-dn" aria-hidden="true"></i></span>
+              <label class="gx-chk"><input type="checkbox" data-sim-inerte="activos"><span>Activos</span></label>
+              <label class="gx-chk"><input type="checkbox" data-sim-inerte="inactivos"><span>Inactivos</span></label>
+              <label class="gx-chk is-preset"><input type="checkbox" checked disabled><span>Todos</span></label>
+            </div>
+
+            <!-- fila 6 -->
+            <div class="gx-row">
+              <span class="gx-lbl gx-lbl--w">Tamaño de Etiqueta:</span>
+              <!-- ✔ casilla pedida (recuadro rojo 4 del Word) -->
+              <select class="gx-sel gx-sel--ask" data-sim-zona data-sim-campo="tamano" aria-label="Tamaño de etiqueta">
+                <option value="">Seleccionar...</option>
+                <option value="chico">Chico</option>
+                <option value="medio">Medio</option>
+                <option value="grande">Grande</option>
+              </select>
+              <span class="gx-lbl">Tipo de etiquetas:</span>
+              <label class="gx-chk is-preset"><input type="checkbox" checked disabled><span>Con precio</span></label>
+              <label class="gx-chk"><input type="checkbox" data-sim-trap="sinprecio"><span>Sin precio</span></label>
+              <span class="gx-lbl gx-lbl--rep">Repeticion de Obleas</span>
+              <span class="gx-input gx-input--rep is-preset">1</span>
+            </div>
+
+            <div class="gx-table" aria-hidden="true">
+              <div class="gx-thead"><span>Depto</span><span>Clase</span><span>Plu</span><span>Descripcion</span><span>EAN</span><span>Stock</span></div>
+              <div class="gx-tbody" data-sim-tbody></div>
+            </div>
+
+            <div class="gx-foot">
+              <button class="gx-print" type="submit" data-sim-imprimir>
+                <span class="gx-print-ic" aria-hidden="true"></span>Imprimir
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="sim-monitor-neck" aria-hidden="true"></div>
+      <div class="sim-monitor-foot" aria-hidden="true"></div>
+    </div>
+  </section>
+
+<!-- ========== 3 · ADORNOS DE LA HOJA (se clonan en los pop-ups) ==========
+     El adorno de la hoja se define UNA vez y se clona: la alternativa
+     era repetirlo dentro de cada uno de los tres pop-ups con su propio
+     estilo cada uno.
+     ============================================================== -->
+
+<!-- Decoración de la hoja (p9). Va en un `<template>` para no repetir
+     doce nodos de adorno en cada pop-up: `curso.js` la clona donde
+     haga falta. Es puro adorno, así que `aria-hidden`. -->
+<template id="sim-adornos">
+  <div class="sim-adornos" aria-hidden="true">
+    <span class="sim-ad sim-ad--bang sim-ad--bang-1">
+      <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="currentColor"/>
+        <rect x="28" y="14" width="8" height="24" rx="4" fill="#fff"/>
+        <circle cx="32" cy="46" r="4.6" fill="#fff"/></svg>
+    </span>
+    <span class="sim-ad sim-ad--bang sim-ad--bang-2">
+      <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="32" fill="currentColor"/>
+        <rect x="28" y="14" width="8" height="24" rx="4" fill="#fff"/>
+        <circle cx="32" cy="46" r="4.6" fill="#fff"/></svg>
+    </span>
+    <span class="sim-ad sim-ad--esq sim-ad--esq-1"></span>
+    <span class="sim-ad sim-ad--esq sim-ad--esq-2"></span>
+    <span class="sim-ad sim-ad--curva sim-ad--curva-1"></span>
+    <span class="sim-ad sim-ad--curva sim-ad--curva-2"></span>
+  </div>
+</template>
+
+
+<!-- ========== 4 · POP-UP DE REGLAS · la hoja a sangre del arte ========== -->
+<!-- ---- REGLAS · la hoja a sangre del PDF (p9) ---- -->
+<div class="modal sim-pop sim-pop--hoja" data-popup="reglas" role="dialog" aria-modal="true"
+     aria-label="Reglas del simulador">
+  <div class="modal-back" data-popup-close></div>
+  <div class="modal-card sim-pop-card" data-sim-adornar>
+    <button class="sim-pop-x" type="button" data-popup-close aria-label="Cerrar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"
+        stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="sim-pop-bd">
+      <h3 class="sim-pop-tit">Cómo se juega</h3>
+      <p class="sim-pop-bajada">Vas a recorrer el mismo camino que hacés en la sucursal
+        para imprimir las obleas de precios.</p>
+
+      <ul class="sim-reglas">
+        <li>
+          <span class="sim-regla-ic" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 L20.5 20.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></span>
+          <span><b>Tenés 3 pistas</b> para todo el simulador, y en cada pantalla
+            se gasta <b>una sola</b>. Volver a leer las que ya abriste no cuesta nada.</span>
+        </li>
+        <li>
+          <span class="sim-regla-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M5 13l4 4 10-10" fill="none" stroke="currentColor"
+              stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span><b>Equivocarte no te saca del juego</b> mientras te queden pistas: te
+            avisamos qué pasó, y si insistís te vamos dando pistas más concretas
+            —gratis— y te resaltamos dónde mirar.</span>
+        </li>
+        <li>
+          <span class="sim-regla-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none"
+              stroke="currentColor" stroke-width="2.4"/><path d="M12 7v5.6l3.4 2"
+              fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </span>
+          <span><b>Sin pistas, cambia el juego.</b> Arranca un reloj de 30 segundos por
+            pantalla, y si te equivocás o se te acaba el tiempo, volvés a esa pantalla
+            con una pista nueva.</span>
+        </li>
+        <li>
+          <span class="sim-regla-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6.1L12 16.8
+              6.6 19.7l1.2-6.1L3.3 9.4l6.1-.8z" fill="currentColor"/></svg>
+          </span>
+          <span>Cada pantalla arranca con una mirada: <b>leerla antes de tocar</b> suma
+            puntos, y resolverla <b>sin errores</b> suma más.</span>
+        </li>
+      </ul>
+
+      <p class="sim-pop-pie">Tomate el tiempo de leer cada pantalla antes de tocar.
+        Acá equivocarse no cuesta nada — en la sucursal, sí.</p>
+    </div>
+
+    <button class="sim-pop-cta" type="button" data-popup-close>Continuar</button>
+  </div>
+</div>
+
+
+<!-- ========== 5 · POP-UP DE PISTAS · la tarjeta marfil del arte ========== -->
+<!-- ---- PISTA · la tarjeta marfil del PDF (p10) ---- -->
+<div class="modal sim-pop sim-pop--tarjeta" data-popup="pista" role="dialog" aria-modal="true"
+     aria-label="Pista">
+  <div class="modal-back" data-popup-close></div>
+  <div class="modal-card sim-pop-card">
+    <button class="sim-pop-x" type="button" data-popup-close aria-label="Cerrar">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"
+        stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="sim-pop-bd sim-pop-bd--centro">
+      <span class="sim-pop-badge" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.3" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.2 15.2 L20.5 20.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></span>
+      <h3 class="sim-pop-tit" data-sim-pista-tit>Pista</h3>
+
+      <!-- LA PILA DE PISTAS DE ESTA PANTALLA.
+           Antes era un `<p>` suelto y siempre el mismo texto: abrir la
+           segunda lupa en la misma pantalla gastaba una pista para leer
+           lo que ya se había leído (reportado por el cliente, con
+           captura). Ahora cada pantalla tiene TRES niveles —orientar,
+           acotar, señalar—, se gasta UNA sola lupa por pantalla, los
+           niveles siguientes se destapan solos a medida que el alumno
+           se equivoca, y volver a leer lo ya destapado no cuesta nada.
+           `<ol>`: son pasos de una misma ayuda, en orden, y así la
+           locución los lee como lista (los `<li>` están en TEXT_SEL). -->
+      <ol class="sim-pistas" data-sim-pista-lista></ol>
+
+      <!-- Cuántas quedan, mostrado con las lupas mismas y no solo
+           escrito: el alumno ya asoció ese ícono con "ayuda", así que
+           tres lupas apagándose se entienden sin leer. El texto va
+           igual, en `.sr-only`, para quien escucha el curso. -->
+      <div class="sim-pop-pips" data-sim-pista-pips aria-hidden="true"></div>
+      <p class="sim-pop-quedan" data-sim-pista-quedan></p>
+    </div>
+
+    <button class="sim-pop-cta" type="button" data-popup-close>Continuar</button>
+  </div>
+</div>
+
+
+<!-- ========== 6 · POP-UP DE RESUMEN
+     Lo que el alumno ve al resolver la última pantalla, ANTES del
+     cierre. Cerrar el círculo con el artefacto real —el papel, el
+     comprobante, el registro que el procedimiento produce de verdad—
+     es lo que hace que el alumno reconozca lo que hizo cuando lo
+     tenga en la mano.
+
+     ⚠️ LA PIEZA DEL MEDIO ES CONTENIDO DEL CURSO, NO KIT.
+     Acá va la oblea de precio del primer simulador, y sus clases
+     `.sim-oblea-*` NO están en `coto-simulador.css` a propósito: cada
+     simulador produce otro papel. Si copiás este bloque tal cual, la
+     etiqueta se va a ver sin estilo hasta que escribas el CSS de TU
+     artefacto en `diapositivas.css`. Del kit es la cáscara del pop-up
+     (`.sim-pop--tarjeta`, `.sim-pasos`, `.sim-pop-acciones`); lo de
+     adentro, no.
+
+     Y una trampa que ya costó una vuelta: un elemento con
+     `container-type` NO es su propio contenedor. Un `padding: 2.2cqw`
+     sobre el artefacto se resuelve contra el LIENZO, no contra él —
+     la oblea salía 2.87:1 donde el arte manda 3:1. El relleno va en
+     los hijos. ========== -->
+<!-- ---- RESUMEN DEL PROCEDIMIENTO ----
+     Pedido en la ronda 2: al tocar "Imprimir" el simulador saltaba
+     solo al cierre y el alumno nunca veía QUÉ hizo bien. Ahora para
+     acá, con el procedimiento completo a la vista, y sigue cuando él
+     quiere. Mismo contenedor que la pista. -->
+<div class="modal sim-pop sim-pop--tarjeta sim-pop--ancha" data-popup="resumen" role="dialog"
+     aria-modal="true" aria-label="Lo que hiciste">
+  <div class="modal-back" data-popup-close></div>
+  <div class="modal-card sim-pop-card">
+    <div class="sim-pop-bd">
+      <div class="sim-resumen-hd">
+        <span class="sim-pop-badge sim-pop-badge--ok" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M5 13l4 4 10-10" fill="none" stroke="currentColor"
+            stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div>
+          <h3 class="sim-pop-tit">¡Obleas a la impresora!</h3>
+          <p class="sim-pop-bajada">Esta es la oblea que acaba de salir, con los datos que
+            cargaste. Y abajo, el procedimiento completo tal como lo hiciste.</p>
+        </div>
+      </div>
+
+      <div class="sim-resumen-col">
+        <!-- La oblea que "salió" de la impresora, con los datos del
+             juego. Es la pieza que cierra el círculo: el alumno ve que
+             los filtros que completó producen un papel concreto, el
+             mismo que va a recortar y colgar en góndola. Los seis
+             datos son los que el curso enseña a identificar. -->
+        <!-- ⚠️ El CSS de `.sim-oblea*` NO viaja con el kit: la oblea es
+             el artefacto de ESTE procedimiento, no del molde, y vive en
+             el `diapositivas.css` del curso (§7.27, "lo que queda del
+             lado del curso"). Esto es el MARCADO de referencia para
+             calcar la proporción y el orden de los datos; el que simule
+             otro sistema va a dibujar otro artefacto. -->
+        <figure class="sim-oblea-wrap">
+          <figcaption>La oblea que acaba de salir</figcaption>
+          <!-- Calcada de la oblea REAL del curso (PDF "Impresión de
+               obleas de precios", diapositiva "Datos de la oblea de
+               precios"): horizontal 3:1, nombre y origen a la
+               izquierda, precio gigante con los centavos en volada a
+               la derecha, y debajo el precio por unidad, el código de
+               barras y la línea `EAN| PLU:nnnnnn| fecha| sucursal`.
+               La primera versión era un invento vertical que no se
+               parecía en nada. -->
+          <div class="sim-oblea" data-sim-oblea>
+            <div class="sim-oblea-izq">
+              <p class="sim-oblea-desc" data-sim-oblea-desc></p>
+              <p class="sim-oblea-origen">ORIGEN: <span data-sim-oblea-origen></span></p>
+            </div>
+            <div class="sim-oblea-der">
+              <p class="sim-oblea-precio">
+                <span aria-hidden="true">$</span><b data-sim-oblea-precio></b><sup data-sim-oblea-cent></sup>
+              </p>
+              <p class="sim-oblea-unidad">
+                <span data-sim-oblea-unidad></span>&nbsp;&nbsp;<b data-sim-oblea-porunidad></b>
+              </p>
+              <div class="sim-oblea-bar" data-sim-oblea-bar aria-hidden="true"></div>
+              <p class="sim-oblea-cod" data-sim-oblea-cod></p>
+            </div>
+          </div>
+          <span class="sim-oblea-corte" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M6.5 4.5 17 17M17.5 4.5 7 17" stroke="currentColor"
+              stroke-width="1.6" stroke-linecap="round" fill="none"/>
+              <circle cx="5.6" cy="19" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/>
+              <circle cx="18.4" cy="19" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+            Recortala por el borde y colocala en góndola
+          </span>
+        </figure>
+
+        <ol class="sim-pasos">
+          <li>
+            <b>Entraste a GESCOM</b>
+            <span>Con el usuario de etiquetas de tu sucursal: <code data-var="usuario">ETI124</code>, usuario y
+              contraseña iguales.</span>
+          </li>
+          <li>
+            <b>Recorriste el menú</b>
+            <span>Precios, Promociones y Ofertas → Carteleria → Impresion de Etiquetas.</span>
+          </li>
+          <li>
+            <b>Completaste los filtros</b>
+            <span>El código del producto, el código de barras principal, solo lo que tiene
+              stock y el tamaño de etiqueta que te pidieron.</span>
+          </li>
+          <li>
+            <b>Imprimiste</b>
+            <span>Ahora: recortala con prolijidad y colocala en su lugar en góndola.</span>
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="sim-pop-acciones">
+      <button class="sim-pop-cta sim-pop-cta--suave" type="button" data-sim-reiniciar>
+        Volver a intentarlo
+      </button>
+      <button class="sim-pop-cta" type="button" data-sim-seguir>Continuar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 7 · "¡UPS!" · a sangre sobre todo el lienzo ==========
+     A SANGRE sobre todo el lienzo, no dentro de una tarjeta: en el PDF
+     es una PÁGINA entera, y metida en un modal el arte quedaba
+     encogido con el cartel "¡Jugá con nosotros!" flotando al costado
+     (reportado con captura). Sin ✕ ni fondo clickeable: de acá se sale
+     reintentando, y `curso.js` le da a cualquier cierre el único
+     significado que puede tener, que es empezar de nuevo.
+     ============================================================== -->
+<div class="modal sim-pop--sangre" data-popup="ups" role="dialog" aria-modal="true"
+     aria-label="Volvé a intentarlo">
+  <div class="modal-back"></div>
+  <div class="modal-card sim-ups">
+    <div class="d-shot" data-shot>
+      <img class="d-shot-img" src="img/ups.webp" alt="" decoding="async">
+
+      <p class="sr-only">¡Ups! Estuviste cerca.</p>
+
+      <!-- DÓNDE TE TRABASTE.
+           El cartel del arte dice "estuviste cerca" y nada más, y con
+           eso el alumno que se cayó en la tercera pantalla vuelve a
+           hacer las dos que ya tenía resueltas. Eso no enseña: cansa.
+           Esta tira tapa el renglón de instrucciones del arte (mismo
+           fondo blanco, misma tipografía) y dice la pantalla en la que
+           se trabó. El botón del arte pasa a significar "retomar desde
+           ahí"; empezar de cero queda abajo, como segunda opción.
+           Las coordenadas son las del renglón que reemplaza, medidas
+           sobre la imagen (§6.70). -->
+      <div class="sim-ups-info" data-sim-ups-info
+           style="left:30%;top:27.4%;width:40%;height:9.4%">
+        <p><span data-sim-ups-lbl>Te trabaste en</span>
+          <b data-sim-ups-paso></b></p>
+        <p class="sim-ups-sub" data-sim-ups-sub></p>
+      </div>
+
+      <button class="d-shot-hit" type="button" data-hit data-sim-reintentar
+              data-l="43.55" data-t="85.1" data-w="12.6" data-h="7.8">
+        <span class="sr-only">Retomar desde esa pantalla</span>
+      </button>
+
+      <button class="sim-ups-cero" type="button" data-sim-reiniciar-cero>Empezar el simulador de nuevo</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== 7b · LAS CUATRO PIEZAS SUELTAS ==========
+     No son una pantalla: son cuatro trozos que `coto-simulador.css`
+     define y que hasta v1.9.81 no tenían ejemplo en ningún lado. Es la
+     misma forma de error que este molde ya arregló dos veces — subió
+     el CSS y no el marcado — así que van acá, cada uno donde se usa.
+     ============================================================== -->
+
+<!-- (a) El hitbox del "¡Empecemos!" sobre el arte de PORTADA. Lo único
+         propio de `.sim-hit-cta` es el radio: el botón horneado en el
+         arte es una píldora y el aro de foco cuadrado del kit quedaría
+         desalineado con la forma. Las coordenadas se miden sobre la
+         imagen (§6.70), como cualquier hitbox. -->
+<button class="d-shot-hit sim-hit-cta" type="button" data-hit data-nav="next"
+        data-l="41.2" data-t="78.6" data-w="17.6" data-h="8.2">
+  <span class="sr-only">Empecemos</span>
+</button>
+
+<!-- (b) El cuerpo de texto de un pop-up del simulador. `.sim-pop-txt`
+         tiene `max-width: 34rem` a propósito: en el lienzo ancho del
+         simulador un párrafo suelto se estira hasta volverse ilegible.
+         Va DENTRO de `.sim-pop-bd`, como hermano del título. -->
+<div class="sim-pop-bd">
+  <h3 class="sim-pop-tit">Las reglas</h3>
+  <p class="sim-pop-txt">Tenés tres pantallas para completar el procedimiento.</p>
+  <p class="sim-pop-pie">Podés volver a leer esto cuando quieras.</p>
+</div>
+
+<!-- (c) "LO QUE TE LLEVÁS": el cierre del simulador. Reemplaza al
+         repaso de dos preguntas — en un simulador el alumno ACABA de
+         practicar, volver a preguntarle lo mismo sobra. Cuatro frases,
+         las mismas cuatro que practicó, para leer en diez segundos.
+         `<ul>`/`<li>`: los `<li>` están en TEXT_SEL, así que la
+         locución las lee como lista. -->
+<ul class="sim-llevate">
+  <li>El <b>PLU</b> es el número que identifica al producto.</li>
+  <li>La oblea sale de <b>Impresión de Etiquetas</b>, no de Ofertas.</li>
+</ul>
+
+<!-- (d) "Volver a intentarlo" desde el arte del CIERRE. Reusa la
+         píldora del "¡Ups!" (`.sim-ups-cero`) —misma familia, misma
+         jerarquía: segunda opción debajo del botón principal— corrida
+         un poco más abajo, porque el "Continuar" del arte del cierre
+         está más al ras del borde. -->
+<button class="sim-ups-cero sim-cierre-reintentar" type="button" data-sim-reiniciar-cero>
+  Volver a hacer el simulador
+</button>
+
+
+<!-- ========== 8 · ORDEN DE LOS SCRIPTS ==========
+     `escenario.js` va ANTES que `curso.js` (los datos antes del
+     motor) y `coto-simulador.js` antes que los dos. -->
+<link rel="stylesheet" href="css/coto-simulador.css">
+<link rel="stylesheet" href="css/coto-gescom.css"><!-- solo si se simula GESCOM -->
+<script src="js/coto-simulador.js"></script>
+<script src="js/escenario.js"></script>
+<script src="js/curso.js"></script>

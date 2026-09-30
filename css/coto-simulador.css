@@ -1,0 +1,1125 @@
+/* ============================================================
+   coto-simulador.css · LA CÁSCARA DE UN CURSO-SIMULADOR
+   ------------------------------------------------------------
+   kit-base v1.9.81 · subido desde "Simulador — Impresión de obleas
+   de precios" (CLAUDE.md §7.27). Va junto con `js/coto-simulador.js`
+   y `simulador-boilerplate.html`.
+
+   QUÉ HAY ACÁ: el escenario del simulador —lienzo, consigna, orden de
+   trabajo, monitor, riel de ayudas, hoja de ruta, reloj, feedback,
+   pop-ups, zona resaltada, lupa de pantalla y el apagado del chrome
+   durante la partida—. Todo medido contra el arte del PDF del primer
+   simulador, y todo en unidades de CONTENEDOR (`cqw`/`cqh` contra
+   `.d-stage`): el lienzo 2:1 escala igual en escritorio y en teléfono
+   acostado sin un solo breakpoint de viewport.
+
+   QUÉ NO HAY: la PANTALLA que se simula. Eso es contenido —qué
+   sistema, qué controles, qué colores tiene— y va en el curso, o en
+   un módulo aparte si el sistema se repite (ver `coto-gescom.css`).
+
+   ⚠️ TRAMPA DE UNIDADES DE CONTENEDOR, pagada dos veces acá:
+   un elemento con `container-type` NO es su propio contenedor. Si a
+   `.sim-oblea` (que declara `container-type: inline-size`) le ponés
+   `padding: 2.2cqw`, ese `cqw` se resuelve contra el contenedor de
+   AFUERA — o sea el lienzo entero. El relleno tiene que ir en los
+   hijos. Se detectó midiendo la proporción del elemento renderizado
+   (2.87:1 donde el arte manda 3:1), no leyendo el CSS.
+   ============================================================ */
+
+
+/* ============================================================
+   0 · PALETA DEL SIMULADOR
+   ------------------------------------------------------------
+   Los amarillos del arte SON la familia de la categoría "salón", así
+   que salen de `--cat` con `color-mix` en vez de estar copiados a
+   mano: si el cliente ajusta la categoría en el manual, esto lo
+   sigue (que es justo lo que `check-raw-cat-colors` protege).
+   Las dos excepciones son el ámbar del botón y el gris del monitor:
+   no pertenecen a la rampa de la categoría, son tinta del arte.
+   ============================================================ */
+body {
+  --sim-pale:      color-mix(in srgb, var(--cat) 46%, #FFFFFF);  /* píldora y tarjetas */
+  --sim-pale-soft: color-mix(in srgb, var(--cat) 30%, #FFFFFF);  /* sombra desplazada  */
+  --sim-pale-deep: color-mix(in srgb, var(--cat) 62%, #FFFFFF);  /* bordes y realces   */
+  --sim-ivory:     #FFFDF2;   /* cuerpo de la tarjeta de pop-up (p10 del PDF) */
+  --sim-cta:       #EEB047;   /* ámbar del botón "Continuar"  */
+  --sim-cta-deep:  #DD9A28;
+  --sim-monitor:   #1A2E35;   /* marco del monitor            */
+  --sim-monitor-2: #0E1E24;
+}
+
+/* ============================================================
+   1 · EL LIENZO: CONSIGNA, ORDEN DE TRABAJO Y MONITOR
+   ============================================================ */
+
+/* El lienzo del arte es BLANCO, no el celeste del kit. Un lavado
+   cálido apenas perceptible en lugar de blanco plano: mantiene el
+   monitor "apoyado" sobre algo en vez de flotando en el vacío, sin
+   irse del original. */
+.slide-sim {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2.6cqh;
+  background:
+    radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--cat) 7%, #FFFFFF) 0%, #FFFFFF 62%);
+}
+
+/* ---- Barra de consigna ----
+   Los tres puntitos de cada extremo son `radial-gradient` y no tres
+   `<span>`: son decoración pura, y en el DOM aparecerían en el
+   recorrido por teclado y en `textOf()` (la locución leería la
+   consigna con basura adelante). El radio VA explícito — sin él,
+   `circle at X% 50%` toma farthest-corner, que en una caja de 4cqw ×
+   1cqh es un círculo más grande que la caja, y los tres puntos salen
+   como una barra blanca. */
+.sim-consigna {
+  display: flex; align-items: center; gap: 1.4cqw;
+  width: 73.9cqw; min-height: 6cqh;
+  margin: 0; padding: 1.1cqh 2.2cqw;
+  box-sizing: border-box;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--sim-pale) 82%, #FFFFFF),
+    var(--sim-pale));
+  color: var(--gray-900);
+  font-family: var(--font-body);
+  font-size: 2.15cqh; line-height: 1.25; font-weight: 500;
+  text-align: center;
+  box-shadow:
+    0 .2cqh .5cqh color-mix(in srgb, var(--cat-strong) 12%, transparent),
+    0 1.1cqh 2.4cqh color-mix(in srgb, var(--cat-strong) 14%, transparent),
+    inset 0 .22cqh 0 rgba(255, 255, 255, .75);
+}
+.sim-consigna > span { flex: 1 1 auto; min-width: 0; }
+.sim-consigna b { font-weight: 700; color: var(--cat-ink); }
+
+.sim-dots {
+  flex: 0 0 auto;
+  width: 4cqw; height: 1cqh;
+  background:
+    radial-gradient(circle .34cqh at 16.66% 50%, #FFFFFF 99%, transparent 100%),
+    radial-gradient(circle .34cqh at 50%    50%, #FFFFFF 99%, transparent 100%),
+    radial-gradient(circle .34cqh at 83.33% 50%, #FFFFFF 99%, transparent 100%);
+}
+
+/* ---- Orden de trabajo ----
+   Estaba flotando sola en el margen izquierdo del lienzo, lejos de
+   todo y sin relación visual con nada (reportado: "ahí no está
+   bien"). Pasa a ser una tira horizontal debajo de la consigna: se
+   lee en el orden natural —qué hacer, con qué datos, la pantalla— y
+   queda dentro del bloque de instrucciones en vez de en un rincón.
+   Es el papel que te dan en la sucursal, no una nota al margen. */
+.sim-orden {
+  display: flex; align-items: center; gap: 1.1cqw;
+  max-width: 73.9cqw;
+  padding: .9cqh 1.6cqw .9cqh 1.1cqw;
+  border-radius: var(--r-lg);
+  background: #FFFFFF;
+  border: 1px solid color-mix(in srgb, var(--cat) 34%, #FFFFFF);
+  box-shadow: 0 .6cqh 1.8cqh color-mix(in srgb, var(--cat-strong) 10%, transparent);
+  font-family: var(--font-body);
+}
+.sim-orden-tag {
+  display: grid; place-items: center;
+  width: 3.6cqh; aspect-ratio: 1; border-radius: .7cqh;
+  background: var(--sim-pale); color: var(--cat-ink);
+}
+.sim-orden-tag svg { width: 66%; height: 66%; }
+.sim-orden-lbl {
+  font-size: 1.55cqh; font-weight: 700; color: var(--cat-ink);
+  text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+}
+.sim-orden-chip {
+  display: flex; flex-direction: column; gap: .1cqh;
+  padding: .35cqh .9cqw;
+  border-radius: .8cqh;
+  background: color-mix(in srgb, var(--cat) 12%, #FFFFFF);
+  white-space: nowrap;
+}
+.sim-orden-chip i {
+  font-style: normal; font-size: 1.15cqh; font-weight: 600;
+  color: var(--gray-500); text-transform: uppercase; letter-spacing: .05em;
+}
+.sim-orden-chip em {
+  font-style: normal; font-family: var(--font-num);
+  font-size: 1.7cqh; font-weight: 700; color: var(--gray-900);
+}
+.sim-orden-nota { font-size: 1.2cqh; color: var(--gray-500); white-space: nowrap; }
+
+/* ---- Monitor ----
+   Marco + cuello + base, los tres recreados. El bisel es UNIFORME y
+   grueso como en el arte (~3.3% del ancho del marco), no el filete
+   fino de la primera versión. El `aspect-ratio` del vidrio es el del
+   arte (5/3): sin él, la pantalla de GESCOM —que es un grid que se
+   estira— definiría el alto del monitor y el marco se deformaría de
+   una diapositiva a otra. */
+.sim-monitor {
+  display: flex; flex-direction: column; align-items: center;
+  /* El segundo término NO es defensivo: en un teléfono acostado el
+     escenario es mucho más ancho que alto, y un ancho fijo en cqw
+     daba un monitor más alto que el lienzo —se recortaba, sin scroll,
+     o sea contenido inalcanzable—. Lo encontró `clip-audit`, no la
+     vista de escritorio (§6.10.1 punto 4). */
+  width: min(56cqw, 118cqh);
+  filter: drop-shadow(0 2.2cqh 3cqh rgba(16, 28, 44, .22));
+}
+
+.sim-screen {
+  width: 100%; aspect-ratio: 5 / 3;
+  box-sizing: border-box;
+  padding: 1.85cqw 1.85cqw 2.4cqw;
+  border-radius: 1.2cqw;
+  background:
+    linear-gradient(168deg, color-mix(in srgb, var(--sim-monitor) 88%, #FFFFFF), var(--sim-monitor) 46%, var(--sim-monitor-2));
+  box-shadow: inset 0 .18cqh .35cqh rgba(255, 255, 255, .10);
+  overflow: hidden;
+}
+.sim-screen > * {
+  width: 100%; height: 100%;
+  border-radius: .18cqw;
+  overflow: hidden;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .35);
+}
+
+/* Cuello trapezoidal y base ancha, como en el arte: el rectángulo
+   plano de la primera versión hacía que el monitor pareciera pegado
+   al piso. */
+.sim-monitor-neck {
+  width: 10cqw; height: 3cqh;
+  background: linear-gradient(180deg, var(--sim-monitor), var(--sim-monitor-2));
+  clip-path: polygon(14% 0, 86% 0, 100% 100%, 0 100%);
+}
+.sim-monitor-foot {
+  width: 18cqw; height: 2.1cqh;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--sim-monitor), var(--sim-monitor-2));
+}
+
+/* ============================================================
+   2 · RIEL: PISTAS · REGLAS · RELOJ
+   ------------------------------------------------------------
+   Posicionado contra el lienzo, no contra el monitor, y con las
+   proporciones medidas del arte: ancho 4.9%, la tarjeta de Pistas
+   ~30% de alto y la de Reglas ~11.6%. En la vuelta anterior las
+   tarjetas eran mucho más chatas y las tres lupas quedaban apretadas
+   contra el rótulo; el arte las tiene BIEN separadas, respirando.
+   ============================================================ */
+.sim-rail {
+  position: absolute;
+  left: 81.9cqw; top: 50cqh; transform: translateY(-50%);
+  /* El `min-width` en PÍXELES es deliberado y es de las pocas medidas
+     absolutas del archivo: los cqw escalan con el lienzo, y en un
+     teléfono acostado el riel quedaba de 48px con lupas de 27×14 —
+     imposibles de tocar con el dedo. Un mínimo de tap no es una
+     proporción del diseño, es una medida del dedo, y por eso no puede
+     ir en unidades de contenedor. Medido con `isMobile` + `hasTouch`
+     reales, no achicando la ventana (§6.10.1 punto 4). */
+  width: 4.9cqw; min-width: 52px;
+  display: flex; flex-direction: column; align-items: center; gap: 3.5cqh;
+  z-index: 3;
+}
+
+.sim-rail-card {
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center;
+  box-sizing: border-box;
+  border-radius: 1.1cqw;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--sim-pale) 80%, #FFFFFF), var(--sim-pale));
+  box-shadow:
+    0 .3cqh .6cqh color-mix(in srgb, var(--cat-strong) 14%, transparent),
+    0 1cqh 2.2cqh color-mix(in srgb, var(--cat-strong) 16%, transparent),
+    inset 0 .2cqh 0 rgba(255, 255, 255, .7);
+}
+.sim-rail-card > b {
+  font-family: var(--font-body); font-weight: 700;
+  font-size: 1.7cqh; color: var(--gray-900); line-height: 1;
+}
+.sim-rail-card--pistas { height: 29.9cqh; padding: 1.5cqh .4cqw; justify-content: space-between; }
+.sim-rail-card--reglas { height: 11.6cqh; padding: 1.3cqh .4cqw; justify-content: space-around; }
+
+.sim-lupas {
+  flex: 1 1 auto;
+  list-style: none; margin: 0; padding: .6cqh 0 0;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: space-around;
+  width: 100%;
+}
+
+/* El botón es CUADRADO y el dibujo ocupa poco más de la mitad de
+   adentro. En la primera versión el botón era 2.9cqw × 4.2cqh y el
+   SVG heredaba `height:auto` sobre un viewBox de 32×40 — o sea que el
+   ícono salía MÁS ALTO que su propio botón, y las tres lupas quedaban
+   enormes y pegadas. El blanco de tap sigue con piso en píxeles: se
+   achica el dibujo, no la zona tocable. */
+/* ---- Las tres lupas: TRES estados, y se distinguen sin leer ----
+   Reportado por el cliente: *"cuando toco una pista no se nota
+   visualmente que ya abrí una"*. Y era cierto: una lupa gastada que
+   todavía sirve para releer no está `disabled` —tiene que seguir
+   siendo un botón— así que se veía idéntica a una sin usar. La
+   opacidad .72 que tenía no alcanza: al lado de otra al 100% en un
+   riel de 52px, esa diferencia no existe.
+
+   Ahora el relleno cuenta el estado, que es lo que se ve de lejos:
+     · DISPONIBLE  — círculo blanco con aro: se lee como "apretame".
+     · GASTADA     — disco lleno: la pista está adentro, y se puede
+                     volver a abrir gratis.
+     · AGOTADA     — gris y tachada: ya no hay nada que ofrecer. */
+.sim-lupa {
+  position: relative;
+  display: grid; place-items: center;
+  width: clamp(34px, 2.5cqw, 46px); aspect-ratio: 1;
+  padding: 0;
+  border: 2px solid color-mix(in srgb, var(--cat-strong) 42%, #FFFFFF);
+  background: #FFFFFF;
+  color: var(--cat-ink);
+  cursor: pointer;
+  border-radius: 50%;
+  box-sizing: border-box;
+  transition: transform .2s cubic-bezier(.2, .9, .3, 1.3),
+              background .22s ease, color .22s ease, border-color .22s ease, opacity .3s ease;
+}
+.sim-lupa svg { width: 60%; height: 60%; }
+.sim-lupa:hover:not([disabled]) { transform: scale(1.14) rotate(-8deg); }
+.sim-lupa:focus-visible { outline: 2px solid var(--cat-strong); outline-offset: 3px; }
+
+/* Gastada y todavía útil: disco lleno. El puntito de abajo dice que
+   hay algo adentro para volver a mirar — es lo que la diferencia de
+   una lupa agotada, que no tiene nada. */
+.sim-lupa.is-gastada:not([disabled]) {
+  background: linear-gradient(180deg, var(--sim-cta), var(--sim-cta-deep));
+  border-color: var(--sim-cta-deep);
+  color: #FFFFFF;
+}
+.sim-lupa.is-gastada:not([disabled])::after {
+  content: ""; position: absolute;
+  left: 50%; bottom: -3px; transform: translateX(-50%);
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--sim-cta-deep);
+  box-shadow: 0 0 0 2px var(--sim-pale);
+}
+
+/* Agotada: se apaga y deja de ser un botón. El tachado es del CSS y
+   no de otro SVG — un ícono distinto para el mismo elemento obliga a
+   mantener dos dibujos sincronizados. */
+.sim-lupa[disabled] {
+  cursor: default; color: var(--gray-500); transform: none;
+  background: transparent; border-color: transparent;
+  opacity: .34;
+}
+.sim-lupa[disabled]::after {
+  content: ""; position: absolute;
+  width: 74%; height: 2px; border-radius: 1px;
+  background: currentColor; transform: rotate(-45deg);
+}
+
+.sim-info {
+  display: grid; place-items: center;
+  width: clamp(32px, 2.3cqw, 42px); aspect-ratio: 1;
+  padding: 0; border: 0;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--sim-cta), var(--sim-cta-deep));
+  color: #FFFFFF;
+  cursor: pointer;
+  box-shadow: 0 .35cqh .8cqh color-mix(in srgb, var(--cat-strong) 34%, transparent);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.sim-info svg { width: 52%; height: 52%; }
+.sim-info:hover { transform: translateY(-.25cqh) scale(1.06); box-shadow: 0 .7cqh 1.4cqh color-mix(in srgb, var(--cat-strong) 40%, transparent); }
+.sim-info:focus-visible { outline: 3px solid var(--cat-strong); outline-offset: 3px; }
+
+/* ---- Nudge de ayuda ----
+   Si el alumno se queda quieto, la tarjeta de Pistas late y aparece un
+   globito. No abre nada ni resuelve nada: solo señala DÓNDE está la
+   ayuda, que es lo que alguien trabado no encuentra justamente porque
+   está mirando otra cosa. */
+/* Va ARRIBA del riel, no a su izquierda: al costado se metía sobre la
+   pantalla de GESCOM y llegaba a tapar la ✕ de la ventana — un aviso
+   de ayuda que estorba justo lo que el alumno está mirando es peor
+   que no avisar. */
+.sim-nudge {
+  position: absolute; bottom: calc(100% + 1.4cqh); right: -.6cqw;
+  width: max-content; max-width: 26cqw;
+  margin: 0; padding: .9cqh 1.4cqw;
+  border-radius: var(--r);
+  background: var(--gray-900); color: #FFFFFF;
+  font-family: var(--font-body); font-size: 1.55cqh; line-height: 1.25;
+  box-shadow: 0 1cqh 2.4cqh rgba(16, 28, 44, .3);
+  animation: sim-nudge-in .35s cubic-bezier(.2, .9, .3, 1.3) both;
+}
+/* La puntita del globo, apuntando a la tarjeta. */
+.sim-nudge::after {
+  content: ""; position: absolute; top: 100%; right: 2.2cqw;
+  border: .7cqh solid transparent; border-top-color: var(--gray-900);
+}
+@keyframes sim-nudge-in { from { opacity: 0; transform: translateY(.8cqh); } to { opacity: 1; } }
+
+.sim-rail.is-nudge .sim-rail-card--pistas { animation: sim-latido 1.5s ease-in-out 3; }
+@keyframes sim-latido {
+  0%, 100% { transform: none; box-shadow: 0 .3cqh .6cqh color-mix(in srgb, var(--cat-strong) 14%, transparent), 0 1cqh 2.2cqh color-mix(in srgb, var(--cat-strong) 16%, transparent), inset 0 .2cqh 0 rgba(255,255,255,.7); }
+  45% { transform: scale(1.05); box-shadow: 0 0 0 .8cqh color-mix(in srgb, var(--cat) 34%, transparent), 0 1.4cqh 3cqh color-mix(in srgb, var(--cat-strong) 28%, transparent); }
+}
+
+/* La próxima lupa disponible respira SOLO durante el nudge, y tres
+   veces. La primera versión la dejaba latiendo siempre: es ruido
+   visual permanente —el ojo se acostumbra y deja de verlo, que es lo
+   contrario de lo que se busca— y además un elemento en movimiento
+   perpetuo no termina nunca de "asentarse", así que ni siquiera se
+   podía hacer clic de forma confiable. */
+.sim-rail.is-nudge .sim-lupa:not([disabled]) { animation: sim-respira 1.5s ease-in-out 3; }
+@keyframes sim-respira { 0%, 100% { transform: none; } 45% { transform: scale(1.12); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sim-nudge { animation: none; }
+  .sim-rail.is-nudge .sim-rail-card--pistas,
+  .sim-rail.is-nudge .sim-lupa:not([disabled]) { animation: none; }
+}
+
+/* ---- Reloj ----
+   Aparece recién cuando se gastó la última pista. El aro es un
+   `stroke-dashoffset` que mueve el mismo temporizador que decide el
+   "¡Ups!": un solo reloj manda sobre lo que se ve y sobre lo que
+   pasa. Dos relojes desincronizados es un bug clásico. */
+.sim-reloj {
+  position: relative;
+  width: 4.9cqw; min-width: 46px; aspect-ratio: 1;
+  display: grid; place-items: center;
+  filter: drop-shadow(0 .5cqh 1.2cqh color-mix(in srgb, var(--cat-strong) 22%, transparent));
+}
+.sim-reloj svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.sim-reloj-bg { fill: #FFFFFF; stroke: var(--sim-pale); stroke-width: 4; }
+.sim-reloj-fg {
+  fill: none; stroke: var(--cat-ink); stroke-width: 4; stroke-linecap: round;
+  stroke-dasharray: 119.4; stroke-dashoffset: 0;
+  transition: stroke-dashoffset .95s linear, stroke .3s ease;
+}
+.sim-reloj > b {
+  position: relative;
+  font-family: var(--font-num); font-weight: 700;
+  font-size: 2.2cqh; color: var(--gray-900); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.sim-reloj.is-urgente .sim-reloj-fg { stroke: var(--danger); }
+.sim-reloj.is-urgente > b { color: var(--danger-ink); animation: sim-tic .9s ease-in-out infinite; }
+@keyframes sim-tic { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.16); } }
+@media (prefers-reduced-motion: reduce) {
+  .sim-reloj.is-urgente > b { animation: none; }
+  .sim-lupa:hover, .sim-info:hover { transform: none; }
+  .sim-reloj-fg { transition: none; }
+}
+
+/* ---- Hitbox del "¡Empecemos!" sobre el arte de portada ----
+   Hereda todo de `.d-shot-hit`; lo único propio es el radio, porque
+   el botón horneado es una píldora y el aro de foco cuadrado del kit
+   quedaría desalineado con la forma (mismo bug que §6.38). */
+.sim-hit-cta { border-radius: var(--r-pill); }
+
+/* ============================================================
+
+
+/* ============================================================
+   3 · FEEDBACK
+   ------------------------------------------------------------
+   Una sola tarjeta reusada por las tres pantallas. `role="status"`:
+   el acierto y el error tienen que LLEGAR por voz, no solo por
+   color (§6.10.1).
+   ============================================================ */
+.sim-fb {
+  position: absolute;
+  left: 50cqw; bottom: 7cqh; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 1.1cqw;
+  max-width: 56cqw; padding: 1.3cqh 2.2cqw 1.3cqh 1.6cqw;
+  box-sizing: border-box;
+  border-radius: var(--r-lg);
+  background: #FFFFFF;
+  box-shadow:
+    0 .3cqh .8cqh rgba(16, 28, 44, .10),
+    0 2cqh 4.5cqh rgba(16, 28, 44, .22);
+  font-family: var(--font-body); font-size: 1.9cqh; line-height: 1.32;
+  color: var(--gray-900);
+  z-index: 4;
+  animation: sim-fb-in .3s cubic-bezier(.2, .9, .3, 1.25) both;
+}
+@keyframes sim-fb-in { from { opacity: 0; transform: translateX(-50%) translateY(1.6cqh) scale(.97); } to { opacity: 1; transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) { .sim-fb { animation: none; } }
+
+.sim-fb p { margin: 0; }
+.sim-fb-ic {
+  flex: 0 0 auto;
+  display: grid; place-items: center;
+  width: 3.8cqh; aspect-ratio: 1; border-radius: 50%;
+  color: #FFFFFF; font-size: 2.1cqh; font-weight: 700;
+}
+.sim-fb--ok { box-shadow: 0 .3cqh .8cqh rgba(16,28,44,.10), 0 2cqh 4.5cqh color-mix(in srgb, var(--success) 26%, transparent); }
+.sim-fb--ok .sim-fb-ic { background: linear-gradient(180deg, color-mix(in srgb, var(--success) 80%, #FFFFFF), var(--success)); }
+.sim-fb--mal { box-shadow: 0 .3cqh .8cqh rgba(16,28,44,.10), 0 2cqh 4.5cqh color-mix(in srgb, var(--danger) 26%, transparent); }
+.sim-fb--mal .sim-fb-ic { background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 80%, #FFFFFF), var(--danger)); }
+
+/* ============================================================
+
+
+   4 · POP-UPS DEL SIMULADOR
+   ------------------------------------------------------------
+   Una sola cáscara, `.sim-pop`, con las dos variantes que el
+   diseñador dibujó en las dos últimas páginas del PDF:
+
+   · `--tarjeta` (p10): cuerpo marfil #FFFDF2, SOMBRA AMARILLA
+     DESPLAZADA abajo-derecha (no una sombra gris difusa: es un
+     bloque de color corrido, medido #FAEBB3), ✕ gris arriba a la
+     derecha y botón "Continuar" ámbar abajo al centro.
+   · `--hoja` (p9): hoja blanca a sangre con los dos círculos ámbar
+     de "!" y los ángulos redondeados de las esquinas.
+
+   En la primera vuelta estas dos páginas se leyeron como "cáscaras
+   de pop-up vacías" y los pop-ups se armaron con el modal genérico
+   del kit: encabezado con degradé, cuerpo blanco y nada más. El
+   diseñador ya los había dibujado.
+   ============================================================ */
+.sim-pop .modal-back { background: rgba(26, 22, 6, .42); backdrop-filter: blur(3px); }
+
+.sim-pop .sim-pop-card {
+  position: relative;
+  display: flex; flex-direction: column;
+  width: min(54rem, 92vw); max-height: 86vh;
+  padding: 0; overflow: visible;
+  border: 0;
+  animation: sim-pop-in .34s cubic-bezier(.2, .9, .28, 1.2) both;
+}
+@keyframes sim-pop-in { from { opacity: 0; transform: translateY(2.4rem) scale(.97); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sim-pop .sim-pop-card { animation: none; } }
+
+.sim-pop--ancha .sim-pop-card { width: min(62rem, 94vw); }
+
+/* La tarjeta marfil con la sombra amarilla corrida del arte. */
+.sim-pop--tarjeta .sim-pop-card {
+  background: var(--sim-ivory);
+  border-radius: 1.6rem;
+  box-shadow:
+    .7rem .7rem 0 0 var(--sim-pale-soft),
+    0 2rem 4.5rem rgba(26, 22, 6, .3);
+}
+
+/* La hoja blanca a sangre. */
+.sim-pop--hoja .sim-pop-card {
+  width: min(58rem, 94vw);
+  background: #FFFFFF;
+  border-radius: 1.6rem;
+  box-shadow: 0 2rem 5rem rgba(26, 22, 6, .32);
+  overflow: visible;
+}
+.sim-pop--hoja .sim-pop-bd { padding: 2.6rem 4.2rem 1rem; }
+
+.sim-pop-x {
+  position: absolute; top: 1.1rem; right: 1.2rem; z-index: 3;
+  display: grid; place-items: center;
+  width: 2.6rem; height: 2.6rem;
+  padding: 0; border: 0; border-radius: 50%;
+  background: transparent; color: #6B6B6B;
+  cursor: pointer;
+  transition: background .16s ease, color .16s ease, transform .16s ease;
+}
+.sim-pop-x svg { width: 58%; height: 58%; }
+.sim-pop-x:hover { background: color-mix(in srgb, var(--cat) 22%, transparent); color: #2A2A2A; transform: rotate(90deg); }
+.sim-pop-x:focus-visible { outline: 3px solid var(--cat-strong); outline-offset: 2px; }
+
+.sim-pop-bd {
+  position: relative; z-index: 2;
+  flex: 1 1 auto; overflow-y: auto;
+  padding: 2.2rem 3rem .8rem;
+  display: flex; flex-direction: column; gap: .9rem;
+}
+.sim-pop-bd--centro { align-items: center; text-align: center; }
+
+/* Cuando el contenido no entra, que se NOTE que hay más abajo.
+   `mask-image` desvanece las últimas líneas contra el borde del área
+   con scroll: sin eso, una fila cortada al ras del botón se lee como
+   "está roto", no como "seguí bajando". Se apaga sola cuando no hay
+   desborde porque el degradé no llega a verse. */
+.sim-pop-bd {
+  mask-image: linear-gradient(180deg, #000 0, #000 calc(100% - 2.2rem), transparent 100%);
+  scrollbar-width: thin;
+}
+
+/* En pantallas bajas el resumen se aprieta en vez de recortarse: las
+   piezas ceden un poco, que es preferible a que el alumno tenga que
+   descubrir que hay scroll. Va contra el ALTO del viewport porque el
+   pop-up es fijo a la ventana, no al lienzo.
+   Si el curso mete una pieza propia acá adentro —el papel que
+   "imprime" el simulador, por ejemplo— tiene que sumarle su propia
+   línea a este bloque desde `diapositivas.css`. */
+@media (max-height: 840px) {
+  .sim-pop-bd { padding: 1.6rem 2.4rem .6rem; gap: .7rem; }
+  .sim-resumen-hd .sim-pop-badge { width: 2.9rem; }
+  .sim-pasos { gap: .5rem; }
+  .sim-pasos b { font-size: .96rem; }
+  .sim-pasos span { font-size: .87rem; }
+  .sim-pasos li, .sim-pasos li::before { --paso-w: 1.9rem; }
+  .sim-pop-acciones { margin: .4rem 0 1.3rem; }
+  .sim-pop-cta { padding: .7rem 2.4rem; font-size: 1.05rem; }
+}
+
+.sim-pop-tit {
+  margin: 0;
+  font-family: var(--font-title); font-weight: 900;
+  font-size: clamp(1.5rem, 1.1rem + 1.2vw, 2rem);
+  line-height: 1.12; color: var(--gray-900);
+}
+.sim-pop-bajada { margin: 0; color: var(--gray-700); font-size: 1rem; line-height: 1.5; }
+.sim-pop-txt {
+  margin: 0; max-width: 34rem;
+  font-size: clamp(1rem, .92rem + .35vw, 1.18rem);
+  line-height: 1.55; color: var(--gray-900);
+}
+.sim-pop-pie {
+  margin: .4rem 0 0; padding-top: .9rem;
+  border-top: 1px dashed color-mix(in srgb, var(--cat) 40%, transparent);
+  color: var(--gray-700); font-style: italic; font-size: .93rem;
+}
+
+/* El ícono grande, en una moneda con halo: en la primera versión era
+   una lupa suelta flotando en medio de un cuerpo blanco enorme. */
+.sim-pop-badge {
+  display: grid; place-items: center;
+  width: 4.6rem; aspect-ratio: 1; border-radius: 50%;
+  background: linear-gradient(180deg, var(--sim-cta), var(--sim-cta-deep));
+  color: #FFFFFF;
+  box-shadow:
+    0 0 0 .55rem color-mix(in srgb, var(--cat) 26%, transparent),
+    0 .8rem 1.8rem color-mix(in srgb, var(--cat-strong) 34%, transparent);
+}
+.sim-pop-badge svg { width: 52%; height: 52%; }
+.sim-pop-badge--ok { background: linear-gradient(180deg, color-mix(in srgb, var(--success) 78%, #FFFFFF), var(--success)); box-shadow: 0 0 0 .55rem color-mix(in srgb, var(--success) 22%, transparent), 0 .8rem 1.8rem color-mix(in srgb, var(--success) 34%, transparent); }
+
+/* Cuántas pistas quedan, con las lupas mismas: el alumno ya asoció
+   ese ícono con "ayuda", así que tres lupas apagándose se entienden
+   sin leer. El texto va igual abajo, para quien escucha el curso. */
+.sim-pop-pips { display: flex; gap: .5rem; margin-top: .3rem; }
+.sim-pop-pip {
+  display: grid; place-items: center;
+  width: 1.8rem; aspect-ratio: 1; border-radius: 50%;
+  background: color-mix(in srgb, var(--cat) 20%, #FFFFFF);
+  color: var(--cat-ink);
+}
+.sim-pop-pip svg { width: 62%; height: 62%; }
+.sim-pop-pip--usada {
+  background: color-mix(in srgb, var(--cat) 8%, #EEEAE0);
+  color: color-mix(in srgb, var(--cat-strong) 22%, #B8B2A4);
+}
+.sim-pop-quedan { margin: 0; color: var(--gray-700); font-size: .92rem; }
+
+/* Reglas — la lista con su ícono por regla. */
+.sim-reglas { margin: .4rem 0 0; padding: 0; list-style: none; display: grid; gap: 1rem; }
+.sim-reglas li { display: flex; gap: .9rem; align-items: flex-start; line-height: 1.5; }
+.sim-reglas b { color: var(--cat-ink); }
+.sim-regla-ic {
+  flex: 0 0 auto;
+  display: grid; place-items: center;
+  width: 2.2rem; aspect-ratio: 1; border-radius: .7rem;
+  background: color-mix(in srgb, var(--cat) 24%, #FFFFFF);
+  color: var(--cat-ink);
+}
+.sim-regla-ic svg { width: 64%; height: 64%; }
+
+/* Resumen del procedimiento — pasos numerados. */
+.sim-pasos { margin: 0; padding: 0; list-style: none; counter-reset: paso; display: grid; gap: .65rem; }
+.sim-pasos li {
+  counter-increment: paso;
+  display: grid; grid-template-columns: 2.2rem 1fr; gap: .2rem .9rem;
+  align-items: baseline;
+}
+.sim-pasos li::before {
+  content: counter(paso);
+  grid-row: span 2;
+  display: grid; place-items: center;
+  width: 2.2rem; height: 2.2rem; border-radius: 50%;
+  background: color-mix(in srgb, var(--cat) 28%, #FFFFFF);
+  color: var(--cat-ink);
+  font-family: var(--font-num); font-weight: 700; font-size: 1rem;
+  align-self: start;
+}
+.sim-pasos b { font-size: 1.04rem; color: var(--gray-900); }
+.sim-pasos span { grid-column: 2; color: var(--gray-700); font-size: .94rem; line-height: 1.45; }
+.sim-pasos code {
+  font-family: var(--font-num); font-weight: 700;
+  padding: .05rem .35rem; border-radius: .3rem;
+  background: color-mix(in srgb, var(--cat) 22%, #FFFFFF); color: var(--cat-ink);
+}
+
+/* ---- Resumen del procedimiento: la oblea y los pasos ----
+   Dos columnas: a la izquierda el PAPEL que salió de la impresora, a
+   la derecha lo que se hizo para conseguirlo. El alumno completó
+   cuatro filtros abstractos; acá ve qué producen. */
+.sim-resumen-hd { display: flex; align-items: flex-start; gap: 1.2rem; }
+.sim-resumen-hd .sim-pop-badge { flex: 0 0 auto; width: 3.6rem; }
+.sim-resumen-hd > div { display: grid; gap: .35rem; }
+
+/* La oblea es HORIZONTAL (3:1), así que va a lo ancho arriba y los
+   pasos abajo — no en dos columnas, que la dejaba del tamaño de un
+   sello. */
+.sim-resumen-col { display: grid; gap: 1.1rem; margin-top: .8rem; }
+
+
+
+.sim-pop-acciones {
+  display: flex; gap: .9rem; flex-wrap: wrap;
+  justify-content: center; align-items: center;
+  margin: .5rem 0 1.8rem;
+}
+.sim-pop-acciones .sim-pop-cta { margin: 0; }
+
+.sim-pop-acciones .sim-pop-cta--suave {
+  background: #FFFFFF;
+  color: var(--cat-ink);
+  padding: .85rem 2.2rem;
+  box-shadow:
+    0 .3rem 0 color-mix(in srgb, var(--cat) 45%, transparent),
+    0 .8rem 1.6rem color-mix(in srgb, var(--cat-strong) 16%, transparent);
+}
+.sim-pop-acciones .sim-pop-cta--suave:hover { box-shadow: 0 .45rem 0 color-mix(in srgb, var(--cat) 45%, transparent), 0 1.2rem 2.2rem color-mix(in srgb, var(--cat-strong) 22%, transparent); }
+
+/* El "Continuar" ámbar del arte, abajo y al centro. */
+.sim-pop-cta {
+  align-self: center;
+  margin: .6rem 0 2.4rem;
+  padding: .85rem 3.2rem;
+  border: 0; border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--sim-cta), var(--sim-cta-deep));
+  color: #FFFFFF;
+  font-family: var(--font-title); font-weight: 900;
+  font-size: 1.15rem; letter-spacing: .01em;
+  cursor: pointer;
+  box-shadow:
+    0 .3rem 0 color-mix(in srgb, var(--cat-strong) 55%, transparent),
+    0 1rem 2rem color-mix(in srgb, var(--cat-strong) 30%, transparent);
+  transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
+}
+.sim-pop-cta:hover { transform: translateY(-2px); filter: brightness(1.05); box-shadow: 0 .45rem 0 color-mix(in srgb, var(--cat-strong) 55%, transparent), 0 1.4rem 2.6rem color-mix(in srgb, var(--cat-strong) 34%, transparent); }
+.sim-pop-cta:active { transform: translateY(1px); box-shadow: 0 .15rem 0 color-mix(in srgb, var(--cat-strong) 55%, transparent); }
+.sim-pop-cta:focus-visible { outline: 3px solid var(--cat-strong); outline-offset: 3px; }
+
+/* ---- Adornos de la hoja (p9) ----
+   Los dos círculos de "!" y los ángulos de las esquinas. Puro
+   decorado: van detrás del contenido y sin eventos. */
+/* `overflow: visible` a propósito: en el arte los círculos de "!" son
+   FORMAS ENTERAS apoyadas sobre la página, no recortes contra un
+   borde. Recortados a la mitad se leían como manchones ámbar sueltos.
+   Las curvas finas sí se recortan solas contra el borde del lienzo,
+   que es lo que hacen en el original. */
+.sim-adornos { position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+.sim-ad { position: absolute; color: var(--sim-cta); }
+.sim-ad--bang { width: 3.2rem; }
+.sim-ad--bang svg { width: 100%; height: auto; display: block; }
+.sim-ad--bang-1 { top: -1.5rem; left: -1.6rem; }
+.sim-ad--bang-2 { bottom: -1.4rem; right: -1.5rem; }
+.sim-ad--esq {
+  width: 6rem; height: 4.2rem;
+  border: .38rem solid var(--sim-cta);
+  border-radius: 1.4rem;
+}
+.sim-ad--esq-1 { top: -2.2rem; right: -2rem; border-left: 0; border-bottom: 0; }
+.sim-ad--esq-2 { bottom: -2.2rem; left: -2rem; border-right: 0; border-top: 0; }
+.sim-ad--curva {
+  width: 7rem; height: 7rem; opacity: .8;
+  border: 1px solid color-mix(in srgb, var(--sim-cta) 55%, transparent);
+  border-radius: 50%;
+}
+.sim-ad--curva-1 { top: -4.2rem; left: -1.4rem; }
+.sim-ad--curva-2 { bottom: -4.4rem; right: -1rem; }
+
+/* ---- "¡Ups!" a sangre ----
+   En el PDF es una PÁGINA entera, no una tarjeta. Metida en el modal
+   genérico, el arte quedaba encogido con el cartel "¡Jugá con
+   nosotros!" flotando al costado (reportado con captura). Acá ocupa
+   el lienzo completo, como el arte. */
+.sim-pop--sangre { padding: 0; }
+.sim-pop--sangre .modal-back { background: rgba(26, 22, 6, .55); backdrop-filter: blur(3px); }
+.sim-ups {
+  position: relative; z-index: 1;
+  width: min(96vw, 176vh); max-width: none; max-height: 92vh;
+  aspect-ratio: 2 / 1;
+  padding: 0; border: 0; overflow: hidden;
+  border-radius: 1.6rem;
+  background: #FFFFFF;
+  box-shadow: 0 2.4rem 6rem rgba(26, 22, 6, .45);
+  animation: sim-pop-in .34s cubic-bezier(.2, .9, .28, 1.2) both;
+}
+.sim-ups > .d-shot { width: 100%; height: 100%; position: relative; }
+.sim-ups .d-shot-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+@media (prefers-reduced-motion: reduce) { .sim-ups { animation: none; } }
+
+/* ============================================================
+
+
+   5 · PANTALLA YA RESUELTA
+   ------------------------------------------------------------
+   Se congela con `inert` desde `curso.js` (apaga clic y teclado de
+   todo el subárbol). Acá solo se cuenta visualmente. Sin esto,
+   volver atrás mostraba una pantalla viva que no respondía a nada.
+   ============================================================ */
+.slide-sim.is-resuelto .sim-screen { filter: saturate(.5) brightness(.98); }
+.slide-sim.is-resuelto .sim-orden { opacity: .5; }
+
+/* Va CONTRA el borde de arriba del monitor, no a una altura fija.
+   Con `top: 14.5cqh` caía justo encima del papel "Te pidieron" y lo
+   tapaba a la mitad — se vio recién al quedarse en la pantalla después
+   de resolverla, que es una situación que antes no existía (hasta la
+   ronda 7 el simulador saltaba solo al cierre). */
+.sim-resuelto {
+  position: absolute; left: 50cqw; top: 22.5cqh; transform: translateX(-50%);
+  display: flex; align-items: center; gap: .7cqw;
+  margin: 0; padding: .8cqh 1.8cqw;
+  border-radius: var(--r-pill);
+  background: #FFFFFF;
+  border: 1px solid color-mix(in srgb, var(--success) 45%, transparent);
+  box-shadow: 0 .6cqh 1.6cqh color-mix(in srgb, var(--success) 22%, transparent);
+  color: var(--success-ink);
+  font-family: var(--font-body); font-size: 1.7cqh; font-weight: 600;
+  z-index: 4;
+}
+.sim-resuelto span {
+  display: grid; place-items: center;
+  width: 2.3cqh; aspect-ratio: 1; border-radius: 50%;
+  background: var(--success); color: #FFFFFF; font-size: 1.4cqh;
+}
+
+/* ============================================================
+
+
+/* ============================================================
+   6 · HOJA DE RUTA
+   ------------------------------------------------------------
+   Espeja al riel de ayudas, y el espejo es literal: el riel arranca
+   en `left: 81.9cqw` y la ruta termina en `right: 81.9cqw`, así que
+   las dos quedan **a la misma distancia del monitor**. Antes la ruta
+   estaba pegada al borde del lienzo y se leía como algo suelto en el
+   margen; ahora las dos columnas enmarcan la pantalla: a la izquierda
+   por dónde vas, a la derecha con qué contás.
+   Misma piel que las tarjetas del riel (`.sim-rail-card`) — no es
+   decoración: es lo que hace que se lean como piezas de la misma
+   familia y no como dos cosas que aparecieron en rondas distintas.
+   ============================================================ */
+.sim-ruta {
+  position: absolute;
+  right: 81.9cqw; top: 50cqh; transform: translateY(-50%);
+  width: 12.4cqw; min-width: 92px;
+  z-index: 3;
+}
+.sim-ruta[hidden] { display: none; }
+
+.sim-ruta-card {
+  padding: 1.5cqh 1cqw 1.7cqh;
+  gap: 1.4cqh;
+}
+.sim-ruta-card > ol {
+  width: 100%;
+  margin: 0; padding: 0; list-style: none;
+  display: flex; flex-direction: column; gap: 3.1cqh;
+}
+
+.sim-ruta-i {
+  position: relative;
+  display: flex; align-items: center; gap: .7cqw;
+  font-family: var(--font-body);
+}
+/* El hilo que une los pasos: se dibuja desde el número hacia abajo, y
+   no existe en el último. Es lo que convierte tres marcas sueltas en
+   un CAMINO — que es lo que el alumno tiene que ver. */
+.sim-ruta-i:not(:last-child)::after {
+  content: ""; position: absolute;
+  left: 1.55cqh; top: 3.2cqh;
+  width: 2px; height: 3.1cqh;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--cat) 34%, #FFFFFF);
+}
+.sim-ruta-i.is-hecho:not(:last-child)::after { background: var(--success); }
+
+.sim-ruta-i > b {
+  flex: 0 0 auto;
+  display: grid; place-items: center;
+  width: 3.1cqh; aspect-ratio: 1; border-radius: 50%;
+  box-sizing: border-box;
+  border: 2px solid color-mix(in srgb, var(--cat) 34%, #FFFFFF);
+  background: #FFFFFF; color: var(--gray-500);
+  font-family: var(--font-num); font-size: 1.6cqh; font-weight: 800; line-height: 1;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.sim-ruta-i span {
+  font-size: 1.45cqh; font-weight: 600; color: var(--gray-500);
+  line-height: 1.1;
+}
+
+.sim-ruta-i.is-ahora > b {
+  border-color: var(--cat-strong);
+  background: linear-gradient(180deg, var(--cat-strong), var(--cat-ink));
+  color: #FFFFFF;
+  box-shadow: 0 0 0 .5cqh color-mix(in srgb, var(--cat) 26%, transparent);
+}
+.sim-ruta-i.is-ahora span { color: var(--cat-ink); font-weight: 800; }
+
+.sim-ruta-i.is-hecho > b {
+  border-color: var(--success); background: var(--success); color: #FFFFFF;
+  /* El número se cambia por un tilde SIN tocar el DOM: el texto real
+     sigue siendo "1", que es lo que lee un lector de pantalla junto al
+     rótulo, y la vista muestra el estado. */
+  font-size: 0;
+}
+.sim-ruta-i.is-hecho > b::after {
+  content: "✓"; font-size: 1.7cqh; font-weight: 700;
+}
+.sim-ruta-i.is-hecho span { color: var(--success-ink); }
+
+/* ============================================================
+   7 · LA PILA DE PISTAS
+   ------------------------------------------------------------
+   Antes el pop-up mostraba UN párrafo, siempre el mismo para toda la
+   pantalla: abrir la segunda lupa gastaba una pista para volver a
+   leer lo mismo (reportado por el cliente). Ahora son tres niveles
+   que se van destapando, y verlos apilados es parte de la ayuda: el
+   alumno ve cuánto más concreto se puso y cuánto le queda.
+   ============================================================ */
+/* En `rem` y no en unidades de contenedor, como todo el resto de los
+   pop-ups: el modal es fijo a la VENTANA y vive fuera de `.d-stage`,
+   así que ahí `cqh` no mide el lienzo — mide el viewport, y el tamaño
+   de la letra dejaba de acompañar a la tarjeta que la contiene. */
+.sim-pistas {
+  margin: 1rem 0 0; padding: 0; list-style: none;
+  display: grid; gap: .65rem;
+  width: 100%; text-align: left;
+}
+.sim-pista-i {
+  position: relative;
+  padding: .75rem 1rem .75rem 1.1rem;
+  border-radius: .75rem;
+  background: color-mix(in srgb, var(--sim-pale) 55%, #FFFFFF);
+  border-left: 4px solid color-mix(in srgb, var(--cat) 40%, #FFFFFF);
+}
+.sim-pista-i b {
+  display: block; margin-bottom: .18rem;
+  font-family: var(--font-body); font-size: .74rem; font-weight: 800;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--cat-ink);
+}
+.sim-pista-i p {
+  margin: 0;
+  font-family: var(--font-body); font-size: 1rem; line-height: 1.34;
+  color: var(--gray-900);
+}
+/* La última destapada se distingue: cuando el nivel sube solo después
+   de dos errores, el alumno abre el pop-up y tiene que encontrar de un
+   vistazo qué es lo NUEVO, no releer todo. */
+.sim-pista-i.is-nueva {
+  border-left-color: var(--cat-strong);
+  background: color-mix(in srgb, var(--cat) 12%, #FFFFFF);
+  animation: sim-pista-nueva .5s ease-out both;
+}
+@keyframes sim-pista-nueva {
+  from { opacity: 0; transform: translateY(.6rem); }
+  to { opacity: 1; }
+}
+
+/* (El estado de las lupas vive entero en la sección 2, con el resto
+   del riel: tenerlo repartido en dos lugares fue exactamente cómo esta
+   regla —`opacity: .72`— terminó pisando a la de arriba sin que se
+   notara. Lo agarró `check-css-duplicates`, no la vista.) */
+
+/* Aviso de que se destrabó una pista más. Tres pulsos y para: una
+   animación infinita es ruido visual, y además `waitForTimeout` de
+   Playwright nunca considera la página estable (§6.10). */
+.sim-rail.is-nueva-pista .sim-rail-card--pistas {
+  animation: sim-latido 1.5s ease-in-out 3;
+  box-shadow:
+    0 0 0 .4cqh color-mix(in srgb, var(--cat) 34%, transparent),
+    0 1cqh 2.2cqh color-mix(in srgb, var(--cat-strong) 24%, transparent);
+}
+
+/* ============================================================
+   8 · LA ZONA RESALTADA
+   ------------------------------------------------------------
+   Después de DOS errores en la misma pantalla el simulador deja de
+   explicar y señala. No es un premio por equivocarse: el alumno que
+   erró dos veces seguidas no está distraído, no encuentra el control,
+   y seguir describiéndoselo con palabras es insistir con lo que ya
+   falló. El halo es del color del curso, no verde: no dice "es esta",
+   dice "mirá acá".
+   ============================================================ */
+.is-zona {
+  position: relative;
+  outline: 2px solid var(--cat-strong);
+  outline-offset: 2px;
+  border-radius: 3px;
+  animation: sim-zona 1.7s ease-in-out infinite;
+}
+@keyframes sim-zona {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--cat) 46%, transparent); }
+  50%      { box-shadow: 0 0 0 .7cqh color-mix(in srgb, var(--cat) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .is-zona { animation: none; box-shadow: 0 0 0 .5cqh color-mix(in srgb, var(--cat) 30%, transparent); }
+}
+
+/* ============================================================
+   9 · LUPA DE LA PANTALLA (móvil)
+   ------------------------------------------------------------
+   En un teléfono acostado el lienzo mide 932×336 y la tipografía de
+   GESCOM cae por debajo de 4 px: la pantalla se ve y no se lee. El
+   control aparece solo donde hace falta (lo decide `curso.js` midiendo
+   el ALTO del lienzo, que es lo que falla, no el ancho de la ventana).
+   ============================================================ */
+/* Una tarjeta más del riel, con la misma piel que Pistas y Reglas:
+   es una herramienta del simulador, no un control flotante pegado
+   encima de la pantalla —que es donde estaba y donde tapaba la
+   casilla "Sin precio" en un teléfono acostado—. */
+.sim-rail-card--zoom {
+  height: 13.5cqh; padding: 1cqh .4cqw;
+  justify-content: space-around; gap: .4cqh;
+}
+.sim-rail-card--zoom[hidden] { display: none; }
+.sim-rail-card--zoom b {
+  font-family: var(--font-num); font-size: 1.25cqh; font-weight: 700;
+  color: var(--gray-700); line-height: 1;
+}
+.sim-zoom-b {
+  display: grid; place-items: center;
+  /* Medida del DEDO y no del diseño: por eso va en px y no en cqw. En
+     el lienzo de un teléfono acostado, 2cqw son 18 px. */
+  width: 30px; height: 30px;
+  padding: 0; border: 0; border-radius: 50%;
+  background: var(--sim-pale); color: var(--cat-ink);
+  cursor: pointer;
+}
+.sim-zoom-b svg { width: 62%; height: 62%; }
+.sim-zoom-b[disabled] { opacity: .4; cursor: default; }
+.sim-zoom-b:focus-visible { outline: 2px solid var(--cat-strong); outline-offset: 2px; }
+
+/* El monitor es el marco: la pantalla acercada se mueve por adentro y
+   no se derrama sobre el lienzo. */
+.sim-monitor { position: relative; }
+.sim-screen.is-zoom { cursor: grab; touch-action: none; }
+.sim-screen.is-zoom:active { cursor: grabbing; }
+.sim-screen.is-zoom > * { will-change: transform; }
+
+/* ============================================================
+   10 · EL "¡UPS!" QUE DICE DÓNDE
+   ------------------------------------------------------------
+   La tira tapa el renglón de instrucciones del arte y lo reemplaza
+   por la pantalla en la que el alumno se trabó. Mismo fondo blanco y
+   misma familia que el original: tiene que leerse como parte del
+   arte, no como un cartel pegado encima.
+   ============================================================ */
+.sim-ups-info {
+  position: absolute; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .4cqh;
+  background: #FFFFFF;
+  font-family: var(--font-body); text-align: center;
+  padding: 0 1cqw; box-sizing: border-box;
+}
+.sim-ups-info p { margin: 0; font-size: 2cqh; line-height: 1.2; color: var(--gray-900); }
+.sim-ups-info b { color: var(--cat-ink); font-weight: 800; }
+.sim-ups-info .sim-ups-sub { font-size: 1.5cqh; color: var(--gray-700); }
+
+.d-cierre-shot .d-shot { position: relative; }
+
+.sim-ups-cero {
+  position: absolute; z-index: 2;
+  left: 50%; bottom: 1.4cqh; transform: translateX(-50%);
+  padding: .5cqh 1.4cqw;
+  border: 0; border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, .92);
+  color: var(--gray-700);
+  font-family: var(--font-body); font-size: 1.4cqh; font-weight: 700;
+  text-decoration: underline; text-underline-offset: 2px;
+  cursor: pointer;
+}
+.sim-ups-cero:hover { color: var(--cat-ink); background: #FFFFFF; }
+.sim-ups-cero:focus-visible { outline: 2px solid var(--cat-strong); outline-offset: 2px; }
+
+/* ============================================================
+   11 · LA CÁSCARA DEL CURSO SE APAGA ADENTRO DEL SIMULADOR
+   ------------------------------------------------------------
+   No es cosmética, y no es que sobre: es que ESTORBA justo acá.
+   · El chip de puntos convierte cada pantalla en una jugada por
+     puntaje, y el alumno empieza a optimizar el número en vez de
+     entender el procedimiento. Los puntos siguen sumándose y se ven
+     enteros en el cierre, que es donde significan algo.
+   · El índice y "Anterior" son atajos para salirse de un
+     procedimiento en el medio: un procedimiento se hace de punta a
+     punta o no se hizo.
+   · El glosario abre una ventana encima de la pantalla que el alumno
+     tiene que estar mirando.
+   Los tres vuelven en la bienvenida y en el cierre. El marcado sigue
+   estando —el kit los exige y son parte del curso—; lo que cambia es
+   CUÁNDO se ofrecen.
+   ============================================================ */
+body.sim-jugando .d-chip--achieve,
+body.sim-jugando [data-popup-trigger="glosario"],
+body.sim-jugando [data-popup-trigger="sidenav"] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* "Anterior" NO se esconde, se RESIGNIFICA (ver `curso.js`). Esconderlo
+   era la primera versión y rompía una garantía del kit que está bien
+   puesta: que el alumno nunca quede encerrado en una diapositiva. Lo
+   que molestaba no era el botón, era que adentro del simulador
+   caminara de pantalla en pantalla —y volver a una ya resuelta es
+   volver a una pantalla congelada, que no sirve para nada—. Ahora
+   sale del simulador de una, y lo dice. */
+body.sim-jugando .d-nav-btn--prev { opacity: .78; }
+
+/* ============================================================
+
+
+   12 · LO QUE TE LLEVÁS (cierre)
+   ------------------------------------------------------------
+   Reemplaza al repaso de dos preguntas. Cuatro frases, las mismas
+   cuatro que el alumno acaba de practicar, para leer en diez segundos
+   y llevarse al salón.
+   ============================================================ */
+.sim-llevate {
+  margin: 0; padding: 0; list-style: none;
+  display: grid; gap: .8cqh;
+}
+.sim-llevate li {
+  position: relative; padding-left: 2.2cqw;
+  font-family: var(--font-body); font-size: 1.75cqh; line-height: 1.34;
+  color: var(--gray-700);
+}
+.sim-llevate li::before {
+  content: "✓"; position: absolute; left: 0; top: 0;
+  color: var(--success); font-weight: 800;
+}
+.sim-llevate b { color: var(--gray-900); font-weight: 800; }
+
+/* En un lienzo bajo (teléfono acostado) los rótulos de la hoja de ruta
+   caen a 5 px: están, se ven, y no se leen — el mismo problema que la
+   pantalla de GESCOM, medido igual. Se quedan los números, que a esa
+   altura siguen siendo legibles y alcanzan para saber por dónde va.
+   Va contra el CONTENEDOR y contra el ALTO, que es la medida que
+   falla: un teléfono acostado es ancho y bajo, y un breakpoint de
+   ancho no lo ve. */
+@container (max-height: 430px) {
+  .sim-ruta { width: auto; min-width: 0; }
+  .sim-ruta-card { padding: 1.2cqh .5cqw 1.4cqh; gap: 1cqh; }
+  .sim-ruta-card > b { font-size: 1.5cqh; }
+  .sim-ruta-card > ol { gap: 2.4cqh; }
+  .sim-ruta-i span {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
+  .sim-ruta-i > b { width: 24px; font-size: 12px; }
+  .sim-ruta-i.is-hecho > b::after { font-size: 13px; }
+  .sim-ruta-i:not(:last-child)::after { left: 12px; top: 24px; height: 2.4cqh; }
+}
+
+/* Volver a intentarlo desde el arte del cierre. Reusa la píldora del
+   "¡Ups!" —misma familia, misma jerarquía: segunda opción debajo del
+   botón principal— pero corrida un poco más abajo, porque el
+   "Continuar" del arte del cierre está más al ras del borde. */
+.sim-cierre-reintentar {
+  bottom: 1.4cqh;
+  padding: .7cqh 1.9cqw;
+  font-size: 1.55cqh;
+}

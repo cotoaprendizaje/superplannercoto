@@ -1,0 +1,1130 @@
+/* ============================================================
+   coto-player-chrome.css · Barra superior + estructura de página
+   kit-base v1.1 · Área Aprendizaje (COTO) — genérico, sin contenido
+   de curso. Copiar tal cual a cada curso nuevo, sin editar.
+   ------------------------------------------------------------
+   Extraído de "Surtido sin venta" tras un rediseño completo de la
+   barra superior (antes vivía mezclado en el CSS específico del curso
+   — diapositivas.css/pulido.css — por historia, pero no lee nada del
+   contenido del curso: es 100% reutilizable, ver CLAUDE.md §1).
+
+   Depende de los tokens de coto-base.css (--on-brand, --cat, --brand,
+   --brand-deep, --font-title/body/soft, --r-pill, --r-sm, --focus,
+   --shadow-card, --grad-brand/--cat-grad, --on-cat, --brand-soft).
+
+   CONTRATO — el HTML de cada curso tiene que respetar estos IDs/clases
+   para que este CSS (y los estados que togglea curso.js) funcionen:
+     #d-narrate / #d-sound / #d-fullscreen  → botones con clase .is-on
+       (narrate, fullscreen) o .is-muted (sound) togglada por JS.
+     .d-top-left / .d-top-center / .d-top-right → las 3 zonas de la
+       barra (menú+marca / saludo+logros / controles).
+     .d-top-group con modificador .d-top-group--<nombre> por cada grupo
+       de controles — el modificador es el que la grilla mobile usa
+       para saber a qué columna va cada grupo (ver media query).
+   Ver kit-base/header-boilerplate.html para el HTML de referencia
+   completo, listo para copiar y adaptar (nombre del curso, logo,
+   grupos de controles reales de ESE curso).
+   ============================================================ */
+
+/* ---- Página sin scroll ---- */
+html, body { height: 100%; }
+body { margin: 0; overflow: hidden; background: var(--bg); }
+[hidden] { display: none !important; }
+
+/* ============================================================
+   CHROME: barra superior + escenario + barra inferior
+   ============================================================ */
+/* `grid-template-columns: minmax(0,1fr)` es OBLIGATORIO acá, no
+   cosmético. BUG REAL encontrado en tablet con un nombre real de
+   alumno en el saludo (`#d-greet`, ver más abajo): sin esto, la
+   columna implícita del grid usa su ancho `auto` por default, que en
+   CSS Grid se calcula por el MIN-CONTENT de los items — y como
+   `.d-top`/`.d-bottom` tienen varios hijos `flex:none` que se niegan a
+   achicarse, ese min-content puede superar el ancho real de `.d-app`
+   (fijo por `inset:0`). El resultado: la fila del grid crece más
+   ancha que la ventana y el contenido de más queda invisible — nunca
+   como scroll (`body{overflow:hidden}` lo tapa), así que
+   `scroll-audit` no lo detecta. Sin la voz del alumno en las pruebas
+   automáticas (no hay LMS real corriendo los tests) el saludo nunca
+   llega a ese ancho crítico, así que el bug pasó inadvertido hasta
+   probarlo con un nombre real en un iPad de 1024px. `minmax(0,1fr)`
+   es el fix estándar de este bug de CSS Grid ("grid blowout"): fuerza
+   a la columna a NUNCA superar el contenedor, sin importar cuánto
+   pidan sus hijos — a partir de ahí, lo que no entra se resuelve dentro
+   de `.d-top`/`.d-bottom` (ver `#d-greet` con elipsis y el media query
+   de abajo), no inflando el layout entero. */
+/* ---- El alto del chrome, como variables ----  kit-base v1.9.88
+   Hasta ahora las alturas del chrome vivían hardcodeadas en cuatro
+   `grid-template-rows` distintos, y NADA fuera de `.d-app` podía saber
+   cuánto mide el lienzo. Cualquier cosa que quisiera medirse contra el
+   lienzo terminaba usando `vh` —el viewport—, que incluye el chrome.
+
+   ⚠️ Y ahí está el error que atraviesa media tanda: el lienzo es 2:1,
+   así que EN VERTICAL la lámina es una FRANJA de `ancho/2` mientras el
+   viewport sigue siendo altísimo. Medido en un iPad 768x1024: la lámina
+   mide 768x384 — más baja que un viewport apaisado de 480px, que es
+   justo el caso que las media queries de alto existen para cubrir. Pero
+   el viewport mide 1024, así que ninguna se activaba y todo salía con
+   medidas de escritorio sobre un arte de la mitad de alto.
+
+   REGLA: `vh` y `@media (max-height)` responden por la VENTANA. Si lo
+   que importa es cómo se ve algo AL LADO DEL ARTE, la pregunta va en
+   `--d-arte-h`, en `cqh`, o en un `@container` sobre `.d-stage`. */
+/* En `rem`, no en px (kit-base v1.9.95): así las dos filas del chrome
+   acompañan a la raíz, que ahora escala en monitores grandes (ver
+   coto-base.css). Al default de 16px dan exactamente los mismos 56 y 64
+   de siempre, así que no cambia nada abajo de ~1600px de ancho. */
+:root { --d-chrome-top: 3.5rem; --d-chrome-bot: 4rem; }
+:root {
+  --d-stage-h: calc(100vh - var(--d-chrome-top) - var(--d-chrome-bot));
+  --d-arte-h: min(var(--d-stage-h), 50vw);
+  /* ---- La escala de lo que se APOYA sobre la lámina ----
+     kit-base v1.9.90. Un `[data-place]` se posiciona en % de la lámina,
+     así que su CAJA escala sola. El texto y los espacios de adentro, si
+     van en `rem`, NO — y ahí el contenido se pasa de su propia caja.
+
+     Medido en el repaso del kit: en un iPad vertical el panel baja de
+     203 px a 108 px mientras el padding se queda en 8 px, y el bloque
+     termina 4 px fuera de su panel. En un curso real, con un panel de
+     texto más largo, el mismo error daba 162 px de contenido dentro de
+     un panel de 89.
+
+     720 px de lámina —una PC 1440x900— da exactamente 1rem, así que en
+     escritorio no cambia nada, y el `min()` impide que crezca en un
+     monitor grande.
+
+     ⚠️ REGLA: si algo vive SOBRE LA LÁMINA, se mide en `em` de esta
+     escala o en `cqh` — nunca en `rem`. Un `rem` sobre la lámina es un
+     tamaño que ignora el dispositivo.
+
+     Se usa poniendo `font-size: var(--d-escala-lamina)` en el panel y
+     `em` de ahí para abajo. */
+  --d-escala-lamina: min(1rem, calc(var(--d-arte-h) * 0.02222));
+}
+.d-app { position: fixed; inset: 0; display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--d-chrome-top) 1fr var(--d-chrome-bot); }
+
+/* ---- Pantalla completa en iOS: lugar para la ✕ de Safari ----
+   kit-base v1.9.90. Safari dibuja su propio botón de salir en la
+   esquina superior izquierda, encima de la página. No se puede mover ni
+   esconder; lo único que podemos hacer es no poner nada debajo.
+   Reporte del cliente: la ✕ tapaba el ☰ del índice y dejaba el menú
+   inaccesible.
+   Las dos clases las pone `initFullscreen` (coto-player.js). Acotado a
+   iOS y solo mientras dure la pantalla completa: en escritorio esa ✕ no
+   existe y regalar 64 px de barra no tendría sentido. */
+html.d-ios.d-fullscreen .d-top { padding-left: 64px; }
+@media (max-width: 799px) {
+  html.d-ios.d-fullscreen .d-top { padding-left: 52px; }
+}
+
+/* ---- Chrome TÁCTIL: barras y botones más grandes donde hay dedos ----
+   kit-base v1.9.83. Reporte del cliente probando en iPad: "las barras
+   de navegación tienen un tamaño fijo, se deberían agrandar un toque
+   para el iPad y adaptarse a la pantalla".
+
+   Medido antes de tocar, sobre un curso real: con el chrome fijo en
+   56+64, **los 10 botones del header y el footer quedaban por debajo de
+   44×44 en TODA resolución** — el más chico, 26×26. 44 es el mínimo que
+   recomienda Apple para el dedo. No era una impresión: era exactamente
+   la misma barra en un monitor de 27" que en un iPad.
+
+   Va sobre `pointer: coarse` y NO sobre un ancho: lo que decide es si
+   hay dedo o mouse, no cuán grande es la pantalla. Con mouse, 26×26 no
+   molesta —la precisión es otra— y engordar las barras solo comería
+   lienzo, así que escritorio queda EXACTAMENTE como estaba.
+
+   Efecto lateral bienvenido: bajar el alto del stage acerca su
+   proporción a 2:1, así que ADEMÁS baja el recorte lateral del arte
+   (§7.29 punto 1). En un iPad 10" el stage pasa de 1024×648 (ratio
+   1.580) a 1024×616 (ratio 1.662), y la banda de las diapositivas con
+   video de fondo de 68 a 52px.
+
+   ⚠️ `min-height: 461px` NO es un detalle: sin eso, un TELÉFONO
+   ACOSTADO —que también es `pointer: coarse`— se comía el chrome
+   compacto de §7.25 E2. Ahí las barras miden 44+50 sobre una pantalla
+   de 390px de alto, y forzarles 72+80 (o incluso solo el piso de 44px
+   por botón, que le gana a `.d-iconbtn{height:32px}` porque son
+   propiedades distintas) deja el lienzo en nada. En un teléfono
+   acostado el problema que aprieta es el alto, no el dedo.
+
+   Se evaluó y se descartó una opción más generosa (84+92): los botones
+   ya llegan a 44 con esta, y esos 24px extra compraban 1,7 puntos de
+   recorte a cambio de barras visiblemente pesadas.
+
+   El tradeoff que sí existe y no se puede evitar: el stage pierde 32px
+   de alto en tablet. Barras más grandes y contenido igual de grande no
+   se puede, comparten la pantalla. Lo que compensa es que se recorta
+   menos arte del que se pierde en alto. */
+@media (pointer: coarse) and (min-height: 461px) {
+  :root { --d-chrome-top: 4.5rem; --d-chrome-bot: 5rem; }
+  .d-top button,
+  .d-bottom button { min-width: 44px; min-height: 44px; }
+  .d-nav-btn { min-height: 44px; padding: .55rem 1.1rem; }
+}
+
+/* El chrome se ACHICA en pantallas bajas (kit-base v1.9.79, §7.25 E2).
+   Los 56px + 64px de arriba son fijos: en un escritorio son el 12% de
+   la ventana y no se notan; en un teléfono ACOSTADO son 120px sobre
+   390 — medido en un curso recién generado, **el 31% de la pantalla**,
+   y al lienzo le quedan 270px para todo el contenido del curso.
+
+   (El relay que trajo el hallazgo decía 56% y ~170px de lienzo; medido
+   acá sobre un curso limpio da 31% y 270px. La diferencia es chrome
+   propio de ese curso, no del kit — pero el problema de fondo, que el
+   alto del chrome no dependa del alto de la pantalla, es real y es
+   del kit.)
+
+   Con las barras compactas el lienzo pasa de 270 a 296px. No es todo
+   lo que se puede ganar, pero es lo que se puede ganar SIN sacar
+   controles: los botones siguen todos, con el alto de toque cómodo
+   (44px arriba, 50px abajo, contra el piso recomendado de 44).
+
+   `max-height` y no `max-width`: un teléfono acostado es ancho y bajo,
+   así que el ancho no dice nada del problema. */
+@media (max-height: 460px) {
+  :root { --d-chrome-top: 2.75rem; --d-chrome-bot: 3.125rem; }
+  .d-top { gap: .35rem; padding: 0 .5rem; }
+  .d-iconbtn { width: 32px; height: 32px; }
+  .d-iconbtn.d-iconbtn--labeled { padding: 0 .45rem; }
+  .d-iconbtn.d-iconbtn--labeled .lbl { font-size: .66rem; }
+  /* La cápsula del ☰ suma píxeles a una barra que ya está al límite. */
+  .d-brand .lg img { width: 16px; height: 16px; }
+}
+
+/* Header: izquierda (menú + marca) / CENTRO (saludo + logros/puntos,
+   la "zona de estado del alumno") / derecha (controles agrupados).
+   flex plano con 2 spacers (.d-top-spacer, flex:1 cada uno) a los
+   costados del bloque central — NO grid de 3 columnas iguales: esa
+   versión centra el bloque contra el ANCHO TOTAL de la barra, pero si
+   la izquierda es más angosta que la derecha (típico: marca corta,
+   2+ grupos de controles), el centro queda corrido hacia los íconos.
+   Con 2 spacers iguales repartiendo el espacio SOBRANTE real (ancho
+   total menos lo que ocupan los 3 bloques de contenido), el centro
+   queda a mitad de camino entre el borde real de la marca y el borde
+   real de los íconos — se autoajusta solo si cambia el largo de
+   cualquiera de los 3 bloques (nombre de curso más largo, más/menos
+   controles). */
+.d-top { color: var(--on-brand); display: flex; align-items: center;
+  padding: 0 clamp(.8rem, 3vw, 1.6rem); z-index: 40;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent),
+              0 2px 0 color-mix(in srgb, var(--cat) 55%, transparent),
+              0 6px 20px color-mix(in srgb, var(--brand-deep) 45%, transparent); }
+/* degradé de fondo "respirando" muy lento — inspirado en el lenguaje
+   "tech" de las webs de Coto (azul con toques celestes). Contraste
+   cuidado a propósito: el tramo más claro no pasa de ~80% hacia
+   --brand-deep, así --on-brand (blanco) se mantiene legible siempre. */
+@keyframes d-topbar-breathe { 0%,100% { background-position: 0% 50%, 0 0; } 50% { background-position: 100% 50%, 0 0; } }
+.d-top {
+  background:
+    radial-gradient(130% 200% at 12% -60%, color-mix(in srgb, #eaf6ff 32%, transparent), transparent 62%),
+    linear-gradient(100deg, var(--brand-deep), var(--brand), color-mix(in srgb, var(--brand) 80%, var(--brand-deep)));
+  background-size: 100% 100%, 200% 100%;
+  animation: d-topbar-breathe 16s ease-in-out infinite;
+}
+.d-top-spacer { flex: 1 1 0; min-width: 0; }
+/* En escritorio, "invisible" para el layout: sus hijos (.d-top-left,
+   spacer, .d-top-center) pasan a ser hijos directos del flex de .d-top
+   — ver override a grid real en el media query mobile más abajo. */
+.d-top-row1 { display: contents; }
+.d-top-left { display: flex; align-items: center; gap: 1rem; min-width: 0; flex: none; }
+.d-top-center { display: flex; align-items: center; gap: .65rem; min-width: 0; flex: none; }
+.d-top-right { display: flex; align-items: center; gap: .5rem; min-width: 0; flex: none; }
+.d-brand { display: flex; align-items: center; gap: .55rem; font-family: var(--font-title);
+  font-weight: 900; letter-spacing: -.5px; text-align: left; white-space: nowrap; }
+.d-brand .lg { width: 32px; height: 32px; border-radius: var(--r-sm); flex: none; display: grid; place-items: center;
+  background: var(--cat-grad, var(--grad-brand)); color: var(--on-cat); box-shadow: var(--shadow-card); }
+.d-brand .lg img { width: 20px; height: 20px; object-fit: contain; display: block; }
+/* El subtítulo del header ("ÁREA … · COTO") NO usa --brand-soft directo
+   (kit-base v1.9.62). Ese token (#96A5BE) está pensado para texto sobre
+   fondo CLARO; acá cae sobre el degradado --grad-brand, que va de
+   --brand-deep (#00466E) a --brand (#006EA0), y ahí no llega al 4.5:1
+   que pide AA para texto chico: medido, 4.01:1 contra el extremo oscuro
+   y 2.25:1 contra el CLARO, con 10,5px en mayúsculas.
+   Mismo tipo de bug que §6.60 (--cat-strong usado como color de texto):
+   un token de una familia aplicado en el contexto de la otra.
+   La mezcla lo aclara lo justo para pasar en el peor punto del
+   degradado (4.79:1 sobre --brand) sin volverlo blanco puro: el
+   subtítulo tiene que seguir leyéndose por debajo del título, que sí es
+   --on-brand pleno. */
+.d-brand small { display: block; font-family: var(--font-soft); font-weight: 500; font-size: .66rem;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: color-mix(in srgb, var(--brand-soft) 20%, var(--on-brand)); }
+.d-chip { display: inline-flex; align-items: center; gap: .4rem; font-family: var(--font-body); font-weight: 700;
+  font-size: .8rem; color: var(--on-brand); cursor: pointer; border: none; padding: .42rem .75rem;
+  border-radius: var(--r-pill); background: color-mix(in srgb, var(--on-brand) 12%, transparent); }
+.d-chip:hover { background: color-mix(in srgb, var(--on-brand) 22%, transparent); }
+.d-chip .v { font-family: var(--font-body); font-weight: 600; }
+.d-chip--achieve #d-badge-count { font-family: var(--font-title); font-weight: 900; }
+.d-chip--achieve .lbl { font-weight: 500; opacity: .85; margin-left: -.15rem; }
+.d-chip-sep { width: 1px; height: 13px; background: color-mix(in srgb, var(--on-brand) 30%, transparent); flex: none; }
+/* Pulso al sumar puntos/logros (kit-base v1.9.43) — el curso lo dispara
+   desde `award()`, NO desde `updateHud()` a secas: `updateHud()`
+   también corre al restaurar progreso o desbloquear un logro sin
+   puntos de por medio, donde un pulso sería ruido (algo "festejando"
+   sin que haya pasado nada nuevo en ESE instante). Mismo patrón de
+   siempre para poder repetirlo (sacar+reflow+poner la clase) —
+   `countTo()` (coto-ui.js) anima el número en paralelo, las dos cosas
+   conviven porque tocan propiedades CSS distintas (transform acá,
+   textContent ahí). Cubic-bezier con overshoot (pasa de 1 antes de
+   asentarse) — mismo lenguaje que las medallas/logros del cierre,
+   nunca en loop. */
+.d-chip--achieve.is-award-pulse { animation: d-chip-pulse .5s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes d-chip-pulse {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .d-chip--achieve.is-award-pulse { animation: none; }
+}
+/* nombres reales largos no deben poder romper el ancho de la barra */
+#d-greet { max-width: 22vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+/* El saludo se arma en 2 partes (curso.js): un <span class="ic"> con el
+   emoji + el texto "Hola, Nombre" como nodo de texto aparte — así el
+   emoji se puede ocultar solo en mobile (ver media query) sin tocar el
+   nombre real. Ver kit-base/header-boilerplate.html para el patrón JS. */
+
+.d-iconbtn { width: 38px; height: 38px; border-radius: 50%; border: none; cursor: pointer; display: grid;
+  place-items: center; color: var(--on-brand); background: transparent; flex: none;
+  transition: transform .15s cubic-bezier(.34,1.56,.5,1), background .15s; }
+.d-iconbtn:hover { background: color-mix(in srgb, var(--on-brand) 22%, transparent); transform: translateY(-2px) scale(1.06); }
+.d-iconbtn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---- Divisor + grupos de controles ----
+   Los controles se agrupan por función en "islas" con fondo propio
+   (nunca sueltos en fila — con 5+ botones-ícono idénticos, ninguno se
+   distingue de los demás a simple vista) separadas por un hairline
+   vertical sutil (.d-top-sep, solo en escritorio — ver media query). */
+.d-top-sep { width: 1px; align-self: stretch; margin: .5rem 0;
+  background: color-mix(in srgb, var(--on-brand) 22%, transparent); flex: none; }
+.d-top-group { display: flex; align-items: center; gap: .2rem; padding: .2rem;
+  border-radius: var(--r-pill); background: color-mix(in srgb, var(--on-brand) 10%, transparent); flex: none; }
+.d-top-group .d-iconbtn { background: transparent; }
+.d-top-group .d-iconbtn:hover { background: color-mix(in srgb, var(--on-brand) 22%, transparent); }
+/* ---- El grupo del ☰ no suma alto en pantallas chicas ----
+   La cápsula del grupo es lo que hace que el ☰ se lea como un control
+   y no como un ícono suelto (por eso se le puso, kit-base v1.9.85). Su
+   `padding: .2rem` cuesta píxeles de barra, y en un teléfono acostado
+   la barra ya está al límite: medido en un curso real, pasaba de 110 a
+   117px, y esos 7px salen del lienzo. Con el rótulo escondido a ese
+   ancho queda un solo ícono adentro, así que la cápsula no aporta nada
+   ahí — se apaga y el ☰ vuelve a ser el ícono de siempre. */
+@media (max-width: 860px) {
+  .d-top-group--indice { padding: 0; background: transparent; }
+}
+/* Todo control lleva texto visible, no solo ícono+tooltip — el
+   reproductor es nuevo para el alumno la primera vez, mejor pecar de
+   claro que de "elegante pero ambiguo". .d-iconbtn hereda
+   display:grid+place-items:center (pensado para UN ícono); acá adentro
+   van DOS elementos (ícono+texto) y grid sin columnas explícitas los
+   apila uno arriba del otro en vez de ponerlos en fila — por eso el
+   fix pasa a flex en fila. justify-content:center es necesario aparte
+   de align-items:center: sin él, cuando el texto se oculta en mobile
+   (ver media query) y solo queda el ícono, éste se pega al lado
+   izquierdo del botón en vez de quedar centrado — el fondo/aro de
+   estado activo (.is-on) sí queda centrado en el botón completo,
+   así que sin justify-content el ícono y su propio resaltado quedan
+   visualmente desalineados entre sí (bug real, encontrado probando en
+   mobile). */
+/* ⚠️ `.d-iconbtn--labeled`, no `.d-iconbtn--labeled` a secas
+   (kit-base v1.9.95). Las dos son UNA clase, o sea la misma
+   especificidad, así que cualquier regla de ancho que un curso escriba
+   sobre `.d-iconbtn` —y el CSS del curso carga ÚLTIMO— le gana al
+   `width:auto` de acá y aplasta el botón etiquetado a un cuadrado, con
+   los rótulos encimados ("SonidoLocución GlosarioAmpliar"). Le pasó a un
+   curso y se vio en el render. Con las dos clases juntas el botón
+   etiquetado gana por especificidad y deja de depender del orden de
+   carga. */
+.d-iconbtn.d-iconbtn--labeled { display: inline-flex; flex-direction: row; align-items: center; justify-content: center;
+  width: auto; height: 38px; border-radius: var(--r-pill); padding: 0 .9rem 0 .65rem; gap: .4rem; }
+.d-iconbtn.d-iconbtn--labeled .lbl { font-family: var(--font-body); font-weight: 700; font-size: .78rem; white-space: nowrap; line-height: 1; }
+
+/* ---- Estados de los controles (togglados por curso.js/narrador.js) ---- */
+/* BUG REAL, reporte del cliente: *"al silenciar la locución el audio
+   deja de reproducirse, pero el ícono no cambia de estado"*. Cambiaba —
+   pero los dos íconos eran el MISMO micrófono y la única diferencia
+   eran dos arquitos de 7 px a los costados. A tamaño real, con el botón
+   llevando además su etiqueta al lado, eso no se lee como un cambio de
+   estado: se lee como que no pasó nada.
+
+   `#d-sound` (el parlante) ya lo resolvía bien desde siempre, con una X
+   de lado a lado en el estado apagado. Acá se habla el mismo idioma: el
+   micrófono apagado va TACHADO.
+
+   ⚠️ Se mantiene el MICRÓFONO, no un parlante ni un play/stop: son dos
+   controles distintos en la misma barra —"Sonido" son los efectos,
+   "Locución" es la voz— y darles el mismo ícono sería peor que el bug
+   original. */
+#d-narrate .ic-tachado {
+  stroke: currentColor; stroke-width: 2.2; stroke-linecap: round;
+  paint-order: stroke;
+}
+#d-narrate .ic-off { overflow: visible; }
+#d-narrate .ic-on { display: none; }
+#d-narrate.is-on .ic-off { display: none; }
+#d-narrate.is-on .ic-on { display: block; }
+#d-narrate.is-on { background: color-mix(in srgb, var(--on-brand) 26%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--on-brand) 55%, transparent); }
+#d-narrate.is-on svg { animation: d-narr-pulse 1.1s ease-in-out infinite; }
+@keyframes d-narr-pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { #d-narrate.is-on svg { animation: none; } }
+#d-sound .ic-off { display: none; }
+#d-sound.is-muted .ic-on { display: none; }
+#d-sound.is-muted .ic-off { display: block; }
+#d-fullscreen .ic-compress { display: none; }
+#d-fullscreen.is-on .ic-expand { display: none; }
+#d-fullscreen.is-on .ic-compress { display: block; }
+
+/* ============================================================
+   PANELES DE AUDIO — volumen (Sonido) y línea de tiempo (Locución)
+   kit-base v1.9.35, pedido de producto. Se despliegan bajo el botón:
+   con mouse por hover/foco, y con un tap fijándolos abiertos
+   (`.is-open`, ver `initAudioPopovers` en coto-player.js — mismo
+   criterio "pinned" que `initHotspots`, porque en touch no existe el
+   hover, CLAUDE.md §6.10.1 regla 2). El botón sigue siendo el toggle
+   de siempre (mute / on-off); el panel SUMA control fino, nunca lo
+   reemplaza.
+   A propósito, la transición de apertura es SOLO opacidad/visibilidad
+   — nunca transform: la posición (centrada en escritorio, anclada a
+   la derecha en mobile, ver media query) tiene que quedar fija en
+   TODO momento para no tener que reconciliar un transform "cerrado"
+   contra uno "abierto" en dos breakpoints distintos — menos superficie
+   de bug que un desliz vertical más prolijo. */
+.d-audio-ctl { position: relative; }
+.d-audio-pop {
+  position: absolute; top: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+  background: var(--surface); color: var(--text); border-radius: var(--r-lg);
+  padding: .9rem 1rem; box-shadow: var(--shadow-pop);
+  opacity: 0; pointer-events: none; visibility: hidden; transition: opacity .15s ease, visibility .15s;
+  z-index: 10;
+}
+/* El anclaje horizontal REAL (centrado bajo el botón, o corrido para no
+   salirse de pantalla) lo calcula JS en cada apertura
+   (`initAudioPopovers` → `posicionar()`, coto-player.js) contra la
+   posición real del botón — el grupo de audio puede terminar en
+   cualquier lugar del header según el breakpoint (layout de 2 filas
+   más abajo en este mismo archivo), así que un anclaje fijo por CSS
+   (ej. "siempre a la derecha en mobile") asumía mal dónde iba a estar
+   el botón y el panel se salía de pantalla. `left:50%` +
+   `transform:translateX(-50%)` de arriba queda como fallback sin JS
+   únicamente. `--flecha-left` la fija la misma función, para que la
+   flechita siga apuntando al botón real aunque el panel se haya
+   corrido para entrar en pantalla. */
+.d-audio-pop::before {
+  content: ""; position: absolute; top: -6px; left: var(--flecha-left, 50%); translate: -50% 0;
+  width: 13px; height: 13px; background: var(--surface); transform: rotate(45deg);
+  box-shadow: -2px -2px 5px -3px rgba(20, 30, 60, .18);
+}
+/* Sin `.is-hover`: los popovers de Sonido y Locución abren SOLO por
+   clic, igual que los flotantes de Ayuda y Configuración. Pedido del
+   cliente para que los cuatro se comporten igual — y salió gratis,
+   porque el clic en estos botones YA abría el panel además de mutear o
+   narrar (`initPinnedPopover` engancha ese mismo `click`; medido antes
+   de tocar nada). Lo único que se sacó fue el camino del hover.
+   Con esto la clase `.is-hover` dejó de existir en todo el kit, junto
+   con `attachHoverGrace()` — ver el comentario largo en coto-player.js. */
+.d-audio-ctl:focus-within .d-audio-pop,
+.d-audio-ctl.is-open .d-audio-pop {
+  opacity: 1; pointer-events: auto; visibility: visible;
+}
+
+/* ---- Volumen ---- */
+.d-vol-pop { width: 190px; }
+.d-vol-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: .55rem; }
+.d-vol-title { font-family: var(--font-title); font-weight: 900; font-size: .72rem; color: var(--text);
+  text-transform: uppercase; letter-spacing: .4px; }
+.d-vol-pct { font-family: var(--font-title); font-weight: 900; font-size: .88rem; color: var(--cat-ink);
+  min-width: 2.4em; text-align: right; }
+.d-vol-row { display: flex; align-items: center; gap: .5rem; }
+.d-vol-mute { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--surface-2);
+  color: var(--text-soft); display: grid; place-items: center; cursor: pointer; flex: none; padding: 0;
+  transition: background .15s, color .15s; }
+.d-vol-mute:hover { background: color-mix(in srgb, var(--cat) 18%, var(--surface-2)); color: var(--cat-ink); }
+.d-vol-mute svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.d-vol-mute .ic-off { display: none; }
+.d-vol-mute.is-muted .ic-on { display: none; }
+.d-vol-mute.is-muted .ic-off { display: block; }
+.d-vol-bars { display: flex; align-items: flex-end; gap: 2px; height: 14px; margin-top: .55rem; }
+.d-vol-bars span { flex: 1; border-radius: 2px; background: var(--line); }
+.d-vol-bars span:nth-child(1) { height: 30%; } .d-vol-bars span:nth-child(2) { height: 42%; }
+.d-vol-bars span:nth-child(3) { height: 55%; } .d-vol-bars span:nth-child(4) { height: 68%; }
+.d-vol-bars span:nth-child(5) { height: 78%; } .d-vol-bars span:nth-child(6) { height: 88%; }
+.d-vol-bars span:nth-child(7) { height: 94%; } .d-vol-bars span:nth-child(n+8) { height: 100%; }
+.d-vol-bars span.is-on { background: linear-gradient(180deg, var(--cat), var(--cat-strong)); }
+
+/* ---- Slider genérico (volumen + línea de tiempo) — thumb redondo con
+   borde de categoría, mismo lenguaje visual en los dos paneles.
+   La regla compartida trae SOLO el skin; lo que depende de dónde vive
+   cada slider va en su propia regla. Antes `margin:0` y `flex:1` estaban
+   acá y `.d-narr-range` pisaba el margen más abajo en el archivo —
+   `check-css-duplicates.mjs` lo marcaba como selector duplicado con
+   propiedad en conflicto y quedó sin tocar por ambiguo (§6.59, último
+   hallazgo). Con el contexto a la vista no lo era: los dos valores
+   existen para el slider de VOLUMEN, que vive en `.d-vol-row`
+   (`display:flex`); `.d-narr-range` vive en `.d-narr-pop`, que es un
+   bloque simple, así que heredaba un `flex:1` inerte y tenía que anular
+   el margen. Separados: mismo resultado, sin override. ---- */
+.d-vol-slider, .d-narr-range {
+  -webkit-appearance: none; appearance: none; height: 6px; border-radius: var(--r-pill);
+  background: var(--line); outline: none; cursor: pointer; width: 100%;
+}
+/* Ítem de una fila flex: sin margen propio, ocupa el espacio libre. */
+.d-vol-slider { margin: 0; flex: 1; }
+/* La barra de AVANCE de la locución, visualmente distinta de la de
+   VOLUMEN (kit-base v1.9.71, §7.17). Ésta es la causa real de la
+   confusión que reportó el cliente ("pensaban que era el sonido"): dos
+   paneles a 20px, con el mismo slider gris de 6px, se leen como lo
+   mismo. Las marcas cada 13px la muestran SEGMENTADA —una posición
+   discreta por frase, que es exactamente lo que es— contra la pista
+   continua del volumen. Deshabilitada (nada que narrar) vuelve a ser
+   lisa: marcas sobre una barra muerta prometen precisión que no hay. */
+.d-narr-range {
+  background-image: repeating-linear-gradient(
+    90deg, transparent 0 11px,
+    color-mix(in srgb, var(--brand-navy) 28%, transparent) 11px 13px);
+}
+.d-narr-range:disabled { background-image: none; }
+/* Estado en palabras + la línea que explica para qué es la barra. */
+.d-narr-estado{
+  margin: 0 0 .45rem; font-size: .78rem; font-weight: 700; color: var(--text);
+}
+.d-narr-hint{
+  margin: .4rem 0 0; font-size: .7rem; line-height: 1.35; color: var(--text-soft);
+}
+.d-vol-slider::-webkit-slider-thumb, .d-narr-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 50%;
+  background: var(--surface); border: 3px solid var(--cat-strong); box-shadow: 0 2px 6px rgba(20, 30, 60, .3); cursor: grab; }
+.d-vol-slider::-moz-range-thumb, .d-narr-range::-moz-range-thumb {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--surface); border: 3px solid var(--cat-strong);
+  box-shadow: 0 2px 6px rgba(20, 30, 60, .3); cursor: grab; }
+.d-narr-range:disabled { opacity: .4; cursor: not-allowed; }
+.d-narr-range:disabled::-webkit-slider-thumb, .d-narr-range:disabled::-moz-range-thumb { cursor: not-allowed; }
+
+/* ---- Locución: línea de tiempo + repetir ---- */
+.d-narr-pop { width: 250px; }
+.d-narr-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; }
+.d-narr-title { font-family: var(--font-title); font-weight: 900; font-size: .72rem; color: var(--text);
+  text-transform: uppercase; letter-spacing: .4px; }
+.d-narr-status { font-size: .68rem; font-weight: 800; color: var(--cat-ink); display: flex; align-items: center; gap: .3rem; }
+.d-narr-status .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cat-strong);
+  animation: d-narr-dot-blink 1.1s ease-in-out infinite; }
+@keyframes d-narr-dot-blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.d-narr-range { display: block; margin: .3rem 0 .15rem; }
+/* Reloj de la locución: transcurrido a la izquierda, total a la derecha,
+   como cualquier reproductor. `tabular-nums` evita que los números
+   bailen al pasar de 0:09 a 0:10. */
+.d-narr-times {
+  display: flex; justify-content: space-between; margin: 0 2px .45rem;
+  font: 700 .68rem/1 var(--font-body); color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.d-narr-foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+
+/* ---- Atajo de velocidad dentro del panel de Locución ----
+   Pareja de `initRateQuick()` (coto-player.js). −/valor/+ en vez de un
+   slider: el panel es angosto y un range de 0,75 a 1,40 ahí adentro
+   tiene ~6 px por paso, imposible de apuntar. El slider fino sigue
+   estando, en Config. */
+.d-narr-rate { display: flex; align-items: center; gap: .25rem; flex: none; }
+.d-narr-rate-btn {
+  width: 26px; height: 26px; border: none; border-radius: 50%;
+  background: var(--surface-2); color: var(--cat-ink);
+  font: 800 1rem/1 var(--font-body); cursor: pointer; padding: 0;
+  display: grid; place-items: center; transition: background .15s, opacity .15s;
+}
+.d-narr-rate-btn:hover:not(:disabled) { background: color-mix(in srgb, var(--cat) 22%, var(--surface-2)); }
+.d-narr-rate-btn:disabled { opacity: .35; cursor: default; }
+.d-narr-rate-val {
+  font: 800 .72rem/1 var(--font-body); color: var(--text-soft);
+  /* Ancho fijo: sin esto los botones se corren de lugar cada vez que el
+     número pasa de 1.15x a 1.2x, y apretar + tres veces seguidas se
+     vuelve puntería en vez de un clic repetido. */
+  min-width: 3.4em; text-align: center; font-variant-numeric: tabular-nums;
+}
+.d-narr-replay { display: flex; align-items: center; gap: .3rem; border: none; background: var(--surface-2);
+  color: var(--cat-ink); font-weight: 800; font-size: .72rem; padding: .4rem .65rem; border-radius: var(--r-pill);
+  cursor: pointer; transition: background .15s; flex: none; }
+.d-narr-replay:hover:not(:disabled) { background: color-mix(in srgb, var(--cat) 18%, var(--surface-2)); }
+.d-narr-replay:disabled { opacity: .4; cursor: not-allowed; }
+.d-narr-replay svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+@media (prefers-reduced-motion: reduce) {
+  .d-audio-pop { transition: none; }
+  .d-narr-status .dot { animation: none; }
+}
+
+/* Mobile: el anclaje a la derecha que había acá (asumiendo que el
+   grupo de audio siempre queda pegado al borde derecho) se sacó — es
+   justo la asunción que rompía el popover cuando el layout de 2 filas
+   de abajo mueve ese grupo a la IZQUIERDA por debajo de 799px
+   (`.d-top-group--audio{grid-row:2;justify-self:start}`). El anclaje
+   real ahora lo calcula JS en cada apertura (ver el comentario sobre
+   `.d-audio-pop` más arriba); acá solo queda un tope de ancho para que
+   el panel nunca sea más ancho que la pantalla (probado con Playwright
+   en viewport táctil real, CLAUDE.md §7.3 punto 11 — no alcanza con
+   achicar la ventana de escritorio). */
+@media (max-width: 480px) {
+  .d-audio-pop { max-width: calc(100vw - 16px); }
+  .d-vol-pop, .d-narr-pop { width: min(210px, calc(100vw - 24px)); }
+}
+
+/* ============================================================
+   BOTONES FLOTANTES — Ayuda + Configuración (kit-base v1.9.36,
+   CLAUDE.md §6.57). Reemplazan al botón "Ayuda" fijo del header, que
+   mezclaba instructivo con configuración de voz/velocidad — pedido
+   explícito del cliente: separarlos y bajarlos a flotantes discretos,
+   apilados abajo a la derecha, con el mismo mecanismo hover/foco/tap
+   "pinned" que ya usan Sonido/Locución (initFabPopovers,
+   coto-player.js — mismo criterio que initAudioPopovers/initHotspots,
+   CLAUDE.md §6.10.1 regla 2: en touch no existe el hover).
+   `position:fixed` contra el viewport, mismo criterio que
+   `.d-award-toast`/`.d-resume` (ya en este archivo) — nunca dentro de
+   `.d-stage`, que recorta con overflow:hidden. Anclados siempre al
+   mismo costado (abajo a la derecha) así que, a diferencia de
+   `.d-audio-pop`, no necesitan posicionamiento dinámico por JS: un
+   `max-width` alcanza para no salirse en mobile (ver media query más
+   abajo). */
+/* ---- El rincón de abajo a la derecha del lienzo ES de los FAB ----
+   kit-base v1.9.87. `--d-fab-safe` es lo que ocupan de ANCHO (52 px del
+   botón + 22 del borde + 12 de aire) y `--d-fab-safe-alto` lo que
+   ocupan de ALTO con la pila de dos.
+
+   BUG REAL, reporte del cliente con el curso embebido sin pantalla
+   completa: los FAB tapaban las últimas píldoras del minijuego. No era
+   "el curso reducido" — medido, choca desde 1366x768 para abajo, o sea
+   en la resolución MÁS COMÚN de una PC de sucursal, a pantalla
+   completa. A 1024x600 tapaba dos píldoras.
+
+   En una diapositiva-captura no se nota porque el arte tiene margen
+   ahí; en una con layout propio (minijuego, simulador, cierre) el
+   contenido llega hasta el borde y queda debajo del botón.
+
+   REGLA: los FAB son `position:fixed` contra el viewport — no se
+   corren ni se esconden. Cualquier diapositiva con layout propio
+   reserva ese rincón con `padding-right: var(--d-fab-safe)` en la
+   columna que llega al borde derecho. */
+:root{ --d-fab-safe: 86px; --d-fab-safe-alto: 132px; }
+.d-fab-stack{
+  position: fixed; right: 22px; bottom: 80px; z-index: 60;
+  display: flex; flex-direction: column; gap: .7rem; align-items: flex-end;
+}
+.d-fab{ position: relative; }
+
+/* ---- La canaleta de los flotantes (kit-base v1.9.95) ----
+   BUG REAL medido en 750×340 táctil: los dos botones flotantes tapaban la
+   cuarta opción de un minijuego y una tarjeta. Sobre una diapositiva-
+   CAPTURA eso solo tapa arte y no importa —para eso está el margen de
+   seguridad—, pero una diapositiva de layout HTML a todo el ancho pone
+   controles ahí, y ahí sí importa. Y ningún test lo ve:
+   `hitbox-click-check` solo mira `[data-hit]`, y estos botones no lo son.
+
+   No se mueven los flotantes: su posición es del kit y tiene que ser la
+   misma en todas las diapositivas del curso, o el alumno los pierde. Lo
+   que se hace es RESERVAR el ancho de la pila, y solo donde hace falta:
+   en una diapositiva que NO es captura y cuando la pantalla es baja, que
+   es cuando la pila se mete en la zona de contenido.
+
+   `--d-fab-canal` queda expuesta para que un curso pueda reservarla en
+   su propio contenedor, que es lo que este curso tuvo que escribir a mano
+   (`padding-right` en `.d-mj-play`). */
+/* 74px = el ancho real de la pila más su separación del borde. MEDIDO en
+   los dos tamaños, porque la cuenta "botón + aire" da mal: en 750px
+   táctil la pila va de 676 a 750 (o sea 60 de ancho + 14 de `right`), y en
+   escritorio 52 + 22. Los dos dan 74. Reservar 60 dejaba 14px de
+   superposición — medido, el botón seguía tapado. */
+:root { --d-fab-canal: 74px; }
+@media (pointer: coarse) and (max-height: 560px) {
+  .slide:not(.d-shot-slide) > .slide-inner,
+  .slide:not(.d-shot-slide) > .d-mj > .d-mj-panel {
+    padding-right: var(--d-fab-canal);
+  }
+}
+.d-fab-btn{
+  width: 52px; height: 52px; border-radius: 50%; border: none;
+  background: var(--surface); color: var(--cat-ink); cursor: pointer; padding: 0;
+  display: grid; place-items: center;
+  box-shadow: 0 2px 10px rgba(20,30,60,.14), 0 0 0 1px color-mix(in srgb, var(--cat) 35%, white);
+  transition: transform .2s cubic-bezier(.3,1.4,.4,1), box-shadow .2s ease, background .15s, color .15s;
+}
+.d-fab-btn svg{ width: 21px; height: 21px; transition: transform .35s cubic-bezier(.3,1.4,.4,1); }
+.d-fab-btn:hover, .d-fab-btn:focus-visible{
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 8px 22px rgba(20,30,60,.22), 0 0 0 1px var(--cat-strong);
+}
+.d-fab--config .d-fab-btn:hover svg{ transform: rotate(50deg); }
+.d-fab.is-open .d-fab-btn{
+  background: var(--cat-ink); color: #fff;
+  box-shadow: 0 8px 22px rgba(20,30,60,.28), 0 0 0 1px var(--cat-strong);
+}
+
+/* Aro de "hay algo acá": corre 1 sola vez al cargar el curso (JS le
+   agrega/saca la clase `.is-pulsing` — nunca queda en loop, sería
+   ruido permanente en vez de un llamado de atención puntual). La
+   regla global de prefers-reduced-motion (coto-base.css) ya la anula
+   sola; en reposo sin la clase el aro es invisible (opacity:0), así
+   que sin animación se ve exactamente igual que "sin pulso todavía",
+   nunca roto. */
+.d-fab-ring{
+  position:absolute; inset:-4px; border-radius:50%; border:2px solid var(--cat-strong);
+  opacity:0; pointer-events:none;
+}
+.d-fab.is-pulsing .d-fab-ring{ animation: d-fab-pulse 1.6s ease-out 2; }
+@keyframes d-fab-pulse{
+  0%{ opacity:.5; transform:scale(1); }
+  100%{ opacity:0; transform:scale(1.4); }
+}
+
+/* ⚠️ EL PANEL VA AL COSTADO, NO ARRIBA (kit-base v1.9.85) — y no es
+   una preferencia estética, es un bug medido.
+
+   Hasta v1.9.84 era `bottom: calc(100% + 14px)`: el panel crecía hacia
+   ARRIBA desde su propio botón. Y como los FAB están apilados en
+   columna (`.d-fab-stack`, Configuración arriba de Ayuda), el panel de
+   Ayuda —320×350, y hasta 410 de alto— **tapaba por completo el botón
+   de Configuración**. Medido sobre un curso recién generado, viewport
+   1600×1000: el panel ocupaba y=504..854 y el botón de Config vive en
+   y=805..857, con `elementFromPoint` sobre el centro del botón
+   devolviendo un pedazo del panel de Ayuda. O sea que el botón no
+   estaba tapado "un poco": era **inalcanzable** mientras Ayuda
+   estuviera abierta.
+
+   Reporte del cliente, textual: "si yo quiero pasar del botón de ayuda
+   al de config, ¿cómo hago?".
+
+   Anclarlo al costado (`right: calc(100% + 14px)` + `bottom: 0`) lo
+   saca de la columna: el panel queda a la izquierda de los FAB, la
+   columna entera sigue clickeable con cualquier panel abierto, y el
+   alumno pasa de un control al otro sin cerrar nada.
+
+   El `max-width` descuenta ahora el ancho de la columna (52px) más el
+   hueco (14) y el margen del borde: sin eso, en una pantalla angosta el
+   panel volvería a montarse encima de sus propios botones. */
+.d-fab-pop{
+  position: absolute; right: calc(100% + 14px); bottom: 0;
+  width: 320px; max-width: calc(100vw - 52px - 14px - 28px); background: var(--surface); color: var(--text);
+  border-radius: var(--r-lg); padding: 1.1rem 1.15rem; box-shadow: var(--shadow-pop);
+  opacity: 0; pointer-events: none; visibility: hidden; transform: translateY(10px) scale(.97);
+  transition: opacity .2s ease, visibility .2s, transform .32s cubic-bezier(.3,1.5,.4,1);
+}
+/* La flechita sigue al panel: ahora apunta a la DERECHA, centrada
+   contra el botón (26px = la mitad del FAB de 52). */
+.d-fab-pop::before{
+  content:""; position:absolute; right:-6px; bottom: 20px;
+  width:13px; height:13px; background:var(--surface); transform:rotate(45deg);
+  box-shadow: 2px 2px 5px -3px rgba(20,30,60,.18);
+}
+/* Sin `.is-hover`: ningún popover del kit abre por hover. La clase ya
+   no la pone nadie, así que se saca del selector para que el CSS no
+   siga prometiendo un estado que no existe. */
+.d-fab:focus-within .d-fab-pop, .d-fab.is-open .d-fab-pop{
+  opacity:1; pointer-events:auto; visibility:visible; transform: translateY(0) scale(1);
+}
+/* Cabecera fija, scrollea SOLO la lista (kit-base v1.9.71, §7.17).
+   Antes el `overflow-y` estaba en el panel ENTERO, así que al bajar a
+   buscar una pregunta se iban de pantalla el encabezado y el botón
+   "Volver a ver la introducción": quedaba una lista flotando sin decir
+   de qué panel era.
+   El `min-height:0` del hijo no es decorativo: sin él un hijo flex no
+   se deja achicar por debajo de su contenido y directamente no
+   scrollea — es el error clásico de este patrón.
+   560px -> 410px: el panel arrancaba más alto de lo que necesitaba. */
+/* ⚠️ EL QUE SCROLLEA ES EL PANEL, NO EL ACORDÉON (kit-base v1.9.98).
+   BUG REAL, y en los DOS cursos terminados. La versión anterior dejaba
+   el panel en `overflow:hidden` y le pedía el scroll al acordeón
+   (`.d-fab-acc{overflow-y:auto; min-height:0}`).
+
+   El problema es CUÁL de los hijos cede. Los de arriba —encabezado,
+   párrafo de navegación, grilla de tips, botón de repetir— son
+   `flex: 0 1 auto` con `min-height:auto`, así que NO bajan de su
+   contenido. El acordeón era el único con `min-height:0`, o sea el
+   único que se dejaba achicar… y se llevaba todo el recorte encima.
+
+   MEDIDO en el curso generado por `new-course.mjs`, bajando el alto de
+   ventana para forzar el apretón (los cursos reales llegan acá ya a
+   pantalla completa, porque tienen más contenido arriba):
+
+     ventana 900/700/560  max-h 410px  .d-fab-acc 136px  contenido 140
+     ventana 480          max-h 330px  .d-fab-acc 116px  contenido 140
+     ventana 420          max-h 270px  .d-fab-acc  58px  contenido 140
+     ventana 380          max-h 230px  .d-fab-acc  19px  contenido 140
+     ventana 340/300      max-h 190px  .d-fab-acc   0px  contenido 140
+
+   A 0px las preguntas existen en el DOM y ningún alumno puede verlas ni
+   tocarlas. El relevo lo midió en los dos cursos entregados: 0px en
+   "Prevención cardiovascular" y 1px en "Seguridad alimentaria", las dos
+   veces con 175px de contenido y 5 preguntas.
+
+   Y no lo delataba nada. `fab-config` clickea el acordeón con
+   `{force:true}`, que dispara el click en las coordenadas del elemento
+   aunque esté recortado: el test abría y cerraba preguntas invisibles y
+   daba verde. Peor: a 0px de alto el acordeón sigue teniendo
+   `overflow:auto` y `scrollHeight > clientHeight`, o sea que un chequeo
+   naïf de «¿scrollea?» contesta SÍ. Por eso el chequeo que se le suma
+   al test mide el ALTO, no la scrolleabilidad.
+
+   Fix: que scrollee el PANEL entero. El acordeón pasa a `flex:none`
+   —ocupa lo que necesita— y el recorte lo maneja un solo contenedor,
+   que además es el que ya tiene el degradado de «la lista sigue» al
+   pie. Es más robusto que repartir alto entre hermanos: mañana se
+   agrega otro bloque arriba y sigue funcionando, en vez de robarle el
+   alto al último. */
+.d-fab-pop--ayuda{
+  max-height: min(410px, calc(100vh - 150px));
+  overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column;
+}
+.d-fab-pop--ayuda .d-fab-acc{ flex: none; overflow: visible; min-height: 0; }
+/* Degradado al pie: avisa que la lista sigue. Antes la última pregunta
+   se cortaba al ras del borde y se leía como que ahí terminaba.
+   Va como capa sobre el panel (`::after` del panel), NO como `mask` de
+   la lista, para no pelearse con la barra de scroll.
+
+   SIN `position: relative` acá (kit-base v1.9.72, §7.18 K1). Estuvo en
+   v1.9.71 y era una REGRESIÓN de las caras: `.d-fab-pop` ya es
+   `position: absolute` más arriba en este mismo archivo, con la MISMA
+   especificidad (una clase), así que un `relative` escrito después le
+   ganaba por orden de fuente y el panel de Ayuda dejaba de ser overlay.
+   Al pasar a ocupar lugar en el flujo, `.d-fab-stack` —que es un
+   `flex-direction: column`— crecía de 115px a 465px y empujaba los DOS
+   botones flotantes al medio del lienzo, encima del contenido.
+   Medido en un curso recién generado a 1440x810: la pila en `y=265,
+   h=465` y el botón de Configuración en `y=265`, cuando `bottom:80px`
+   lo tiene que dejar en `y=615`.
+   Y no hace falta reemplazarlo por nada: `position: absolute` TAMBIÉN
+   arma bloque contenedor, así que el `::after` de acá abajo ya tiene
+   contra qué posicionarse. */
+.d-fab-pop--ayuda::after{
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 28px;
+  pointer-events: none; border-radius: inherit;
+  background: linear-gradient(to top, var(--surface), transparent);
+}
+/* Rótulo de sección: que la lista se lea como "preguntas frecuentes" y
+   no como más botones sueltos. */
+.d-fab-acc-hd{
+  font-family: var(--font-title); font-weight: 900; font-size: .68rem;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--text-soft);
+  margin: .1rem 0 .35rem;
+}
+/* Alto de toque, SOLO con dedo. Compactar las preguntas para que
+   entraran más las dejó en ~30px: con mouse va bien porque son anchas,
+   con el dedo es poco (el piso cómodo es ~44px). */
+@media (pointer: coarse){
+  .d-fab-pop--ayuda .d-fab-acc-q{ padding: .62rem .1rem; font-size: .8rem; }
+}
+
+/* `.d-instr-nav`/`.d-instr-grid`/`.d-instr-item` son del addendum
+   (coto-base-addendum-v1.8.css) — pensados para el drawer ancho de
+   "Cómo recorrer el curso" (400px+). Reusados tal cual acá se veían
+   "muy grandes" dentro de un popover de ~320px (reporte real del
+   cliente) — se achican SOLO en este contexto, sin tocar el tamaño
+   que sigue siendo correcto en el drawer/modal original. */
+.d-fab-pop .d-instr-nav{ font-size:.74rem; margin:0 0 .6rem; }
+.d-fab-pop .d-instr-nav kbd{ padding:.08rem .35rem; font-size:.68rem; min-width:1.3em; }
+.d-fab-pop .d-instr-grid{ grid-template-columns:repeat(auto-fit,minmax(78px,1fr)); gap:.4rem; margin:0 0 .6rem; }
+.d-fab-pop .d-instr-item{ padding:.55rem .35rem; gap:.3rem; }
+.d-fab-pop .d-instr-item .i{ width:19px; height:19px; }
+.d-fab-pop .d-instr-item span{ font-size:.7rem; }
+.d-fab-pop .d-instr-item small{ font-size:.62rem; }
+
+.d-fab-pop-hd{ display:flex; align-items:center; gap:.5rem; margin-bottom:.8rem; }
+.d-fab-pop-hd svg{ width:18px; height:18px; stroke:var(--cat-strong); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; flex: none; }
+.d-fab-pop-title{ font-family:var(--font-title); font-weight:900; font-size:.84rem; text-transform:uppercase; letter-spacing:.4px; color:var(--text); }
+
+/* ---- Ayuda: reabrir la intro + acordeón de preguntas frecuentes ---- */
+.d-fab-replay{
+  display:flex; align-items:center; gap:.5rem; width:100%; text-align:left;
+  background: color-mix(in srgb, var(--cat) 10%, var(--surface-2)); border:1px solid color-mix(in srgb, var(--cat) 30%, var(--line));
+  border-radius: var(--r); padding:.55rem .7rem; margin: .7rem 0; cursor:pointer;
+  font-family:var(--font-body); font-size:.78rem; font-weight:700; color:var(--cat-ink);
+  transition: background .15s;
+}
+.d-fab-replay:hover{ background: color-mix(in srgb, var(--cat) 18%, var(--surface-2)); }
+.d-fab-replay svg{ width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
+
+.d-fab-acc-item{ border-bottom:1px solid var(--line); }
+.d-fab-acc-item:last-child{ border-bottom:none; }
+.d-fab-acc-q{
+  width:100%; text-align:left; background:none; border:none; cursor:pointer;
+  padding:.6rem .1rem; display:flex; align-items:center; justify-content:space-between; gap:.5rem;
+  font-family:var(--font-body); font-size:.8rem; font-weight:700; color:var(--text);
+}
+.d-fab-acc-q svg{ width:15px; height:15px; flex:none; fill:none; stroke:var(--text-soft); stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; transition:transform .2s; }
+.d-fab-acc-item.is-open .d-fab-acc-q svg{ transform:rotate(180deg); stroke:var(--cat-strong); }
+.d-fab-acc-a{ font-size:.78rem; color:var(--text-soft); line-height:1.5; margin:0; padding:0 .1rem .7rem; }
+.d-fab-acc-item:not(.is-open) .d-fab-acc-a{ display:none; }
+
+/* ---- Configuración: escuchar ejemplo + restablecer ---- */
+.d-fab-listen{
+  display:flex; align-items:center; gap:.4rem; margin-top:.5rem;
+  background:none; border:1px solid color-mix(in srgb, var(--cat) 40%, var(--line)); color:var(--cat-ink);
+  border-radius: var(--r-pill); padding:.35rem .8rem .35rem .6rem; cursor:pointer;
+  font-family:var(--font-body); font-size:.74rem; font-weight:800; transition: background .15s;
+}
+.d-fab-listen:hover{ background: color-mix(in srgb, var(--cat) 12%, transparent); }
+.d-fab-listen svg{ width:14px; height:14px; fill:currentColor; flex:none; }
+.d-fab-reset{
+  width:100%; text-align:center; background:none; border:none; cursor:pointer;
+  font-family:var(--font-body); font-size:.74rem; font-weight:700; color:var(--text-soft);
+  padding:.5rem 0 0; text-decoration:underline; text-underline-offset:2px;
+}
+.d-fab-reset:hover{ color:var(--cat-ink); }
+
+@media (max-width: 480px) {
+  .d-fab-stack{ right: 14px; bottom: 74px; gap: .55rem; }
+  .d-fab-btn{ width: 46px; height: 46px; }
+  .d-fab-btn svg{ width: 19px; height: 19px; }
+  .d-fab-pop{ width: min(300px, calc(100vw - 28px)); padding: .9rem 1rem; }
+}
+
+/* ---- Modo cine (fx.js atenúa el chrome al reproducir un video) ---- */
+.fx-cinema ~ .d-bottom, .d-app:has(.fx-cinema) .d-top { transition: opacity .4s; }
+.d-app:has(.fx-cinema) .d-top, .d-app:has(.fx-cinema) .d-bottom { opacity: .45; }
+.d-app:has(.fx-cinema) .d-top:hover, .d-app:has(.fx-cinema) .d-bottom:hover { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .d-iconbtn, .d-top { animation: none !important; }
+}
+
+/* ============================================================
+   RESPONSIVE — 2 filas con columnas COMPARTIDAS entre fila 1 y fila 2
+   ============================================================
+   Entre ~480 y ~850px la barra no entra en una sola línea. Intentos
+   más simples (flex-wrap libre; o 2 flex rows independientes, cada una
+   con su propio justify-content:space-between) NO dan columnas
+   alineadas entre fila 1 y fila 2: cada fila, siendo un contenedor
+   flex aparte, calcula su propio "punto de corte" según el ancho de
+   SU contenido — como el contenido difiere entre filas (marca+saludo
+   arriba, grupos de controles abajo), el corte queda en un lugar
+   distinto en cada fila y las columnas no calzan verticalmente (se ve
+   "chueco" — bug real, encontrado en revisión visual).
+
+   Fix real: UNA sola grilla de 2 columnas para TODA la barra, no 2
+   filas flex independientes — columna 1 y columna 2 son las MISMAS
+   celdas compartidas por ambas filas, como una tabla:
+     Fila 1: col1 = menú+marca        · col2 = saludo+logros
+     Fila 2: col1 = 1er grupo de ctrl · col2 = 2º grupo de ctrl (+ más
+             si el curso tiene 3+ grupos — agregar clases
+             .d-top-group--<n> y asignarlas a la columna que
+             corresponda; con más de 2 grupos, evaluar si conviene una
+             3ª columna en vez de forzar todo a 2).
+   .d-top-row1 y .d-top-right dejan de ser sus propios contenedores acá
+   (display:contents) — sus hijos pasan a ser celdas DIRECTAS de la
+   grilla de .d-top. El separador visual (.d-top-sep) se oculta: con
+   columnas alineadas de verdad ya no hace falta una línea divisoria
+   para leer los grupos como bloques distintos. */
+/* ---- Tablet: sigue en 1 SOLA fila (como escritorio), pero compacta ----
+   Pedido real de cliente: en iPad (1024px) prefería la barra de 1 fila
+   "prolija" de la versión desktop antes que el layout de 2 filas — ese
+   layout de 2 filas resuelve el desborde real de CLAUDE.md §6.15 pero
+   se ve más apretado/distinto de lo esperado en un ancho donde en
+   realidad SÍ entra todo en 1 fila, si se le saca el texto de los
+   botones-ícono (mismo recorte que ya existía para celular,
+   adelantado acá). Con esto, el layout de 2 filas queda reservado para
+   anchos realmente angostos (el media query de abajo bajó de 1180px a
+   799px). */
+/* ---- Tablet apaisada (960-1194px): barra completa, saludo corto ----
+   Acá conviven el pedido del cliente y el límite real del ancho.
+
+   El pedido: que en iPad NO se pierdan ni el subtítulo del área ni las
+   etiquetas de los botones (ver el bloque de abajo, que bajó de 1180 a
+   959 justamente por eso).
+
+   El límite: `scroll-audit` lo agarró antes de que el parche saliera del
+   curso — con un NOMBRE REAL de alumno en el saludo, la barra completa
+   se desborda 162px a 1024px. La primera medición se había hecho con el
+   saludo por defecto, que es corto; el test mide con un nombre largo,
+   que es el caso real.
+
+   Se resuelve por prioridad, no por ancho: lo que identifica al curso
+   —nombre + área— y lo que el alumno usa —los botones con su etiqueta—
+   se quedan; el saludo, que es cortesía, cede el espacio. Es la misma
+   decisión que ya tomaba el bloque de abajo, un escalón antes. */
+@media (max-width: 1194px) and (min-width: 960px) {
+  /* Recortado no alcanza: con un nombre largo seguía desbordando 66px.
+     Acá el saludo se va del todo. Es lo correcto por prioridad —es
+     cortesía, no información del curso— y vuelve solo a partir de
+     1195px, donde hay lugar para todo. */
+  #d-greet { display: none; }
+  .d-brand > span:last-child { max-width: 24vw; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+  .d-top { gap: .45rem; padding: 0 clamp(.6rem, 2vw, 1.1rem); }
+  .d-top-group { gap: .2rem; }
+  .d-iconbtn.d-iconbtn--labeled { padding: 0 .7rem 0 .55rem; }
+  .d-iconbtn.d-iconbtn--labeled .lbl { font-size: .74rem; }
+}
+
+/* El corte bajó de 1180px a 959px (reporte del cliente en iPad: *"los
+   botones del menú se ven en distintos tamaños, y falta el nombre del
+   área abajo del nombre del curso"*).
+
+   1180px dejaba a TODOS los iPad del lado compacto —1024, 1080 y 1194
+   son los anchos reales— y ahí la barra pierde el subtítulo del área y
+   las etiquetas de los botones, que pasan a ser cuadrados de 44px al
+   lado de los que sí conservan texto. De ahí el "distintos tamaños": no
+   es que midan mal, es que son dos componentes distintos conviviendo.
+   MEDIDO sobre un curso generado del kit, antes de este cambio: a 1080,
+   1024 y 960 el subtítulo y las etiquetas estaban apagados; a 1194,
+   encendidos.
+
+   El número nuevo está MEDIDO, no elegido: con el layout completo el
+   contenido de la barra ocupa 515px a 1194 y 407px a 960, y recién
+   desborda a 900px. 959 es el último ancho donde todo entra cómodo, así
+   que los tres iPad quedan con la barra completa. */
+@media (max-width: 959px) and (min-width: 800px) {
+  .d-top { gap: .4rem; padding: 0 clamp(.6rem, 2vw, 1rem); }
+  .d-top-left { gap: .6rem }
+  .d-top-center { gap: .4rem }
+  .d-top-right { gap: .3rem }
+  .d-brand small { display: none; }
+  .d-brand > span:last-child { max-width: 22vw; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+  #d-greet { max-width: 16vw; }
+  .d-top-center .d-chip { padding: .38rem .6rem; font-size: .76rem; }
+  .d-iconbtn.d-iconbtn--labeled .lbl { display: none; }
+  .d-iconbtn.d-iconbtn--labeled { width: 38px; padding: 0; }
+  .d-top-group { gap: .05rem; padding: .15rem; }
+}
+
+@media (max-width: 799px) {
+  /* Acá la barra de arriba pasa a dos filas y su alto es `auto`, así
+     que no hay un número exacto que poner. Se ESTIMA alto (110px) a
+     propósito: `--d-stage-h` se usa para LIMITAR cosas (topes de alto),
+     y quedarse corto de lienzo hace que algo se vea un poco chico,
+     mientras que pasarse hace que se salga de la pantalla. */
+  :root { --d-chrome-top: 6.875rem; --d-chrome-bot: 3.75rem; }
+  .d-app { grid-template-rows: auto 1fr 60px; }
+  .d-top { display: grid; grid-template-columns: auto 1fr; align-items: center;
+    height: auto; padding: .6rem .8rem; column-gap: .6rem; row-gap: .55rem; }
+  .d-top-row1, .d-top-right { display: contents; }
+  .d-top-spacer, .d-top-right .d-top-sep { display: none; }
+  .d-top-left         { grid-column: 1; grid-row: 1; justify-self: start; }
+  .d-top-center       { grid-column: 2; grid-row: 1; justify-self: end; }
+  /* Adaptar estos 2 selectores a los grupos reales del curso (mismos
+     modificadores .d-top-group--<nombre> del HTML, ver contrato
+     arriba). Si el curso tiene solo 1 grupo de controles, sacar la
+     2ª regla y dejar el único grupo en grid-column:2 (o el que
+     corresponda). */
+  .d-top-group--audio { grid-column: 1; grid-row: 2; justify-self: start; }
+  .d-top-group--help  { grid-column: 2; grid-row: 2; justify-self: end; }
+  /* .d-top-left/.d-top-center necesitan poder encogerse con elipsis
+     (flex:none/width fijo en escritorio no se puede achicar) para que
+     el texto largo corte con "…" en vez de desbordar la columna. IMPORTANTE:
+     flex-shrink/flex-wrap NO alcanzan para esto — el algoritmo de wrap
+     decide cuántos ítems entran en una línea usando el ancho SIN
+     achicar, shrink actúa recién DESPUÉS de esa decisión. Por eso acá
+     se resuelve con grid (columnas fijas) + min-width:0, no con flex. */
+  .d-top-left, .d-top-center { min-width: 0; }
+  .d-brand { min-width: 0; }
+  .d-brand > span:last-child { min-width: 0; max-width: 34vw; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+}
+
+@media (max-width: 767px) {
+  .d-brand small, .d-chip .lbl, .d-iconbtn--labeled .lbl { display: none; }
+  .d-iconbtn.d-iconbtn--labeled { width: 38px; padding: 0; }
+  .d-nav-btn { min-width: 96px; padding: .6rem .9rem; }
+  .d-counter { display: none; }
+  /* Reparto de presupuesto propio de celular (más angosto que el
+     tramo tablet de arriba, donde 34vw todavía sobra lugar): el
+     nombre del curso cede bastante más para que el saludo alcance a
+     mostrar el nombre real, no solo 1 letra + "…". */
+  .d-brand > span:last-child { max-width: 20vw; }
+  #d-greet { max-width: 30vw; }
+  .d-top-center { gap: .4rem; }
+  .d-top-center .d-chip { padding: .38rem .55rem; }
+  /* Presupuesto real: aun con marca+saludo achicados al máximo
+     razonable, marca+saludo+logros no entran juntos en una fila en un
+     celular angosto (~360-400px) sin perder legibilidad. Se simplifica
+     contenido secundario en vez de seguir apretando tipografía: el
+     emoji del saludo se saca (el texto "Hola, Nombre" ya comunica lo
+     mismo) y el chip de logros muestra SOLO el ícono/contador principal
+     — sigue siendo el mismo botón clickeable, el detalle completo se
+     ve en su pop-up al tocarlo. Adaptar el selector del chip de logros
+     si el curso usa otro nombre de clase para su métrica secundaria. */
+  #d-greet .ic { display: none; }
+  .d-top-center .d-chip--achieve .d-chip-sep,
+  .d-top-center .d-chip--achieve .d-chip-sep ~ * { display: none; }
+}
+
+/* ============================================================
+   Avisos flotantes y "retomá donde dejaste"
+   kit-base v1.8 — pareja de `toast()` e `initResume()` de coto-player.js,
+   que estaban en el kit desde v1.7 con su CSS todavía en cada curso.
+   ============================================================ */
+/* `--d-award-toast-bottom`: alto al que flota el aviso de logro.
+   Era 82px fijo y se superponía con el contenido anclado al pie del
+   lienzo (kit-base v1.9.71, §7.17). Medido a 1600x900: el aviso ocupaba
+   la banda 82-116px desde el borde inferior y un cartel de
+   `initHotspots()` anclado a `bottom:2%` ocupaba 79-110px — o sea el
+   "Desbloqueaste..." caía justo encima del cartel y lo dejaba
+   ilegible. Subido a 130px, verificado sin superposición en 1600x900,
+   1280x720 y 1024x768.
+   Va como variable y no como número suelto para que un curso con
+   contenido más alto al pie la pueda correr con una línea
+   (`:root{--d-award-toast-bottom:160px}`) en vez de duplicar la regla
+   entera — misma lección que §7.16: la palanca es una custom property,
+   no "pisá esta regla". */
+:root{ --d-award-toast-bottom: 130px; }
+.d-award-toast{position:fixed;bottom:var(--d-award-toast-bottom, 130px);left:50%;transform:translateX(-50%) translateY(12px); background:var(--brand-navy);color:#fff;padding:.65rem 1.2rem;border-radius:var(--r-pill); font-family:var(--font-body);font-weight:700;font-size:.85rem;box-shadow:var(--shadow-pop); opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:95; display:flex;align-items:center;gap:.5rem}
+.d-award-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.d-resume{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:70; display:flex;align-items:center;gap:.8rem;background:var(--surface); border:1px solid color-mix(in srgb,var(--cat) 45%,var(--line));border-radius:var(--r-pill); padding:.5rem .5rem .5rem 1.1rem;box-shadow:var(--shadow-pop); animation:d-resume-in .35s cubic-bezier(.2,.7,.2,1)}
+
+/* ---- Chip del modo revisión (`?review=1`, motor-slides.js) ----
+   kit-base v1.9.48. Muestra, por diapositiva, si tiene gate/hitboxes/
+   pop-ups — información que hoy exige inspeccionar el HTML a mano.
+   Fijo en la esquina, fuera del flujo del chrome real (no es parte
+   del diseño del curso, es una herramienta de auditoría) — mismo
+   z-index que el botón de volumen flotante (§6.57) para no competir
+   con ningún pop-up (siempre por debajo de `.modal`). Clickeable
+   desde v1.9.48: abre el panel de tracking (`.d-review-panel` acá
+   abajo) — por eso `cursor:pointer`/`pointer-events:auto`, a
+   diferencia de otros chips puramente informativos del kit. */
+.d-review-chip {
+  position: fixed; left: 10px; bottom: 10px; z-index: 60;
+  background: #1e2d46; color: #fff; font-family: var(--font-body);
+  font-size: .72rem; font-weight: 700; letter-spacing: .02em;
+  padding: .35rem .7rem; border-radius: var(--r-pill);
+  box-shadow: var(--shadow-pop); pointer-events: auto; cursor: pointer;
+  border: none;
+}
+.d-review-chip:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+/* ---- Panel de tracking del modo revisión (kit-base v1.9.48) ----
+   Colapsado por default (`display:none` sin `.is-open`); el JS solo
+   le pone contenido cuando está abierto, para no gastar ciclos con el
+   panel cerrado. Ancho fijo + `overflow-wrap` porque los IDs de
+   diapositiva/actividad pueden ser largos y esto vive en la esquina,
+   no puede empujar el layout del curso real. */
+.d-review-panel {
+  display: none; position: fixed; left: 10px; bottom: 46px; z-index: 60;
+  width: min(320px, calc(100vw - 20px)); max-height: 50vh; overflow: auto;
+  background: #1e2d46; color: #fff; font-family: var(--font-body);
+  font-size: .74rem; line-height: 1.4; border-radius: var(--r);
+  box-shadow: var(--shadow-pop); padding: .7rem .85rem;
+}
+.d-review-panel.is-open { display: block; }
+.d-review-panel-sec { margin-bottom: .6rem; overflow-wrap: break-word; }
+.d-review-panel-sec:last-child { margin-bottom: 0; }
+.d-review-panel-sec b { color: #8fd0ff; }
+.d-review-panel-sec code { background: rgba(255,255,255,.12); padding: 0 .3em; border-radius: 3px; }
+.d-review-panel-log { margin: .3rem 0 0; padding-left: 1.1rem; }
+.d-review-panel-log li { margin-bottom: .15rem; }
+.d-resume-txt{font-size:.9rem;font-weight:600;color:var(--text)}
+.d-resume .btn{padding:.5rem 1rem}
+.d-resume-x{width:30px;height:30px;border-radius:50%;border:none;cursor:pointer; background:var(--surface-2);color:var(--text-soft);font-size:.9rem}
+.d-resume-x:hover{background:var(--line)}
+/* BUG REAL (kit-base v1.9.52): `.d-resume` viene declarando
+   `animation:d-resume-in .35s ...` desde v1.8, pero ESTE `@keyframes`
+   no existía en NINGÚN .css del kit — una `animation-name` que no
+   resuelve es un no-op silencioso, así que el banner de "retomá donde
+   dejaste" aparecía de golpe, sin la entrada que su propia regla
+   declara. Baja desde arriba (es un banner fijado a `top:70px`),
+   respetando el `translateX(-50%)` del centrado horizontal — sin él,
+   la animación arrancaría descentrada media pantalla. */
+@keyframes d-resume-in{
+  from{opacity:0;transform:translateX(-50%) translateY(-14px)}
+  to{opacity:1;transform:translateX(-50%) translateY(0)}
+}
+@media (prefers-reduced-motion:reduce){.d-resume{animation:none}}

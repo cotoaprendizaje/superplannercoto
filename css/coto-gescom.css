@@ -1,0 +1,441 @@
+/* ============================================================
+   coto-gescom.css · LA PANTALLA DE GESCOM, RECREADA EN HTML
+   ------------------------------------------------------------
+   kit-base v1.9.81 · subido desde "Simulador — Impresión de obleas
+   de precios" (CLAUDE.md §7.27).
+
+   POR QUÉ ESTO ES UN MÓDULO Y NO CSS DE UN CURSO: GESCOM es EL
+   sistema del salón. Cualquier simulador de un procedimiento de
+   sucursal —pedidos, precios, stock, devoluciones— empieza por esta
+   misma ventana, este mismo árbol de menú y este mismo formulario
+   Java. Rehacerlos por curso es rehacer el mismo trabajo y que cada
+   curso tenga un GESCOM apenas distinto del anterior.
+
+   CÓMO SE HIZO, y es la parte importante: los colores están
+   MUESTREADOS PIXEL A PIXEL de las capturas reales del Word del
+   cliente, no elegidos a ojo ni derivados de los tokens del curso.
+   Por eso este archivo tiene hex crudos y `check-raw-cat-colors` no
+   se queja: no son colores de categoría COTO disfrazados, son los
+   grises de Windows y los azules de Java Swing. Un GESCOM "lindo",
+   con la paleta del curso, deja de parecerse al que el alumno tiene
+   en la sucursal — y ahí el simulador pierde justo lo que lo hace
+   valer.
+
+   Se carga SOLO en cursos que simulan GESCOM. El resto de los
+   simuladores recrean su propia pantalla.
+   ============================================================ */
+
+/* ============================================================
+   1 · CÁSCARA DE VENTANA
+   ------------------------------------------------------------
+   Los colores de esta sección salen de las capturas reales del Word,
+   muestreadas pixel a pixel. No son tokens del sistema COTO a
+   propósito (ver el encabezado del archivo).
+   ============================================================ */
+.gx-win {
+  display: flex; flex-direction: column;
+  font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+  font-size: 1.15cqh;
+  color: #1A1A1A;
+  background: #F5F5F5;
+}
+
+.gx-titlebar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: .5cqw;
+  padding: .55cqh .7cqw;
+  background: linear-gradient(180deg, #FAFAFA, #EFEFEF);
+  border-bottom: 1px solid #DCDCDC;
+}
+.gx-titlebar > b {
+  flex: 1 1 auto; min-width: 0;
+  font-weight: 600; font-size: 1.2cqh;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gx-titlebar-ic {
+  flex: 0 0 auto; width: 1.1cqw; aspect-ratio: 1;
+  background:
+    linear-gradient(135deg, #F59B1E 50%, transparent 50%),
+    linear-gradient(45deg, #8CC63E 50%, #5FC0F0 50%);
+  border-radius: .12cqw;
+}
+.gx-titlebar-ic--lupa {
+  background: radial-gradient(circle at 40% 40%, #5FC0F0 42%, transparent 44%);
+  box-shadow: inset -.15cqw .15cqh 0 #D0202C;
+}
+.gx-winbtns { flex: 0 0 auto; display: flex; gap: .9cqw; color: #4A4A4A; font-size: 1.25cqh; }
+
+.gx-body { flex: 1 1 auto; display: flex; min-height: 0; }
+
+/* ---- Panel lateral oscuro ---- */
+.gx-side {
+  flex: 0 0 25.5%;
+  display: flex; flex-direction: column;
+  background: #2F2D3E;
+  border-right: 1px solid #1F1E2A;
+  overflow: hidden;
+}
+
+.gx-user {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: .6cqw;
+  padding: .8cqh .7cqw;
+  background: #F0585F;
+  color: #FFFFFF;
+}
+.gx-avatar { flex: 0 0 auto; width: 2.2cqw; }
+.gx-avatar svg { width: 100%; height: auto; display: block; }
+.gx-user-txt { display: flex; flex-direction: column; gap: .12cqh; min-width: 0; }
+.gx-user-txt > b { font-size: 1.25cqh; font-weight: 700; }
+.gx-user-txt > i { font-style: normal; font-size: 1cqh; font-weight: 600; opacity: .95; }
+
+.gx-tree { margin: 0; padding: .6cqh 0 0; }
+.gx-tree--sub { padding: 0 0 0 1.3cqw; }
+
+.gx-node {
+  display: flex; align-items: center; gap: .45cqw;
+  width: 100%; padding: .42cqh .6cqw;
+  border: 0; background: transparent;
+  color: #E8E8EE; font: inherit; font-size: 1.12cqh; text-align: left;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.gx-node:hover { background: rgba(255, 255, 255, .09); }
+.gx-node:focus-visible { outline: 2px solid var(--cat); outline-offset: -2px; }
+
+/* El triangulito de Swing: cerrado apunta a la derecha, abierto
+   abajo. Es un borde CSS y no un carácter — un ▶ tipográfico cambia
+   de tamaño y de alineación entre sistemas, y acá tiene que calzar
+   con el arte. */
+.gx-caret {
+  flex: 0 0 auto; width: 0; height: 0;
+  border-top: .5cqh solid transparent;
+  border-bottom: .5cqh solid transparent;
+  border-left: .62cqh solid #9A99A6;
+  transition: transform .18s ease;
+}
+.gx-node[aria-expanded="true"] .gx-caret { transform: rotate(90deg) translateX(-.06cqh); }
+
+/* El ícono de carpeta del árbol. Estaba armado con `clip-path` sobre
+   una caja de 1cqw × .8cqh y salía CORTADO: el polígono se recortaba
+   contra un alto que no le alcanzaba, y en pantalla se veía medio
+   embudo pegado al borde (reportado con captura). Pasa a ser un
+   triángulo por bordes —la misma técnica que el caret de al lado—,
+   que no depende del alto de la caja y no se puede recortar. */
+.gx-node-ic {
+  flex: 0 0 auto; width: 0; height: 0;
+  border-left: .52cqw solid transparent;
+  border-right: .52cqw solid transparent;
+  border-top: .62cqh solid #C9C9D2;
+}
+.gx-leaf-ic {
+  flex: 0 0 auto; width: 1.05cqw; aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #A8D8F5 40%, #4B92C8 70%);
+  box-shadow: .12cqw .16cqh 0 -.02cqw #D0202C;
+}
+.gx-node--leaf { padding-left: 1.1cqw; }
+.gx-node--leaf, .gx-node { white-space: nowrap; }
+
+/* ---- Área principal ---- */
+.gx-main { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; background: #F2F2F2; }
+
+.gx-topbar {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: .6cqw;
+  padding: .7cqh 1cqw;
+  background: linear-gradient(180deg, #5388C3, #4A7EBB);
+  color: #FFFFFF;
+}
+.gx-topbar > b { font-size: 2.2cqh; font-weight: 700; letter-spacing: .02em; }
+.gx-logo { width: 2.2cqw; }
+.gx-logo svg { width: 100%; height: auto; display: block; }
+.gx-search {
+  margin-left: auto; width: 16%; height: 1.9cqh;
+  background: #FFFFFF; border-radius: .2cqw;
+  box-shadow: inset 0 .1cqh .2cqh rgba(0, 0, 0, .18);
+}
+
+.gx-canvas { flex: 1 1 auto; background: #F2F2F2; }
+
+.gx-apps { flex: 0 0 auto; background: #B8CCE4; }
+.gx-apps-lbl {
+  display: block; padding: .25cqh .7cqw;
+  font-size: .95cqh; font-weight: 700; color: #2A3B4F;
+  background: #DDDDDD;
+}
+.gx-apps-row { display: flex; gap: 8%; padding: .8cqh 1cqw; }
+
+.gx-app {
+  display: flex; align-items: center; gap: .4cqw;
+  padding: .45cqh .6cqw;
+  border: 1px solid #7E9DC0; border-radius: .15cqw;
+  background: linear-gradient(180deg, #EAF1F9, #D3E1F1);
+  color: #16283C; font: inherit; font-size: 1cqh; font-weight: 600;
+  text-align: left; line-height: 1.15;
+  cursor: pointer;
+  transition: transform .14s ease, box-shadow .14s ease, filter .14s ease;
+}
+.gx-app:hover { filter: brightness(1.06); box-shadow: 0 .3cqh .8cqh rgba(20, 30, 60, .2); transform: translateY(-1px); }
+.gx-app:focus-visible { outline: 2px solid var(--cat-strong); outline-offset: 2px; }
+
+/* ============================================================
+   2 · PANTALLA DE LOGIN
+   ============================================================ */
+.gx-login {
+  display: flex; flex-direction: row;
+  font-family: 'Segoe UI', 'Roboto', system-ui, sans-serif;
+  font-size: 1.15cqh; color: #1A1A1A;
+  background: #FFFFFF;
+}
+.gx-login-art { flex: 0 0 46%; }
+.gx-login-art svg { width: 100%; height: 100%; display: block; }
+
+.gx-login-form {
+  flex: 1 1 auto;
+  position: relative;
+  display: flex; flex-direction: column; justify-content: center; gap: 3.4cqh;
+  padding: 0 5% 0 6%;
+}
+
+.gx-x {
+  position: absolute; top: 3%; right: 3.5%;
+  width: 2.1cqw; padding: 0; border: 0; background: transparent; cursor: pointer;
+  border-radius: 50%;
+}
+.gx-x svg { width: 100%; height: auto; display: block; }
+.gx-x:focus-visible { outline: 2px solid var(--cat-strong); outline-offset: 2px; }
+
+.gx-field { display: flex; flex-direction: column; gap: .4cqh; }
+.gx-field > label { font-size: 1.7cqh; color: #8B8B8B; }
+.gx-field > input {
+  width: 100%; box-sizing: border-box;
+  padding: .5cqh 0;
+  border: 0; border-bottom: 1px solid #C5D4E4;
+  background: transparent;
+  font: inherit; font-size: 1.9cqh; color: #1A1A1A;
+  letter-spacing: .04em;
+}
+.gx-field > input:focus { outline: none; border-bottom-color: #4A7EBB; box-shadow: 0 1px 0 #4A7EBB; }
+.gx-field > input:focus-visible { outline: 2px solid var(--cat-strong); outline-offset: 3px; }
+
+/* El campo que quedó mal se marca en rojo, pero el mensaje va aparte
+   (`.sim-fb`): un borde rojo solo es invisible para quien no ve la
+   pantalla, y la locución no lee bordes. */
+.gx-field.is-mal > input { border-bottom-color: var(--danger); box-shadow: 0 1px 0 var(--danger); }
+
+/* ---- Ver / ocultar la contraseña ----
+   Dos íconos BIEN distintos, no el mismo con una raya encima: ojo
+   abierto con pupila llena para "mostrar", y párpado bajo con pestañas
+   más la barra en diagonal para "ocultar". El primer intento usaba el
+   mismo dibujo con una línea cruzada y se leía como un borrón. */
+.gx-field--pass { position: relative; }
+.gx-field--pass > input { padding-right: 3.4cqw; }
+.gx-ojo {
+  position: absolute; right: 0; bottom: .3cqh;
+  display: grid; place-items: center;
+  width: clamp(28px, 2.5cqw, 38px); aspect-ratio: 1;
+  padding: 0; border: 0; background: transparent;
+  color: #8B8B8B; cursor: pointer; border-radius: 50%;
+  transition: color .15s ease, background .15s ease;
+}
+.gx-ojo svg { width: 70%; height: 70%; }
+.gx-ojo:hover { color: #4A7EBB; background: rgba(74, 126, 187, .12); }
+.gx-ojo[aria-pressed="true"] { color: #4A7EBB; }
+.gx-ojo:focus-visible { outline: 2px solid var(--cat-strong); outline-offset: 2px; }
+
+/* El campo de contraseña NO es `type="password"`: se tapa acá.
+   Chrome ignora `autocomplete="off"` en cualquier formulario que
+   huela a login, y lo que lo delata es justamente ese type — aparecía
+   el desplegable de credenciales GUARDADAS DEL ALUMNO encima del
+   campo de usuario. Sin campo de contraseña real no hay login que
+   detectar. `-webkit-text-security` cubre Chrome/Safari/Edge, que es
+   todo lo que corre en las máquinas de sucursal; el fallback de
+   `text-security` queda por si algún día importa Firefox. */
+/* `.is-oculta` es la clase que pone `coto-simulador.js` (genérica,
+   sin marca de sistema); `.gx-oculta` se acepta por compatibilidad con
+   el marcado que ya existía. kit-base v1.9.81. */
+.is-oculta,
+.gx-oculta {
+  -webkit-text-security: disc;
+  text-security: disc;
+  font-family: var(--font-body);
+  letter-spacing: .18em;
+}
+
+.gx-btn {
+  align-self: center;
+  margin-top: 1.4cqh; padding: .7cqh 2.4cqw;
+  border: 1px solid #5B8FC9; border-radius: .25cqw;
+  background: linear-gradient(180deg, #7FB0E0, #5F94CC);
+  color: #FFFFFF; font: inherit; font-size: 1.7cqh; font-weight: 600;
+  cursor: pointer;
+  transition: filter .14s ease, transform .14s ease;
+}
+.gx-btn:hover { filter: brightness(1.07); transform: translateY(-1px); }
+.gx-btn:active { transform: translateY(0); }
+.gx-btn:focus-visible { outline: 3px solid var(--cat-strong); outline-offset: 2px; }
+
+/* ============================================================
+   3 · FORMULARIO (el ejemplo es Impresión de Etiquetas)
+   ============================================================ */
+.gx-form {
+  flex: 1 1 auto;
+  display: flex; flex-direction: column;
+  padding: .7cqh .8cqw 0;
+  background: #DFE3E9;
+  min-height: 0;
+}
+
+.gx-row {
+  display: flex; align-items: center; gap: .55cqw;
+  padding: .28cqh 0;
+  flex-wrap: nowrap;
+}
+/* La primera fila lleva NUEVE controles (seis casillas, la fecha y la
+   lupa) y con el mismo espaciado que las demás se pasaba 8,7 px del
+   borde de la ventana: la lupa salía cortada al ras. Medido con una
+   comparación de rectángulos, no a ojo. Se aprieta solo esa fila, que
+   además es como se ve en la captura real del sistema. */
+.gx-row:first-child { gap: .34cqw; }
+
+.gx-lbl { flex: 0 0 auto; font-size: 1.12cqh; white-space: nowrap; }
+.gx-lbl--w { flex: 0 0 9.5%; text-align: right; }
+.gx-lbl--rep { margin-left: auto; }
+
+.gx-input {
+  display: flex; align-items: center; gap: .3cqw;
+  min-height: 1.95cqh; padding: 0 .35cqw;
+  box-sizing: border-box;
+  border: 1px solid #9BA7B4;
+  background: #FFFFFF;
+  font-size: 1.1cqh; color: #1A1A1A;
+  white-space: nowrap;
+}
+.gx-input--grow { flex: 1 1 auto; min-width: 0; }
+.gx-input--suc { flex: 0 0 52%; }
+.gx-input--date { flex: 0 0 26%; }
+.gx-input--txt { flex: 0 0 15%; }
+.gx-input--sel { flex: 1 1 auto; justify-content: space-between; color: #555555; }
+.gx-input--rep { flex: 0 0 4.5%; }
+
+/* Los campos que el sistema ya trae cargados (sucursal, fecha, los
+   tildes por defecto) se ven grises y no responden: son parte del
+   decorado, no de lo que el alumno decide. Sin esta distinción el
+   alumno no puede saber qué le toca a él. */
+.is-preset { background: #EDEFF2; color: #4A4A4A; }
+.is-preset input { pointer-events: none; }
+
+.gx-chk, .gx-rad {
+  display: inline-flex; align-items: center; gap: .28cqw;
+  flex: 0 0 auto;
+  font-size: 1.1cqh; white-space: nowrap;
+  cursor: pointer;
+  padding: .12cqh .2cqw;
+  border-radius: .2cqw;
+  transition: background .14s ease;
+}
+.gx-chk:hover, .gx-rad:hover { background: rgba(255, 255, 255, .55); }
+.gx-chk input, .gx-rad input { width: 1.2cqh; height: 1.2cqh; margin: 0; cursor: pointer; accent-color: #3A6EA5; }
+.gx-chk.is-preset, .gx-rad.is-off { cursor: default; color: #9A9A9A; background: transparent; }
+.gx-rad.is-off input { pointer-events: none; }
+
+.gx-group { display: inline-flex; align-items: center; gap: .55cqw; flex: 0 0 auto; }
+
+.gx-caret-dn {
+  flex: 0 0 auto; width: 0; height: 0;
+  border-left: .5cqh solid transparent;
+  border-right: .5cqh solid transparent;
+  border-top: .55cqh solid #5B6B7B;
+}
+
+.gx-lupa {
+  flex: 0 0 auto; margin-left: auto;
+  width: 1.9cqw; height: 2.2cqh;
+  border: 1px solid #9BA7B4; border-radius: .2cqw;
+  background:
+    radial-gradient(circle at 44% 40%, transparent 22%, #3A6EA5 24%, #3A6EA5 30%, transparent 32%),
+    linear-gradient(180deg, #F4F6F9, #DCE2EA);
+}
+
+.gx-sel {
+  flex: 0 0 34%;
+  min-height: 1.95cqh; padding: 0 .35cqw;
+  box-sizing: border-box;
+  border: 1px solid #9BA7B4;
+  background: #FFFFFF;
+  font: inherit; font-size: 1.1cqh; color: #1A1A1A;
+  cursor: pointer;
+}
+.gx-sel:focus-visible, .gx-input--txt:focus-visible {
+  outline: 2px solid var(--cat-strong); outline-offset: 1px;
+}
+.gx-input--txt::placeholder, .gx-sel option[value=""] { color: #A8AEB6; }
+
+/* ---- Las 4 casillas que SÍ hay que completar ----
+   Se marcan con un halo del color del curso mientras están vacías, y
+   el halo pasa a verde en cuanto tienen valor. Es el criterio de
+   §6.10.3: se resalta la forma, no se tiñe todo. Sin esto, un
+   formulario de 20 controles no le dice al alumno cuáles son suyos —
+   y "adiviná cuáles" no es lo que enseña este simulador. */
+.gx-chk--ask, .gx-input--ask, .gx-sel--ask, .gx-group--ask {
+  box-shadow: 0 0 0 .22cqh color-mix(in srgb, var(--cat-strong) 55%, transparent);
+  border-radius: .2cqw;
+  transition: box-shadow .25s ease, background .25s ease;
+}
+.gx-chk--ask { background: color-mix(in srgb, var(--cat) 18%, #FFFFFF); }
+.gx-group--ask { padding: .12cqh .3cqw; background: color-mix(in srgb, var(--cat) 18%, #FFFFFF); }
+.gx-lbl--ask { font-weight: 700; }
+
+.is-listo.gx-chk--ask, .is-listo.gx-group--ask { background: color-mix(in srgb, var(--success) 16%, #FFFFFF); }
+.is-listo { box-shadow: 0 0 0 .22cqh color-mix(in srgb, var(--success) 60%, transparent); }
+
+/* ---- Grilla de resultados ---- */
+.gx-table {
+  flex: 1 1 auto;
+  display: flex; flex-direction: column;
+  margin-top: .5cqh;
+  border: 1px solid #9BA7B4;
+  background: #FFFFFF;
+  min-height: 0; overflow: hidden;
+}
+.gx-thead, .gx-trow { display: grid; grid-template-columns: 12% 14% 12% 34% 16% 12%; }
+.gx-thead {
+  flex: 0 0 auto;
+  background: linear-gradient(180deg, #F4F6F9, #DDE2E9);
+  border-bottom: 1px solid #9BA7B4;
+}
+.gx-thead > span { padding: .3cqh .4cqw; font-size: 1.05cqh; font-weight: 600; border-right: 1px solid #C8CFD8; }
+.gx-tbody { flex: 1 1 auto; overflow: hidden; }
+.gx-trow > span { padding: .28cqh .4cqw; font-size: 1cqh; border-right: 1px solid #EDEFF2; }
+.gx-trow:nth-child(odd) { background: #F4F6F9; }
+
+/* Las filas entran escalonadas al "buscar": el sistema real tarda, y
+   una tabla que aparece de golpe se lee como un salto de pantalla. */
+.gx-trow { animation: gx-fila .32s ease both; }
+@keyframes gx-fila { from { opacity: 0; transform: translateY(-.4cqh); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .gx-trow { animation: none; } }
+
+.gx-foot {
+  flex: 0 0 auto;
+  display: flex; justify-content: center;
+  padding: .7cqh 0;
+  background: #D6DCE4;
+}
+.gx-print {
+  display: inline-flex; align-items: center; gap: .45cqw;
+  padding: .45cqh 1.2cqw;
+  border: 1px solid #9BA7B4; border-radius: .2cqw;
+  background: linear-gradient(180deg, #F4F6F9, #DCE2EA);
+  font: inherit; font-size: 1.2cqh; color: #1A1A1A;
+  cursor: pointer;
+  transition: filter .14s ease, transform .14s ease, box-shadow .14s ease;
+}
+.gx-print:hover { filter: brightness(1.05); transform: translateY(-1px); box-shadow: 0 .3cqh .8cqh rgba(20, 30, 60, .18); }
+.gx-print:focus-visible { outline: 3px solid var(--cat-strong); outline-offset: 2px; }
+.gx-print-ic {
+  width: 1.5cqw; height: 1.4cqh;
+  background: linear-gradient(180deg, #8E99A6 42%, #E4E8ED 43%);
+  border: 1px solid #6E7987; border-radius: .15cqw;
+}
+

@@ -1,0 +1,254 @@
+<!-- ==============================================================
+     MINIJUEGO "¿QUÉ ESTÁ MAL EN ESTA IMAGEN?"   ·  kit-base v1.9.87
+     --------------------------------------------------------------
+     Marcado de referencia para `initMinijuego()` (js/coto-minijuego.js)
+     y las ~120 reglas de `css/coto-minijuego.css`.
+
+     NO se copia entero: se copia lo que el curso vaya a usar. Son
+     TRES CAPAS dentro de una diapositiva con `data-layers`, más un
+     pop-up de repaso que va afuera, con los demás pop-ups.
+
+     CÓMO SE ARMA, en orden:
+       1. pegar esta <section> entre las diapositivas del curso y
+          ajustar `data-slide-index`;
+       2. pegar el pop-up `mj-repaso` (al final de este archivo) con
+          los demás pop-ups del documento;
+       3. cargar `js/coto-minijuego.js` y `css/coto-minijuego.css`;
+       4. en `js/curso.js`, llamar a `initMinijuego({opciones, fb, …})`
+          — el ejemplo de llamada está al final de este archivo.
+
+     ⚠️ El GRID de opciones se arma SOLO, desde `opciones`. En el HTML
+     va `<div class="d-mj-grid" data-mj-grid></div>` VACÍO: escribir
+     los botones a mano deja dos fuentes de verdad —el HTML y la tabla
+     de `curso.js`— y la que manda es la tabla, así que los botones
+     escritos a mano desaparecen al primer render sin decir nada.
+     ============================================================== -->
+
+<section class="slide slide-minijuego d-shot-slide" data-slide="minijuego" data-slide-index="99">
+  <h2 data-slide-title class="sr-only">Mini juego: ¿qué está mal en esta imagen?</h2>
+
+  <div class="slide-inner d-mj" data-layers>
+    <!-- Los tres destinos de capa. Son `sr-only` y no decorativos: el
+         kit cambia de capa CLICKEÁNDOLOS, que es el mismo camino que
+         usa el alumno, para que el motor de capas se entere. -->
+    <button class="sr-only" type="button" data-target="mj-intro">Volver a la portada del minijuego</button>
+    <button class="sr-only" type="button" data-target="mj-jugar">Ir al minijuego</button>
+    <button class="sr-only" type="button" data-target="mj-fin">Ver el resultado del minijuego</button>
+
+    <!-- ---- capa 1 · portada (captura íntegra, botón dibujado) ---- -->
+    <div class="d-mj-panel d-mj-shot" data-panel="mj-intro">
+      <div class="d-shot" data-shot>
+        <img class="d-shot-img" src="img/minijuego-intro.webp" alt="" aria-hidden="true">
+        <!-- Hitbox transparente sobre el "Empezar" DIBUJADO en el arte.
+             Los % salen de medir sobre la imagen real, no a ojo. -->
+        <button class="d-shot-hit d-mj-start" data-hit data-mj-start
+                data-l="43.73" data-t="62.54" data-w="12.62" data-h="6.83">
+          <span class="sr-only">Empezar el mini juego</span>
+        </button>
+      </div>
+      <div class="sr-only">
+        <p>(El texto de bienvenida que está dibujado en el arte, para que lo lea la locución y el lector de pantalla.)</p>
+      </div>
+    </div>
+
+    <!-- ---- capa 2 · el juego ---- -->
+    <div class="d-mj-panel d-mj-play" data-panel="mj-jugar" hidden>
+      <div class="d-mj-body">
+        <div class="d-mj-escena-col">
+          <!-- Opcional: el título "¡Aprendé jugando!" recortado del arte. -->
+          <img class="d-mj-kicker" src="img/mj-kicker.webp" alt="" aria-hidden="true">
+          <figure class="d-mj-escena">
+            <!-- ⚠️ El `alt` de ESTA imagen sí describe la escena en
+                 detalle: es el contenido del juego, no decoración. -->
+            <img src="img/mj-escena.webp" alt="(Descripción completa de la escena, incluyendo cada cosa que está mal.)">
+
+            <!-- Zonas del dibujo que se prenden al acertar. Un
+                 `data-mj-hotspot` por opción correcta, y su valor
+                 coincide 1:1 con el `id` de la opción en `curso.js`
+                 — no hace falta tabla de mapeo aparte.
+
+                 ⚠️ Los % se miden contra el ARCHIVO de imagen (con
+                 Python/PIL, detectando píxeles, no a ojo), y funcionan
+                 1:1 contra el contenedor solo si `--mj-escena-ratio`
+                 es EXACTO a la proporción del archivo: si no, el
+                 `object-fit:cover` recorta y todas las zonas quedan
+                 corridas, en cualquier pantalla.
+
+                 `data-mj-hotspot-lbl-pos="abajo"` para dos zonas que
+                 se solapan y cuyas etiquetas chocarían arriba. -->
+            <span class="d-mj-hotspot" data-mj-hotspot="(id-de-la-opcion)" aria-hidden="true"
+                  style="--l:70.98%; --t:26.06%; --w:3.72%; --h:4.39%"><span class="d-mj-hotspot-lbl">(Etiqueta corta)</span></span>
+          </figure>
+        </div>
+
+        <div class="d-mj-choose">
+          <div class="d-mj-stats">
+            <div class="d-mj-stat">
+              <span class="d-mj-stat-lbl">Encontrados</span>
+              <b data-mj-found>0/6</b>
+            </div>
+            <!-- Puntos: el número lo escribe EL CURSO desde
+                 `onAcierto` — es su moneda (la misma del chip de
+                 arriba), no una escala interna del minijuego. Un
+                 curso sin puntaje puede borrar esta tarjeta entera. -->
+            <div class="d-mj-stat d-mj-stat--pts">
+              <span class="d-mj-stat-lbl">Puntos</span>
+              <b><span class="d-mj-trophy" aria-hidden="true">🏆</span><span data-mj-score>0</span></b>
+            </div>
+            <div class="d-mj-stat">
+              <span class="d-mj-stat-lbl">Vidas</span>
+              <span class="d-mj-lives" data-mj-lives></span>
+            </div>
+            <button class="d-mj-stat d-mj-rules" type="button" data-popup-trigger="mj-reglas" aria-haspopup="dialog">
+              <span class="d-mj-stat-lbl">Reglas</span>
+              <span class="d-mj-rules-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><circle cx="12" cy="7.5" r="1" fill="currentColor" stroke="none"/></svg></span>
+            </button>
+          </div>
+
+          <p class="d-mj-consigna">¿Qué observás en esta imagen que esté <b>mal</b>?</p>
+          <!-- Aviso de remediación: lo muestra y lo esconde el kit
+               según haya algo que reforzar del intento anterior. -->
+          <p class="d-mj-remedy" data-mj-remedy hidden>💡 Te destacamos primero lo que más te costó la vez pasada.</p>
+          <!-- VACÍO a propósito: lo llena `initMinijuego` (ver arriba). -->
+          <div class="d-mj-grid" data-mj-grid></div>
+          <p class="d-mj-fb" data-mj-fb role="status" aria-live="polite"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- capa 3 · resultado ----
+         Arte real del PDF con los números dinámicos BLANQUEADOS en la
+         imagen y HTML real encima (§6.19 punto 5). -->
+    <div class="d-mj-panel d-mj-fin" data-panel="mj-fin" hidden>
+      <div class="d-shot" data-shot>
+        <img class="d-shot-img" src="img/minijuego-fin-exito.webp" alt="" aria-hidden="true" data-mj-fin-img>
+        <div class="d-mj-fin-stat" data-place data-l="30.16" data-t="71.43" data-w="9.52" data-h="3.41">
+          <b data-mj-fin-found>0/6</b>
+        </div>
+        <div class="d-mj-fin-stat" data-place data-l="43.65" data-t="71.43" data-w="12.70" data-h="3.41">
+          <b data-mj-fin-score>0</b>
+        </div>
+        <!-- Botón PINTADO, no hitbox transparente: el arte suele traer
+             "Reintentar" dibujado en las DOS versiones, también en la
+             de aprobado, y quien aprueba tiene que poder seguir. Se
+             repinta con la forma, el tamaño y los colores medidos sobre
+             el arte, así que lo cubre sin blanquear nada — un
+             rectángulo blanco sobre una píldora redondeada deja las
+             esquinas asomando (§6.22 punto 5).
+             `data-hit-label-visible`: opt-out explícito de
+             markup-sanity — este texto visible sobre un [data-hit] es
+             a propósito, no una fuga de sr-only (§6.19 punto 6). -->
+        <button class="d-shot-hit d-mj-fin-cta" data-hit data-hit-label-visible data-mj-retry
+                data-l="43.77" data-t="81.83" data-w="12.46" data-h="7.30">Reintentar</button>
+
+        <!-- LA OTRA RAMA del mismo botón, y no es cuestión de gusto:
+             depende del arte.
+               · `.d-mj-fin-cta` (arriba): el arte dibuja UN SOLO texto
+                 pero el botón tiene que decir cosas distintas según el
+                 resultado. Botón PINTADO que cubre al dibujado.
+               · `.d-mj-fin-btn` (abajo): el arte ya dibuja el texto
+                 CORRECTO para cada resultado (dos imágenes distintas).
+                 Hitbox invisible encima; pintarle fondo taparía el
+                 texto del diseñador (bug real, §6.26 punto 2).
+             Se usa UNA de las dos, nunca las dos.
+        <button class="d-shot-hit d-mj-fin-btn" data-hit data-mj-retry
+                data-l="43.77" data-t="81.83" data-w="12.46" data-h="7.30">
+          <span class="sr-only">Reintentar el mini juego</span>
+        </button>
+        -->
+
+        <!-- Título y bajada del panel final, como HTML real. Solo hacen
+             falta si el arte los deja EN BLANCO porque cambian con el
+             resultado; si el arte ya los trae dibujados (lo habitual),
+             no van.
+             ⚠️ `.d-mj-fin-sub` lleva `flex-direction:column` en el CSS
+             del kit y eso es obligatorio: con el `row` por default, un
+             texto suelto y un <b> cuentan como dos ítems de flex y
+             quedan lado a lado en vez de uno debajo del otro (bug
+             real, §6.19).
+        <div class="d-mj-fin-tit" data-place data-l="25" data-t="40" data-w="50" data-h="8">¡Muy bien!</div>
+        <div class="d-mj-fin-sub" data-place data-l="25" data-t="50" data-w="50" data-h="10">
+          Encontraste todo lo que estaba mal. <b>Seguí así.</b>
+        </div>
+        -->
+      </div>
+      <div class="sr-only" data-mj-fin-say aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ==============================================================
+     POP-UP DE REPASO  ·  va con los DEMÁS POP-UPS del documento,
+     fuera de la diapositiva. Se muestra entre terminar la partida y
+     ver el resultado.
+
+     Pedido explícito del curso de origen: que no sea una capa nueva a
+     pantalla completa, sino un pop-up sobre el juego.
+
+     "Ver resultado" lleva `data-popup-close` y nada más: el motor lo
+     cierra solo (igual que ✕/Esc/fondo) y el kit reacciona al cierre,
+     venga por donde venga. No cablear un handler propio acá.
+     ============================================================== -->
+<div class="modal" data-popup="mj-repaso" role="dialog" aria-modal="true" aria-label="Repaso del mini juego">
+  <div class="modal-back" data-popup-close></div>
+  <!-- ⚠️ Las tres clases del chasis importan y no son intercambiables:
+       `d-wide` ensancha la tarjeta, `modal-card--mj-repaso` le fija el
+       ancho y el alto máximos, y `.d-mj-repaso` va en el `modal-bd`
+       —NO en la tarjeta—, que es lo que el CSS del kit espera. -->
+  <div class="modal-card d-wide modal-card--mj-repaso">
+    <div class="modal-hd">
+      <button class="modal-x" type="button" data-popup-close aria-label="Cerrar">✕</button>
+      <h3 class="d-mj-repaso-title" style="margin:0;color:inherit">
+        <span aria-hidden="true">🎯</span> <span data-mj-repaso-title></span>
+      </h3>
+    </div>
+    <div class="modal-bd d-mj-repaso">
+      <!-- Opcional, arriba del título: un volantazo corto tipo
+           "Repaso" o "Antes del resultado". -->
+      <!-- <span class="d-mj-repaso-kicker">Repaso</span> -->
+      <p class="d-mj-repaso-sub" data-mj-repaso-sub></p>
+      <!-- VACÍA a propósito: la llena el kit. -->
+      <ul class="d-mj-repaso-list" data-mj-repaso-list></ul>
+      <!-- ⚠️ `d-mj-repaso-cta` es EL BOTÓN, no un contenedor. -->
+      <button class="btn btn-cat d-mj-repaso-cta" type="button" data-popup-close>Ver resultado</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==============================================================
+     LA LLAMADA, en js/curso.js
+     --------------------------------------------------------------
+     El kit pone la mecánica; el curso pone los datos y la economía.
+
+  initMinijuego({
+    opciones: [
+      { id: 'cruzada',  txt: 'Contaminación cruzada', ok: true },
+      { id: 'uniforme', txt: 'Uniforme completo',     ok: false }
+      // …las correctas y las distracciones, mezcladas.
+    ],
+    fb: {
+      cruzada:  'Sí. (Qué se ve en la imagen y por qué está mal.)',
+      uniforme: 'No. (Por qué no corresponde — sin retar: §6.10.2.3.)'
+    },
+    // Posición en el grid, 1 par por opción. Sin esto, fluyen solas.
+    pos: [[1,1],[2,1],[3,1],[1,2],[2,2],[3,2]],
+    vidas: 3,
+    artes: { exito: 'img/minijuego-fin-exito.webp',
+             reintentar: 'img/minijuego-fin-reintentar.webp' },
+    // Persiste entre intentos Y entre sesiones: va donde el curso
+    // guarda el resto de su estado.
+    memoria: estado.juego,
+    decir: speakPaso,
+    // ⚠️ `primera` es false si ese hallazgo ya se encontró en un
+    // intento anterior. Sin mirarlo, un curso que deje reintentar sin
+    // límite paga los mismos puntos cada vuelta (bug real).
+    onAcierto: function (o, primera) { if (primera) award(PUNTOS.hallazgo, 'Lo encontraste'); },
+    onFin: function (r) {
+      estado.juegoHecho = true;
+      if (r.aprobado) estado.juegoAprobado = true;
+      persistir();
+    }
+  });
+     ============================================================== -->

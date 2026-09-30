@@ -1,0 +1,205 @@
+/* ============================================================
+   coto-quiz.css · Mini práctica genérica (opción múltiple)
+   kit-base v1.6 · Área Aprendizaje (COTO) — genérico, sin contenido
+   de curso. Copiar tal cual a cada curso nuevo, sin editar.
+   ------------------------------------------------------------
+   Pareja de js/coto-quiz.js (initMiniQuiz). Extraído de "Prevención
+   cardiovascular" — usa exclusivamente tokens de coto-base.css
+   (--cat/--cat-strong/--success/--danger/--warning/--surface/--line/
+   --text/--focus), sin nada propio de ese curso.
+
+   Requiere `.d-nav-btn`/`.d-shot-hit` del resto del kit para las
+   utilidades de gate compartidas (`.d-nudge`, `.is-gated`, `.d-shake`
+   — ver coto-player-bottom.css/diapositivas de cada curso): quedaron
+   ACÁ porque nacieron junto al quiz, pero @keyframes d-shake también
+   lo usa el gate genérico de avance (data-require-seen) de cada curso.
+   ============================================================ */
+.d-quiz-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+.d-quiz-count{font-size:.88rem;font-weight:600;color:var(--text-soft)}
+.d-quiz-count b{font-family:var(--font-title);font-weight:900;color:var(--cat-ink)}
+.d-quiz-streak{display:inline-flex;align-items:center;gap:.3rem;font-size:.85rem;font-weight:700;
+  color:var(--warning-ink);background:color-mix(in srgb,var(--warning) 16%,transparent);
+  padding:.3rem .7rem;border-radius:var(--r-pill)}
+.d-quiz-streak.bump{animation:d-bump .3s ease}
+.d-quiz-streak.hot{color:var(--danger-ink);background:color-mix(in srgb,var(--danger) 14%,transparent)}
+@keyframes d-bump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+.d-quiz-dots{display:inline-flex;gap:.55rem}
+.d-quiz-dots i{width:13px;height:13px;border-radius:50%;background:var(--line);display:block;
+  transition:transform .2s,background .2s}
+.d-quiz-dots i.cur{background:linear-gradient(135deg,var(--cat-strong),var(--cat));transform:scale(1.35)}
+.d-quiz-dots i.ok{background:var(--success)}
+.d-quiz-dots i.bad{background:var(--danger)}
+
+.d-q{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:var(--r-lg);
+  background:var(--surface);padding:1.3rem 1.5rem;box-shadow:var(--shadow-card)}
+/* ---- Enunciado a la vista en pantallas bajas (kit-base v1.9.71, §7.17) ----
+   Bug real, y solo aparece midiendo: en un teléfono acostado (~390px de
+   alto) la tarjeta del quiz es más alta que el lienzo, así que al
+   scrollear para llegar a las opciones el enunciado se va de vista y el
+   alumno elige entre cuatro opciones sin ver qué se le pregunta.
+   Medido: `.d-q-title` en `top:-101px`.
+
+   El `overflow:hidden` de `.d-q` de acá arriba existe para que la
+   animación de entrada de las opciones no se derrame — pero de paso
+   convierte a `.d-q` en el SCROLLPORT de cualquier `position:sticky`
+   que se ponga adentro, así que un enunciado sticky se pega dentro de
+   una caja que no scrollea, o sea no se pega a nada. Por eso el
+   `overflow:visible` no es opcional acá: sin él, el `sticky` de abajo
+   es una regla muerta.
+   Acotado a `max-height:560px` a propósito: es donde el problema
+   existe, y ahí el stagger ya terminó hace rato (dura ~.4s desde que
+   entra la diapositiva), así que soltar el recorte no reintroduce el
+   derrame que motivó el `hidden`. */
+@media (max-height: 560px){
+  .d-q{ overflow: visible; }
+  .d-q-title{
+    position: sticky; top: 0; z-index: 3; background: var(--surface);
+    box-shadow: 0 6px 10px -8px rgba(20,30,60,.45);
+  }
+}
+.d-q-title{font-family:var(--font-title);font-weight:900;font-size:1.12rem;color:var(--text);
+  display:flex;gap:.8rem;align-items:baseline;margin:0 0 1.1rem}
+.d-q-num{flex:none;width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;
+  font-size:.95rem;background:var(--cat-ink);color:#fff}
+.d-opt{display:flex;align-items:flex-start;gap:.8rem;padding:.9rem 1.05rem;border-radius:var(--r-lg);
+  border:1.5px solid var(--line);cursor:pointer;margin-top:.6rem;transition:border-color .15s,background .15s}
+.d-opt:first-of-type{margin-top:0}
+.d-opt:hover{border-color:var(--cat-strong);background:color-mix(in srgb,var(--cat) 8%,var(--surface))}
+.d-opt input{position:absolute;opacity:0;width:0;height:0}
+.d-opt-mark{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);
+  margin-top:.1rem;display:grid;place-items:center}
+.d-opt-mark::after{content:"";width:11px;height:11px;border-radius:50%;background:var(--cat-strong);
+  transform:scale(0);transition:transform .15s}
+.d-opt input:checked + .d-opt-mark{border-color:var(--cat-strong)}
+.d-opt input:checked + .d-opt-mark::after{transform:scale(1)}
+.d-opt input:focus-visible + .d-opt-mark{outline:3px solid var(--focus);outline-offset:2px}
+/* Letra de la opción (kit-base v1.9.98). Va entre la marca del radio y
+   el texto, con ancho FIJO: así los textos de las 3 opciones arrancan
+   todos en la misma columna, que es la mitad de para qué sirve
+   numerarlas. `--cat-ink` y no `--cat-strong`: es texto chico y tiene
+   que pasar AA (§6.5). */
+.d-opt-letra{
+  flex:none; width:1.35em; color:var(--cat-ink);
+  font-family:var(--font-num); font-weight:800; font-size:.95rem;
+  line-height:1.5; text-align:left;
+}
+.d-opt.is-ok .d-opt-letra{color:var(--success)}
+.d-opt.is-bad .d-opt-letra{color:var(--danger)}
+.d-opt-text{color:var(--text);font-size:.97rem;font-weight:600}
+.d-opt.is-ok{border-color:var(--success);background:color-mix(in srgb,var(--success) 16%,var(--surface))}
+.d-opt.is-bad{border-color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,var(--surface));
+  animation:d-shake .4s} /* @keyframes d-shake vive en coto-player-bottom.css (cargarlo antes) */
+@media (prefers-reduced-motion:reduce){.d-opt.is-bad{animation:none}.d-quiz-streak.bump{animation:none}}
+
+.d-quiz-fb{margin-top:1.1rem;border-radius:var(--r-lg);padding:1rem 1.15rem;font-size:.95rem;line-height:1.45}
+.d-quiz-fb.ok{background:color-mix(in srgb,var(--success) 14%,var(--surface));border-left:5px solid var(--success);color:var(--success-ink)}
+.d-quiz-fb.bad{background:color-mix(in srgb,var(--danger) 12%,var(--surface));border-left:5px solid var(--danger);color:var(--danger-ink)}
+.d-quiz-mascot{display:flex;align-items:center;gap:.7rem;margin-top:.8rem;font-size:.92rem;color:var(--text-soft)}
+/* BUG REAL (kit-base v1.9.52): `coto-quiz.js` viene escribiendo
+   `mascot.className = 'd-quiz-mascot happy' | 'd-quiz-mascot oops'`
+   desde v1.6, pero `.happy`/`.oops` no tenían NINGUNA regla — las dos
+   clases eran letra muerta y el comentario del mascota se veía igual
+   (gris `--text-soft`) hubieras acertado o no. Se completan con los
+   mismos tokens de estado que ya usan `.d-quiz-fb.ok/.bad` y
+   `.d-opt.is-ok/.is-bad` acá arriba, para que el bloque entero hable
+   un solo idioma de color y no se invente una paleta nueva. */
+.d-quiz-mascot.happy{color:var(--success-ink);font-weight:600}
+.d-quiz-mascot.oops{color:var(--warning-ink);font-weight:600}
+.d-quiz-mface{font-size:1.6rem;flex:none}
+.d-quiz-actions{display:flex;justify-content:center;gap:.8rem;margin-top:1rem;flex-wrap:wrap}
+.d-quiz-result{position:relative;overflow:hidden;text-align:center;border-radius:var(--r-lg);
+  padding:1.6rem 1.7rem;border:1px solid var(--line);background:var(--surface)}
+.d-quiz-result::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:var(--line)}
+.d-quiz-result.pass{background:linear-gradient(160deg,color-mix(in srgb,var(--success) 16%,var(--surface)),var(--surface))}
+.d-quiz-result.pass::before{background:linear-gradient(90deg,var(--success),color-mix(in srgb,var(--success) 60%,#fff),var(--success))}
+.d-quiz-result strong{font-family:var(--font-title);font-size:1.35rem;display:block}
+.d-quiz-result p{margin:.5rem 0 0;color:var(--text)}
+.d-quiz-review{margin-top:1.1rem;text-align:left}
+.d-quiz-review .rv-title{font-weight:700;margin:0 0 .5rem}
+.d-quiz-review ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.7rem}
+.d-quiz-review li{background:var(--surface-2);border-radius:var(--r);padding:.8rem .95rem;font-size:.88rem}
+.d-quiz-review .rq{display:block;font-weight:700;color:var(--text)}
+.d-quiz-review .ra{display:block;margin-top:.3rem;color:var(--text-soft)}
+.d-quiz-review .rv-go{margin-top:.6rem}
+.d-quiz-allgood{font-weight:700;color:var(--success-ink)}
+
+@media (max-height: 560px){
+  /* ---- Y QUE ENTRE, que es de lo que se trata (kit-base v1.9.98) ----
+     ⚠️ El `sticky` de arriba (v1.9.71) se escribió asumiendo que la
+     tarjeta se alcanzaba SCROLLEANDO. No se alcanza: medido en el curso
+     generado a 844×390 —la orientación que el kit PIDE, porque en
+     vertical tapa todo con «Girá tu dispositivo»— no hay un solo
+     scrollport arriba de `.d-q`, ni la página ni el `body` scrollean, y
+     el botón "Responder" queda en y=406 cuando la diapositiva termina en
+     y=340. O sea: el alumno NO PUEDE RESPONDER. Y el `sticky` es una
+     regla muerta, exactamente el modo de falla contra el que advierte el
+     comentario de arriba, un nivel más arriba de donde miraba.
+
+     La regla del molde es que el contenido ENTRA, no que se scrollea —
+     es lo que verifican `scroll-audit` y `mini-practica`. Medido, la
+     práctica pedía 379px en un lienzo de 296px: sobraban 83.
+
+     ⚠️ Se recorta SOLO EL AIRE. Ni un tamaño de letra baja, así que no
+     se toca el contraste (§6.5) ni la legibilidad, y las opciones quedan
+     en 44px de alto, que es justo el mínimo de área táctil de las WCAG.
+     Lo que se gana, medido: 17.6 del padding de la tarjeta, 33.6 de los
+     tres paddings de opción, 8 de los dos huecos entre opciones, 8 del
+     margen del enunciado, 8 del de las acciones y 8.8 del encabezado. */
+  .d-quiz-head{ margin-bottom: .45rem; }
+  .d-q{ padding: .75rem .9rem; }
+  .d-q-title{ margin-bottom: .6rem; }
+  .d-opt{ padding: .55rem 1.05rem; margin-top: .35rem; }
+  .d-quiz-actions{ margin-top: .5rem; }
+
+  /* La pantalla de resultado es el estado MÁS ALTO (nota + una ficha de
+     repaso por pregunta errada + dos botones), y es la que `scroll-audit`
+     nunca ve porque no responde el cuestionario. Mismo criterio: aire, no
+     tipografía. */
+  .d-quiz-result{ padding: .45rem .9rem; }
+  .d-quiz-review{ margin-top: .35rem; }
+  .d-quiz-review li{ padding: .4rem .65rem; }
+  /* ---- La lista de repaso, a DOS COLUMNAS ----
+     Recortar aire no alcanzaba para el estado más alto: quedaban 47px.
+     La salida no es tipografía más chica ni scroll, es usar el ANCHO, que
+     es lo que un teléfono acostado sí tiene de sobra — la tarjeta llega a
+     760px y cada ficha de repaso es una pregunta corta con su
+     explicación. Con tres preguntas erradas (el peor caso, y el que este
+     estado produce) se pasa de tres filas a dos: una fila menos son
+     ~70px, y hacían falta 47.
+     `grid` y no `flex-wrap`: con grid las dos fichas de una fila quedan
+     del mismo alto sin pedirlo, así que no hay escalones. */
+  .d-quiz-review ul{
+    display: grid; grid-template-columns: 1fr 1fr; gap: .3rem;
+    align-items: start;
+  }
+  .d-quiz-review .rv-title{ margin-bottom: .25rem; }
+  /* Los últimos 7px que faltaban, medidos: el margen entre la nota y la
+     lista, y el que separa los botones. */
+  .d-quiz-result p{ margin-top: .3rem; }
+  .d-quiz-review .ra{ margin-top: .2rem; }
+
+  /* ---- Y la intro de la diapositiva se va, en pantalla baja ----
+     Recortar el aire alcanzó para la PRÁCTICA sola (379px → 295px en un
+     lienzo de 296) y no para la práctica MÁS lo que va arriba. Y lo que
+     va arriba no es opcional: `narracion-titulos` exige que la voz
+     empiece por el nombre de la diapositiva, y `textOf()` NO narra el
+     `<h2 data-slide-title>`, así que hace falta una línea de texto
+     visible — es para lo que el generador emite su párrafo de arranque.
+     Medido, con el `<h2>` y una sola línea (26 + 26 = 52px): la pregunta
+     se pasaba 46px a 844×390 y 26px a 932×430, y el resultado 94. Los
+     tres tests que lo ven —`clip-audit`, `scroll-audit` y
+     `mini-practica`— dan el mismo número.
+
+     ⚠️ Se esconde con `display:none`, NO con el atributo `hidden`, y esa
+     es toda la gracia: `textOf()` filtra el ATRIBUTO `[hidden]`, nunca el
+     `display` computado (§7.21 F1). O sea que la intro sigue narrándose
+     completa y `narracion-titulos` sigue en verde — se saca de la
+     PANTALLA, no de la VOZ, que es la misma costura de
+     `data-narrate-skip` pero en el sentido contrario.
+
+     En pantalla baja la diapositiva de práctica ES la práctica: el
+     enunciado ya dice de qué se trata, y el título sigue en la barra de
+     arriba del curso. En pantallas normales no cambia nada. */
+  .d-slide-quiz > h2,
+  .d-slide-quiz > p { display: none; }
+}
