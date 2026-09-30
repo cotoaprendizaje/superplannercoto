@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.101** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.102** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -85,7 +85,7 @@ kit-base/
 │   ├── build-evaluacion-xml.mjs + evaluacion.ejemplo.json — evaluación → Moodle XML,
 │   │                           el único formato de entrega (v1.9.56)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 52 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 53 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -158,7 +158,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 52, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 53, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -397,6 +397,22 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.102 — cada curso sabe de qué versión del kit es
+
+CLAUDE.md §7.51. Primer paso de la Fase 0 (que el kit deje de copiarse a
+ciegas).
+
+- **`kit-version.json`**: todo curso nuevo anota la versión del kit y una
+  huella de cada archivo del kit que recibió.
+- **`npm run actualizar-kit -- ../mi-curso`**: muestra qué cambiaría para
+  llevar el curso a esta versión, sin tocar nada. Con `--aplicar` lo
+  hace, respaldando todo lo que reemplaza en `.kit-anterior/` (que no
+  viaja al LMS). Si un archivo del kit se editó a mano en el curso, frena
+  y lo señala: probablemente es un arreglo que tiene que subir al kit.
+  También avisa qué funciones nuevas del kit el `curso.js` no llama.
+- **`kit-intacto`** (test nuevo, 53): avisa si un curso tiene archivos del
+  kit editados a mano, o si no tiene registro de versión.
 
 ### v1.9.101 — el play de marca, y el índice como el modelo
 

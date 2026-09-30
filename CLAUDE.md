@@ -203,6 +203,16 @@ de versión no pasan el proxy de las sesiones en la nube: la versión
 está en el mensaje del commit y en `package.json`.)
 Una sesión de CURSO sigue sin tocar esa rama: relaya, como dice abajo.
 
+**Cada curso sabe de qué versión del kit es** (desde v1.9.102, §7.51):
+`kit-version.json` en la raíz del curso, con una huella de cada archivo
+del kit. Para una sesión de curso eso cambia dos cosas: (1) si toca un
+archivo del kit para no frenar la entrega, `kit-intacto` lo va a marcar
+en rojo —es a propósito: ese cambio tiene que viajar como relevo—; y (2)
+para ponerse al día NO se copian archivos a mano: se corre
+`node <kit>/tools/actualizar-kit.mjs <curso>`, que muestra el plan, y con
+`--aplicar` lo hace respaldando todo en `.kit-anterior/`.
+
+
 **El mecanismo, en 4 pasos:**
 
 1. Durante una sesión de curso, cualquier cosa que surja y NO dependa
@@ -14027,3 +14037,60 @@ protege el bloque P de `reproductor-video` (los tres casos: sin ícono
 recibe triángulo, `--art` conserva su imagen, `--horneado` no recibe
 nada). Verificado: con la versión vieja, rojo por `--art` y por
 `--horneado`; con la nueva, verde.
+
+## 7.51 Cada curso sabe de qué versión del kit es (kit-base v1.9.102)
+
+Primer paso de la Fase 0 del plan para que el kit sea sostenible: que se
+deje de copiar a ciegas. El problema que resuelve está medido en las
+rondas anteriores: casi todos los relevos llegaron escritos contra un kit
+más viejo; en cuatro, copiar los archivos "completos" habría borrado
+arreglos; y el curso modelo tenía 38 archivos del kit distintos de los
+del kit sin forma de saber cuáles estaban atrasados y cuáles traían un
+arreglo propio (§7.48). Nada registraba de qué versión era cada copia.
+
+### Las cuatro piezas
+
+- **`tools/_kit-archivos.mjs`** — la ÚNICA lista de qué archivos de un
+  curso son del kit (121 hoy). La usan el generador, el actualizador y el
+  test, así no pueden discrepar. `new-course.mjs` verifica al generar que
+  todo lo de la lista haya llegado al curso: si alguien agrega una copia y
+  no la anota (o al revés), falla en el momento.
+- **`kit-version.json`** — lo escribe `new-course.mjs` en cada curso: la
+  versión y una huella (sha256 corto) de cada archivo del kit.
+- **`tools/actualizar-kit.mjs`** (`npm run actualizar-kit -- <curso>`) —
+  se corre desde el kit NUEVO. Por defecto solo muestra el plan: igual, a
+  actualizar, nuevo, quitado del kit, o EDITADO A MANO. Un editado a mano
+  frena todo salvo `--forzar`, porque suele ser un arreglo que tiene que
+  subir (§0.1). Con `--aplicar` respalda en `.kit-anterior/<fecha>-v<x>/`
+  todo lo que reemplaza o saca, y reescribe `kit-version.json`. Además
+  avisa qué funciones llama la plantilla de `curso.js` en su arranque que
+  el `curso.js` del curso no llama (no lo toca: es del curso).
+- **`tests/kit-intacto.mjs`** — pide cada archivo registrado AL CURSO
+  SERVIDO y compara la huella. Rojo si alguno se editó, o si el curso no
+  tiene registro.
+
+### Verificado
+
+- Curso recién generado → "sin cambios" en los 121.
+- Kit simulado v+1 con un archivo cambiado, uno nuevo y uno eliminado, y
+  un archivo del kit editado a mano en el curso → el plan lista las cuatro
+  cosas; `--aplicar` sin `--forzar` no toca nada (exit 1); con `--forzar`
+  aplica, el arreglo manual queda en el respaldo, y una segunda pasada da
+  todo igual.
+- "Seguridad alimentaria" real (sin registro) → 31 iguales, 53 nuevos, 38
+  distintos — los mismos de la auditoría a mano de §7.48 — y la lista de
+  funciones que su arranque no llama: `initPrediccion`,
+  `initEntradaGenerica`, `initLogros`, `initIndexJumps`, `initStatPopups`.
+  Lo que en §7.48 llevó horas de comparar archivos, ahora es un comando.
+- `kit-intacto`: verde en un curso recién generado; rojo con `js/fx.js`
+  tocado; verde otra vez después de actualizar.
+- `build-zip.py` excluye `.kit-anterior/`: el respaldo no viaja al LMS.
+
+### Dos cosas que aparecieron al hacerlo
+
+- `tools/__pycache__/*.pyc` (lo deja Python al correr `build-zip.py`) se
+  colaba en la lista del kit y **en la rama de git**. Se excluye en la
+  lista, en la copia del generador y en `.gitignore`.
+- El arnés de pruebas del kit ahora se pone al día con `actualizar-kit
+  --aplicar --forzar` en vez de copiar archivos: cada corrida de la suite
+  ejercita también el actualizador.

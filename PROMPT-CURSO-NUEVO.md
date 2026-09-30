@@ -17,7 +17,7 @@ entre `<>` y adjuntar el zip de `kit-base/` + el PDF del diseñador.
 ## ✂️ Copiar desde acá
 
 Vas a armar un curso SCORM del molde "Área Aprendizaje (COTO)" usando el
-kit adjunto (`kit-base/`, v1.9.101). Antes de escribir una línea, leé del
+kit adjunto (`kit-base/`, v1.9.102). Antes de escribir una línea, leé del
 kit:
 
 - `CLAUDE.md` **§7** — el checklist de arranque, paso por paso.
@@ -60,7 +60,7 @@ node tools/new-course.mjs ../<carpeta-del-curso> \
 Eso genera el `index.html` COMPLETO —chrome, barra inferior, índice
 lateral, modales, orden de scripts— más el `imsmanifest.xml`, el CSS
 propio vacío y las diapositivas rotuladas. Recién salido del generador
-tiene que dar **52/52 en verde**; si no, es un bug del kit y se relaya
+tiene que dar **53/53 en verde**; si no, es un bug del kit y se relaya
 antes de seguir.
 
 Con `--tipo simulador` suma `js/escenario.js` (el archivo de DATOS, que

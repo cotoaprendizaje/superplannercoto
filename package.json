@@ -1,6 +1,6 @@
 {
   "name": "kit-base-coto-aprendizaje",
-  "version": "1.9.101",
+  "version": "1.9.102",
   "private": true,
   "description": "Herramientas de verificación (Playwright) para cursos SCORM del molde Área Aprendizaje (COTO). Ver README.md y CLAUDE.md.",
   "scripts": {
@@ -12,6 +12,7 @@
     "raw-colors": "node tools/check-raw-cat-colors.mjs",
     "check-assets": "node tools/check-image-weight.mjs",
     "new-course": "node tools/new-course.mjs",
+    "actualizar-kit": "node tools/actualizar-kit.mjs",
     "visual-regress": "node tools/visual-regress.mjs \"$COURSE_URL\"",
     "visual-regress:update": "node tools/visual-regress.mjs \"$COURSE_URL\" --update",
     "evaluacion": "node tools/build-evaluacion-xml.mjs",

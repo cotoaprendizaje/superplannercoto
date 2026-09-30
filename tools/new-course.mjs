@@ -40,6 +40,7 @@ import { fileURLToPath } from 'node:url';
    Antes la tabla estaba acá adentro, así que el test no tenía contra qué
    comparar y solo podía verificar que no hubiera choques (kit v1.9.87). */
 import { ICONOS_TIPO, TRAZOS_TIPO, spriteTipos } from './iconos-tipo.mjs';
+import { archivosDelKit, registroDeVersion } from './_kit-archivos.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const KIT_ROOT = path.join(AQUI, '..');
@@ -110,7 +111,7 @@ copiarDir('css');
    `header-boilerplate.html`. */
 copiarDir('js', entry => entry.name !== 'curso.js' && entry.name !== 'escenario-boilerplate.js');
 copiarDir('fonts');
-copiarDir('tools');
+copiarDir('tools', entry => entry.name !== '__pycache__'); // lo deja build-zip.py al correr
 fs.copyFileSync(path.join(KIT_ROOT, 'header-boilerplate.html'), path.join(destinoAbs, 'header-boilerplate.html'));
 fs.copyFileSync(path.join(KIT_ROOT, 'spec-motor-slides.md'), path.join(destinoAbs, 'spec-motor-slides.md'));
 /* El marcado del minijuego viaja SIEMPRE (kit-base v1.9.87), no detrás
@@ -504,6 +505,27 @@ fs.writeFileSync(
   manifest.replace('<!--FILES-->',
     delPaquete.map((f) => '      <file href="' + f.replace(/&/g, '&amp;') + '"/>').join('\n'))
 );
+
+// ---- 7. kit-version.json: de qué versión del kit salió este curso ----
+/* kit-base v1.9.102. Anota la versión y una huella de cada archivo del
+   kit que recibió el curso. Con eso `actualizar-kit.mjs` puede llevarlo a
+   una versión nueva sin pisar a ciegas —sabe qué se tocó a mano— y
+   `tests/kit-intacto.mjs` avisa si alguien editó un archivo del kit
+   adentro del curso, que es cómo los arreglos quedaban atrapados en un
+   zip (§0.1).
+   ⚠️ Y verifica que TODO lo que la lista dice que es del kit haya llegado:
+   si alguien agrega una copia acá arriba y no a `_kit-archivos.mjs` (o
+   al revés), falla al generar y no seis meses después. */
+{
+  const faltan = archivosDelKit(KIT_ROOT).filter((f) => !fs.existsSync(path.join(destinoAbs, f)));
+  if (faltan.length) {
+    console.error('✗ _kit-archivos.mjs dice que estos archivos son del kit y no llegaron al curso:\n  ' +
+      faltan.join('\n  ') + '\n  Corregir la lista o la copia — tienen que coincidir.');
+    process.exit(1);
+  }
+  fs.writeFileSync(path.join(destinoAbs, 'kit-version.json'),
+    JSON.stringify(registroDeVersion(KIT_ROOT, destinoAbs), null, 2) + '\n');
+}
 
 console.log(`✓ Curso creado en ${destinoAbs}`);
 if (esSimulador) {

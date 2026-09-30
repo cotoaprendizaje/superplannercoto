@@ -51,7 +51,7 @@ Ejemplos:
     python3 build-zip.py seguridad-alimentaria seguridad-alimentaria.zip node_modules
 
 Excluye siempre, sin necesidad de pedirlo: node_modules/, .git/,
-__pycache__/, .pytest_cache/, .DS_Store, Thumbs.db, y cualquier
+__pycache__/, .pytest_cache/, .kit-anterior/, .DS_Store, Thumbs.db, y cualquier
 README.md que conviva con un README-CURSO.md en la misma carpeta (regla
 de §6.43 — nunca empaquetar los dos READMEs con nombres casi iguales).
 """
@@ -60,7 +60,9 @@ import sys
 import struct
 import zipfile
 
-EXCLUIR_DIRS = {'node_modules', '.git', '__pycache__', '.pytest_cache'}
+# `.kit-anterior`: los respaldos que deja `actualizar-kit.mjs` (v1.9.102).
+# Son la red de seguridad de quien actualiza el curso; al LMS no van.
+EXCLUIR_DIRS = {'node_modules', '.git', '__pycache__', '.pytest_cache', '.kit-anterior'}
 EXCLUIR_ARCH = {'.DS_Store', 'Thumbs.db'}
 ARCHIVOS_DE_TRABAJO = {'PROMPT-CURSO-NUEVO.md', 'header-boilerplate.html',
                        'simulador-boilerplate.html'}
