@@ -119,7 +119,24 @@
   //
   // ⚠️ Es un DEFAULT, no un piso: quien ya movió el control tiene su
   // preferencia guardada en `LS_RATE` y esto no se la pisa.
-  var RATE_DEFAULT = 1.15;
+  // Y de 1.15 BAJA A 1.05 (kit-base v1.9.100, segundo pedido del mismo
+  // cliente sobre un curso ya publicado: *"la locución arranca muy
+  // rápida por defecto. Aunque el colaborador puede bajar la velocidad,
+  // es mejor que empiece más lenta y que, si la persona quiere, la
+  // acelere desde el control"*).
+  //
+  // El razonamiento de v1.9.88 sigue siendo válido —1.0 se percibe
+  // lento— pero la conclusión operativa cambió, y es una regla que vale
+  // anotar: para un default, el error de quedarse CORTO es más barato
+  // que el de pasarse. Si arranca lento, el que quiere ir rápido lo
+  // sube y listo; si arranca rápido, el que no llega a seguir el texto
+  // ya perdió esa diapositiva antes de encontrar el control. 1.05 se
+  // sigue percibiendo por encima de la velocidad natural, que era lo
+  // que el pedido original buscaba.
+  //
+  // ⚠️ Es un DEFAULT, no un piso: quien ya movió el control tiene su
+  // preferencia guardada en `LS_RATE` y esto no se la pisa.
+  var RATE_DEFAULT = 1.05;
   var rateFactor = RATE_DEFAULT;
   /* `rateElegido` — ¿esto lo eligió el ALUMNO o es el default?
      (kit-base v1.9.95). `getRateFactor()` devuelve un número siempre, y
@@ -799,6 +816,42 @@
     setTimeout(seguir, 12000);
   }
 
+  /* ---- Desbloquear el motor de voz DENTRO del gesto (v1.9.99) ----
+     REPORTE REAL sobre iPad: *"al pasar a la diapositiva siguiente la
+     locución no se escucha y hay que activar el audio manualmente"*, con
+     la locución ya prendida (que es el default).
+
+     La causa no es el permiso: es CUÁNDO se pide. Safari en iOS habilita
+     `speechSynthesis` con el primer gesto del usuario, pero exige que ese
+     primer `speak()` salga DENTRO de la cadena del gesto. Y el kit narra
+     al cambiar de diapositiva con 220ms de espera (`speakDelayMs`, que
+     existe por otro bug bien real: pasar cinco diapositivas rápido
+     encolaba cinco locuciones). Esos 220ms caen fuera del gesto, así que
+     el primer `speak()` del curso se pide cuando ya no hay permiso — y
+     falla en silencio. Tocar "Locución" a mano sí funciona porque ESE
+     click es un gesto y el `speak()` sale pegado.
+
+     `desbloquear()` gasta el gesto en una utterance vacía y muda: no se
+     oye nada, y a partir de ahí el motor queda habilitado para todo el
+     resto del curso, timers incluidos. Es el uso exacto que el cliente
+     pidió: *"aprovechar el toque en el botón «Empezar» para habilitar el
+     audio, así la locución arranca directamente en la diapositiva
+     siguiente"*.
+
+     Una sola vez por sesión, y nunca si el alumno apagó la locución. */
+  var desbloqueado = false;
+  function desbloquear() {
+    if (desbloqueado || !narrating) return;
+    var synth = global.speechSynthesis;
+    if (!synth || !global.SpeechSynthesisUtterance) return;
+    desbloqueado = true;
+    try {
+      var u = new global.SpeechSynthesisUtterance(' ');
+      u.volume = 0;
+      synth.speak(u);
+    } catch (e) {}
+  }
+
   function isNarrating() { return narrating; }
   function setNarrating(v) {
     narrating = !!v;
@@ -895,7 +948,24 @@
      `data-narrate-skip` en el boilerplate: la decisión está escrita donde
      se ve, y `.d-instr-item` —que sí está en esta lista— sigue narrando
      los tips del panel de AYUDA, que es otra pieza con nombre parecido. */
-  var TEXT_SEL = 'h2, p, dt, dd, li, .d-q-title, .d-opt-text, .d-quiz-fb, .d-quiz-result, .who, .d-cert-note, .d-instr-item, .d-repaso-btns button';
+  /* `.modal-hd h3` está en la lista desde kit-base v1.9.100, y es un
+     agujero que llevaba mucho tiempo abierto: TODOS los pop-ups de
+     contenido de este molde titulan con `<h3>` dentro de `.modal-hd`, y
+     la lista solo tenía `h2` — así que al abrir un pop-up la locución
+     arrancaba por el cuerpo, sin decir DE QUÉ es.
+
+     REPORTE REAL: *"al abrir cada pop-up, la locución debe leer primero
+     el título y después el contenido"*, sobre los cuatro tipos de ENT y
+     sobre "Un dato para tener en cuenta". No era un problema de orden:
+     el título simplemente no se narraba nunca.
+
+     No se agrega `h3` pelado a propósito: hay `<h3>` de chrome (paneles
+     laterales, encabezados de sección) que no son contenido de una
+     locución. El selector apunta al encabezado del pop-up, que es el que
+     hace de título hablado. Y como `.modal-hd` va ANTES de `.modal-bd`
+     en el marcado, el orden sale solo: `textOf()` recoge en orden de
+     documento. */
+  var TEXT_SEL = 'h2, p, dt, dd, li, .modal-hd h3, .d-q-title, .d-opt-text, .d-quiz-fb, .d-quiz-result, .who, .d-cert-note, .d-instr-item, .d-repaso-btns button';
   function addTextSel(sel) { if (sel) TEXT_SEL += ', ' + sel; }
   /* Lo publica `Narrador.textSel()` (kit-base v1.9.81) para que un test
      pueda preguntar QUÉ narra el kit en vez de traer su propia copia de
@@ -1067,6 +1137,18 @@
     if (narrarTitulos && todos[0] && todos[0].hasAttribute('data-slide-title') && partes[1]) {
       partes[1] = quitarAperturaRepetida(partes[1], partes[0]);
     }
+    /* Y lo mismo con el título de un POP-UP (kit-base v1.9.100). Desde
+       que `.modal-hd h3` se narra, un cuerpo que arranca repitiendo el
+       título —"Un dato para tener en cuenta: la presión alta no duele",
+       debajo de "Un dato para tener en cuenta:"— lo decía dos veces
+       seguidas. Medido antes de esto: `textOf()` devolvía "Un dato para
+       tener en cuenta: Un dato para tener en cuenta: la presión…". Es el
+       mismo caso de los dos puntos que arregla `quitarAperturaRepetida`
+       para las diapositivas; acá no depende de `narrarTitulos`, porque el
+       título de un pop-up se narra siempre. */
+    else if (todos[0] && todos[0].matches && todos[0].matches('.modal-hd h3') && partes[1]) {
+      partes[1] = quitarAperturaRepetida(partes[1], partes[0]);
+    }
     /* Unir con ". " SOLO si el fragmento no viene ya cerrado
        (kit-base v1.9.71, §7.17). El `join('. ')` incondicional de
        antes generaba "...correctamente.. Objetivos de aprendizaje." en
@@ -1082,11 +1164,26 @@
   }
   function quitarAperturaRepetida(texto, titulo) {
     function limpiarBordes(s) {
-      return (s || '').replace(/^[¡¿\s]+/, '').replace(/[\s.!?]+$/, '').toLowerCase();
+      /* Los dos puntos y el punto y coma también se recortan del final
+         (kit-base v1.9.100). Si no, la comparación de acá abajo falla justo
+         en el caso que el `match` de arriba acaba de habilitar: la
+         apertura queda como "últimos consejos:" y el título como "últimos
+         consejos", y no matchean. Las dos mitades del arreglo van juntas
+         o no sirve ninguna. */
+      return (s || '').replace(/^[¡¿\s]+/, '').replace(/[\s.!?:;]+$/, '').toLowerCase();
     }
     var tit = limpiarBordes(titulo);
     if (!tit) return texto;
-    var m = texto.match(/^([^.!?]*[.!?]+)\s*/);
+    /* Los dos puntos y el punto y coma cuentan como cierre de la
+       apertura (kit-base v1.9.100). La regex solo aceptaba `.!?`, así que
+       un texto que arranca *"Últimos consejos: consultá al médico…"* no
+       matcheaba y el título se decía DOS VECES seguidas — que es el
+       reporte: *"la locución dice 2 veces «Últimos consejos»"*.
+       Y es la forma NATURAL de escribir estos párrafos en este molde:
+       el `.sr-only` suele abrir nombrando el tema y siguiendo con dos
+       puntos. Medido en "Prevención cardiovascular": pasaba en
+       "consejos", y también en el `.sr-only` de "objetivos". */
+    var m = texto.match(/^([^.!?:;]*[.!?:;]+)\s*/);
     if (!m) return texto;
     if (limpiarBordes(m[1]) === tit) return texto.slice(m[0].length);
     return texto;
@@ -1103,6 +1200,7 @@
     cancel: cancel,
     isNarrating: isNarrating,
     setNarrating: setNarrating,
+    desbloquear: desbloquear,
     pickVoice: pickVoice,
     setManualVoice: setManualVoice,
     setNarrateTitles: setNarrateTitles,

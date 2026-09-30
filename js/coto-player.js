@@ -182,6 +182,29 @@
            en cada píxel si se llamara durante un arrastre continuo. */
         if (global.Narrador && global.Narrador.refreshVolume) global.Narrador.refreshVolume();
       }
+      /* `cotoaudiopedido` — lo emite coto-media.js cuando el alumno
+         toca el chip de gesto que OFRECE sonido ("Tocá para comenzar" /
+         "Tocá para escuchar"). Ver el comentario largo de `pedirAudio()`
+         alla (kit-base v1.9.100): es la mitad que arregla el reporte
+         "el icono aparece tachado pero la musica se escucha igual".
+         Este es el unico lugar del kit que escribe la marca de mute, asi
+         que el levantamiento tiene que pasar por aca — y de paso `sync()`
+         redibuja el icono y aplica el volumen a todos los videos, que es
+         exactamente lo que hacia falta para que icono y audio no puedan
+         volver a contradecirse. Si el volumen habia quedado en 0, se
+         devuelve a 1: dejarlo en 0 seria desmutear a un silencio, o sea
+         el mismo boton que no hace nada, con otra cara. */
+      document.addEventListener('cotoaudiopedido', function () {
+        if (!efectivoMudo()) return;
+        muted = false;
+        try { localStorage.setItem(LS, '0'); } catch (e) {}
+        if (volume <= 0) {
+          volume = 1;
+          try { localStorage.setItem(LS_VOL, '1'); } catch (e) {}
+        }
+        sync();
+        if (global.Narrador && global.Narrador.refreshVolume) global.Narrador.refreshVolume();
+      });
       btn.addEventListener('click', function () { if (panelYaAbierto(btn)) toggleMute(); });
       // El de ADENTRO del panel siempre actúa: ahí no hay nada que abrir.
       if (popMuteBtn) popMuteBtn.addEventListener('click', toggleMute);
@@ -431,6 +454,16 @@
         if (hecho) return;
         hecho = true;
         if (!global.Narrador || !global.motor) return;
+        /* Lo PRIMERO: gastar este gesto en desbloquear el motor de voz
+           (kit-base v1.9.100). Va antes de cualquier `return` de los que
+           siguen, porque el caso que más importa es justamente uno de
+           ellos: una portada que es video de fondo no tiene texto que
+           narrar, así que `speakSlide` de abajo no habla — y sin esto el
+           gesto se desperdiciaba y la locución de la diapositiva
+           siguiente llegaba 220ms tarde, o sea fuera del gesto, y Safari
+           la descartaba. Ver el comentario largo de `desbloquear()` en
+           narrador.js. */
+        if (global.Narrador.desbloquear) global.Narrador.desbloquear();
         if (global.Narrador.isNarrating && !global.Narrador.isNarrating()) return;
         var inicial = global.motor.slides[0];
         var cur = global.motor.current();

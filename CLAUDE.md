@@ -13884,3 +13884,98 @@ esas dos diapositivas animadas; se saca borrando el atributo.
   son (topología de su mapa, sus colores, su cierre).
 - **El exportador GIFT** (`build-evaluacion-gift.mjs`): regla fija, no
   va al kit.
+
+## 7.49 Segunda vuelta de cardio: locución, el ícono que mentía y la tira sobre la lámina (kit-base v1.9.100)
+
+Relevo de "Prevención cardiovascular" rotulado "v1.9.99 → v1.9.100". Su
+"v1.9.99" es la numeración de ese chat, NO la v1.9.99 del kit (§7.48,
+alimentaria): copiar su `narrador.js` y su `coto-media.js` habría
+borrado `alTerminar`, el candado del rescate, `dibujarPlay`,
+`arrancoMudo`, el `webkitendfullscreen` y parte de `montarControles`.
+Se portó hunk por hunk. Otra vez: un número de versión no identifica un
+archivo.
+
+### 1 · Locución (narrador.js + coto-player.js)
+
+- **Velocidad por defecto 1.15 → 1.05.** Pedido del cliente. Para un
+  default, quedarse corto es más barato que pasarse: el que quiere ir
+  rápido lo sube.
+- **Los títulos de los pop-ups se narran.** `TEXT_SEL` no tenía ningún
+  `h3`, así que `.modal-hd h3` —el título de TODO pop-up de contenido—
+  no se decía nunca. Se suma `.modal-hd h3` (no `h3` pelado: hay `h3` de
+  chrome que no son locución).
+- **Los dos puntos cierran la apertura repetida.** `quitarAperturaRepetida`
+  cortaba solo en `.!?`, así que "Últimos consejos: …" repetía el título.
+- ⚠️ **Y lo que el relevo no vio, medido al verificar:** sumar el título
+  del pop-up sin más hacía que un cuerpo que arranca repitiéndolo lo
+  dijera dos veces — `textOf()` devolvía *"Un dato para tener en cuenta:
+  Un dato para tener en cuenta: la presión…"*. El filtro de apertura
+  repetida solo corría para `data-slide-title` con títulos narrados; ahora
+  corre también para el título del pop-up. Un pop-up que no repite
+  (*"¿Qué son las ENT? Son enfermedades…"*) queda intacto.
+- **`Narrador.desbloquear()`**: Safari habilita la voz solo si el PRIMER
+  `speak()` sale dentro del gesto, y el kit narra con 220ms de espera.
+  Con una portada de video (que no narra nada) el gesto se gastaba y la
+  diapositiva 2 quedaba muda. Se gasta el gesto en una utterance vacía y
+  muda, una sola vez, como primera sentencia de `reparar()`. Medido: una
+  sola locución con `volume:0` aunque haya dos gestos.
+
+### 2 · El ícono de "Sonido" no puede contradecir al audio
+
+El chip "Tocá para comenzar/escuchar" hacía `v.muted = false` a secas.
+Con el curso silenciado desde el panel, tocarlo dejaba el video sonando
+y el ícono tachado: dos dueños del mismo dato. Ahora el tap es un PEDIDO
+de audio: coto-media.js emite `cotoaudiopedido` y coto-player.js —el
+único que escribe la marca de mute— la levanta y redibuja.
+
+`audio-estado.mjs` (nuevo) recorre ese camino. ⚠️ Tal como llegó, en un
+curso sin portada `--bg-video` anotaba "no se pudo probar el tap" y daba
+✓: contra un curso recién generado habría sido verde SIEMPRE, el mismo
+verde por ausencia que su propio comentario denuncia. Ahora, si la
+portada no es video de fondo, la vuelve una (reescribe el HTML servido),
+llama a `initBgVideos()` y sirve un webm real. Verificado: rojo sin el
+arreglo de coto-media, rojo sin el listener de coto-player (las dos
+mitades hacen falta), verde con las dos.
+
+⚠️ Hallazgo al pasar, sin arreglar en esta vuelta: **ningún** test de
+video de fondo del kit inyecta uno (`video-tap-chip`,
+`video-autoplay-ios`, `video-lienzo-tablet`, `narracion-video`…). Contra
+un curso generado dicen todos "nada que revisar". `audio-estado` es el
+primero que no; el patrón está ahí para los demás.
+
+### 3 · El resumen del cierre, sin "aplanar"
+
+`align-items:start` en `.d-cierre-recap-grid`: las columnas se estiraban
+al alto de la más larga y el filete de cada una llegaba hasta abajo.
+
+### 4 · La tira de repaso, colocable sobre una lámina (coto-repaso.css)
+
+Cambia una decisión escrita: la cabecera de coto-repaso.css decía que
+NINGUNA regla con `[data-place]` viajaba al kit. Con cardio son dos los
+cursos que apoyan la tira sobre la lámina (NOA fue el primero), que es
+lo que pide §4, y el traslado destapó dos trampas del propio kit:
+
+1. `.d-repaso` declara `position: relative` y en el kit **no hay** una
+   regla genérica `[data-place]{position:absolute}` —cada clase colocable
+   trae la suya—. La tira colocada se quedaba en el flujo, 1122px abajo
+   de la lámina. (El relevo lo explicaba como un empate de especificidad
+   con una regla de coto-shot-stage.css que no existe; el arreglo es el
+   mismo.) → `.d-repaso[data-place]{position:absolute}`.
+2. El motor escribe `height` sobre lo colocado y la tira, que es flex en
+   columna, se estiraba (174px de contenido en 320). →
+   `.d-repaso-marco`: la banda declara el espacio, la tira mide lo suyo.
+
+Y `.d-repaso-btns--col`, para opciones múltiples que son frases.
+
+`repaso-tira.mjs` (nuevo). ⚠️ Mismo caso que `audio-estado`: llegó
+diciendo "nada que revisar" sin tira en el curso. Ahora arma dos sobre
+una lámina de 1440×720 —una colocada directa, otra en un marco— y
+contesta mal a propósito (el estado más alto). Verificado: sin el arreglo
+1 falla la tira directa (*"relative y no absolute"*, se sale 168px); sin
+el marco falla la segunda; con los dos, verde.
+
+### 5 · `clip-audit`: falso positivo dentro de `.sr-only`
+
+`closest('.sr-only')` en vez de `classList.contains`. Verificado con una
+lista dentro de un `.sr-only`: la versión vieja da 3 fallos (uno por
+viewport, *"ul se sale 108px de .sr-only"*), la nueva ninguno.

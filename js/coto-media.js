@@ -635,6 +635,32 @@
   // caliente sobre CUALQUIER <video> presente al mover el slider; esto
   // cubre el caso de un video que arranca DESPUÉS de ese ajuste (recién
   // se pone play), mismo criterio que ya usa `muted()` acá al lado.
+  /* `pedirAudio()` — el chip de gesto es una PETICIÓN EXPLÍCITA de
+     audio, y por lo tanto le gana al mute global (kit-base v1.9.100).
+
+     Viene del reporte de iPad vertical *"en la portada el ícono de
+     sonido aparece tachado, pero la música se escucha igual"*. HONESTO:
+     no logré reproducir ese par exacto en un arranque limpio — con la
+     marca de mute puesta, el `play()` mudo de `attempt()` no rechaza y
+     el chip no aparece, así que no hay nada que se saltee el mute. El
+     único camino que produce las dos mitades juntas es el del alumno
+     que YA tiene el chip a la vista (mute apagado, autoplay con sonido
+     bloqueado por iOS), abre el panel de "Sonido", silencia el curso, y
+     entonces toca el chip: el `click` hacía `v.muted = false` a secas,
+     sin mirar `muted()`. Video sonando, ícono tachado, y los dos
+     diciendo la verdad de su propio lado.
+
+     Se arregla del lado del ESTADO, no del ícono: el alumno que toca
+     "Tocá para comenzar" está pidiendo sonido, así que lo correcto es
+     levantar el mute global de verdad —y que el ícono lo refleje— en
+     vez de silenciar el video y dejarlo tocando un botón que no hace
+     nada. Quien manda sobre esa marca es `initSoundToggle`
+     (coto-player.js): este módulo avisa con un evento y no escribe
+     `localStorage` por su cuenta, para no tener dos dueños del mismo
+     dato — que es exactamente de dónde salió el desfasaje. */
+  function pedirAudio() {
+    try { document.dispatchEvent(new CustomEvent('cotoaudiopedido')); } catch (e) {}
+  }
   function volumeLevel() {
     try {
       var v = parseFloat(global.localStorage.getItem('coto-diapos-volume'));
@@ -1157,6 +1183,13 @@
          delante del alumno (kit-base v1.9.72, §7.18 K10). */
       if (tap) tap.addEventListener('click', function () {
         var modo = tap.getAttribute('data-modo');
+        /* Antes de tocar el video: si el chip ofrece SONIDO, el tap vale
+           como pedido de audio y levanta el mute global (ver
+           `pedirAudio()` arriba). Va PRIMERO porque el `attempt()` de
+           abajo arranca con `v.muted = muted()` — si la marca sigue
+           puesta, el reintento sale mudo otra vez y el botón queda sin
+           efecto audible. */
+        if (modo === 'sonido' || modo === 'inicio') pedirAudio();
         if (!v.paused && v.muted && (modo === 'sonido' || modo === 'inicio')) {
           v.muted = false;
           v.volume = volumeLevel();

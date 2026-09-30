@@ -23,8 +23,15 @@
      candado y una forma alternativa para lienzo chico); "Seguridad
      alimentaria" lo pone en una diapositiva normal. Esa diferencia es
      real y no se puede promediar — por eso NINGUNA regla con
-     `[data-place]` viaja acá. También queda en el curso el contenido:
-     las preguntas, el feedback y qué respuesta es la correcta.
+     `[data-place]` viajaba acá. ⚠️ CAMBIÓ en v1.9.100: "Prevención
+     cardiovascular" fue el segundo curso en apoyar la tira sobre la
+     lámina (después de NOA), que es lo que pide §4 para subir algo, y
+     el traslado destapó dos trampas del propio kit. Ahora sí viajan:
+     `.d-repaso[data-place]` y `.d-repaso-marco` (ver más abajo). La
+     decisión de DÓNDE va la tira sigue siendo del curso; lo que sube es
+     que, si la coloca, la coloque bien.
+     También queda en el curso el contenido: las preguntas, el feedback
+     y qué respuesta es la correcta.
 
    Marcado (idéntico en los dos cursos, es el contrato):
      <div class="d-repaso" data-repaso>
@@ -41,7 +48,8 @@
            <button data-repaso-ans="true">Verdadero</button>
            <button data-repaso-ans="false">Falso</button>
          </div>
-       … y en OPCIÓN MÚLTIPLE, sin el `--vf` y con un solo `"true"`:
+       … y en OPCIÓN MÚLTIPLE, sin el `--vf` y con un solo `"true"`
+       (con `d-repaso-btns--col` si las opciones son frases, v1.9.100):
          <div class="d-repaso-btns">
            <button data-repaso-ans="false">Opción A</button>
            <button data-repaso-ans="true">Opción B</button>
@@ -131,6 +139,61 @@
    orden de carga hace el resto. */
 .d-repaso-item.is-answered .d-repaso-btns button.es-la-correcta{ opacity: 1; border-color: var(--success); background: linear-gradient(180deg, #fff, color-mix(in srgb, var(--success) 14%, #fff)); color: var(--success-ink); box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 28%, transparent); }
 .d-repaso-item.is-answered .d-repaso-btns button.es-la-correcta::after{ content: "← esta era"; margin-left: auto; padding-left: .5rem; font-size: .86em; font-weight: 800; opacity: .9; }
+
+/* ---- `.d-repaso` colocada con `data-l/t/w/h` (kit-base v1.9.100) ----
+   BUG REAL, encontrado poniendo la tira sobre una lámina en
+   "Prevención cardiovascular": `.d-repaso` (arriba) declara
+   `position: relative`, y en el kit NO hay una regla genérica
+   `[data-place]{position:absolute}` —cada clase colocable trae la
+   suya, por eso existe el aviso del motor—. Resultado medido: la tira
+   se queda en el flujo normal, con su `left`/`top` en px escritos y sin
+   efecto, 1122 px por debajo del borde de la lámina; o sea fuera de la
+   diapositiva, sin que nada se rompa a la vista.
+   (El relevo lo explicaba como un empate de especificidad con una regla
+   `[data-place]` de coto-shot-stage.css; esa regla no existe. El
+   arreglo es el mismo.)
+   El motor ya avisa de este caso por consola ("elemento con data-l/t/w/h
+   pero sin position:absolute"), que es como se encontró, pero avisar no
+   alcanza cuando la regla que lo causa es del propio kit.
+   En alimentaria no se notaba porque allá la tira va adentro de un
+   `.d-info-panel[data-place]` —el `data-place` en un contenedor— y ese
+   patrón sigue funcionando igual. */
+.d-repaso[data-place]{ position: absolute; }
+
+/* ---- `.d-repaso-marco` — la tira colocada sobre una lámina (kit-base v1.9.100) ----
+   El motor (`place()`, motor-slides.js) escribe `width`/`height` en px
+   sobre el elemento que lleva `data-l/t/w/h`. `.d-repaso` es
+   `display:flex` en columna, así que puesta directamente en la banda se
+   ESTIRA a la altura declarada: medido en "Prevención cardiovascular",
+   174 px de contenido dentro de una tarjeta de 320 px, con 146 px de
+   vacío abajo. Y no se puede declarar la banda "justa" porque la
+   tarjeta cambia de alto al contestar (la devolución se despliega).
+   El marco separa las dos cosas: la banda declara el ESPACIO
+   DISPONIBLE, la tarjeta ocupa lo que necesita y se alinea arriba.
+   Es el mismo patrón que ya usaba "Seguridad Alimentaria" con
+   `.d-info-panel[data-place] > .d-repaso`, acá con una clase del kit
+   para que no haya que traerse una clase de curso.
+   `overflow: hidden` + `align-items: flex-start` es lo que garantiza
+   que, si algún día la tarjeta creciera más que la banda, se recorte
+   por abajo en vez de desbordar la lámina. */
+.d-repaso-marco{ position: absolute; display: flex; align-items: flex-start; overflow: hidden; }
+.d-repaso-marco > .d-repaso{ max-height: 100%; }
+
+/* ---- Opciones EN COLUMNA (kit-base v1.9.100) ----
+   `.d-repaso-btns` reparte los botones en fila, que es lo correcto para
+   un Verdadero/Falso: dos palabras cortas, una al lado de la otra.
+   Una pregunta de opción múltiple —que el kit ya soporta— suele traer
+   opciones que son frases ("El colesterol alto", "La diabetes"…), y en
+   fila cada una queda de 2 o 3 renglones, se desalinean entre sí y la
+   tira crece de alto hasta pasarse de su propia caja.
+   Con el modificador van una debajo de la otra, a todo el ancho y con
+   el texto alineado a la izquierda, que es como se lee una lista de
+   opciones. `flex: none` porque `.d-repaso-btns button` trae
+   `flex: 0 0 auto` pensado para la fila.
+   Marcado: `<div class="d-repaso-btns d-repaso-btns--col">`. */
+.d-repaso-btns--col{ flex-direction: column; gap: .3em; }
+.d-repaso-btns--col button{ width: 100%; justify-content: flex-start; text-align: left;
+  border-radius: 999px; padding: .3em .9em; }
 
 /* ============================================================
    PANTALLAS BAJAS: el repaso dejaba contenido INALCANZABLE

@@ -137,7 +137,17 @@ for (const vp of VIEWPORTS) {
              misma. Reportarlo sería ruido en CADA diapositiva de CADA
              curso, y un ⚠️ que aparece siempre es un ⚠️ que se deja de
              leer (la lección que §7.12 ya pagó con verify-hitboxes). */
-          if (el.classList.contains('sr-only')) return;
+          /* ⚠️ `closest`, no `classList.contains` (kit-base v1.9.100).
+             La versión anterior saltaba el `.sr-only` pero NO sus hijos,
+             y andaba de casualidad: un `<p>` adentro de una caja de 1px
+             mide 1px de ancho, así que lo filtraba el umbral de 24px de
+             más abajo. MEDIDO en "Prevención cardiovascular", apenas un
+             bloque de narración pasó a tener una lista: un `<ul>` trae
+             `padding-inline-start: 40px` por default, o sea 40px de
+             ancho — pasa el umbral, y el test reportaba 3 fallos en 3
+             viewports por contenido que es invisible A PROPÓSITO y que
+             ningún alumno puede alcanzar ni necesita alcanzar. */
+          if (el.closest('.sr-only')) return;
           /* Decorativo = se sale a propósito. Dos familias, las dos
              verificadas contra cursos reales:
              · `aria-hidden="true"` es la declaración explícita de "esto

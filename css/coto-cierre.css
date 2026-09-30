@@ -108,7 +108,14 @@
 .d-cierre-recap{position:relative;overflow:hidden;height:100%;padding:1.3rem 1.8rem; border-radius:var(--r-xl);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-card)}
 .d-cierre-recap::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--cat-grad,var(--brand))}
 .d-cierre-recap h3{text-align:center;margin:0 0 .9rem;font-family:var(--font-title);font-weight:900;color:var(--text)}
-.d-cierre-recap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.9rem 2.4rem}
+/* `align-items:start` (kit-base v1.9.100). Sin él las columnas se
+   estiran todas al alto de la más larga —es el default del grid— y el
+   filete vertical de `.d-cierre-recap-col::before` se estira con ellas:
+   quedaban tres líneas llegando hasta abajo con contenido solo arriba
+   en dos de las tres. Medido en "Prevención cardiovascular": las 3
+   columnas a 799px cuando la segunda tiene ~430px de contenido. Se lee
+   como un resumen "aplanado", que es justo lo que reportó el cliente. */
+.d-cierre-recap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.9rem 2.4rem;align-items:start}
 .d-cierre-recap-col{position:relative;padding-left:1rem}
 .d-cierre-recap-col::before{content:"";position:absolute;top:.15rem;bottom:.15rem;left:0;width:3px; border-radius:2px;background:var(--cat,var(--brand))}
 .d-cierre-recap-col h4{margin:0 0 .5rem;font-family:var(--font-title);font-weight:900;font-size:.92rem;color:var(--cat-ink)}

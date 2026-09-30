@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.99 · Área Aprendizaje (COTO)
+kit-base v1.9.100 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 50 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 52 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -17,7 +17,7 @@ le hable — nació de un bug real en el que ningún curso escuchaba
 `courseend`, así que el alumno terminaba todo y en el LMS quedaba
 "incomplete" para siempre, sin que ningún test lo notara.
 
-⚠️ **Nueve tests se arman su propio marcado** en vez de mirar el del
+⚠️ **Once tests se arman su propio marcado** en vez de mirar el del
 curso: `objetivos-progreso.mjs` y `recursos-panel.mjs` (kit v1.9.86),
 `minijuego.mjs` y `corte-directo.mjs` (v1.9.87), y
 `locucion-segundos.mjs` (v1.9.92: le escribe texto propio a la

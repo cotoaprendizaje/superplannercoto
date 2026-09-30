@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.99** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.100** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -85,7 +85,7 @@ kit-base/
 │   ├── build-evaluacion-xml.mjs + evaluacion.ejemplo.json — evaluación → Moodle XML,
 │   │                           el único formato de entrega (v1.9.56)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 50 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 52 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -158,7 +158,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 50, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 52, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -397,6 +397,24 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.100 — segunda vuelta de cardio
+
+CLAUDE.md §7.49.
+
+- **Locución**: velocidad por defecto 1.05 (antes 1.15); los títulos
+  de los pop-ups se narran, sin repetirse si el cuerpo arranca igual;
+  `Narrador.desbloquear()` aprovecha el primer toque para habilitar la voz
+  en iPad, así la diapositiva siguiente a una portada de video no queda
+  muda.
+- **El ícono de Sonido ya no contradice al audio**: tocar "Tocá para
+  comenzar" con el curso silenciado levanta el silencio de verdad.
+- **El resumen del cierre** deja de verse "aplanado".
+- **La tira de repaso** se puede apoyar sobre la lámina con
+  `data-l/t/w/h` (y `.d-repaso-marco`), y tiene opciones en columna.
+- **Dos tests nuevos** (`audio-estado`, `repaso-tira`), que ahora arman lo
+  que necesitan en vez de dar verde cuando el curso no lo tiene. La suite
+  pasa a **52**.
 
 ### v1.9.99 — "Seguridad alimentaria" como modelo
 
