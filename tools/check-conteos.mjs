@@ -55,7 +55,11 @@ const AFIRMACIONES = [
   ['README.md', /suite pass\/fail genérica, (\d+) tests/, 'tests'],
   ['README.md', /correr `tools\/tests\/\*\.mjs` \(los (\d+)/, 'tests'],
   ['js/curso.js', /correr tools\/tests\/\*\.mjs \(los (\d+)/, 'tests'],
-  ['tools/tests/README.md', /\*\*Hoy son (\d+) tests\*\*/, 'tests']
+  ['tools/tests/README.md', /\*\*Hoy son (\d+) tests\*\*/, 'tests'],
+  /* v1.9.104: el paso 4 del prompt decía "los 17" con 53 tests, y ningún
+     patrón lo miraba. Y el manual declara para qué versión vale. */
+  ['PROMPT-CURSO-NUEVO.md', /npm test\s+# los (\d+)/, 'tests'],
+  ['MANUAL-DEL-MOLDE.md', /Vigente para \*\*kit-base v([\d.]+)\*\*/, 'version']
 ];
 
 const fallos = [];

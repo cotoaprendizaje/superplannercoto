@@ -37,7 +37,7 @@ const CARPETAS = {
 };
 const SUELTOS = [
   'header-boilerplate.html', 'spec-motor-slides.md', 'minijuego-boilerplate.html',
-  'PROMPT-CURSO-NUEVO.md', 'package.json', 'package-lock.json'
+  'PROMPT-CURSO-NUEVO.md', 'MANUAL-DEL-MOLDE.md', 'package.json', 'package-lock.json'
 ];
 /* `__pycache__`/`.pyc`: los deja Python al correr `build-zip.py`, y se
    colaban en la lista (y en la rama de git) como si fueran del kit.

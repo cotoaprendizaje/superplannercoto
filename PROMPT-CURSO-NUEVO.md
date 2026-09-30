@@ -17,9 +17,13 @@ entre `<>` y adjuntar el zip de `kit-base/` + el PDF del diseñador.
 ## ✂️ Copiar desde acá
 
 Vas a armar un curso SCORM del molde "Área Aprendizaje (COTO)" usando el
-kit adjunto (`kit-base/`, v1.9.103). Antes de escribir una línea, leé del
+kit adjunto (`kit-base/`, v1.9.104). Antes de escribir una línea, leé del
 kit:
 
+- **`MANUAL-DEL-MOLDE.md`, entero.** Son las reglas vigentes, cortas y
+  en un solo lugar. `CLAUDE.md` es el diario del kit (la historia de
+  cada regla): se consulta cuando hace falta el porqué, y si no coincide
+  con el manual, manda el manual.
 - `CLAUDE.md` **§7** — el checklist de arranque, paso por paso.
 - `CLAUDE.md` **§0.1** — cómo se relevan hallazgos hacia el kit. Es la
   regla más importante de este flujo: **desde este chat NO se edita
@@ -173,7 +177,7 @@ desconecta, `contrato-cableado` lo dice con nombre y consecuencia.
 ### Paso 4 — antes de entregar
 
 ```bash
-COURSE_URL="http://localhost:8080/index.html" npm test   # los 17, exit 0 en todos
+COURSE_URL="http://localhost:8080/index.html" npm test   # los 54, exit 0 en todos
 npm run verify-hitboxes                                   # inspección visual
 npm run check-assets                                      # peso/formato de imágenes
 ```

@@ -128,6 +128,10 @@ fs.copyFileSync(path.join(KIT_ROOT, 'minijuego-boilerplate.html'),
    carpeta en un chat nuevo (o hay que rehacerla), el procedimiento está
    ahí adentro y no en la memoria de quien la armó. */
 fs.copyFileSync(path.join(KIT_ROOT, 'PROMPT-CURSO-NUEVO.md'), path.join(destinoAbs, 'PROMPT-CURSO-NUEVO.md'));
+/* Y las reglas vigentes (kit-base v1.9.104): el diario (`CLAUDE.md`) no
+   viaja con el curso, así que sin esto el chat que retoma la carpeta no
+   tiene las reglas a mano. */
+fs.copyFileSync(path.join(KIT_ROOT, 'MANUAL-DEL-MOLDE.md'), path.join(destinoAbs, 'MANUAL-DEL-MOLDE.md'));
 fs.copyFileSync(path.join(KIT_ROOT, 'package.json'), path.join(destinoAbs, 'package.json'));
 if (fs.existsSync(path.join(KIT_ROOT, 'package-lock.json'))) {
   fs.copyFileSync(path.join(KIT_ROOT, 'package-lock.json'), path.join(destinoAbs, 'package-lock.json'));

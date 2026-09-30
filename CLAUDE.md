@@ -1,5 +1,11 @@
 # Cursos SCORM COTO — Área Aprendizaje · guía maestra
 
+> **Desde v1.9.104 las reglas vigentes están en `MANUAL-DEL-MOLDE.md`**,
+> cortas y por tema. Este archivo es el DIARIO del kit: cuenta cómo se
+> llegó a cada regla, en orden, y solo se agrega. Un párrafo de acá
+> puede describir algo que después cambió; **si no coincide con el
+> manual, manda el manual** (§7.53).
+
 > Este documento es el "gen" del que parte cada curso nuevo. Lo lee Claude
 > (o cualquier dev) al arrancar un curso. **Se actualiza SOLO desde el chat
 > dedicado a mejorar `kit-base/` — nunca desde una sesión de curso, ver
@@ -237,7 +243,8 @@ para ponerse al día NO se copian archivos a mano: se corre
    un curso corriendo el kit modificado — nunca alcanza con correr la
    suite contra el curso tal cual, que sigue usando SU copia vieja del
    CSS/JS) y se documenta acá (sección nueva, más changelog + versión
-   en `kit-base/README.md`).
+   en `kit-base/README.md`). **Si cambia una regla, también
+   `MANUAL-DEL-MOLDE.md` en la misma versión** (§7.53).
 4. El `kit-base.zip` que sale de ESE chat, ya actualizado, es el que
    arranca el próximo curso — nunca un zip parcheado a mano desde una
    sesión de curso.
@@ -7303,6 +7310,10 @@ separadas (52-73px contra 250-270px) gracias a
 
 ## 7. Checklist de arranque rápido para un curso nuevo
 
+> ⚠️ Las listas de este punto (módulos, cantidad de tests) son de su
+> época y quedaron viejas. Las reglas al día están en
+> `MANUAL-DEL-MOLDE.md` §2 (§7.53).
+
 1. **Generar el curso con `tools/new-course.mjs`** (ver abajo). No se
    copia nada a mano y **nada del kit se edita** — el listado que sigue
    es para saber QUÉ hay disponible, no para armarlo uno.
@@ -14175,3 +14186,66 @@ contra el kit de ese curso.
   un número. Se le da tamaño a la zona y una medida no finita es rojo.
 - `check-raw-cat-colors`: `.b{background:#1EAADC}` detectado,
   `.a{background:var(--cat, #1EAADC)}` no.
+
+## 7.53 El Manual del molde: las reglas vigentes, separadas del diario (kit-base v1.9.104)
+
+Fase 0, paso 2. Este archivo tiene más de 14.000 líneas en orden
+cronológico, y la regla vigente de cada tema está en la ÚLTIMA sección
+que lo tocó, que no siempre es la que uno encuentra primero. Medido al
+armar el manual: el checklist de §7 todavía decía "JS (17)", "CSS (13)"
+y "23 tests" (hoy 18, 15 y 54), y el prompt de arranque mandaba a
+correr `npm test` "los 17".
+
+### Qué es
+
+**`MANUAL-DEL-MOLDE.md`**: ~310 líneas, once secciones por tema (las
+siete reglas que no se discuten, arranque, PDF → diapositivas, qué ya
+existe para `curso.js`, diseño y CSS, video, locución, mobile, relevo al
+kit, entrega y mantenimiento del kit). Cada regla lleva la sección de
+este diario que la explica.
+
+- **Manda el manual.** Si una sección vieja de acá dice otra cosa, es
+  historia. El manual se REESCRIBE cuando una regla cambia; este diario
+  solo se agrega.
+- **Viaja con cada curso**: lo copia `new-course.mjs`, está en
+  `_kit-archivos.mjs` (así `actualizar-kit` lo lleva a los cursos que
+  ya existen, verificado: aparece como "nuevo en el kit") y
+  `build-zip.py` lo deja fuera del zip del LMS, igual que el prompt.
+  Este diario, en cambio, no viaja con el curso: sin el manual, el chat
+  que retoma una carpeta no tenía las reglas a mano.
+- **`PROMPT-CURSO-NUEVO.md`** lo pone primero en la lista de lectura.
+
+### Cómo se armó
+
+No se resumió de memoria. Cada regla salió de una sección de este
+diario, se buscó la ÚLTIMA versión de esa regla, y se comprobó contra el
+código lo que se pudo comprobar: la lista de categorías sale de
+`coto-base.css`; los `init*` de la tabla de `curso.js`, de los que
+publica `js/*.js`; `--cat-ink`/`--cat-wash`, `--d-arte-h`,
+`--d-escala-lamina`, `data-overlay-stagger`, `Narrador.alTerminar` y
+`addFixes` existen donde dice el manual. Las referencias § se
+verificaron buscando cada frase en este archivo: cinco estaban mal en
+el primer borrador (la de iOS apuntaba a §7.33 y es §7.37, por ejemplo)
+y se corrigieron.
+
+Un detalle que apareció al verificar: la regla "el índice no deja saltar
+a lo no visto" de §7.3 #3 manda a escribir `a.disabled = !visto` en
+`curso.js`. Hoy eso lo hace `initIndexJumps` si recibe `visited`; el
+manual dice lo de hoy.
+
+### `check-conteos`, dos afirmaciones más
+
+- `PROMPT-CURSO-NUEVO.md`: el número de `npm test   # los N`. Decía 17
+  con 54 tests y ningún patrón lo miraba.
+- `MANUAL-DEL-MOLDE.md`: "Vigente para **kit-base vX**" contra
+  `package.json`. Subir la versión obliga a pasar por el manual. Si ninguna
+  regla cambió, se toca solo el número, pero alguien lo miró.
+
+Verificadas las dos: con el prompt en "los 17" y el manual en v1.9.103,
+`check-conteos` da rojo en las dos con la frase; restauradas, verde.
+
+### Qué cambia en el mantenimiento
+
+A la lista de §0.1 de lo que lleva cada cambio se suma una línea: **si
+el cambio altera una regla, se actualiza el manual en la misma versión.**
+Un manual que se queda atrás repite el problema que vino a resolver.

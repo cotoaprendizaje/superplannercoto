@@ -64,7 +64,7 @@ import zipfile
 # Son la red de seguridad de quien actualiza el curso; al LMS no van.
 EXCLUIR_DIRS = {'node_modules', '.git', '__pycache__', '.pytest_cache', '.kit-anterior'}
 EXCLUIR_ARCH = {'.DS_Store', 'Thumbs.db'}
-ARCHIVOS_DE_TRABAJO = {'PROMPT-CURSO-NUEVO.md', 'header-boilerplate.html',
+ARCHIVOS_DE_TRABAJO = {'PROMPT-CURSO-NUEVO.md', 'MANUAL-DEL-MOLDE.md', 'header-boilerplate.html',
                        'simulador-boilerplate.html'}
 
 

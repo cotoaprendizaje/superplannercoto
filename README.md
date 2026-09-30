@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.103** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.104** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -23,6 +23,8 @@ copiar la de la raíz acá antes de armar el próximo zip).
 
 ```
 kit-base/
+├── MANUAL-DEL-MOLDE.md — las reglas VIGENTES, cortas (v1.9.104). Viaja con cada
+│                        curso; CLAUDE.md es el diario (el porqué de cada una)
 ├── js/
 │   ├── motor-slides.js   — motor de diapositivas/capas/pop-ups (Motor)
 │   ├── narrador.js       — wrapper de Web Speech API (narración por voz)
@@ -397,6 +399,24 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.104 — el Manual del molde: las reglas vigentes, separadas del diario
+
+Fase 0, paso 2 (ver CLAUDE.md §7.53).
+
+- **`MANUAL-DEL-MOLDE.md`** (nuevo, ~310 líneas): las reglas que valen
+  HOY, por tema — arranque, PDF → diapositivas, qué ya existe para
+  `curso.js`, diseño y CSS, video, locución, mobile, relevo al kit,
+  entrega y mantenimiento. Cada regla lleva la sección del diario que la
+  explica. **Si no coincide con `CLAUDE.md`, manda el manual.**
+- **Viaja con cada curso**: `new-course.mjs` lo copia, está en la lista
+  del kit (lo trae `actualizar-kit` a los cursos existentes) y
+  `build-zip.py` lo deja fuera del zip del LMS.
+- **`PROMPT-CURSO-NUEVO.md`** lo pone primero en la lista de lectura. Y
+  su paso 4 decía `npm test # los 17` con 54 tests: corregido.
+- **`check-conteos`** mira dos afirmaciones más: ese número del prompt y
+  la versión para la que dice valer el manual. Probadas en las dos
+  direcciones.
 
 ### v1.9.103 — el play de la marca que reacciona, y el tamaño del pop-up que nadie puede pisar
 
