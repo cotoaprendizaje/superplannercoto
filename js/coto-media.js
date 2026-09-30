@@ -906,6 +906,13 @@
       else v.setAttribute('src', v._fuenteBg);
       try { v.load(); } catch (e) {}
     }
+    /* ⚠️ ESTA es la línea que "recuerda al inicializar" (kit-base
+       v1.9.105). Faltó desde v1.9.98 hasta v1.9.104: el bloque relevado
+       traía `soltar`/`reenganchar` pero no la asignación, así que las dos
+       salían en su primera línea y la cura no hacía nada. La encontró
+       "Prevención cardiovascular", que sí la tenía; la vigila
+       `video-fondo-soltar.mjs`, que inyecta su propio video de fondo. */
+    Array.prototype.forEach.call(videos, function (v) { v._fuenteBg = fuenteDe(v); });
 
     /* ---- `seen` / `markSeen` / `onFirstPlay`, igual que los otros
        patrones (kit-base v1.9.95) ----

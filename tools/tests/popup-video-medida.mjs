@@ -81,9 +81,24 @@ for (const [nombre, w, h] of VIEWPORTS) {
   await page.evaluate(() => {
     const act = document.querySelector('.d-slide.is-active, [data-slide].is-active') || document;
     const hit = act.querySelector('[data-video-play], [data-video-popup]');
-    if (hit) hit.click();
+    /* Se toca el PLAY, como el alumno (kit-base v1.9.105). Un recuadro
+       `[data-inline-video][data-video-popup]` no abre nada con un clic
+       en el contenedor: el disparador es su botón. MEDIDO en "Seguridad
+       alimentaria": clic en el recuadro → ningún pop-up abierto, y el
+       test medía la tarjeta CERRADA (0px) y acusaba "el video queda de
+       0px de alto" en los seis viewports. */
+    const play = hit && !hit.matches('button') && hit.querySelector('.d-shot-hit-play, button');
+    if (play) play.click(); else if (hit) hit.click();
   });
   await page.waitForTimeout(800);
+  const abierto = await page.evaluate(() => {
+    const m = window.motor && window.motor.openPopup;
+    return !!(m && m.querySelector('#d-video-player'));
+  });
+  if (!abierto) {
+    fallos.push('[' + nombre + '] el disparador de video no abrió el pop-up del reproductor: no hay nada que medir (y medir la tarjeta cerrada daría 0px).');
+    await page.close(); continue;
+  }
 
   const m = await page.evaluate(() => {
     const c = document.querySelector('.modal-card--video');

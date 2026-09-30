@@ -752,7 +752,7 @@ html.d-ios.d-fullscreen .modal-card--video.d-vp-ampliado .modal-x--video { top: 
   scale: 1.12;
   filter: drop-shadow(0 6px 14px color-mix(in srgb, #000 38%, transparent));
 }
-.d-shot-hit-play.d-shot-hit-play--marca:hover { background: transparent; }
+.d-shot-hit-play.d-shot-hit-play--marca:hover { background: transparent; transform: none; }
 @media (prefers-reduced-motion: reduce) {
   .d-shot-hit:hover .d-shot-hit-play--marca,
   .d-shot-hit-play--marca:hover { scale: 1; }

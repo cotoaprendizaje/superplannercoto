@@ -14249,3 +14249,121 @@ Verificadas las dos: con el prompt en "los 17" y el manual en v1.9.103,
 A la lista de §0.1 de lo que lleva cada cambio se suma una línea: **si
 el cambio altera una regla, se actualiza el manual en la misma versión.**
 Un manual que se queda atrás repite el problema que vino a resolver.
+
+## 7.54 Los dos cursos modelo contra el kit, y el parche de la tira que no tapa el arte (kit-base v1.9.105)
+
+Dos pedidos en la misma vuelta: auditar "Seguridad alimentaria" y
+"Prevención cardiovascular" ("dos cursos modelos que supuestamente están
+ok e iguales"), para usarlos de base del curso de prueba (Fase 0, paso
+3); y un parche de cardio con dos herramientas.
+
+### ¿Iguales? No.
+
+- El zip de alimentaria es **byte a byte el mismo** que se auditó en
+  §7.48. Nada nuevo ahí.
+- Entre los dos, de los archivos del kit que tienen en común, **14 son
+  distintos**. Cardio está mucho más cerca del kit actual (su
+  `motor-slides.js`, `coto-base.css`, `coto-logros.js` y
+  `coto-cierre.js` son idénticos a los de hoy); alimentaria es de antes
+  de v1.9.99. Cardio numera a su manera: su "v1.9.99" es la v1.9.100
+  del kit (§7.49).
+- Cardio no trae `coto-piezas`, `coto-visor` ni `coto-simulador`
+  porque su `index.html` no los carga: es el zip del LMS.
+
+### ¿Tiene cardio algo que el kit no? Se miró SOLO el código
+
+Comparando los archivos sin comentarios (casi todas las diferencias eran
+comentarios redactados distinto), cardio tiene muy poco código propio en
+archivos del kit. Revisado uno por uno:
+
+- **`v._fuenteBg = fuenteDe(v)` — BUG DEL KIT, desde v1.9.98.** La
+  línea que "recuerda la fuente al inicializar" nunca llegó al kit: el
+  bloque K46 que se portó en v1.9.98 traía `soltar()` y `reenganchar()`
+  pero no la asignación, así que las dos salían en su primera línea y
+  la cura del video de fondo negro en iPad **no hizo nada durante seis
+  versiones**. El comentario del propio kit decía "la fuente se recuerda
+  al INICIALIZAR"; el código no. Lo encontró cardio, que tenía la línea.
+  Nadie lo vio porque `video-fondo.mjs` da verde en un curso sin video
+  de fondo, y el del arnés no tiene. **Test nuevo
+  `video-fondo-soltar.mjs`**: si el curso no tiene video de fondo,
+  convierte la segunda diapositiva en una y llama a `initBgVideos()`;
+  verifica que la fuente quede guardada, suelta con la diapositiva
+  inactiva, enganchada al entrar y suelta al salir. Rojo con el kit de
+  v1.9.104 (los tres fallos), verde con la línea.
+- **`transform: none` en `.d-shot-hit-play--marca:hover` — BUG DEL KIT,
+  de v1.9.103.** `.d-shot-hit-play:hover` trae `transform: scale(1.06)`
+  y se multiplica con el `scale: 1.12` de `--marca`. Medido en el kit:
+  48px en reposo, 54 con el mouse en la zona, **57 con el mouse encima
+  del play**. El cliente de cardio lo reportó como "doble aumento".
+  En §7.52 se había verificado el hover solo "en la zona, lejos del
+  play", que es justo el lugar donde no se ve. Arreglado y agregado al
+  bloque P de `reproductor-video.mjs` (mismo tamaño en la zona y encima
+  del play); rojo sin el arreglo (54 contra 57).
+- `.d-repaso-marco--abajo`: cardio lo agregó al CSS del kit y no lo usa
+  en ningún lado. **No sube**: ni un curso lo necesita.
+- Los hex de fallback (`var(--cat, #1EAADC)`) y el corte en 899px son
+  cardio atrasado: el kit los cambió a propósito (§7.47, §7.48).
+- `--horneado`: cardio lo borró; el kit lo mantiene obsoleto (§7.52).
+
+### La suite actual contra los dos, antes y después de `actualizar-kit`
+
+| curso | tal cual (55 tests) | puesto al día (suite final, 56 tests) |
+|---|---|---|
+| Seguridad alimentaria | 10 con fallos | **4**, los cuatro del curso (ver abajo); antes de corregir los tests eran 7 |
+| Prevención cardiovascular | 5 | **1**: su `curso.js` no llama a `initPrediccion` |
+| curso del arnés | — | 56 de 56 |
+
+**Tres de los rojos de alimentaria puesta al día eran de los TESTS, no
+del curso ni del kit.** Cada uno se tropezaba con algo que el curso ya
+tenía:
+
+- `popup-video-medida` (subido en v1.9.103): hacía clic en el recuadro
+  `[data-inline-video][data-video-popup]`, que no abre nada — el
+  disparador es su botón de play — y medía la tarjeta CERRADA: "el video
+  queda de 0px" en los seis viewports. Ahora toca el play, como el
+  alumno, y si el pop-up no se abrió lo dice en vez de medir 0.
+- `minijuego`: inyecta su propio tablero pero buscaba los botones en
+  todo el documento, y contaba los 16 del minijuego real del curso en
+  vez de sus 4. Ahora busca dentro de la sección inyectada.
+- `overlays-colocados`: su grupo inyectado tomaba el layout de la
+  diapositiva activa, que a esa altura era el cierre de alimentaria (un
+  flex donde medía 0 de ancho). Ahora el grupo tiene tamaño propio.
+
+Los tres, verificados en las dos direcciones: verdes en los tres cursos,
+y rojos con su bug puesto (override de 760px; listener de `layerchange`
+quitado). Regla que queda en `tools/tests/README.md` y en el manual: **un
+test que inyecta marcado busca dentro de lo que inyectó y le da tamaño
+propio.**
+
+Los cuatro rojos que le quedan a alimentaria son del CURSO y son ciertos:
+íconos del índice repetidos o reservados (`iconos-indice`), `curso.js`
+sin `initPrediccion`, sin el panel de recursos del boilerplate, y tiras
+de repaso de opción múltiple con el ✓ de verdadero/falso
+(`repaso-tira`). **Para el curso de prueba, el modelo es cardio.**
+
+### El parche: `bloque-no-tapa-arte.mjs` y `achicar-ilustracion.py`
+
+De la vuelta de cardio en que la tira de repaso se ubicó cinco veces.
+
+- **`bloque-no-tapa-arte.mjs`** (test 56): un bloque con
+  `data-no-tapa-arte` no puede caer sobre el dibujo de la lámina, y se
+  verifica contando píxeles del .webp dentro del rectángulo renderizado,
+  con tolerancia cero. Tal como llegó daba verde sin medir en un curso
+  sin bloques marcados (el del arnés): se le agregó un **autochequeo**
+  que corre siempre, con una lámina dibujada en canvas y dos bloques (uno
+  en el hueco que debe dar 0, otro encima del dibujo que debe
+  detectarse). Rojo con el detector roto de las dos formas (no ve nada /
+  lee mal el fondo). Adaptado a `report`/`requireUrl`. **Sobre las
+  láminas reales de cardio** (en una copia, marcando su tira): 12
+  mediciones, 0 píxeles — lo que dice el relevo — y con la tira subida
+  al 45%, rojo en las 12.
+- **`achicar-ilustracion.py`**: achica y reubica la ilustración horneada
+  para hacerle lugar a un bloque. Probado con láminas sintéticas: dos
+  láminas con el dibujo a distinta altura quedan en la misma franja
+  (15–62%), la columna de texto intacta (3 píxeles de diferencia, ruido
+  de recomprimir el WebP) y 0 píxeles de dibujo en la banda limpiada; una
+  lámina con fondo ruidoso se RECHAZA sin tocarla (81% < 85%). Al
+  subirlo: aviso de dependencias en vez de traceback (como
+  `pdf-capa-texto.py`) y documentado que supone una lámina de dos
+  columnas. Reescribe el arte del cliente: el manual lo pone como último
+  recurso, después de pedirle la lámina al diseñador.

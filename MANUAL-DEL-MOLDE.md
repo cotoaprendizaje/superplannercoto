@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.104**.
+Vigente para **kit-base v1.9.105**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -104,6 +104,13 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 - **"Este botón dibujado lleva a la siguiente" es `data-goto`**, no
   `data-nav="next"` (ese pinta un bloque de color encima del arte,
   §7.3 #8).
+- **Un bloque que NO puede tapar la ilustración** (una tira de repaso
+  debajo del dibujo, por ejemplo) se marca `data-no-tapa-arte`, y
+  `bloque-no-tapa-arte` lo verifica contando píxeles del dibujo, no
+  comparando coordenadas: la caja de una ilustración es su hotspot y
+  miente (§7.54). Si no hay lugar, lo primero es pedirle al diseñador la
+  lámina; `tools/achicar-ilustracion.py` es el último recurso: reescribe
+  el arte del cliente, así que antes se guardan los originales.
 - **Si un asset se corrige por segunda vez, cambiarle el nombre**
   (sufijo de versión): el cliente puede estar viendo la copia cacheada
   (§7.3 #20).
@@ -202,6 +209,9 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   `.d-shot-hit-play--marca` con `--play`, `--play-x` y `--play-y` por
   tarjeta, medidos sobre el .webp. En reposo es igual al arte; al pasar
   el mouse crece. `--horneado` está obsoleto (§7.52).
+- **El video de fondo suelta su fuente al salir de la diapositiva** y la
+  recupera al volver (iPad desaloja sin avisar los videos pausados). Lo
+  hace `initBgVideos`; no hay que escribirlo en el curso (§7.47, §7.54).
 - **Toda superficie que es un botón necesita hover propio**;
   `cursor:pointer` solo no alcanza (§7.3 #6).
 - **Si faltan los videos reales, placeholders con el nombre final**, y
@@ -304,6 +314,9 @@ python3 tools/build-zip.py                                 # el zip para el LMS
 - **Cuidado con el verde por ausencia**: si la pieza no está, el test no
   la saltea; la inyecta y la mide. Y una medida que da `NaN` es rojo, no
   verde (§7.47, §7.52).
+- **Un test que inyecta marcado busca DENTRO de lo que inyectó** y le da
+  tamaño propio: si no, se tropieza con lo que el curso ya tiene y acusa
+  al kit por el curso (§7.54).
 - **Cada cambio lleva**: su sección §7.xx en el diario, entrada en el
   changelog del README, versión en `package.json` + README + prompt +
   `tools/tests/README.md`, y **este manual actualizado si cambió una

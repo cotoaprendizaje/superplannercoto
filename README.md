@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.104** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.105** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -86,8 +86,11 @@ kit-base/
 │   ├── check-image-weight.mjs   — peso de las imágenes del curso (v1.9.48)
 │   ├── build-evaluacion-xml.mjs + evaluacion.ejemplo.json — evaluación → Moodle XML,
 │   │                           el único formato de entrega (v1.9.56)
+│   ├── achicar-ilustracion.py — achica la ilustración HORNEADA en una lámina para hacerle
+│   │                           lugar a un bloque; reescribe el arte, se niega si el fondo
+│   │                           no es liso (v1.9.105)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 54 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 56 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -160,7 +163,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 54, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 56, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -399,6 +402,28 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.105 — los dos cursos modelo contra el kit: dos bugs del kit, tres tests que acusaban al curso
+
+Ver CLAUDE.md §7.54.
+
+- **Video de fondo en iPad**: la cura de v1.9.98 (soltar la fuente al
+  salir de la diapositiva) nunca funcionó en el kit porque faltaba la
+  línea que guarda la fuente. Arreglado. Test nuevo
+  `video-fondo-soltar.mjs`, que inyecta su propio video de fondo.
+- **`--marca`**: con el mouse encima del play crecía 1,19 en vez de 1,12
+  ("doble aumento"). Arreglado y cubierto en `reproductor-video.mjs`.
+- **Tres tests corregidos** que daban rojo por el marcado del curso:
+  `popup-video-medida` (ahora toca el play), `minijuego` (busca dentro
+  de lo que inyecta), `overlays-colocados` (tamaño propio).
+- **Test nuevo `bloque-no-tapa-arte.mjs`** (56 tests): un bloque con
+  `data-no-tapa-arte` no tapa el dibujo; cuenta píxeles, con
+  autochequeo propio.
+- **Herramienta nueva `tools/achicar-ilustracion.py`**: achica la
+  ilustración horneada para hacerle lugar a un bloque. Reescribe el arte:
+  último recurso.
+- **Auditoría**: cardio puesto al día pasa 54 de 55; alimentaria tiene
+  cuatro pendientes propios. El modelo para el curso de prueba es cardio.
 
 ### v1.9.104 — el Manual del molde: las reglas vigentes, separadas del diario
 

@@ -177,6 +177,12 @@ if (avisos.length) {
     const slide = document.querySelector('.slide.is-active') || document.querySelector('[data-slide]');
     if (!slide) return { salteado: 'no hay diapositivas' };
     const grupo = document.createElement('div');
+    /* Tamaño PROPIO (kit-base v1.9.105): sin él, el grupo toma el layout
+       de la diapositiva donde cae. MEDIDO en "Seguridad alimentaria": la
+       activa a esta altura era su cierre, un contenedor flex donde el
+       grupo medía 0 de ancho, y el test acusaba al motor de no colocar
+       overlays que no tenían dónde colocarse. */
+    grupo.style.cssText = 'position:absolute;left:0;top:0;width:800px;height:400px;z-index:2147483000';
     grupo.innerHTML =
       '<div class="d-mj-panel" data-panel="prueba-a">' +
       '  <div class="d-shot" data-shot><img class="d-shot-img" alt="" aria-hidden="true"></div>' +

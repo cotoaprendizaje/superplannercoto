@@ -617,6 +617,21 @@ if (prende.length)
     } else if (Math.abs(m.x - 30) > 1 || Math.abs(m.y - 40) > 1 || Math.abs(m.w - 12) > 1) {
       fallos.push(`\`.d-shot-hit-play--marca\` no cae donde dicen sus variables (pedido 30%/40%, disco 12%; quedó ${m.x.toFixed(1)}%/${m.y.toFixed(1)}%, disco ${m.w.toFixed(1)}%): no calzaría sobre el play del arte.`);
     }
+    /* El aumento es UNO, se pase el mouse por donde se pase (v1.9.105).
+       `.d-shot-hit-play:hover` trae `transform: scale(1.06)`, y `transform`
+       y `scale` se MULTIPLICAN: encima del play daba 1,19 y en el resto de
+       la zona 1,12 — "doble aumento", reporte del cliente en cardio. */
+    const z = await page.evaluate(() => {
+      const b = document.querySelector('.d-shot-hit-play--marca'); b.id = 'zz-marca';
+      const r = b.getBoundingClientRect(), p = b.parentElement.getBoundingClientRect();
+      return { bx: r.left + r.width / 2, by: r.top + r.height / 2, zx: p.left + 12, zy: p.top + 12 };
+    });
+    const ancho = () => page.evaluate(() => document.getElementById('zz-marca').getBoundingClientRect().width);
+    await page.mouse.move(z.zx, z.zy); await page.waitForTimeout(350); const enZona = await ancho();
+    await page.mouse.move(z.bx, z.by); await page.waitForTimeout(350); const encima = await ancho();
+    if (Math.abs(enZona - encima) > 1) {
+      fallos.push(`\`.d-shot-hit-play--marca\` crece distinto según dónde esté el mouse: ${enZona.toFixed(0)}px en la zona y ${encima.toFixed(0)}px encima del play. Se está sumando el \`transform\` del hover genérico al \`scale\` propio.`);
+    }
   }
   await page.close();
 }

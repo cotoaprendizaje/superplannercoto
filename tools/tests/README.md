@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.104 · Área Aprendizaje (COTO)
+kit-base v1.9.105 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 54 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 56 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -17,7 +17,7 @@ le hable — nació de un bug real en el que ningún curso escuchaba
 `courseend`, así que el alumno terminaba todo y en el LMS quedaba
 "incomplete" para siempre, sin que ningún test lo notara.
 
-⚠️ **Doce tests se arman su propio marcado** en vez de mirar el del
+⚠️ **Catorce tests se arman su propio marcado** en vez de mirar el del
 curso: `objetivos-progreso.mjs` y `recursos-panel.mjs` (kit v1.9.86),
 `minijuego.mjs` y `corte-directo.mjs` (v1.9.87), y
 `locucion-segundos.mjs` (v1.9.92: le escribe texto propio a la
@@ -35,6 +35,20 @@ que el código llama a `play()`. Si un test nuevo necesita reproducción
 de verdad, ese es el patrón. En v1.9.103, `popup-video-medida.mjs`
 inyecta un `data-video-play` si el curso no tiene video, para medir el
 pop-up igual (sin eso, un curso sin videos daría verde sin medir nada).
+Y en v1.9.105 `video-fondo-soltar.mjs` convierte una diapositiva en
+video de fondo si el curso no tiene ninguna: el arreglo de iPad que
+suelta la fuente estuvo seis versiones sin hacer nada, y
+`video-fondo.mjs` daba verde porque el curso del arnés no tiene video
+de fondo. Y `bloque-no-tapa-arte.mjs` (v1.9.105) se autoverifica
+siempre con una lámina dibujada en canvas: un bloque en el hueco tiene
+que dar 0 píxeles de dibujo y uno encima del dibujo tiene que detectarse.
+
+**Regla para todo test que inyecta marcado** (salió de auditar los dos
+cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo
+el documento, y lo inyectado lleva tamaño propio. Tres tests daban rojo
+sobre "Seguridad alimentaria" por lo que el CURSO ya tenía (su propio
+minijuego, un cierre en flex, un disparador de video que abre desde su
+botón) y no por el kit.
 Los dos mecanismos que verifican son OPCIONALES —el boilerplate trae
 los pips de objetivo y la ficha de recurso comentados, porque un curso
 puede no tener ni objetivos declarados ni documentos—, así que el guard

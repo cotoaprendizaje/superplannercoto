@@ -88,24 +88,28 @@ if (!(await page.evaluate(() => typeof window.initMinijuego === 'function'))) {
       onFin: (res) => log.fin.push(res)
     });
 
-    const btn = (id) => document.querySelector('[data-mj-opt="' + id + '"]');
-    const out = { armo: document.querySelectorAll('[data-mj-grid] .d-mj-opt').length };
+    /* Todo se busca DENTRO de la sección inyectada (kit-base v1.9.105):
+       buscando en el documento, un curso que ya tiene su minijuego
+       (MEDIDO en "Seguridad alimentaria") le suma sus botones al conteo
+       —16 en vez de 4— y el test acusaba al kit por el marcado del curso. */
+    const btn = (id) => sec.querySelector('[data-mj-opt="' + id + '"]');
+    const out = { armo: sec.querySelectorAll('[data-mj-grid] .d-mj-opt').length };
 
     /* --- partida 1: se pierde por falta de vidas --- */
     api.empezar();
     btn('a').click();
-    out.hotspotA = document.querySelector('[data-mj-hotspot="a"]').classList.contains('is-on');
-    out.hotspotB = document.querySelector('[data-mj-hotspot="b"]').classList.contains('is-on');
-    out.found1 = document.querySelector('[data-mj-found]').textContent;
+    out.hotspotA = sec.querySelector('[data-mj-hotspot="a"]').classList.contains('is-on');
+    out.hotspotB = sec.querySelector('[data-mj-hotspot="b"]').classList.contains('is-on');
+    out.found1 = sec.querySelector('[data-mj-found]').textContent;
     btn('x').click();
-    out.vidasTrasUnError = document.querySelectorAll('[data-mj-lives] .d-mj-heart:not(.is-off)').length;
+    out.vidasTrasUnError = sec.querySelectorAll('[data-mj-lives] .d-mj-heart:not(.is-off)').length;
     btn('y').click();                   // segunda vida → termina
     out.finPerdida = log.fin.length ? { gano: log.fin[0].gano, hallados: log.fin[0].hallados, total: log.fin[0].total } : null;
     out.memoriaTrasPerder = Object.keys(memoria.errados || {}).sort();
 
     /* --- partida 2: se gana, y 'a' ya se había encontrado antes --- */
     api.empezar();
-    out.remedyVisible = !document.querySelector('[data-mj-remedy]').hidden;
+    out.remedyVisible = !sec.querySelector('[data-mj-remedy]').hidden;
     btn('a').click();
     btn('b').click();
     out.finGanada = log.fin.length > 1 ? { gano: log.fin[1].gano, hallados: log.fin[1].hallados } : null;
@@ -203,7 +207,7 @@ if (!(await page.evaluate(() => typeof window.initMinijuego === 'function'))) {
       fb: { a: 'ULTIMA DEVOLUCION', x: 'no' } });
     api.empezar();
     await new Promise((r) => setTimeout(r, 2200));
-    document.querySelector('[data-mj-opt="a"]').click();
+    sec.querySelector('[data-mj-opt="a"]').click();
     await new Promise((r) => setTimeout(r, 4000));
     const fin = window.__ev.filter((e) => e.fin === 'ULTIMA DEVOLUCION')[0];
     return { tPop, tFinDevolucion: fin ? fin.t : null };
