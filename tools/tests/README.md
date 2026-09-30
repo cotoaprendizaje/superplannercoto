@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.102 · Área Aprendizaje (COTO)
+kit-base v1.9.103 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 53 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 54 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -17,7 +17,7 @@ le hable — nació de un bug real en el que ningún curso escuchaba
 `courseend`, así que el alumno terminaba todo y en el LMS quedaba
 "incomplete" para siempre, sin que ningún test lo notara.
 
-⚠️ **Once tests se arman su propio marcado** en vez de mirar el del
+⚠️ **Doce tests se arman su propio marcado** en vez de mirar el del
 curso: `objetivos-progreso.mjs` y `recursos-panel.mjs` (kit v1.9.86),
 `minijuego.mjs` y `corte-directo.mjs` (v1.9.87), y
 `locucion-segundos.mjs` (v1.9.92: le escribe texto propio a la
@@ -32,7 +32,9 @@ trae) y `reproductor-video.mjs`, que además de inyectar el disparador
 si falta **sirve un webm REAL** fabricado con MediaRecorder en lugar de
 los .mp4 de 0 bytes: comprueba que el alumno ve el video moverse, no
 que el código llama a `play()`. Si un test nuevo necesita reproducción
-de verdad, ese es el patrón.
+de verdad, ese es el patrón. En v1.9.103, `popup-video-medida.mjs`
+inyecta un `data-video-play` si el curso no tiene video, para medir el
+pop-up igual (sin eso, un curso sin videos daría verde sin medir nada).
 Los dos mecanismos que verifican son OPCIONALES —el boilerplate trae
 los pips de objetivo y la ficha de recurso comentados, porque un curso
 puede no tener ni objetivos declarados ni documentos—, así que el guard

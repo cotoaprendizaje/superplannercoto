@@ -556,7 +556,11 @@ if (prende.length)
    lo tiene: `--art` perdía su `<img>` con el ícono del cliente (MEDIDO:
    quedaba el triángulo genérico, regresión de v1.9.98) y `--horneado`
    —cuyo play ya está en el arte— recibía uno dibujado encima, que es el
-   play doble que existe para sacar. Y ningún test lo miraba. */
+   play doble que existe para sacar. Y ningún test lo miraba.
+   v1.9.103: se suma `--marca` (el play de la marca calzado sobre el del
+   arte con `--play`/`--play-x`/`--play-y`): tiene que conservar su <img>,
+   quedar transparente y caer donde dicen sus variables — que es todo lo
+   que lo hace calzar con el play dibujado en la tarjeta. */
 {
   const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
   await page.route('**/*.mp4', r => r.fulfill({ status: 200, contentType: 'video/webm', body: CUERPO }));
@@ -576,12 +580,24 @@ if (prende.length)
     };
     const art = mk('d-shot-hit-play--art', '<span class="sr-only">Reproducir</span><img src="img/reproductor-play.webp" alt="" aria-hidden="true">');
     const horn = mk('d-shot-hit-play--horneado', '<span class="sr-only">Reproducir video</span>');
+    const marca = mk('d-shot-hit-play--marca', '<span class="sr-only">Reproducir video</span><img src="img/reproductor-play.webp" alt="" aria-hidden="true">');
+    marca.setAttribute('style', '--play:12%; --play-x:30%; --play-y:40%');
+    /* Tamaño explícito: sin él la zona inyectada mide 0×0, las medidas dan
+       NaN y toda comparación con NaN es falsa → verde sin medir (MEDIDO). */
+    marca.parentElement.style.cssText = 'position:absolute; left:100px; top:100px; width:400px; height:300px';
     const plano = mk('', 'Reproducir');
     window.initInlineCircleVideos({});
     const leer = (b) => ({ svg: !!b.querySelector('svg'), img: !!b.querySelector('img'),
       nombre: (b.getAttribute('aria-label') || b.textContent || '').trim(),
       fondo: getComputedStyle(b).backgroundColor });
-    return { art: leer(art), horn: leer(horn), plano: leer(plano) };
+    const donde = (b) => {
+      const z = b.parentElement.getBoundingClientRect(), r = b.getBoundingClientRect();
+      return { x: (r.left + r.width / 2 - z.left) / z.width * 100,
+               y: (r.top + r.height / 2 - z.top) / z.height * 100,
+               w: r.width / z.width * 100 };
+    };
+    return { art: leer(art), horn: leer(horn), plano: leer(plano),
+             marca: Object.assign(leer(marca), donde(marca)) };
   });
   if (pl) {
     if (!pl.plano.svg) fallos.push('un `.d-shot-hit-play` sin ícono tendría que recibir el triángulo del kit (`dibujarPlay`) y no lo recibió.');
@@ -591,6 +607,15 @@ if (prende.length)
     if (!pl.horn.nombre) fallos.push('`.d-shot-hit-play--horneado` se quedó sin nombre accesible: es el único control del círculo.');
     if (!/rgba\(0, 0, 0, 0\)|transparent/.test(pl.horn.fondo)) {
       fallos.push(`\`.d-shot-hit-play--horneado\` tendría que ser transparente (su dibujo lo pone el arte) y tiene fondo ${pl.horn.fondo}.`);
+    }
+    const m = pl.marca;
+    if (!m.img || m.svg) fallos.push('`.d-shot-hit-play--marca` perdió su <img> con el play de la marca (o recibió el triángulo genérico encima).');
+    if (!m.nombre) fallos.push('`.d-shot-hit-play--marca` se quedó sin nombre accesible.');
+    if (!/rgba\(0, 0, 0, 0\)|transparent/.test(m.fondo)) fallos.push(`\`.d-shot-hit-play--marca\` tendría que ser transparente y tiene fondo ${m.fondo}.`);
+    if (![m.x, m.y, m.w].every(Number.isFinite) || m.w === 0) {
+      fallos.push('`.d-shot-hit-play--marca`: no se pudo medir (zona o botón sin tamaño).');
+    } else if (Math.abs(m.x - 30) > 1 || Math.abs(m.y - 40) > 1 || Math.abs(m.w - 12) > 1) {
+      fallos.push(`\`.d-shot-hit-play--marca\` no cae donde dicen sus variables (pedido 30%/40%, disco 12%; quedó ${m.x.toFixed(1)}%/${m.y.toFixed(1)}%, disco ${m.w.toFixed(1)}%): no calzaría sobre el play del arte.`);
     }
   }
   await page.close();

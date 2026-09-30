@@ -134,6 +134,39 @@
    alto del lienzo (`--d-arte-h`, que vive en `:root`) convertido a ancho
    por el 16/9 del reproductor, para que no se salga por abajo en un
    lienzo apaisado y bajo. */
+/* ============================================================
+   ESTÁNDAR DE TAMAÑO DEL POP-UP DE VIDEO — kit-base v1.9.103
+   ------------------------------------------------------------
+   Pedido del cliente: *"cuando se abre el pop up de video, ¿hay un
+   estándar del tamaño? estaría bueno definirlo para todos los
+   cursos"*. Sí, es este (existe desde v1.9.96), y vale para todos:
+
+     width: min(1040px, 94vw, calc(var(--d-arte-h) * 0.94 * 16 / 9))
+
+     · 1040px — el techo: más ancho no se lee mejor, y el pop-up deja de
+       leerse como ficha;
+     · 94vw — aire a los costados, para que la ✕ flotante no quede
+       pegada al borde;
+     · el alto de la lámina por 16/9 — para que en una pantalla
+       apaisada y baja no se salga por abajo.
+
+   MEDIDO en el kit, abriendo el reproductor (ancho del pop-up / alto
+   del video):
+     escritorio   1600x900   1040px (65%)   585px
+     notebook     1366x768   1040px (76%)   585px
+     iPad horiz.  1080x810    902px (84%)   508px
+     iPad vert.    810x1080   677px (84%)   381px
+     tel. acost.   844x390    495px (59%)   278px
+     tel. parado   390x844    326px (84%)   183px
+   y en los seis entra entero en pantalla.
+
+   ⚠️ UN CURSO NO REDECLARA ESTE ANCHO. Las hojas del curso cargan
+   después del kit, así que cualquier `width` sobre `.modal-card--video`
+   gana en silencio. Pasó en "Prevención cardiovascular": arrastraba
+   `width:min(760px,100%)` —el valor viejo del kit— y el pop-up salía
+   de 760px en escritorio, notebook e iPad horizontal por igual. Lo hace
+   cumplir `tools/tests/popup-video-medida.mjs`.
+   ============================================================ */
 .modal-card--video {
   width: min(1040px, 94vw, calc(var(--d-arte-h, 620px) * 0.94 * 16 / 9));
   padding: 0; overflow: hidden;
@@ -167,9 +200,11 @@
    curso escribía `var(--cat, #1EAADC)`, y ese hex es el turquesa de
    "Seguridad alimentaria": un fallback con el color de UN curso es peor
    que ninguno, porque si alguna vez faltara `--cat` el molde entero
-   saldría turquesa sin que nada avise. Lo caza `check-raw-cat-colors`,
-   que es justo la herramienta que existe para esto. `--cat` lo define
-   coto-base.css para cada categoría, así que no hay caso sin valor.
+   saldría turquesa sin que nada avise. `--cat` lo define coto-base.css
+   para cada categoría, así que no hay caso sin valor.
+   (Desde v1.9.103 `check-raw-cat-colors` ya no marca un hex de fallback
+   —no se puede desfasar del token, que es lo único que ese chequeo
+   persigue—. El kit igual lo deja sin fallback, por lo de arriba.)
    ============================================================ */
 .d-vp-bar {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
@@ -645,6 +680,93 @@ html.d-ios.d-fullscreen .modal-card--video.d-vp-ampliado .modal-x--video { top: 
 .d-shot-hit-play.d-shot-hit-play--art img { width: 100%; height: 100%; display: block; object-fit: contain; }
 .d-shot-hit-play.d-shot-hit-play--art:hover { background: transparent; }
 
+/* ---- `--marca`: el play de la marca, calzado sobre el que trae el arte ----
+   kit-base v1.9.103.
+
+   Pedido del cliente, dos veces en la misma vuelta: *"¿podemos hacer
+   que la interacción sea sobre el botón de play en vez que del
+   círculo?"* y *"lo mismo en los otros reproductores de video, que el
+   botón de play tenga animación al pasar el mouse por arriba"*.
+
+   El problema de fondo: en estos cursos el diseñador entrega el
+   mockup del reproductor CON el disco de play dibujado, y un dibujo no
+   se anima. La vuelta anterior lo dejó anotado así: *"si algún día el
+   play tiene que REACCIONAR al mouse, la forma limpia es pedirle al
+   diseñador la tarjeta SIN el play dibujado"* — y también anotó que
+   superponer el del kit no servía, porque *"no hay una posición que
+   sirva para las siete"*.
+
+   Las dos cosas eran ciertas con UN solo valor para todas. Con un valor
+   POR TARJETA no: el play horneado se puede medir sobre el .webp y el
+   botón se calza encima, y entonces el que reacciona es el play.
+   MEDIDO sobre los 9 de "Prevención cardiovascular" (detectando el
+   triángulo blanco de adentro y derivando el disco con la proporción
+   del propio icono de la marca, 2,76 x el ancho del triángulo):
+
+     · los 2 círculos           50,4-50,7% / 49,2-50,4%   disco 19,5-20%
+     · las 6 tarjetas de Unidad 2   49,7-49,9% / 47,0-47,4%   disco 11,2-11,7%
+     · "Riesgo cardiovascular"      49,9%     / 41,8%        disco 14,1%
+
+   O sea: centrado en horizontal en los nueve, y en vertical entre 0 y
+   8 puntos MÁS ARRIBA del centro (la barra de controles del mockup
+   ocupa abajo). Por eso hacen falta las tres variables y no alcanza
+   con "centrado".
+
+   Marcado — `--play` es el diámetro y `--play-x` / `--play-y` el centro,
+   los tres en % del hitbox:
+
+     <span class="d-shot-hit-play d-shot-hit-play--marca" aria-hidden="true"
+           style="--play:11.7%; --play-x:49.8%; --play-y:47%">
+       <img src="img/reproductor-play.webp" alt="">
+     </span>
+
+   Va como `<span>` cuando el hitbox ya es un `<button>` (no se puede
+   anidar un botón en otro) y como `<button>` cuando el hitbox es un
+   `<div>` — ahí este es el único control real, así que lleva su rótulo.
+   Sin las variables se comporta como antes: 30% y centrado.
+
+   ⚠️ `translate`/`scale` y NO `transform`: `.is-playing` de más arriba
+   apaga el play con `transform: scale(.8)`, y escribir el centrado en
+   `transform` se lo llevaba puesto. Son propiedades independientes. */
+.d-shot-hit-play.d-shot-hit-play--marca {
+  inset: auto; margin: 0; padding: 0;
+  left: var(--play-x, 50%); top: var(--play-y, 50%);
+  translate: -50% -50%;
+  width: var(--play, 30%); height: auto; aspect-ratio: 1;
+  max-width: none; max-height: none;
+  background: transparent; box-shadow: none; border: none;
+  transition: scale .16s ease, filter .16s ease;
+}
+.d-shot-hit-play.d-shot-hit-play--marca img {
+  width: 100%; height: 100%; display: block; object-fit: contain;
+}
+/* La respuesta al hover vive en el PLAY, y se dispara desde TODA la
+   zona: el alumno apunta a la tarjeta, no al disco de 50px. Por eso el
+   selector arranca en el hitbox y no en el botón.
+   `:not(.is-playing)` para no pelearle al `scale(.8)` con que el play
+   se retira cuando el video arranca. */
+.d-shot-hit:not(.is-playing):hover .d-shot-hit-play--marca,
+.d-shot-hit:not(.is-playing):focus-visible .d-shot-hit-play--marca,
+.d-shot-hit-play--marca:hover,
+.d-shot-hit-play--marca:focus-visible {
+  scale: 1.12;
+  filter: drop-shadow(0 6px 14px color-mix(in srgb, #000 38%, transparent));
+}
+.d-shot-hit-play.d-shot-hit-play--marca:hover { background: transparent; }
+@media (prefers-reduced-motion: reduce) {
+  .d-shot-hit:hover .d-shot-hit-play--marca,
+  .d-shot-hit-play--marca:hover { scale: 1; }
+}
+
+/* ---- `--horneado`: OBSOLETO desde v1.9.103 — usar `--marca` ----
+   Lo reemplaza `--marca` (arriba), que resuelve lo mismo y además deja
+   que el play reaccione al mouse, que es lo que pidió el cliente. Se
+   deja la regla para no romper un curso que ya lo use (lo usó
+   "Prevención cardiovascular" una vuelta); no usarlo en cursos nuevos.
+   `dibujarPlay()` lo sigue excluyendo, y el bloque P de
+   `reproductor-video` lo sigue probando mientras exista.
+
+   Lo que decía cuando se creó (kit-base v1.9.101): */
 /* ---- `--horneado`: el arte YA trae el play (kit-base v1.9.101) ----
    Caso real de "Prevención cardiovascular": las dos capturas con video
    circular traen el botón de play DIBUJADO en el .webp, y es el mismo

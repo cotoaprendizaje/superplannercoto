@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.102** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.103** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -85,7 +85,7 @@ kit-base/
 │   ├── build-evaluacion-xml.mjs + evaluacion.ejemplo.json — evaluación → Moodle XML,
 │   │                           el único formato de entrega (v1.9.56)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 53 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 54 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -158,7 +158,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 53, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 54, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -397,6 +397,34 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.103 — el play de la marca que reacciona, y el tamaño del pop-up que nadie puede pisar
+
+Relevo de "Prevención cardiovascular" (ver CLAUDE.md §7.52).
+
+- **`.d-shot-hit-play--marca`**: el play de la marca calzado EXACTO sobre
+  el que viene dibujado en la tarjeta, con tres variables por tarjeta
+  (`--play` diámetro, `--play-x`/`--play-y` centro, en % del hitbox).
+  En reposo es indistinguible del arte; al pasar el mouse por cualquier
+  parte de la zona el play crece (`scale: 1.12`) con sombra. Usa
+  `translate`/`scale`, no `transform`, para no chocar con el retiro de
+  `.is-playing`. `<span>` si el hitbox ya es `<button>`; `<button>` con
+  rótulo si el hitbox es un `<div>`.
+- **`--horneado` queda OBSOLETO** (no se borró: un curso que lo use sigue
+  funcionando). Para cursos nuevos, `--marca`.
+- **El ESTÁNDAR del pop-up de video** tiene bloque propio en
+  `coto-media.css`: `min(1040px, 94vw, alto del lienzo × 16/9)`. Un curso
+  NO declara `width` en `.modal-card--video`.
+- **Test nuevo `popup-video-medida.mjs`** (54 tests): en 6 viewports,
+  ninguna hoja del curso pisa ese ancho, el pop-up entra entero y el video
+  mide ≥150px de alto. Inyecta un disparador si el curso no tiene video.
+- **`reproductor-video.mjs`** cubre `--marca`: conserva su `<img>`, es
+  transparente y cae donde dicen sus variables.
+- **`check-globals` acepta una carpeta** (`node tools/check-globals.mjs
+  js`) y **`check-raw-cat-colors` revisa el `css/` del directorio
+  actual**: corridos desde un curso, antes revisaban el kit.
+- `check-raw-cat-colors` ya no reporta un hex que va como fallback de
+  `var(--x, #hex)`. El kit igual no usa fallbacks.
 
 ### v1.9.102 — cada curso sabe de qué versión del kit es
 

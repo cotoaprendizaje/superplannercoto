@@ -31,7 +31,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
-const JS_DIR = path.join(AQUI, '..', 'js');
+/* ⚠️ Acepta la carpeta por argumento, y eso importa más de lo que
+   parece (kit-base v1.9.103). Antes miraba SIEMPRE el `js/` del kit,
+   sin forma de apuntarlo a otro lado — así que corrido desde la carpeta
+   de un curso revisaba el kit y decía "✓" sin haber mirado una sola
+   línea del curso. Y el archivo que un curso agrega es justamente el
+   que más consume del contrato: su `curso.js`, que usa `Logros`,
+   `Cierre`, `Narrador`, `motor`, `SCORM`, `XAPI`… Medido en
+   "Prevención cardiovascular": 29 símbolos consumidos con el default y
+   los mismos 29 apuntándolo al curso, pero eso es suerte del caso, no
+   una garantía — el chequeo no lo estaba dando.
+   Uso: `node tools/check-globals.mjs [carpeta-js]` */
+const JS_DIR = process.argv[2]
+  ? path.resolve(process.argv[2])
+  : path.join(AQUI, '..', 'js');
 
 /* Provistos por el navegador o por el propio curso — no los publica
    ningún módulo del kit y no tiene sentido exigirlo. */

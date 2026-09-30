@@ -34,8 +34,20 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
-const CSS_DIR = path.join(AQUI, '..', 'css');
-const CSS_BASE = path.join(CSS_DIR, 'coto-base.css');
+/* ⚠️ Mismo arreglo que en check-globals (kit-base v1.9.103): sin
+   argumentos miraba el `css/` DEL KIT, así que corrido desde la carpeta
+   de un curso decía "✓" sin haber revisado ninguna hoja del curso — que
+   es donde los hex copiados a mano aparecen de verdad. Ahora, sin
+   argumentos, usa el `css/` del directorio actual si existe, y cae al
+   del kit solo si no lo hay.
+   `CSS_BASE` (de donde salen los tokens) sigue el mismo criterio: un
+   curso trae su propia copia de `coto-base.css`. */
+const CSS_DIR = fs.existsSync(path.resolve('css'))
+  ? path.resolve('css')
+  : path.join(AQUI, '..', 'css');
+const CSS_BASE = fs.existsSync(path.join(CSS_DIR, 'coto-base.css'))
+  ? path.join(CSS_DIR, 'coto-base.css')
+  : path.join(AQUI, '..', 'css', 'coto-base.css');
 
 function stripComments(css) {
   return css.replace(/\/\*[\s\S]*?\*\//g, m => '\n'.repeat(m.split('\n').length - 1));
@@ -62,6 +74,24 @@ function analizarArchivo(filePath, hexSet) {
       const prop = m[1];
       const hex = m[2].toLowerCase();
       if (prop.startsWith('--')) continue; // es la definición del token, no un bypass
+      /* ⚠️ FALSO POSITIVO que este test se comió durante varias vueltas
+         (kit-base v1.9.103): un hex que va como FALLBACK de `var()` —
+         `var(--cat, #1EAADC)` — no es un bypass, es lo contrario. El
+         token gana siempre que exista, y el hex solo aparece si alguien
+         cargó el CSS sin definir la categoría. La regla existe para que
+         nadie COPIE un color de categoría a mano y después ese color
+         quede desfasado del token; un fallback no puede desfasarse,
+         porque no se usa mientras el token esté.
+         MEDIDO en `coto-media.css` del kit: 4 hallazgos, los cuatro
+         fallbacks de `var(--cat, …)` en los controles del reproductor,
+         que venían así desde que ese reproductor subió al kit. O sea
+         que el test estaba en rojo por algo correcto — y un test que
+         está siempre en rojo se deja de leer, que es el modo de fallar
+         que este kit ya pagó dos veces.
+         Se mira el texto ANTES del hex en la misma declaración: si
+         termina en una `var(` abierta con su coma, es un fallback. */
+      const antes = line.slice(m.index, m.index + m[0].length - m[2].length);
+      if (/var\(\s*--[\w-]+\s*,\s*$/.test(antes)) continue;
       if (hexSet.has(hex)) {
         hallazgos.push(`línea ${i + 1}: "${prop}: ${m[2]}" — ese hex es un token de categoría; usar var(--cat...) en su lugar.`);
       }

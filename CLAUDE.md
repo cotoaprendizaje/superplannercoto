@@ -14094,3 +14094,84 @@ arreglo propio (§7.48). Nada registraba de qué versión era cada copia.
 - El arnés de pruebas del kit ahora se pone al día con `actualizar-kit
   --aplicar --forzar` en vez de copiar archivos: cada corrida de la suite
   ejercita también el actualizador.
+
+## 7.52 El play de la marca que reacciona, y el tamaño del pop-up que nadie puede pisar (kit-base v1.9.103)
+
+Relevo de "Prevención cardiovascular" (zip `kitbase-v1.9.102-parche`).
+Portado por partes, no copiando archivos: el relevo estaba escrito
+contra el kit de ese curso.
+
+### Qué entró
+
+- **`.d-shot-hit-play--marca`** (`coto-media.css`): el play de la marca
+  calzado sobre el que viene dibujado en el .webp de la tarjeta. Lo que
+  había hecho fracasar el intento anterior era buscar UN valor para todas
+  las tarjetas; con tres variables por tarjeta (`--play`, `--play-x`,
+  `--play-y`, en % del hitbox) calza. En reposo es el mismo archivo en el
+  mismo lugar; el hover se dispara desde toda la zona y se dibuja en el
+  play (`scale: 1.12` + sombra). Se escribe con `translate`/`scale` y no
+  con `transform`, porque `.is-playing` retira el play con
+  `transform: scale(.8)` y el centrado se perdería. `dibujarPlay()` no lo
+  toca porque trae `<img>` (el guard de §7.50).
+- **`--horneado` queda OBSOLETO, no borrado.** El relevo decía que se
+  había ido, pero su propio CSS todavía traía la regla. Un curso que lo
+  use no tiene que romperse al actualizar el kit. Para cursos nuevos se
+  usa `--marca`.
+- **El ESTÁNDAR del pop-up de video** tiene su bloque con título arriba
+  de `.modal-card--video`. La fórmula no cambió; lo que faltaba era que
+  algo impidiera pisarla (las hojas del curso cargan después y ganan).
+  Medido en el kit (el relevo traía números de otro curso, y su tabla
+  decía 326px para el teléfono parado mientras un comentario decía 352):
+
+  | viewport | ancho | % | alto del video |
+  |---|---|---|---|
+  | 1600×900 | 1040 | 65 | 585 |
+  | 1366×768 | 1040 | 76 | 585 |
+  | 1080×810 | 902 | 84 | 508 |
+  | 810×1080 | 677 | 84 | 381 |
+  | 844×390 | 495 | 59 | 278 |
+  | 390×844 | 326 | 84 | 183 |
+
+- **`tests/popup-video-medida.mjs`** (nuevo, 54 tests). Revisa la CAUSA
+  (quién declara el `width`), no recalcula la fórmula en JS: `--d-arte-h`
+  no vive en `:root` y `94vw` no es `innerWidth × .94`. Recorre el CSSOM
+  mirando cada regla PRIMERO y bajando a `cssRules` después: con CSS
+  anidado, una regla común también tiene `cssRules` (vacía pero truthy).
+  Adaptado al kit: usa `report`/`requireUrl`, sirve los .mp4 vacíos, si
+  el curso no tiene disparador inyecta uno (verde por ausencia, si no), y
+  que no exista `#d-video-player` es rojo.
+- **`reproductor-video.mjs`, bloque P**, cubre `--marca`: `<img>`
+  conservada, sin triángulo, con nombre, transparente, y centro y
+  diámetro donde dicen sus variables (±1 punto).
+- **`check-globals.mjs`** toma la carpeta por argumento y
+  **`check-raw-cat-colors.mjs`** mira el `css/` del cwd si existe.
+  Corridos desde un curso sin argumentos, revisaban el KIT y decían ✓.
+- **`check-raw-cat-colors`** no reporta un hex que va de fallback de
+  `var(--x, #hex)`: un fallback no puede desfasarse del token, que es lo
+  único que la regla persigue. Sigue agarrando un hex suelto. El kit
+  igual no tiene fallbacks (§7.47): el comentario de `coto-media.css` lo
+  dice así ahora.
+
+### Lo que el relevo afirmaba y no era del kit
+
+- "`check-raw-cat-colors` en rojo desde varias vueltas": en el kit
+  canónico estaba verde (los fallbacks se sacaron en v1.9.98). Ese rojo
+  y el `Player` publicado dos veces son señal de que el curso cardio
+  tiene una copia vieja del kit: tiene que correr `actualizar-kit`.
+
+### Verificado
+
+- `popup-video-medida`: verde en el curso de prueba en los 6 viewports;
+  rojo con `.modal-card--video{width:min(760px,100%)}` en
+  `diapositivas.css` (en los 4 viewports donde el override cambia la
+  medida); verde en un curso sin video, inyectando el disparador.
+- `--marca` medido: reposo, disco de 47px centrado en 49,8 / 47,0 con
+  `<img>` y sin svg; hover en un punto de la zona lejos del play → 52px
+  (`scale 1.12`).
+- Bloque P: verde con el kit; rojo con `left` del `--marca` fijado en
+  50% (no respeta `--play-x`). **La primera versión dio verde con el CSS
+  roto**: la zona inyectada medía 0×0, las posiciones daban `NaN` y toda
+  comparación con `NaN` es falsa. Verde por ausencia otra vez, ahora en
+  un número. Se le da tamaño a la zona y una medida no finita es rojo.
+- `check-raw-cat-colors`: `.b{background:#1EAADC}` detectado,
+  `.a{background:var(--cat, #1EAADC)}` no.
