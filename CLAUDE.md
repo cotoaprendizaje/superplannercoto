@@ -192,6 +192,17 @@ curso arrancaba con el mismo bug, otra vez, porque nada garantizaba
 que alguien lo trajera de vuelta a mano. Pasó más de una vez (§6.17,
 §6.17.2, §6.18) antes de que esto se formalizara.
 
+**Dónde vive la copia canónica** (desde v1.9.99): en la rama
+`claude/kit-base` del repo `cotoaprendizaje/superplannercoto` —una rama
+huérfana, exclusiva del kit, que no comparte historia con el
+Superplanner—. Cada versión entregada es un commit ahí. Antes el kit
+vivía solo en el contenedor de la sesión del kit y **se perdió dos
+veces** con un reinicio; hubo que re-subirlo desde un zip. Una sesión
+nueva del kit arranca clonando esa rama, no pidiendo el zip. (Los tags
+de versión no pasan el proxy de las sesiones en la nube: la versión
+está en el mensaje del commit y en `package.json`.)
+Una sesión de CURSO sigue sin tocar esa rama: relaya, como dice abajo.
+
 **El mecanismo, en 4 pasos:**
 
 1. Durante una sesión de curso, cualquier cosa que surja y NO dependa
