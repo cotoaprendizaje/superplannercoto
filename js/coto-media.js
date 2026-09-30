@@ -687,7 +687,19 @@
   var ICONO_PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
     '<path d="M8 5v14l11-7z"></path></svg>';
   function dibujarPlay(btn) {
-    if (!btn || btn.querySelector('svg')) return;
+    /* ⚠️ No se toca un botón que YA trae su ícono (kit-base v1.9.101).
+       Hasta acá solo se miraba si había un `<svg>`, y los dos modificadores
+       del play de marca no lo tienen:
+         · `--art` (v1.9.98) lleva un `<img>` con el PNG de la marca. MEDIDO:
+           `dibujarPlay` le reemplazaba el contenido y el botón terminaba con
+           el triángulo genérico en vez del ícono del cliente — regresión de
+           v1.9.98, cuando `--art` subió al kit sin mirar esta función;
+         · `--horneado` (v1.9.101) no dibuja nada a propósito: el play está
+           en el arte. Sin esta excepción, el kit le pintaba un triángulo
+           encima, que es exactamente el play doble que ese modificador
+           vino a sacar. */
+    if (!btn || btn.querySelector('svg, img') ||
+        btn.classList.contains('d-shot-hit-play--horneado')) return;
     var texto = (btn.textContent || '').trim();
     if (texto && !btn.getAttribute('aria-label')) btn.setAttribute('aria-label', texto);
     btn.innerHTML = ICONO_PLAY;

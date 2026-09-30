@@ -391,6 +391,40 @@ html.d-ios.d-fullscreen .modal-card--video.d-vp-ampliado .modal-x--video { top: 
    Redondear el propio `<video>` no depende del recorte del ancestro y
    corta el caso de raíz. */
 .d-shot-hit--circle .d-shot-hit-video { border-radius: 50%; }
+
+/* ---- `--encuadre`: elegir QUÉ PARTE del cuadro se ve (kit-base v1.9.101) ----
+   Un `<video>` en el lugar se dibuja con `object-fit: cover`, así que en
+   un contenedor que NO tiene la proporción del clip hay que recortar. En
+   un círculo (1:1) con un clip 16:9 eso significa tirar el 44% del ancho
+   y agrandar la imagen ~1,78x respecto del cuadro completo — y `cover`
+   recorta siempre por el CENTRO, que en un clip compuesto (fondo de
+   color, carteles a un lado, la persona al otro) casi nunca es lo que hay
+   que mostrar.
+
+   Reporte del cliente sobre "Prevención cardiovascular": *"en el video
+   circular se ve como un fondo de otra cosa"*. No era un bug suelto:
+   era esta geometría. El arte del círculo muestra a la persona recortada
+   sobre blanco, y al arrancar el video aparecía un recorte muy ampliado
+   del centro del cuadro, con fondo de color y carteles cortados.
+
+   El curso modelo ("Seguridad Alimentaria") evita el problema de raíz:
+   pone su video en un rectángulo de 1,72:1, o sea la proporción del clip,
+   donde `cover` no recorta nada. Cuando el arte manda un círculo eso no
+   es una opción, y entonces hace falta decir a mano dónde está la
+   persona dentro del cuadro.
+
+   `--encuadre` deja que cada video declare su propio `object-position`
+   con una custom property, sin tener que escribir una regla por video:
+
+     <div class="d-shot-hit d-shot-hit--circle d-shot-hit--video
+                 d-shot-hit--encuadre" style="--encuadre: 68% 40%" ...>
+
+   Sin `--encuadre` el valor sigue siendo `center`, o sea que esta clase
+   NO cambia nada por sí sola: es opt-in y no toca ningún curso existente.
+   El número se saca mirando el clip: el primer valor es qué punto
+   horizontal del cuadro queda en el centro del círculo (0% = borde
+   izquierdo, 100% = derecho), el segundo lo mismo en vertical. */
+.d-shot-hit--encuadre .d-shot-hit-video { object-position: var(--encuadre, center); }
 /* BUG REAL ("Seguridad alimentaria"), 2 capas — la 1ª parecía resuelta
    pero solo tapaba la 2ª:
    1) El tamaño se daba con `width` y `height` en % del wrapper Y un
@@ -610,3 +644,38 @@ html.d-ios.d-fullscreen .modal-card--video.d-vp-ampliado .modal-x--video { top: 
 }
 .d-shot-hit-play.d-shot-hit-play--art img { width: 100%; height: 100%; display: block; object-fit: contain; }
 .d-shot-hit-play.d-shot-hit-play--art:hover { background: transparent; }
+
+/* ---- `--horneado`: el arte YA trae el play (kit-base v1.9.101) ----
+   Caso real de "Prevención cardiovascular": las dos capturas con video
+   circular traen el botón de play DIBUJADO en el .webp, y es el mismo
+   ícono de la marca. El curso, además, le ponía encima un
+   `.d-shot-hit-play--art` — MEDIDO: dos plays idénticos encimados a
+   ~9px uno del otro (el del arte en 31,03%/70,79% de la lámina, el del
+   código en 30,97%/71,54%), que a la vista daban un solo botón con el
+   borde doble.
+
+   El primer intento fue sacar el botón, y estaba MAL: el wrapper del
+   círculo es un `<div data-hit>` y `initInlineCircleVideos` no le
+   engancha nada — el único control real es ese botón. Sin él el círculo
+   solo arranca por el `click` del `<video>` de abajo (que existe), o
+   sea que se pierde el acceso por TECLADO y el rótulo para lector de
+   pantalla.
+
+   Así que el control se queda y lo que se apaga es su DIBUJO. Cubre el
+   círculo entero, que es lo que el alumno cree que está tocando de
+   todos modos, y el play visible es el que el diseñador puso en el
+   arte, exactamente donde lo puso.
+   Marcado: `<button class="d-shot-hit-play d-shot-hit-play--horneado">`
+   sin nada adentro más que el `<span class="sr-only">`.
+   ⚠️ Y el JS no le dibuja nada: `dibujarPlay()` (coto-media.js) lo
+   excluye desde esta misma versión, igual que a `--art`. Sin esa
+   excepción el kit le pintaba un triángulo encima (medido), o sea el
+   play doble otra vez. Lo protege el bloque P de `reproductor-video`. */
+.d-shot-hit-play.d-shot-hit-play--horneado {
+  inset: 0; margin: 0; width: 100%; height: 100%;
+  aspect-ratio: auto; max-width: none; max-height: none;
+  background: transparent; box-shadow: none; border-radius: 50%;
+}
+.d-shot-hit-play.d-shot-hit-play--horneado:hover {
+  background: transparent; transform: none;
+}

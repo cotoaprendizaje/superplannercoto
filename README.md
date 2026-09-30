@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.100** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.101** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -397,6 +397,20 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.101 — el play de marca, y el índice como el modelo
+
+CLAUDE.md §7.50.
+
+- **El contador del índice** dice "Viste 1 de 26 secciones", como el
+  curso modelo (antes "1 de 20 vistas").
+- **`.d-shot-hit-play--horneado`**: para cuando el arte ya trae el play
+  dibujado. El botón queda (teclado y lector de pantalla) y no se dibuja.
+- **`.d-shot-hit--encuadre`** + `--encuadre: 68% 40%`: elegir qué parte
+  del video se ve en un círculo. Sin la variable no cambia nada.
+- ⚠️ **Arreglado: el play con el ícono de la marca (`--art`) se veía como
+  el triángulo genérico** desde v1.9.98 — el kit le reemplazaba la
+  imagen. Ahora lo protege un test.
 
 ### v1.9.100 — segunda vuelta de cardio
 

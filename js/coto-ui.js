@@ -429,7 +429,14 @@
       });
       var prog = document.getElementById('d-sidenav-progress');
       if (prog && items.length) {
-        prog.textContent = vistos + ' de ' + items.length + ' vistas';
+        /* Redacción del CURSO MODELO ("Seguridad Alimentaria"), que es
+           la referencia del molde — kit-base v1.9.101. El kit decía
+           "1 de 20 vistas", que además de no coincidir con el modelo se
+           lee mal: "vistas" queda colgando y no se entiende si cuenta
+           diapositivas, visitas o secciones. El modelo dice de quién es
+           el progreso y qué cuenta. Lo notó el cliente comparando los
+           dos índices lado a lado. */
+        prog.textContent = 'Viste ' + vistos + ' de ' + items.length + ' secciones';
       }
 
       /* ---- Progreso por OBJETIVO de aprendizaje (kit-base v1.9.86) ----

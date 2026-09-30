@@ -549,5 +549,52 @@ if (prende.length)
   await page.close();
 }
 
+/* ---- P. el botón de play: cuándo lo dibuja el kit y cuándo NO ----
+   (kit-base v1.9.101). `dibujarPlay()` pone el triángulo en un
+   `.d-shot-hit-play` que no trae ícono. Hasta v1.9.100 solo miraba si
+   había un `<svg>`, y ninguno de los dos modificadores del play de marca
+   lo tiene: `--art` perdía su `<img>` con el ícono del cliente (MEDIDO:
+   quedaba el triángulo genérico, regresión de v1.9.98) y `--horneado`
+   —cuyo play ya está en el arte— recibía uno dibujado encima, que es el
+   play doble que existe para sacar. Y ningún test lo miraba. */
+{
+  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+  await page.route('**/*.mp4', r => r.fulfill({ status: 200, contentType: 'video/webm', body: CUERPO }));
+  await page.goto(url);
+  await page.waitForTimeout(600);
+  const pl = await page.evaluate(() => {
+    if (typeof window.initInlineCircleVideos !== 'function') return null;
+    const slide = document.querySelector('.slide.is-active') || document.querySelector('[data-slide]');
+    const mk = (clase, interior) => {
+      const w = document.createElement('div');
+      w.setAttribute('data-inline-video', '');
+      w.className = 'd-shot-hit d-shot-hit--circle d-shot-hit--video';
+      w.innerHTML = '<video class="d-shot-hit-video" playsinline></video>' +
+        '<button type="button" class="d-shot-hit-play ' + clase + '">' + interior + '</button>';
+      slide.appendChild(w);
+      return w.querySelector('.d-shot-hit-play');
+    };
+    const art = mk('d-shot-hit-play--art', '<span class="sr-only">Reproducir</span><img src="img/reproductor-play.webp" alt="" aria-hidden="true">');
+    const horn = mk('d-shot-hit-play--horneado', '<span class="sr-only">Reproducir video</span>');
+    const plano = mk('', 'Reproducir');
+    window.initInlineCircleVideos({});
+    const leer = (b) => ({ svg: !!b.querySelector('svg'), img: !!b.querySelector('img'),
+      nombre: (b.getAttribute('aria-label') || b.textContent || '').trim(),
+      fondo: getComputedStyle(b).backgroundColor });
+    return { art: leer(art), horn: leer(horn), plano: leer(plano) };
+  });
+  if (pl) {
+    if (!pl.plano.svg) fallos.push('un `.d-shot-hit-play` sin ícono tendría que recibir el triángulo del kit (`dibujarPlay`) y no lo recibió.');
+    if (!pl.plano.nombre) fallos.push('al dibujar el triángulo, el botón se quedó sin nombre accesible (el texto tiene que pasar a aria-label).');
+    if (!pl.art.img || pl.art.svg) fallos.push('`.d-shot-hit-play--art` perdió su <img> con el ícono de la marca: `dibujarPlay` la reemplazó por el triángulo genérico.');
+    if (pl.horn.svg) fallos.push('`.d-shot-hit-play--horneado` recibió un triángulo dibujado: el play ya está en el arte, y quedan dos encimados.');
+    if (!pl.horn.nombre) fallos.push('`.d-shot-hit-play--horneado` se quedó sin nombre accesible: es el único control del círculo.');
+    if (!/rgba\(0, 0, 0, 0\)|transparent/.test(pl.horn.fondo)) {
+      fallos.push(`\`.d-shot-hit-play--horneado\` tendría que ser transparente (su dibujo lo pone el arte) y tiene fondo ${pl.horn.fondo}.`);
+    }
+  }
+  await page.close();
+}
+
 await browser.close();
 report('reproductor-video', fallos);

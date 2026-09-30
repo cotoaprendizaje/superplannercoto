@@ -13979,3 +13979,51 @@ el marco falla la segunda; con los dos, verde.
 `closest('.sr-only')` en vez de `classList.contains`. Verificado con una
 lista dentro de un `.sr-only`: la versión vieja da 3 fallos (uno por
 viewport, *"ul se sale 108px de .sr-only"*), la nueva ninguno.
+
+## 7.50 Cardio contra el curso modelo, y el play de marca que el kit borraba (kit-base v1.9.101)
+
+Relevo chico de "Prevención cardiovascular" ("v1.9.100 → v1.9.101"),
+salido de poner los dos cursos lado a lado. Traía `coto-ui.js` y
+`coto-media.css` "completos", pero eran copias de ese chat: pisarlos
+habría borrado `initPrediccion` e `initEntradaGenerica` (§7.48) y vuelto
+a meter `var(--cat, #1EAADC)` (§7.47). Se portó solo lo nuevo.
+
+### 1 · El contador del índice, con la redacción del modelo
+
+Medido: el kit decía `1 de 20 vistas`; "Seguridad alimentaria", `Viste 1
+de 26 secciones`. Se adopta la del modelo, que dice de quién es el
+progreso y qué cuenta.
+
+### 2 · `.d-shot-hit-play--horneado` — el arte ya trae el play
+
+Cuando la captura trae el botón de play DIBUJADO, el control se queda
+(es el único que da teclado y nombre accesible: el wrapper `data-hit`
+no tiene handlers) y se apaga su dibujo: transparente, cubriendo el
+círculo entero. Medido: 256×256 sobre un círculo de 256×256.
+
+### 3 · `.d-shot-hit--encuadre` — qué parte del cuadro se ve
+
+`object-position: var(--encuadre, center)` para un video 16:9 en un
+círculo, donde `cover` tira el 44% del ancho y recorta siempre por el
+centro. Opt-in: sin `--encuadre` computa `50% 50%` como siempre; con
+`--encuadre: 68% 40%` computa eso.
+
+### 4 · ⚠️ Lo que el relevo no podía ver: `dibujarPlay()` borraba el play de marca
+
+El kit de cardio no tiene `dibujarPlay()` (§7.43, dibuja el triángulo en
+un `.d-shot-hit-play` sin ícono); el nuestro sí. Y solo preguntaba si
+había un `<svg>`. MEDIDO en el kit:
+
+- `--art` (§7.47, el PNG de la marca) llevaba un `<img>`, no un `<svg>`:
+  `dibujarPlay` le reemplazaba el contenido y quedaba el **triángulo
+  genérico en vez del ícono del cliente**. Regresión MÍA de v1.9.98:
+  subí `--art` sin mirar esta función.
+- `--horneado`, el modificador nuevo, recibía un triángulo dibujado
+  encima del play del arte: el play doble que vino a sacar.
+
+Ahora `dibujarPlay` no toca un botón con `<svg>` o `<img>`, ni uno
+`--horneado`. Ningún test miraba esta función desde que existe; ahora la
+protege el bloque P de `reproductor-video` (los tres casos: sin ícono
+recibe triángulo, `--art` conserva su imagen, `--horneado` no recibe
+nada). Verificado: con la versión vieja, rojo por `--art` y por
+`--horneado`; con la nueva, verde.
