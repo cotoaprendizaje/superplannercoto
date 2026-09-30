@@ -62,7 +62,10 @@ import zipfile
 
 # `.kit-anterior`: los respaldos que deja `actualizar-kit.mjs` (v1.9.102).
 # Son la red de seguridad de quien actualiza el curso; al LMS no van.
-EXCLUIR_DIRS = {'node_modules', '.git', '__pycache__', '.pytest_cache', '.kit-anterior'}
+# `curso-prueba`: el curso real contra el que se prueba cada versión del
+# kit (v1.9.106, CLAUDE.md §7.55). Vive en la rama del kit, no viaja en el zip.
+EXCLUIR_DIRS = {'node_modules', '.git', '__pycache__', '.pytest_cache', '.kit-anterior',
+                'curso-prueba'}
 EXCLUIR_ARCH = {'.DS_Store', 'Thumbs.db'}
 ARCHIVOS_DE_TRABAJO = {'PROMPT-CURSO-NUEVO.md', 'MANUAL-DEL-MOLDE.md', 'header-boilerplate.html',
                        'simulador-boilerplate.html'}

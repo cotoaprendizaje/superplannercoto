@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.105** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.106** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -23,6 +23,9 @@ copiar la de la raíz acá antes de armar el próximo zip).
 
 ```
 kit-base/
+├── curso-prueba/      — SOLO en la rama del kit, no en el zip: los archivos propios de
+│                        "Prevención cardiovascular" + probar.sh, que les aplica el kit
+│                        actual y corre la suite (v1.9.106)
 ├── MANUAL-DEL-MOLDE.md — las reglas VIGENTES, cortas (v1.9.104). Viaja con cada
 │                        curso; CLAUDE.md es el diario (el porqué de cada una)
 ├── js/
@@ -402,6 +405,19 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.106 — el curso de prueba: cada versión del kit contra un curso real
+
+Fase 0, paso 3 (ver CLAUDE.md §7.55).
+
+- **`curso-prueba/`** (solo en la rama del kit, no en el zip): los
+  archivos propios de "Prevención cardiovascular". **`sh
+  curso-prueba/probar.sh`** les aplica el kit actual y corre la suite.
+  Cada versión se entrega con las dos suites en verde: la del arnés y
+  esta.
+- **Los tests ya no fallan por un video placeholder de 0 bytes** (el
+  416 que contesta el servidor). Un video que falta (404) sigue siendo
+  fallo.
 
 ### v1.9.105 — los dos cursos modelo contra el kit: dos bugs del kit, tres tests que acusaban al curso
 

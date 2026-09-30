@@ -16,10 +16,20 @@ import { chromium, devices } from 'playwright-core';
    default es peor que ignorarlo: entrena a mirar la suite en rojo y
    asumir que "siempre está así" — exactamente el modo de fallar de
    §6.60, donde "0 fallos" quería decir "0 fallos en 6 de 7". Cualquier
-   OTRO 404 sigue siendo un fallo, ahora con la URL adelante. */
+   OTRO 404 sigue siendo un fallo, ahora con la URL adelante.
+
+   El 416 de un VIDEO también se ignora (kit-base v1.9.106). Es lo que
+   contesta el servidor cuando el navegador pide un rango de un archivo
+   VACÍO, o sea un placeholder de 0 bytes con el nombre final — que es
+   justo lo que el kit manda a dejar mientras faltan los videos reales
+   (§3.9). MEDIDO en el curso de prueba: `puntaje-maximo` daba rojo por
+   `video/tabaquismo.mp4` en una corrida y verde en otra, según si el
+   navegador llegaba a pedirlo. Un 404 de un video sigue siendo fallo:
+   ese archivo falta de verdad. */
 function mensajeDeConsola(msg) {
   const url = (msg.location && msg.location().url) || '';
   if (/\/favicon\.ico$/.test(url)) return null;
+  if (/\.(mp4|webm|m4v|mov)$/i.test(url) && /status of 416/.test(msg.text())) return null;
   return url ? `${msg.text()}  ← ${url}` : msg.text();
 }
 

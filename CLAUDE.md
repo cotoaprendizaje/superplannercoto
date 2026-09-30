@@ -244,7 +244,9 @@ para ponerse al día NO se copian archivos a mano: se corre
    suite contra el curso tal cual, que sigue usando SU copia vieja del
    CSS/JS) y se documenta acá (sección nueva, más changelog + versión
    en `kit-base/README.md`). **Si cambia una regla, también
-   `MANUAL-DEL-MOLDE.md` en la misma versión** (§7.53).
+   `MANUAL-DEL-MOLDE.md` en la misma versión** (§7.53). Y la suite se
+   corre contra los dos cursos: el del arnés y `sh curso-prueba/probar.sh`
+   (§7.55).
 4. El `kit-base.zip` que sale de ESE chat, ya actualizado, es el que
    arranca el próximo curso — nunca un zip parcheado a mano desde una
    sesión de curso.
@@ -14367,3 +14369,55 @@ De la vuelta de cardio en que la tira de repaso se ubicó cinco veces.
   `pdf-capa-texto.py`) y documentado que supone una lámina de dos
   columnas. Reescribe el arte del cliente: el manual lo pone como último
   recurso, después de pedirle la lámina al diseñador.
+
+## 7.55 El curso de prueba: cada versión del kit contra un curso real (kit-base v1.9.106)
+
+Fase 0, paso 3. Hasta acá la suite se corría contra UN curso: el del
+arnés, generado por `new-course.mjs` y "enriquecido" a mano. Es
+sintético, y por eso los tests que no encuentran la pieza tienen que
+inyectarla. Funciona, pero los dos bugs de §7.54 muestran el límite: el
+kit pasó seis versiones con el video de fondo roto porque el arnés no
+tiene video de fondo, y lo encontró un curso real.
+
+### Qué es
+
+**`curso-prueba/`**, en la raíz del kit: los archivos PROPIOS de
+"Prevención cardiovascular" (47: `index.html`, sus tres CSS, `curso.js`,
+`imsmanifest.xml`, `img/` y los videos placeholder de 0 bytes), y
+ninguno del kit. **`curso-prueba/probar.sh`** arma cada vez una copia
+fresca, le aplica el kit ACTUAL con `actualizar-kit.mjs --aplicar`, la
+sirve y corre la suite entera. Así:
+
+- se prueba siempre el kit de hoy, sin copias del kit que envejezcan
+  dentro de la carpeta (y sin duplicar 2 MB en la rama);
+- el actualizador queda ejercitado en cada corrida, sobre un curso sin
+  registro previo;
+- vive en la rama `claude/kit-base` y **no viaja en el zip**
+  (`build-zip.py` excluye `curso-prueba/`; `new-course.mjs` y
+  `_kit-archivos.mjs` no la ven porque solo miran sus carpetas).
+
+Por qué cardio y no alimentaria: §7.54 — puesta al día, cardio pasa
+55 de 56 y alimentaria tiene cuatro pendientes propios.
+
+**Un único cambio respecto del curso entregado:** `curso.js` llama a
+`initPrediccion()`, que la plantilla llama en su arranque y el curso
+—anterior a esa pieza— no. Queda marcado en el propio `curso.js`.
+
+### Lo que mostró en su primera corrida
+
+- **`puntaje-maximo` en rojo por un 416** de `video/tabaquismo.mp4`: el
+  servidor contesta 416 cuando se pide un rango de un archivo vacío, o
+  sea un placeholder de 0 bytes — lo que el kit manda a dejar mientras
+  faltan los videos (§3.9). Salía rojo o verde según si el navegador
+  llegaba a pedir ese video. `_shared.mjs` ahora ignora el 416 de un
+  archivo de video, con el mismo criterio que el `favicon.ico`.
+  Verificado: con el placeholder, verde; con el archivo borrado (404),
+  rojo con la URL.
+- **La prueba de que sirve:** con la línea de `_fuenteBg` quitada otra
+  vez del kit, `video-fondo-soltar` da rojo en el curso de prueba sobre
+  su diapositiva REAL "unidad1", sin inyectar nada. Restaurada, verde.
+
+### Regla
+
+Cada versión se entrega con las DOS suites en verde: la del arnés y
+`sh curso-prueba/probar.sh`. Está en §0.1 y en el manual.

@@ -1,0 +1,989 @@
+/* ============================================================
+   diapositivas.css · Prevención cardiovascular (COTO · Servicio Médico)
+   Layout genérico de ESTE curso: escenario, diapositivas-captura,
+   barra inferior, índice lateral, glosario, logros. No es parte del
+   kit-base (ver CLAUDE.md §1) — vive acá porque conoce la estructura
+   puntual de este index.html (data-slide reales, cantidad de unidades).
+   ============================================================ */
+
+/* .sr-only ya no se define acá: pasó a coto-base.css (el kit no la traía
+   pese a hacer falta para data-slide-title y el texto de cada hitbox).
+   Un solo nombre de clase para todo texto oculto-visualmente-no-de-la-
+   accesibilidad — no hace falta un .sr-only-text aparte. */
+
+/* El escenario (.d-stage) y la base de .slide (incluidas las animaciones
+   anim-l/anim-r) ya NO se definen acá: pasaron a coto-shot-stage.css, que
+   es donde tienen que estar (el resto de ese archivo depende de que
+   .d-stage sea un container-type:size). Ojo con volver a agregarles
+   padding: el lienzo se dimensiona con 100cqw/100cqh contra .d-stage, así
+   que cualquier padding en .slide haría que .d-shot pida más ancho del
+   disponible. */
+
+/* ---- Diapositiva-captura (patrón "captura íntegra", ver CLAUDE.md §2.8) ---- */
+.d-shot-slide{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.d-shot{position:relative}
+/* object-fit:cover, NO contain — es lo que espera coto-shot-stage.css: en el
+   rango tablet (@container 1.5–1.9) el lienzo pasa a ocupar el frame completo
+   y cuenta con que `cover` recorte los costados DENTRO del margen de
+   seguridad del 13% (CLAUDE.md §2.9/§6.9). Con `contain` el lienzo se agranda
+   igual pero la imagen se sigue viendo entera con franjas adentro: el fix de
+   tablets del kit queda anulado y vuelve el letterbox que justamente venía a
+   resolver. En desktop da lo mismo (imagen y lienzo son 2:1 exactos, recorte
+   matemáticamente 0, ver §2.8). */
+.d-shot-img{width:100%;height:100%;object-fit:cover;object-position:50% 50%;
+  display:block;background:#fff}
+
+/* ---- Fondos en video con sonido (portada, unidad1, unidad2) ----
+   El cliente va a subir portada.mp4/unidad1.mp4/unidad2.mp4 a mano en
+   `video/` más adelante (por eso NO están en este repo todavía) — hasta
+   que lleguen, el navegador simplemente muestra el `poster` (la misma
+   captura .webp de siempre), así que el curso funciona igual sin ellos.
+   Calcado 1 a 1 de "Surtido sin venta" (portada/unidad-1 con audio):
+   ver initBgVideos() en curso.js. */
+.d-shot-slide--bg-video .d-shot-video{position:absolute;inset:0;width:100%;height:100%;
+  max-width:none;max-height:none;object-fit:cover;object-position:center;display:block}
+/* Los botones de video-en-tarjeta (rectangular, tipo "Riesgo cardiovascular")
+   se dibujan sobre una tarjeta blanca con esquinas MUY redondeadas en el
+   arte. El radio genérico de `.d-shot-hit` (--r-sm, 8px) es demasiado
+   chico: el tinte del :hover se veía como un rectángulo casi recto
+   asomando por fuera de las esquinas curvas de la tarjeta — "una forma
+   rara que se extiende de más". Con --r-xl (32px, medido contra el
+   radio real de la tarjeta en el arte) el tinte queda contenido dentro
+   del borde curvo. */
+[data-video-play].d-shot-hit{border-radius:var(--r-xl)}
+
+/* ---- Video circular chico que se reproduce EN EL LUGAR (no en un pop-up)
+   ----  "Fallecimiento por ENT" / "Aterosclerosis": el círculo pequeño con
+   la cara del especialista, calcado del mismo criterio que
+   "Surtido sin venta" no usa para estos casos, pero SÍ pidió el cliente:
+   "los videos circulares chiquitos deben reproducirse ahí dentro de ese
+   círculo, no en un reproductor que se abra". initInlineCircleVideos()
+   en curso.js. El resto de los videos (rectangulares, tipo tarjeta) sigue
+   abriendo el pop-up grande — acá no aplica, el círculo es demasiado chico
+   para controles nativos legibles. */
+.d-shot-hit--video{cursor:pointer;background:transparent}
+/* BUG REAL: el círculo chico usa 2 clases (`--circle` Y `--video`), y
+   `.d-shot-hit--circle:hover` (más abajo en el archivo) traía un tinte de
+   color que le ganaba a esta regla por orden de cascada — misma
+   especificidad, gana el que está último. Se veía como un aro de color
+   de más, superpuesto al botón de play (reporte real del cliente: "queda
+   raro, como superpuesto"). Selector combinado = más especificidad,
+   gana siempre sin importar el orden. */
+.d-shot-hit--circle.d-shot-hit--video:hover{background:transparent}
+/* opacity:0 salvo mientras reproduce (BUG REAL corregido: al terminar el
+   video, `ended` sacaba `.is-playing` pero el <video> seguía encima
+   mostrando su último cuadro — que en estos clips queda en negro — en
+   vez de la imagen original del círculo (la cara del especialista
+   horneada en la captura). Ocultar el <video> fuera de reproducción deja
+   ver siempre esa imagen de base, tanto en reposo como al terminar. */
+.d-shot-hit-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
+  opacity:0;transition:opacity .15s ease}
+/* El botón de play del círculo lo dibuja EL KIT y no se pisa acá
+   (coto-media.css): `width:44%; height:auto; aspect-ratio:1;
+   max-width:64px`, o sea un círculo perfecto centrado con `margin:auto`.
+   Este curso le declaraba `height:44%` y `max-height:64px`: sobre un
+   contenedor que no es cuadrado, fijar el ALTO en 44% y dejar el ancho
+   en 44% del ANCHO da una elipse, y los dos topes (max-width del kit y
+   max-height de acá) se peleaban — el resultado era el play corrido y
+   "como superpuesto" que reportó el cliente. */
+
+/* ---- Diapositivas HTML nativas (mini-práctica, resumen del cierre) ----
+   Primeras del curso que NO son captura íntegra: contenido de alto
+   variable (pregunta + 4 opciones + feedback), así que .slide (base del
+   kit, coto-shot-stage.css) no alcanza tal cual — esa base fuerza
+   justify-content:center sin "safe" y no tiene overflow, pensada para
+   una sola imagen que siempre entra exacta. Acá, si el contenido no
+   entra en la ventana, tiene que scrollear DENTRO de la diapositiva
+   (nunca la página — eso rompería scroll-audit), y "safe center" evita
+   que un centrado sin safe ate la mitad de arriba del contenido fuera
+   de alcance cuando sobra alto (mismo criterio que "Surtido sin venta").
+   Acotado a :not(.d-shot-slide) para no tocar el padding:0 que las
+   diapos-captura necesitan (ver nota más arriba: el lienzo se
+   dimensiona con 100cqw/100cqh contra .d-stage, cualquier padding en
+   .slide les rompería el cálculo). */
+.slide:not(.d-shot-slide){flex-direction:column;overflow-y:auto;overflow-x:hidden;
+  justify-content:safe center;gap:1.4rem;padding:clamp(1rem,1.6vw,1.4rem)}
+.slide-inner{width:min(960px,100%);min-width:0}
+/* El texto va en --brand-deep y NO en el color de categoría: es el único
+   texto del curso que queda sobre el fondo del escenario (--bg, un
+   lavanda claro) en vez de sobre una tarjeta blanca, y con 11,5px en
+   mayúsculas ni --cat-ink llega al 4.5:1 que pide AA para texto chico
+   (medido: --cat-strong 3.98:1, --cat-ink 4.42:1, --brand-deep 8.78:1).
+   El acento de categoría no se pierde: lo aporta el guioncito de
+   ::before, que es decoración y ahí --cat-strong sí corresponde. */
+.slide-eyebrow{display:inline-flex;align-items:center;gap:.5rem;font-size:.72rem;font-weight:700;
+  letter-spacing:2px;text-transform:uppercase;color:var(--brand-deep);margin-bottom:.6rem}
+.slide-eyebrow::before{content:"";width:24px;height:2px;background:var(--cat-strong);border-radius:2px}
+.slide-lead{font-size:1.06rem;color:var(--text-soft);line-height:var(--lh-body);max-width:64ch}
+
+/* ============================================================
+   MINI PRÁCTICA (.d-quiz-*) — patrón calcado de "Surtido sin venta"
+   (única referencia con la que se armó esto: no hay minijuego de 10
+   niveles en este curso, solo la mini-práctica de preguntas). Usa
+   exclusivamente tokens de coto-base.css (--cat/--cat-strong/--success/
+   --danger/--surface/--line/--text/--focus) — candidato directo a
+   coto-base-addendum-v1.2.css del próximo kit (ver README).
+   ============================================================ */
+.d-quiz-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+.d-q-num{background:var(--cat-strong)}
+
+/* ---- Gate genérico de avance (initSlideGates() en curso.js) ----
+   Mismo patrón que "Surtido sin venta": el botón "Siguiente" nunca se
+   deshabilita (con disabled/aria-disabled un lector de pantalla no
+   anunciaría por qué no reacciona) — solo se atenúa y, al intentar
+   avanzar igual, tiembla (reusa @keyframes d-shake de acá arriba) y el
+   toast de advanceblocked explica qué falta. El hitbox pendiente pulsa
+   2 veces para guiar la mirada hacia dónde hay que hacer clic. Genérico
+   y barato — candidato directo al kit junto con data-require-seen. */
+@keyframes d-nudge-pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--cat-strong) 55%,transparent)}
+  50%{box-shadow:0 0 0 8px transparent}}
+/* Con las 3 preguntas falladas, el repaso son 3 tarjetas de 3 líneas y
+   un botón cada una: la pantalla de resultado se pasaba del alto
+   disponible de 1366x768 para abajo (recorte medido: 114-201px). En
+   pantallas bajas el repaso se compacta y el botón pasa a ser un enlace
+   en la misma línea. */
+@media (max-height:820px){
+  .d-quiz-review{margin-top:.7rem}
+  .d-quiz-review ul{gap:.4rem}
+  .d-quiz-review li{padding:.5rem .7rem;font-size:.82rem;
+    display:grid;grid-template-columns:1fr auto;column-gap:.7rem;align-items:center}
+  .d-quiz-review .rq{grid-column:1;font-size:.82rem}
+  .d-quiz-review .ra{grid-column:1;margin-top:.15rem;font-size:.78rem}
+  .d-quiz-review .rv-go{grid-column:2;grid-row:1 / span 2;margin-top:0;
+    padding:.35rem .6rem;font-size:.76rem;white-space:nowrap}
+  .d-quiz-result strong{font-size:1.1rem}
+  .d-quiz-result > p{font-size:.85rem;margin-bottom:.5rem}
+}
+
+/* ---- Cierre: bloqueado hasta terminar la mini práctica ---- */
+.slide-cierre .locked{text-align:center;color:var(--text-soft);font-style:italic;border:1px dashed var(--line);
+  border-radius:var(--r-lg);padding:1.2rem 1.6rem;max-width:52ch}
+.slide-cierre.unlocked .locked{display:none}
+/* El paso 1 (captura) mantiene padding:0 como cualquier diapo-captura (lo
+   da la regla :not(.d-shot-slide) de más arriba, que no matchea acá). El
+   paso 2 es HTML real de alto variable — mismo resguardo que el resto de
+   las diapos HTML: si en una ventana angosta el resumen no entra en el
+   lienzo 2:1, scrollea DENTRO de la diapositiva, nunca la página. */
+.slide-cierre.unlocked .d-cierre-summary:not([hidden]){display:block;width:min(1400px,100%);
+  max-height:100%;overflow-y:auto;overflow-x:hidden}
+/* Antes era blanco liso (`var(--surface)`) — pedido del cliente, "tunear
+   el color de la caja blanca": un degradado muy suave con el color de
+   categoría (10-15% de mezcla) le da algo de personalidad sin perder
+   legibilidad, consistente con el resto de tarjetas del curso que ya
+   usan degradados sutiles (ej. `.d-medalla[data-nivel]`). */
+.d-cierre-results{position:relative;overflow:hidden;text-align:center;padding:1.8rem 1.6rem;
+  display:flex;flex-direction:column;border-radius:var(--r-xl);
+  background:linear-gradient(160deg,color-mix(in srgb,var(--cat-soft) 16%,var(--surface)) 0%,var(--surface) 55%);
+  border:1px solid var(--line);box-shadow:var(--shadow-card)}
+.d-cierre-summary .who{margin:0 0 .8rem}
+.d-cierre-summary p{margin:0 0 1.1rem}
+/* 5 tarjetas en una sola FILA, no en 2 columnas: en 2 columnas eran 3
+   filas de ~100px (314px en total) y la columna izquierda del resumen
+   medía 818px contra 648 disponibles a 1366x768 — o sea, se cortaba.
+   En una fila ocupan ~90px y el resumen entra entero, que es el punto:
+   el cierre tiene que leerse de un vistazo, sin scroll. */
+/* Los 4 recuadros de estadística van 2x2, NO en una fila de 4. La regla
+   del kit (coto-cierre.css) ya es `repeat(2,minmax(0,1fr))` y es la
+   correcta: viven en el riel izquierdo del resumen, que mide ~300px.
+   Este curso la pisaba con `repeat(4,1fr)` y cada recuadro quedaba de
+   57px con rótulos que necesitan 66 ("Respuestas correctas") y 52
+   ("Intentos de práctica"): se veían cortados. Medido a 1920x1080.
+   Solo se conserva el margen de este curso. */
+.d-cert-stats{margin:0 0 1.1rem}
+/* Más aire real (reporte del cliente: "se ven muy apretados") — padding
+   vertical y horizontal más generoso, y la tarjeta pasa de gris plano a
+   blanco con sombra propia: se separa mejor del fondo ya tinteado de
+   `.d-cierre-results`, en vez de fundirse con él. */
+.d-cert-stats .s{position:relative;overflow:hidden;border-radius:var(--r-lg);padding:.85rem .5rem;
+  background:#fff;border:1px solid var(--line);
+  box-shadow:0 3px 10px color-mix(in srgb,#000 6%,transparent);
+  transition:transform .15s,box-shadow .15s;text-align:center}
+.d-cert-stats .s:hover{transform:translateY(-2px);box-shadow:0 8px 18px color-mix(in srgb,#000 10%,transparent)}
+/* "Brillo de medalla": barrido de luz que cruza cada tarjeta de stat,
+   escalonado, disparado por celebrate() en curso.js junto con el confeti
+   del cierre. Puramente cosmético y barato -1 clase, 1 keyframe- así que
+   es candidato directo a sumarse al kit junto al resto del festejo. */
+.d-cert-stats .s.d-shine::after{content:"";position:absolute;inset:0;left:-70%;width:45%;
+  background:linear-gradient(100deg,transparent,color-mix(in srgb,#fff 65%,transparent),transparent);
+  animation:d-cert-shine .95s ease forwards}
+
+.d-cert-stats .s b{display:block;margin-bottom:.2rem;font-family:var(--font-num);font-weight:800;font-size:clamp(.95rem,1.5vw,1.35rem);line-height:1.15}
+.d-cert-stats .s span{display:block;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.d-cierre-results .cta{margin:1.2rem 0 0;gap:.65rem}
+.d-gloss > div{padding:.26rem .2rem}
+.d-gloss dt{font-size:.92rem}
+.d-gloss dd{font-size:.85rem;line-height:1.32}
+
+/* ---- Barra "Retomá donde dejaste" (initResume en curso.js) ----
+   Descartable y con autoocultado — nunca navega sola, ver README (era
+   una diferencia real con "Surtido sin venta": la 1ª versión de este
+   curso saltaba de entrada sin preguntar). */
+.d-resume{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:70;
+  display:flex;align-items:center;gap:.8rem;background:var(--surface);
+  border:1px solid color-mix(in srgb,var(--cat) 45%,var(--line));border-radius:var(--r-pill);
+  padding:.5rem .5rem .5rem 1.1rem;box-shadow:var(--shadow-pop);
+  animation:d-resume-in .35s cubic-bezier(.2,.7,.2,1)}
+@media (max-width:560px){.d-resume-txt{display:none}}
+
+/* ---- Pop-up de estadística ("Control de factores de riesgo", 50%) ----
+   Antes era una captura del PDF (imagen suelta con texto en sr-only, sin
+   relación real con el sistema de diseño). Se reescribió como contenido
+   HTML real -mismo patrón que el resto de los pop-ups del curso (glosario,
+   ayuda)- con el número animado por countUpStat() en curso.js al abrirse.
+   Genérico: cualquier pop-up de "dato/estadística" del kit puede reusar
+   .d-stat-pop tal cual, solo cambia el ícono/número/texto. */
+/* padding-top generoso: el ícono es un círculo de 84px y con .3rem
+   quedaba casi tocando el borde del encabezado (reporte del cliente).
+   overflow:hidden se mantiene por las partículas decorativas. */
+.d-stat-pop{position:relative;text-align:center;overflow:hidden;padding-top:1.5rem}
+/* .btn-ic gana por especificidad (ver más abajo): este curso no carga el
+   addendum v1.8 del kit, así que `.d-stat-pop .btn{width:100%}` sin ese
+   contrapeso dejaba "Continuar" a lo ancho completo de la tarjeta —
+   distinto del resto de los botones de pop-up, ya corregidos a ancho de
+   su texto. */
+.d-stat-pop .btn{width:100%;justify-content:center}
+.d-stat-pop .btn-ic{width:auto}
+@media (prefers-reduced-motion:reduce){.d-stat-pop-num{transition:none}}
+
+/* ---- `.btn-ic` / `.d-cta-sticky` ----
+   BUG REAL encontrado en esta pasada: estas 2 clases son del addendum
+   v1.8 del kit (`coto-base-addendum-v1.8.css`), pero este curso todavía
+   carga la v1.2 (ver CLAUDE.md §6.10.8 — el curso no consume ninguno de
+   los módulos nuevos del kit). Sin la clase, el <svg> de los botones
+   "Empezar mi aprendizaje" / "Continuar" / "Empezar la mini práctica"
+   quedaba SIN ningún tamaño — el tamaño intrínseco por default de un
+   <svg> sin `width`/`height` es 300×150px, así que el botón (inline-flex,
+   se agranda para contener a su hijo) se veía como un óvalo gigante con
+   un triángulo enorme adentro. Se copia acá la definición real del kit
+   (sin tocar el kit — ES la misma regla) hasta que este curso migre de
+   verdad al addendum v1.8. */
+.btn-ic{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+  width:auto;max-width:100%}
+
+/* ---- Confeti (celebrate() en curso.js) ---- */
+#d-confetti{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden}
+
+/* Cierre: mismo patrón, envuelto en .d-cierre-shot para el selector de coto-shot-stage.css */
+.d-cierre-shot{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+
+/* Tabs de "Factores de riesgo cardiovascular": los botones y paneles viven
+   dentro del propio .d-shot (posicionados como cualquier [data-hit]); los
+   paneles [data-panel] son solo texto accesible (sr-only), la imagen
+   visible cambia entera al elegir un factor (ver curso.js, initFactores). */
+.d-factores-tabs{position:absolute;inset:0}
+
+/* La barra inferior (.d-bottom, .d-nav-btn, .d-counter, .d-progress*) pasó
+   a css/coto-player-bottom.css — es genérica y el kit ya dependía de sus
+   clases sin definirlas. No reescribirla acá. */
+
+/* ---- Índice lateral / Glosario / Logros (contenido de los .modal) ----
+   .d-sidenav/.d-sidenav-list/.d-sidenav-group/.d-sidenav-item* pasaron a
+   css/coto-base-addendum-v1.2.css: el motor ya arma el índice clickeable
+   y las marcas de sección leyendo esta estructura (spec-motor-slides.md),
+   así que es genérico — no reescribirlo acá. Lo único propio de ESTE
+   curso es el resumen de progreso arriba de la lista. */
+.d-sidenav-progress{margin:0 0 .4rem;font-size:.82rem;font-weight:600;color:var(--text-soft)}
+/* Con 16 términos la lista pasa a ser larga: se le da scroll propio y una
+   línea divisoria entre entradas para que no se lea como un bloque. El
+   .modal-card ya tiene max-height:88vh, así que sin esto el pop-up entero
+   scrollearía y el encabezado se iría de pantalla. */
+.d-glossary > dt:not(:first-child){border-top:1px solid var(--line);padding-top:.85rem}
+
+/* ---- Modal de video, SIN barra superior ----
+   Pedido del cliente: que al abrir el video se vea SOLO el video con sus
+   propios controles, sin la barra de título encima (que hasta acá era
+   igual a la de cualquier otro pop-up, CLAUDE.md §4). El título sigue en
+   el DOM (`sr-only`) para lectores de pantalla; el cierre pasa a un
+   botón flotante sobre la esquina del video en vez de vivir en un
+   `.modal-hd`. Fondo oscuro semitransparente (en vez de heredar el color
+   claro del `.modal-hd--dark`) para que el ícono se lea igual sobre
+   cualquier video, no solo sobre un header de un color conocido. */
+/* ⚠️ ACÁ ESTABA `width:min(760px,100%)` Y ERA UN BUG (v1.9.102).
+   Esta hoja carga DESPUÉS del kit, así que ese ancho le ganaba al
+   estándar de `coto-media.css` —
+   `min(1040px, 94vw, calc(var(--d-arte-h) * .94 * 16 / 9))` — y lo
+   dejaba clavado en 760px. Los 760 son justamente el valor viejo que el
+   kit reemplazó, y por el motivo exacto que el cliente había
+   reportado: *"se ve un poco chiquito y mal las opciones del
+   reproductor"* en iPad.
+   MEDIDO con el override puesto: 760px en escritorio (48% del ancho),
+   en notebook (56%) y en iPad horizontal (70%) — o sea el pop-up salía
+   igual de chico en las tres, sin aprovechar nada de la pantalla.
+   El ancho ya NO se declara acá: es del kit, y es el mismo para todos
+   los cursos. Lo que sí queda de este bloque es el resto del pedido
+   (sin barra de título, cierre flotante), más abajo. */
+.modal-card--video{padding:0;overflow:hidden}
+/* BUG REAL (reportado en iPad, pero no es un bug de tablet): sin
+   `aspect-ratio`, un <video> con `width:100%;height:auto` y SIN
+   metadata cargada (los placeholders de este curso son archivos de 0
+   bytes, ver CLAUDE.md §3.9) cae en el alto por default del navegador
+   —150px, fijo, sin relación con el ancho— así que se ve como una
+   franja angosta "recortada" en vez de un reproductor. `aspect-ratio`
+   reserva una caja 16:9 razonable DESDE el placeholder, y en cuanto
+   carga un video real con su propia relación de aspecto, el navegador
+   usa esa (la intrínseca) por sobre este valor de CSS — no hace falta
+   sacarlo cuando el cliente suba los videos finales. */
+#d-video-player{aspect-ratio:16/9;background:#000;object-fit:contain}
+
+/* ============================================================
+   Los 4 tipos de ENT: círculos del arte convertidos en botones
+   ============================================================
+   Pedido del cliente. El resaltado del hover NO puede ser el fondo
+   teñido de `.d-shot-hit` genérico: acá abajo hay un círculo de color
+   sólido dibujado en el arte, y un rectángulo teñido encima se ve como
+   una mancha. Se usa un aro que sigue la forma real (redondeado arriba,
+   donde está el círculo) + una elevación mínima, que es lo que comunica
+   "esto se toca" sin ensuciar el diseño. */
+/* El resaltado NO es un recuadro sobre toda la zona clickeable (probado y
+   descartado: la caja incluye el texto de abajo, así que se veía como una
+   tarjeta gris pegada encima del arte). Se resalta SOLO el ícono, con un
+   aro del color de categoría alrededor del círculo que ya está dibujado.
+   La medida sale del arte: el círculo mide 158px de los 337 de alto de la
+   zona, o sea el 46,9% de su alto, y está centrado horizontalmente en
+   todas (medido: 50,0 / 50,0 / 49,6 / 50,0%). Por eso el aro se
+   dimensiona contra el ALTO —que es igual en las 4— y no contra el ancho,
+   que cambia según el largo de cada etiqueta. */
+.d-shot-hit--ent{background:transparent}
+.d-shot-hit--ent:hover{background:transparent}
+.d-shot-hit--ent::after{
+  content:"";position:absolute;top:0;left:50%;translate:-50% 0;
+  height:46.9%;aspect-ratio:1;border-radius:50%;pointer-events:none;
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--cat-strong) 60%,transparent);
+  opacity:0;transition:opacity .16s ease,box-shadow .16s ease,scale .16s ease}
+.d-shot-hit--ent:hover::after,
+.d-shot-hit--ent:focus-visible::after{
+  opacity:1;scale:1.06;
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--cat-strong) 55%,transparent),
+             0 8px 22px color-mix(in srgb,#000 22%,transparent)}
+.d-shot-hit--ent:focus-visible{outline:none}
+@media (prefers-reduced-motion:reduce){
+  .d-shot-hit--ent::after{transition:none}
+  .d-shot-hit--ent:hover::after,.d-shot-hit--ent:focus-visible::after{scale:1}}
+
+/* ---- Las 7 pestañas de "Factores de riesgo cardiovascular" ----
+   Mismo criterio que arriba (§ ENT, CLAUDE.md §6.10.3): reportado por el
+   cliente, el recuadro rectangular de `.d-shot-hit` genérico (el tinte
+   de :hover y el outline de :focus-visible) cubre ícono + etiqueta de
+   texto entera, así que se ve como una tarjeta/recuadro pegado encima
+   del arte — y además es redundante, porque el color ya indica cuál
+   está seleccionada (la imagen de fondo cambia entera). Se resalta SOLO
+   el círculo del ícono, igual que en "¿Qué son las ENT?": medido en
+   píxeles contra el arte (mismo método, PIL) — el círculo mide ~103px
+   de los ~230 de alto de la zona (44,8%) y arranca a los 16px del techo
+   de la caja (7%), centrado horizontalmente en las 7. */
+.d-shot-hit--factor{background:transparent}
+.d-shot-hit--factor:hover{background:transparent}
+.d-shot-hit--factor::after{
+  content:"";position:absolute;top:7%;left:50%;translate:-50% 0;
+  height:44.8%;aspect-ratio:1;border-radius:50%;pointer-events:none;
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--cat-strong) 60%,transparent);
+  opacity:0;transition:opacity .16s ease,box-shadow .16s ease,scale .16s ease}
+.d-shot-hit--factor:hover::after,
+.d-shot-hit--factor:focus-visible::after{
+  opacity:1;scale:1.08;
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--cat-strong) 55%,transparent),
+             0 8px 22px color-mix(in srgb,#000 22%,transparent)}
+.d-shot-hit--factor:focus-visible{outline:none}
+@media (prefers-reduced-motion:reduce){
+  .d-shot-hit--factor::after{transition:none}
+  .d-shot-hit--factor:hover::after,.d-shot-hit--factor:focus-visible::after{scale:1}}
+
+/* Cuerpo de los 4 pop-ups de tipo de ENT. Candidato a subir al addendum
+   si otro curso repite el patrón "ícono + definición + datos + cierre". */
+.d-ent-pop{text-align:center}
+.d-ent-pop-icon{width:64px;height:64px;margin:0 auto .8rem;background:var(--cat-soft);color:var(--cat-ink)}
+.d-ent-pop-icon svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.d-ent-pop > p{margin:0 0 .9rem;line-height:1.5}
+.d-ent-pop ul{margin:0 0 .9rem;padding:0;list-style:none;display:flex;flex-direction:column;gap:.55rem;text-align:left}
+.d-ent-pop li{position:relative;padding-left:1.4rem;font-size:.92rem;line-height:1.45;color:var(--text-soft)}
+.d-ent-pop li::before{content:"";position:absolute;left:.35rem;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--cat)}
+.d-ent-pop-note{margin:0 0 1.1rem;padding:.7rem .9rem;border-radius:var(--r-sm);
+  background:var(--cat-soft);color:var(--brand-navy);font-size:.9rem;line-height:1.4}
+
+/* ============================================================
+   Torta interactiva de "Fallecimiento por ENT en Argentina"
+   ============================================================
+   Se dibuja exactamente encima de la torta del arte (ver el comentario
+   del HTML). Mientras nadie interactúa se ve idéntica al PDF; al pasar
+   el mouse o al enfocar por teclado, el sector se separa un poco hacia
+   afuera (por su bisectriz, de ahí las variables --bx/--by que trae
+   cada path) y los otros dos se atenúan. */
+.d-shot-hit--pie{background:transparent;overflow:visible;cursor:default}
+.d-shot-hit--pie:hover{background:transparent}
+.d-pie-svg{width:100%;height:100%;display:block;overflow:visible}
+.d-pie-seg{
+  cursor:pointer;
+  transform-origin:100px 100px;
+  transition:transform .18s ease, opacity .18s ease, filter .18s ease}
+/* El sector activo se separa 5 unidades del viewBox (2,5% del radio):
+   suficiente para leerse como "elegido", poco para no romper el círculo. */
+.d-shot-hit--pie:not(.is-idle) .d-pie-seg{opacity:.42}
+.d-pie-seg.is-active{
+  opacity:1;
+  transform:translate(calc(var(--bx) * 5px), calc(var(--by) * 5px));
+  filter:drop-shadow(0 3px 8px color-mix(in srgb,#000 28%,transparent))}
+.d-pie-seg:focus{outline:none}
+.d-pie-seg:focus-visible{outline:3px solid var(--brand-navy);outline-offset:2px}
+
+/* Tarjeta de datos: NO queda fija en un solo lugar — se ubica cerca del
+   sector elegido (pedido del cliente: "que cada dato aparezca en su
+   correspondiente parte de la torta"). La primera versión posicionaba
+   por la dirección bx/by directo, sin chequear el arte: en las 3
+   quedaba pisando la propia etiqueta horneada en la imagen ("40%
+   Enfermedades del corazón", "25% Cáncer", "35% Diabetes") — "se
+   pisan", mismo reporte que el cartel de barras. Se remidió en píxeles
+   contra el layout real (viewport de referencia 1600×900: torta
+   401,9-766,3px / 325,4-689,8px, video circular arranca en x=1060,3,
+   etiquetas de la torta en x330-926 según el sector) y se reposicionó
+   en las 2 zonas realmente libres:
+   · corazón: a la derecha de la torta, DEBAJO de su propia etiqueta,
+     antes de llegar al video del especialista.
+   · cáncer/diabetes: a la izquierda de la torta, en el hueco vertical
+     entre las 2 etiquetas de ese lado — buena posición para ambas
+     porque nunca se muestran al mismo tiempo. */
+.d-pie-card{
+  position:absolute;width:55%;
+  pointer-events:none;
+  background:#fff;border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:0 12px 30px color-mix(in srgb,#000 16%,transparent);
+  padding:.7rem .85rem;text-align:left;
+  animation:d-pie-card-in .18s ease both;
+  transition:left .2s ease, top .2s ease}
+/* corazón: hueco libre a la derecha de la torta, debajo del "40%" horneado */
+[data-pie-active="corazon"] .d-pie-card{left:106%;top:38%}
+/* cáncer y diabetes: mismo hueco, a la izquierda de la torta, entre
+   las 2 etiquetas de ese lado (nunca se muestran juntas) */
+[data-pie-active="diabetes"] .d-pie-card,
+[data-pie-active="cancer"] .d-pie-card{left:-64%;top:24%}
+@keyframes d-pie-card-in{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:none}}
+.d-pie-card-pct{margin:0;font-family:var(--font-title);font-weight:900;
+  font-size:clamp(1.1rem,2.6cqw,2rem);line-height:1;color:var(--cat-ink)}
+.d-pie-card-pct small{font-size:.5em;margin-left:.08em}
+.d-pie-card-name{margin:.1rem 0 .3rem;font-weight:700;color:var(--brand-navy);
+  font-size:clamp(.62rem,1.15cqw,.95rem);line-height:1.2}
+.d-pie-card-txt{margin:0;color:var(--text-soft);
+  font-size:clamp(.55rem,1cqw,.85rem);line-height:1.35}
+@media (prefers-reduced-motion:reduce){
+  .d-pie-seg,.d-pie-card{transition:none;animation:none}
+  .d-pie-seg.is-active{transform:none}
+}
+
+/* ============================================================
+   Las 4 etapas de la aterosclerosis (hover / foco / tap)
+   ============================================================
+   Mismo criterio que la torta: el arte no se toca, se le superponen
+   zonas interactivas. Acá el resaltado no puede ser un tinte de color
+   (el dibujo ya es rojo y amarillo saturados): se usa un halo blanco +
+   sombra y una escala mínima, que funciona sobre cualquier color de
+   fondo sin ensuciarlo. */
+/* Mismo criterio que los tipos de ENT: se resalta el ÍCONO (el corte
+   redondo de la arteria, a la izquierda de cada fila), no un recuadro
+   sobre toda la fila. La versión anterior pintaba un panel claro encima
+   del dibujo y se veía como una tarjeta pegada. Medida del arte: el
+   círculo mide 141px y la zona 770px de ancho, o sea el 18,3%; como es
+   redondo, el alto sale solo con aspect-ratio. */
+.d-shot-hit--etapa{background:transparent}
+.d-shot-hit--etapa:hover{background:transparent}
+.d-shot-hit--etapa::after{
+  content:"";position:absolute;top:0;left:0;width:18.3%;aspect-ratio:1;
+  border-radius:50%;pointer-events:none;
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--cat-strong) 60%,transparent);
+  opacity:0;transition:opacity .18s ease,box-shadow .18s ease,scale .18s ease}
+.d-shot-hit--etapa:hover::after,
+.d-shot-hit--etapa:focus-visible::after,
+.d-shot-hit--etapa.is-active::after{
+  opacity:1;scale:1.07;
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--cat-strong) 55%,transparent),
+             0 8px 20px color-mix(in srgb,#000 22%,transparent)}
+.d-shot-hit--etapa:focus-visible{outline:none}
+
+@media (prefers-reduced-motion:reduce){
+  .d-shot-hit--etapa::after{transition:none}
+  .d-shot-hit--etapa.is-active::after,.d-shot-hit--etapa:hover::after{scale:1}
+}
+
+/* Pop-up de la etapa (el texto se movió acá: en la diapositiva no había
+   hueco libre del tamaño necesario y quedaba apretado).
+   El nombre de la etapa vive en el encabezado, no repetido en el cuerpo,
+   y no hay botón de acción: se cierra con ✕, Esc o tocando fuera. */
+.d-etapa-pop{text-align:left}
+.modal-card:has(.d-etapa-pop){width:min(520px,100%)}
+
+/* Barra de progresión: ubica la etapa dentro de las 4. Es lo que le
+   faltaba al pop-up, que con un número suelto y una frase se veía vacío. */
+.d-etapa-steps{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);
+  gap:.35rem;margin:0 0 1rem;padding:0}
+.d-etapa-steps li{border-top:3px solid var(--line);transition:border-color .15s}
+.d-etapa-steps button{display:flex;flex-direction:column;align-items:center;gap:.3rem;
+  width:100%;padding:.4rem .2rem .1rem;border:none;background:transparent;cursor:pointer;
+  text-align:center;font:inherit;font-size:.68rem;line-height:1.2;color:var(--text-soft);
+  opacity:.5;transition:opacity .15s,color .15s}
+.d-etapa-steps button:hover{opacity:.85}
+.d-etapa-steps button:focus-visible{outline:3px solid var(--cat-strong);outline-offset:2px;border-radius:6px}
+.d-etapa-steps button span{display:grid;place-items:center;width:26px;height:26px;
+  border-radius:50%;background:var(--line);color:var(--brand-navy);
+  font-weight:700;font-size:.78rem;transition:background .15s,color .15s,transform .15s}
+.d-etapa-steps button:hover span{background:var(--cat-soft);color:var(--cat-ink)}
+.d-etapa-steps li.is-prev{border-top-color:var(--cat)}
+.d-etapa-steps li.is-prev button{opacity:.85}
+.d-etapa-steps li.is-prev button span{background:var(--cat-soft);color:var(--cat-ink)}
+.d-etapa-steps li.is-cur{border-top-color:var(--cat-strong)}
+.d-etapa-steps li.is-cur button{opacity:1;font-weight:700;color:var(--brand-navy);cursor:default}
+.d-etapa-steps li.is-cur button span{background:var(--cat-strong);color:#fff;transform:scale(1.15)}
+@media (prefers-reduced-motion:reduce){
+  .d-etapa-steps button,.d-etapa-steps button span{transition:none}
+  .d-etapa-steps li.is-cur button span{transform:none}
+}
+
+/* Alto fijo del cuerpo: los 4 textos tienen largos distintos y el
+   pop-up cambiaba de tamaño al saltar de etapa, con la barra de pasos
+   moviéndose bajo el dedo. Se reserva el alto del texto más largo para
+   que la tarjeta no se mueva nunca. */
+.d-etapa-pop-cuerpo{min-height:11.5rem;display:flex;flex-direction:column}
+.d-etapa-pop-que{margin-top:auto}
+.d-etapa-pop-txt{margin:0 0 .8rem;color:var(--brand-navy);line-height:1.5;font-size:1rem}
+/* Segundo párrafo: por qué importa esa etapa. Diferenciado con fondo,
+   para que no se lea como una continuación de la definición. */
+.d-etapa-pop-que{margin:0;padding:.7rem .85rem;border-radius:var(--r-sm);
+  background:var(--cat-soft);color:var(--text-soft);font-size:.9rem;line-height:1.45}
+
+/* ============================================================
+   Unidad 2: ilustración viva + progreso de la unidad
+   ============================================================ */
+/* La zona sobre la ilustración no se tiñe: la ilustración ya es a color y
+   cualquier velo la ensucia. Se usa una elevación mínima. */
+.d-ilustra-zona{background:transparent;border-radius:20px;transition:transform .2s ease}
+.d-ilustra-zona:hover{background:transparent}
+.d-ilustra-zona.is-on{transform:scale(1.02)}
+.d-ilustra-zona:focus-visible{outline:3px solid var(--cat-strong);outline-offset:4px}
+
+/* El cartel se apoya SOBRE el tercio inferior de la ilustración. Estas
+   diapositivas no tienen ningún hueco libre del tamaño necesario (medido:
+   la banda inferior izquierda queda dentro del margen de seguridad), así
+   que el dato se revela encima del dibujo y desaparece al salir: es un
+   reveal temporal, no tapa nada de forma permanente. */
+.d-ilustra-cartel{position:absolute;display:flex;align-items:flex-start;pointer-events:none;
+  animation:d-ilu-in .18s ease both}
+@keyframes d-ilu-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.d-ilustra-cartel p{margin:0;width:100%;
+  background:color-mix(in srgb,var(--brand-navy) 92%,transparent);color:#fff;
+  border-radius:var(--r-sm);padding:.55rem .75rem;text-align:left;
+  font-size:clamp(.55rem,1cqw,.88rem);line-height:1.35;
+  box-shadow:0 10px 26px color-mix(in srgb,#000 30%,transparent)}
+
+/* Fila de avance de la unidad 2 (etiqueta + tildes). */
+.d-u2-prog{position:absolute;display:flex;align-items:center;justify-content:flex-end;
+  gap:.6rem;pointer-events:none}
+.d-u2-prog-lbl{
+  font-size:clamp(.5rem,.95cqw,.82rem);white-space:nowrap}
+.d-u2-dots{gap:clamp(4px,.5cqw,9px)}
+
+/* Avance de la unidad: 6 TILDES, no botones (decisión del cliente).
+   Pendiente = tilde gris apenas visible dentro de un aro; completada =
+   tilde blanca sobre verde. Se usa verde y no el color de categoría
+   porque acá "completado" es un estado de logro, no un elemento de
+   marca — y es el mismo verde de acierto que ya usa el resto del curso.
+   Sin cursor:pointer ni hover: no hay nada que clickear. */
+.d-u2-tick{display:grid;place-items:center;
+  width:clamp(14px,1.5cqw,24px);height:clamp(14px,1.5cqw,24px);
+  border-radius:50%;border:2px solid var(--line);background:#fff;
+  transition:background .2s ease,border-color .2s ease,transform .2s ease}
+/* El factor en el que estás parado se agranda apenas, para ubicarse en
+   la serie sin sugerir que se puede tocar. */
+.d-u2-tick.is-here{transform:scale(1.25);border-color:var(--cat-strong)}
+.d-u2-tick.is-here.is-done{border-color:#2e7d32}
+
+/* Pop-up de predicción */
+@media (prefers-reduced-motion:reduce){
+  .d-ilustra-zona,.d-u2-tick{transition:none}
+  .d-ilustra-zona.is-on,.d-u2-tick.is-here{transform:none}
+  .d-ilustra-cartel{animation:none}
+}
+
+/* ---- Gráfico de barras de las Américas (hover / foco / tap) ---- */
+.d-barra-fila{border-radius:10px;background:transparent;
+  transition:background .15s ease, box-shadow .15s ease, opacity .15s ease}
+.d-barra-fila:hover{background:transparent}
+.d-shot:not(.is-barra-idle) .d-barra-fila{opacity:.45}
+.d-barra-fila.is-active{opacity:1;
+  background:color-mix(in srgb,var(--cat) 14%,transparent);
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--cat-strong) 45%,transparent)}
+.d-barra-fila:focus-visible{outline:3px solid var(--cat-strong);outline-offset:2px}
+/* align-items:flex-start (no center): el cartel crece HACIA ABAJO desde
+   el borde superior de su caja. Con `center` una segunda línea lo hacía
+   crecer también hacia arriba y rozaba el pie del logo de la OMS, que
+   termina exactamente en el 85,16% de la altura (medido). Lo que sobra
+   hacia abajo cae en el margen de seguridad del 8%, que está vacío por
+   diseño.
+   `data-t` se corrió de 85.55 a 87.10 (casi +1.5pp) porque con el gap
+   original (0.39pp contra el pie de los logos) el cartel se veía pegado
+   al gráfico — "se pisan", reporte real del cliente. Sumado al padding
+   más generoso de abajo, da aire real sin comerse el margen de
+   seguridad del 8%. */
+.d-barra-cartel{position:absolute;display:flex;align-items:flex-start;pointer-events:none;
+  animation:d-ilu-in .18s ease both}
+.d-barra-cartel p{margin:0;width:100%;
+  background:color-mix(in srgb,var(--brand-navy) 94%,transparent);color:#fff;
+  border-radius:var(--r-sm);padding:.7rem 1rem;text-align:left;
+  font-size:clamp(.52rem,.95cqw,.85rem);line-height:1.4;
+  box-shadow:0 10px 26px color-mix(in srgb,#000 28%,transparent)}
+.d-barra-cartel b{color:var(--cat)}
+@media (prefers-reduced-motion:reduce){.d-barra-fila{transition:none}.d-barra-cartel{animation:none}}
+
+/* Aviso de encuadre de la mini práctica. Va con el color de INFORMACIÓN,
+   no con el de advertencia: no es un error ni un peligro, es una
+   aclaración. Pedido del cliente para que nadie confunda esta práctica
+   con la evaluación final del curso. */
+.d-aviso-practica{display:grid;grid-template-columns:auto 1fr;gap:.8rem;align-items:start;
+  margin:0 0 1.1rem;padding:.85rem 1rem;border-radius:var(--r-sm);
+  background:var(--cat-soft);border-left:4px solid var(--cat-strong);text-align:left}
+.d-aviso-ic{
+  background:var(--cat-strong)}
+.d-aviso-practica p{margin:0;font-size:.9rem;line-height:1.45;color:var(--brand-navy)}
+.d-aviso-practica p + p{margin-top:.4rem;color:var(--text-soft)}
+/* El aviso suma ~90px a una diapositiva que ya venía justa: sin esto se
+   recortaba el botón "Responder" a 1280x720 y 1366x768 (lo detectó el
+   chequeo de recorte de scroll-audit). Se compacta el bloque de intro
+   entero —no solo el aviso— en pantallas de menos de 800px de alto. */
+/* Al responder, la intro se colapsa (ver renderQ en curso.js). */
+.slide.is-quiz-running .slide-eyebrow,
+.slide.is-quiz-running .slide-lead,
+.slide.is-quiz-running .d-aviso-practica{display:none}
+
+@media (max-height:800px){
+  .d-aviso-practica{padding:.55rem .8rem;margin-bottom:.7rem;gap:.6rem}
+  .d-aviso-practica p{font-size:.8rem;line-height:1.35}
+  .d-aviso-practica p + p{margin-top:.25rem}
+  .d-aviso-ic{width:28px;height:28px}
+  .d-aviso-ic svg{width:16px;height:16px}
+  .slide[data-slide="evaluacion"] .slide-lead{margin-bottom:.6rem;font-size:.9rem}
+  .slide[data-slide="evaluacion"] h2{margin-bottom:.3rem}
+  .slide[data-slide="evaluacion"] .d-opt{padding-top:.45rem;padding-bottom:.45rem}
+}
+/* Pantallas bajas: además se oculta el título mientras se responde y la
+   mascota del feedback (el texto del feedback ya dice lo mismo). */
+@media (max-height:720px){
+  .slide.is-quiz-running h2{display:none}
+  .slide.is-quiz-running .d-quiz-mascot{display:none}
+  .slide[data-slide="evaluacion"] .d-q{padding:.7rem .8rem}
+  .slide[data-slide="evaluacion"] .d-q-title{margin-bottom:.5rem}
+}
+
+/* ============================================================
+   Premio final: medalla de oro / plata / bronce
+   ============================================================
+   Rediseño pedido por el cliente: la versión anterior teñía la CAJA
+   entera con un degradado muy pálido (casi gris en pantalla, "quedaba
+   feo") y el ícono era el emoji suelto, sin ningún tratamiento. Ahora
+   el color de tier vive en un badge cuadrado-redondeado propio
+   (`.d-medalla-ic`), con degradado real oro/plata/bronce + sombra —
+   la caja (`.d-medalla`) queda neutra para que el badge sea lo que se
+   destaca. De paso, más "aire": gaps y paddings más generosos entre
+   secciones de toda la columna izquierda. */
+.d-cierre-results{gap:0}
+
+/* ---- Efecto cinematográfico al revelar la medalla ----
+   `mostrarResumenCierre()` en curso.js suma `.is-revealing` al llegar al
+   resumen (mismo momento que el confeti): el badge entra con un pop
+   elástico (overshoot + leve rotación, como una medalla real
+   "cayendo" en su lugar) y un destello radial detrás se expande y se
+   apaga. Es una sola vez, no un loop — un brillo permanente se lee
+   como una animación rota, no como un logro. */
+.d-medalla-ic::after{content:"";position:absolute;inset:-45%;z-index:-1;
+  border-radius:50%;pointer-events:none;opacity:0;
+  background:radial-gradient(circle,color-mix(in srgb,#fff 75%,transparent) 0%,transparent 70%)}
+
+/* Los 3 rangos siempre visibles: el que se alcanzó, destacado. */
+.d-medalla-rangos{list-style:none;display:flex;gap:.4rem;margin:0 0 1.2rem;padding:0}
+.d-medalla-rangos li.is-logrado{background:var(--cat-soft)}
+
+/* ---- Pop-up de intro de la mini práctica ---- */
+.d-pracintro{text-align:center}
+.d-pracintro-ic{width:56px;height:56px;margin:0 auto .7rem;background:var(--cat-soft);color:var(--cat-ink)}
+.d-pracintro-ic svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.d-pracintro-lead{margin:0 0 .7rem;font-size:1.05rem;color:var(--brand-navy)}
+.d-pracintro ul{margin:0 0 .9rem;padding:0;list-style:none;display:flex;flex-direction:column;
+  gap:.45rem;text-align:left}
+.d-pracintro li{position:relative;padding-left:1.4rem;font-size:.92rem;line-height:1.4;color:var(--text-soft)}
+.d-pracintro li::before{content:"";position:absolute;left:.35rem;top:.55em;width:7px;height:7px;
+  border-radius:50%;background:var(--cat)}
+.d-pracintro-eval{margin:0 0 1.1rem;padding:.7rem .9rem;border-radius:var(--r-sm);
+  background:var(--cat-soft);color:var(--brand-navy);font-size:.88rem;line-height:1.45;text-align:left}
+
+/* ---- Pantalla de salida del curso ---- */
+.d-salida{position:fixed;inset:0;z-index:200;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--brand-navy) 92%,transparent);padding:1.5rem}
+.d-salida-eval{background:var(--cat-soft);
+  color:var(--brand-navy)}
+
+/* ---- El resumen del cierre entra sin scroll ----
+   Medido a 1366x768: las 2 columnas necesitaban 818px contra 648
+   disponibles. Con las tarjetas de estadística en una fila se resuelve
+   la columna izquierda; el repaso se comprime acá. No se saca contenido:
+   el cliente pidió expresamente que el resumen fuera MÁS completo. */
+@media (max-height:860px){
+  .d-medalla-ic{font-size:1.7rem;width:56px;height:56px}
+}
+/* Pantallas bajas de verdad (720p y menos): un escalón más de compresión.
+   El contenido no se recorta — se achica. */
+@media (max-height:740px){
+  .d-medalla-ic{font-size:1.4rem;width:46px;height:46px}
+  .d-cert-stats .s{padding:.55rem .35rem}
+}
+/* Netbooks de sucursal (1024x640): último escalón. */
+@media (max-height:660px){
+  .d-medalla-ic{font-size:1.15rem;width:38px;height:38px}
+  .d-cert-stats .s{padding:.45rem .3rem}
+}
+/* El resumen mantiene 3 columnas mientras haya ancho: apilarlas lo hace
+   crecer a lo alto justo cuando menos alto hay. */
+
+/* ---- Instructivo v3: grilla 2x2 de tarjetas ícono+texto ----
+   Referencia visual pasada por el cliente (otro curso), adaptada acá
+   100% con tokens de color (--cat/--cat-strong/--cat-soft/--cat-grad):
+   cambia de color de curso a curso solo con `data-cat`, sin tocar nada
+   de este bloque. Candidato a subir al addendum si un segundo curso
+   repite el patrón (ver comentario en el HTML). */
+.d-instr-modal{position:relative;overflow:hidden;width:min(620px,100%)}
+.d-instr-modal::before,.d-instr-modal::after{content:"";position:absolute;
+  border-radius:50%;background:var(--cat-grad,var(--brand));opacity:.14;pointer-events:none}
+.d-instr-modal::after{width:170px;height:170px;bottom:-90px;left:-70px}
+.d-instr-kicker{
+  background:var(--cat-soft);color:var(--on-cat,var(--brand-navy))}
+
+/* ---- Instructivo (Ayuda, siempre disponible): subtítulos y botón
+   centrado con ícono ---- */
+
+/* El botón queda PEGADO al pie de la tarjeta: el instructivo es el
+   pop-up más largo del curso y en pantallas bajas su llamado a la
+   acción quedaba abajo de todo, fuera de la vista. Un botón que hay que
+   ir a buscar scrolleando no se usa. Con `sticky` el contenido scrollea
+   y el botón se queda. Mismo criterio que `.modal-hd` sticky. */
+.d-instr-cta{display:flex;justify-content:center;margin-top:1.1rem;
+  position:sticky;bottom:0;z-index:2;
+  padding:.7rem 0 .2rem;background:linear-gradient(to top,#fff 65%,transparent)}
+
+/* ⚠️ ACÁ VIVIERON el chip `.d-repaso-chip`, su banda `.d-banda-chip` y
+   el ancho del pop-up `.modal--repaso` — los tres se fueron con el
+   envase que los necesitaba (v1.9.103). El repaso volvió a ser una tira
+   dentro de la diapositiva: la arma `initUnidad2DOM()` con la tarjeta
+   `.d-repaso` del kit, y el único estilo propio que le queda a este
+   curso es el de abajo (sin globito numerado). */
+
+
+/* La tira de cada factor tiene UNA sola pregunta, así que el globito
+   numerado de `.d-repaso-item::before` no cuenta nada: en alimentaria
+   dice "pregunta 1 / pregunta 2" de un repaso de dos, acá saldría un
+   "5" que el alumno no puede relacionar con nada (medido: mostraba el
+   número del factor). Sin globito, la pregunta arranca pegada al borde
+   como cualquier párrafo. */
+.d-repaso--factor .d-repaso-item{ padding-left: 0; }
+.d-repaso--factor .d-repaso-item::before{ content: none; display: none; }
+
+/* ============================================================
+   Acá vivía el pop-up de PREDICCIÓN (.modal--reto / .d-reto*)
+   ============================================================
+   Se fue entero: las 6 preguntas ahora son la tira de repaso dentro de
+   la diapositiva (.d-repaso, css/coto-repaso.css del kit), a pedido del
+   cliente — *"que el repaso de cada video sea como el de alimentaria"*.
+   Con el pop-up se van también sus ~40 líneas de estilo, que eran la
+   excepción visual más grande del curso (encabezado propio, tarjeta
+   angosta, premio animado). Al quedarse sin marcado no estaban
+   molestando a nadie, pero CSS que no aplica a nada es CSS que alguien
+   va a copiar creyendo que está vivo. */
+
+/* El instructivo es el pop-up más largo del curso y su botón quedaba
+   abajo de todo, fuera de la vista: la tarjeta scrollea (max-height:88vh
+   + overflow:auto de coto-base.css) pero un llamado a la acción que hay
+   que ir a buscar scrolleando no se usa. Se comprime por alto de
+   pantalla, sin sacar contenido. */
+@media (max-height:900px){
+  .d-instr-nav{font-size:.88rem;line-height:1.4}
+
+  .d-instr-grid{gap:.5rem}
+  .d-instr-item{padding:.6rem .5rem}
+  .d-instr-item .i{width:20px;height:20px}
+  .d-instr-item span{font-size:.8rem}
+  .d-instr-item small{font-size:.7rem;line-height:1.25}
+
+  .d-instr-cta{margin-top:.8rem}
+  .modal-bd{gap:.6rem;padding:1rem 1.2rem 1.2rem}
+}
+@media (max-height:800px){
+  .d-instr-nav{font-size:.82rem}
+
+  .d-instr-grid{gap:.4rem}
+  .d-instr-item{padding:.45rem .4rem}
+  .d-instr-item .i{width:18px;height:18px}
+  .d-instr-item span{font-size:.75rem}
+  .d-instr-item small{font-size:.65rem;line-height:1.2}
+
+  .modal-bd{gap:.45rem;padding:.8rem 1rem 1rem}
+}
+
+@media (max-height:730px){
+  .d-instr-nav{font-size:.76rem;line-height:1.3}
+
+  .d-instr-grid{gap:.3rem}
+  .d-instr-item{padding:.35rem .3rem}
+  .d-instr-item .i{width:16px;height:16px}
+  .d-instr-item span{font-size:.7rem}
+  .d-instr-item small{font-size:.6rem;line-height:1.15}
+
+  .d-instr-cta{margin-top:.5rem}
+  .modal-bd{gap:.35rem;padding:.6rem .8rem .8rem}
+}
+
+/* ============================================================
+   MINI PRÁCTICA EN TELÉFONO ACOSTADO · ENTRA, NO SCROLLEA
+   ============================================================
+   REGLA DEL MOLDE: en estos cursos NO hay scroll, nunca. Una versión
+   anterior de este bloque resolvía el desborde de la mini práctica
+   haciendo scrollear la tarjeta de la pregunta por dentro. Andaba —el
+   botón "Responder" quedaba a la vista y las opciones se alcanzaban—
+   pero rompía la regla, así que se rehízo: a 844x390 el contenido
+   ENTRA, y no hay nada que scrollear.
+
+   Qué lo hizo posible: las preguntas pasaron de 4 opciones a 3 (pedido
+   del cliente, y ahora regla del molde), o sea ~52px menos de
+   contenido. Con eso alcanza compactando, sin apretar la tipografía
+   por debajo de lo legible.
+   ============================================================ */
+@media (max-height: 560px) {
+  /* La intro se esconde SIEMPRE, no solo mientras se responde. Al
+     terminar, `syncQuizRunning()` saca `.is-quiz-running` y la intro
+     vuelve —eyebrow, título, bajada y el aviso destacado, ~200px— justo
+     cuando la diapositiva pasa a su estado MÁS ALTO (la nota + la lista
+     de repaso). Medido: el botón "Continuar" terminaba 53px fuera de la
+     diapositiva.
+     El aviso de "esto no es la evaluación" no se pierde por esconderlo
+     acá: en esta pantalla lo da el pop-up `practica-intro`, que se abre
+     al entrar, y vuelve a aparecer en el resultado. */
+  .slide[data-slide="evaluacion"] .slide-eyebrow,
+  .slide[data-slide="evaluacion"] h2,
+  .slide[data-slide="evaluacion"] .slide-lead,
+  .slide[data-slide="evaluacion"] .d-aviso-practica { display: none; }
+  .slide[data-slide="evaluacion"] .slide-inner { max-height: 100%; min-height: 0; }
+  .slide[data-slide="evaluacion"] .d-quiz-head { margin-bottom: .45rem; }
+  .slide[data-slide="evaluacion"] .d-q { padding: .55rem .7rem; }
+  .slide[data-slide="evaluacion"] .d-q-title { margin-bottom: .45rem; font-size: 1rem; gap: .55rem; }
+  .slide[data-slide="evaluacion"] .d-q-num { width: 24px; height: 24px; font-size: .8rem; }
+  .slide[data-slide="evaluacion"] .d-opt { padding: .42rem .6rem; margin-top: .3rem; gap: .5rem; }
+  .slide[data-slide="evaluacion"] .d-opt-text { font-size: .86rem; }
+  .slide[data-slide="evaluacion"] .d-opt-letra { font-size: .86rem; }
+  .slide[data-slide="evaluacion"] .d-opt-mark { width: 17px; height: 17px; }
+  .slide[data-slide="evaluacion"] .d-quiz-actions { margin-top: .4rem; }
+
+  /* ---- La PANTALLA DE RESULTADO también tiene que entrar ----
+     Es el estado más alto de la diapositiva: nota + "Para repasar" con
+     una ficha por pregunta errada (enunciado + respuesta correcta +
+     botón "Repasar en…") + los dos botones del pie. Medido a 844x390
+     con las 3 erradas —el peor caso— se pasaba 53px y el botón
+     "Continuar" quedaba FUERA de la diapositiva.
+     Se compacta la lista, no la nota ni los botones: el "Respuesta
+     correcta: …" de cada ficha es lo primero que sobra, porque la
+     explicación completa ya se mostró al responder cada pregunta. */
+  .slide[data-slide="evaluacion"] .d-quiz-result > strong { font-size: 1rem; }
+  .slide[data-slide="evaluacion"] .d-quiz-review { margin-top: .4rem; }
+  .slide[data-slide="evaluacion"] .d-quiz-review .rv-title { font-size: .76rem; margin-bottom: .25rem; }
+  .slide[data-slide="evaluacion"] .d-quiz-review ul { gap: .25rem; }
+  .slide[data-slide="evaluacion"] .d-quiz-review li { padding: .3rem .5rem; }
+  .slide[data-slide="evaluacion"] .d-quiz-review .rq { font-size: .74rem; line-height: 1.25; }
+  .slide[data-slide="evaluacion"] .d-quiz-review .ra { display: none; }
+  .slide[data-slide="evaluacion"] .d-quiz-review .rv-go { padding: .22rem .5rem; font-size: .7rem; }
+  .slide[data-slide="evaluacion"] .d-quiz-result .d-quiz-actions .btn { padding: .4rem .8rem; font-size: .82rem; }
+}
+
+/* ---- El aviso previo a la práctica, en teléfono acostado ----
+   A 844×390 la tarjeta del pop-up entra en 328px y su contenido mide
+   526px: la tarjeta scrollea (`.modal-card{overflow:auto}` del kit) y el
+   botón queda pegado abajo (`.d-instr-cta` sticky), así que nada es
+   inalcanzable. Pero el degradé del pie era transparente en su tercio
+   superior y la última viñeta asomaba por detrás del botón: se leía como
+   texto cortado, no como texto que sigue abajo. Se compacta lo que se
+   puede —el círculo del ícono es decorativo y son 63px— y el pie se
+   vuelve opaco para que el corte sea limpio. */
+@media (max-height: 560px) {
+  .d-pracintro-ic { display: none; }
+  .d-pracintro-lead { margin-bottom: .45rem; font-size: .98rem; }
+  .d-pracintro ul { margin-bottom: .55rem; gap: .3rem; }
+  .d-pracintro li { font-size: .86rem; line-height: 1.32; }
+  .d-pracintro-eval { margin-bottom: .6rem; padding: .5rem .7rem;
+    font-size: .82rem; line-height: 1.35; }
+  .d-instr-cta { margin-top: .5rem; padding-top: .45rem;
+    background: var(--surface); box-shadow: 0 -10px 12px -10px rgba(20,30,60,.35); }
+}
+
+/* ============================================================
+   REALCE DE LAS ZONAS SOBRE EL ARTE · solo la forma, nunca el rectángulo
+   ============================================================
+   Pedido del cliente, textual: *"si solo remarcamos el círculo está
+   bien, ya que el rectángulo no queda bien"* — y lo mismo en las etapas
+   de la aterosclerosis y en la torta.
+
+   Qué pasaba. El kit le pone a TODA `.d-shot-hit` un realce genérico al
+   pasar el mouse (coto-shot-stage.css): aro rectangular de 2px + sombra
+   proyectada + 1px de levante. Es un buen default para una zona que sin
+   él no se distingue del fondo. Pero estas zonas YA dibujan su propio
+   realce —un aro que sigue el círculo del arte, medido en píxeles contra
+   la ilustración— así que se veían las dos cosas a la vez: el círculo
+   bien resaltado y, alrededor de todo el bloque (ícono + etiqueta de
+   texto), un rectángulo que no corresponde a ninguna forma dibujada.
+   Las reglas de cada zona ya ponían `background:transparent` para matar
+   el TINTE del kit, pero el tinte no era el problema: el aro y la sombra
+   sí, y esos seguían.
+
+   `.d-shot-hit--pie` entra en la misma lista por otro motivo: no dibuja
+   aro propio porque su respuesta ya se ve en el arte (el gajo se
+   destaca y aparece el cartel con el dato). Es el caso que el kit
+   documenta como `--sin-aro`.
+
+   ⚠️ El `:focus-visible` NO se apaga acá. En `--ent`, `--factor` y
+   `--etapa` esas reglas ya lo resuelven con el mismo aro circular; en
+   `--pie` y en las tarjetas de video sigue valiendo el del kit. Un foco
+   de teclado invisible sería peor que el rectángulo. */
+.d-shot-hit--ent:hover,
+.d-shot-hit--factor:hover,
+.d-shot-hit--etapa:hover,
+.d-shot-hit--pie:hover,
+[data-video-play]:hover {
+  outline: none;
+  box-shadow: none;
+  transform: none;
+}
+
+/* ---- Tarjetas de video rectangulares · sin recuadro ----
+   Pedido del cliente: *"no usar recuadro en contenedores de video
+   rectangulares porque queda mal, solo usar botón de play al pasar el
+   mouse por encima"*.
+
+   Lo que se saca: el aro rectangular + la sombra + el levante del
+   `:hover` genérico del kit (arriba, en la lista de zonas), y el aro
+   animado infinito que este curso le agregaba en assets.css. Eran dos
+   bordes redondeados, uno encima del otro, sobre un arte que YA dibuja
+   el marco del reproductor.
+
+   Lo que NO se pone, y conviene que quede escrito: un botón de play
+   propio encima. El play de estas 7 tarjetas está HORNEADO en la
+   captura —el diseñador entrega el mockup del reproductor completo:
+   marco, barra de controles y disco de play—, así que superponerle el
+   botón del kit da dos plays corridos entre sí, que es exactamente el
+   defecto que se reportó en el video circular. Se probó y se midió: el
+   disco dibujado cae en (50,5%, 41,7%) en "Riesgo cardiovascular" y en
+   otro punto en las 6 de la Unidad 2, con diámetros distintos; no hay
+   una posición que sirva para las siete, y errarle por 10px se ve peor
+   que no ponerlo.
+
+   O sea que el affordance de estas tarjetas ES el play dibujado, que
+   está siempre a la vista y se lee como tal, más `cursor:pointer`. Es
+   el caso que el kit documenta como `.d-shot-hit--sin-aro`: si la zona
+   ya comunica sola, el realce genérico sobra.
+
+   Si algún día el play tiene que REACCIONAR al mouse, la forma limpia
+   es pedirle al diseñador la tarjeta SIN el play dibujado: ahí el kit
+   dibuja el suyo (`.d-shot-hit-play`, centrado y con su hover) y no hay
+   nada que alinear a mano.
+
+   El `:focus-visible` del kit queda intacto: es el único indicador del
+   recorrido por teclado. */

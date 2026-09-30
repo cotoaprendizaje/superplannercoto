@@ -1,0 +1,104 @@
+<?xml version="1.0" standalone="no" ?>
+<manifest identifier="COTO_PREVENCION_CARDIOVASCULAR" version="1.0"
+  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2 imscp_rootv1p1p2.xsd
+                       http://www.adlnet.org/xsd/adlcp_rootv1p2 adlcp_rootv1p2.xsd">
+
+  <metadata>
+    <schema>ADL SCORM</schema>
+    <schemaversion>1.2</schemaversion>
+  </metadata>
+
+  <organizations default="COTO_PREVENCION_CARDIOVASCULAR_ORG">
+    <organization identifier="COTO_PREVENCION_CARDIOVASCULAR_ORG">
+      <title>Prevención cardiovascular</title>
+      <item identifier="ITEM_PREVENCION_CARDIOVASCULAR" identifierref="RES_PREVENCION_CARDIOVASCULAR">
+        <title>Prevención cardiovascular</title>
+      </item>
+    </organization>
+  </organizations>
+
+  <resources>
+    <resource identifier="RES_PREVENCION_CARDIOVASCULAR" type="webcontent" adlcp:scormtype="sco" href="index.html">
+      <file href="index.html"/>
+      <file href="css/assets.css"/>
+      <file href="css/coto-base-addendum-v1.8.css"/>
+      <file href="css/coto-base.css"/>
+      <file href="css/coto-cierre.css"/>
+      <file href="css/coto-fx.css"/>
+      <file href="css/coto-media.css"/>
+      <file href="css/coto-minijuego.css"/>
+      <file href="css/coto-player-bottom.css"/>
+      <file href="css/coto-player-chrome.css"/>
+      <file href="css/coto-quiz.css"/>
+      <file href="css/coto-repaso.css"/>
+      <file href="css/coto-shot-stage.css"/>
+      <file href="css/diapositivas.css"/>
+      <file href="css/pulido.css"/>
+      <file href="fonts/Faible-Black.woff2"/>
+      <file href="fonts/Raleway-Medium.woff2"/>
+      <file href="fonts/Raleway-Regular.woff2"/>
+      <file href="fonts/Roboto-Bold.woff2"/>
+      <file href="fonts/Roboto-Medium.woff2"/>
+      <file href="fonts/Roboto-Regular.woff2"/>
+      <file href="fonts/Roboto-SemiBold.woff2"/>
+      <file href="img/aterosclerosis.webp"/>
+      <file href="img/cierre.webp"/>
+      <file href="img/colesterol-alto.webp"/>
+      <file href="img/consejos.webp"/>
+      <file href="img/diabetes-detalle.webp"/>
+      <file href="img/ent-americas.webp"/>
+      <file href="img/factores/alcohol.webp"/>
+      <file href="img/factores/colesterol.webp"/>
+      <file href="img/factores/diabetes.webp"/>
+      <file href="img/factores/hipertension.webp"/>
+      <file href="img/factores/index.webp"/>
+      <file href="img/factores/obesidad.webp"/>
+      <file href="img/factores/sedentarismo.webp"/>
+      <file href="img/factores/tabaco.webp"/>
+      <file href="img/fallecimiento-ent.webp"/>
+      <file href="img/hipertension-arterial.webp"/>
+      <file href="img/icono-servicio-medico.webp"/>
+      <file href="img/indice.webp"/>
+      <file href="img/obesidad-detalle.webp"/>
+      <file href="img/objetivos.webp"/>
+      <file href="img/portada.webp"/>
+      <file href="img/reproductor-play.webp"/>
+      <file href="img/que-son-ent.webp"/>
+      <file href="img/riesgo-cardiovascular.webp"/>
+      <file href="img/sedentarismo-detalle.webp"/>
+      <file href="img/tabaquismo-detalle.webp"/>
+      <file href="img/unidad1.webp"/>
+      <file href="img/unidad2.webp"/>
+      <file href="js/coto-cierre.js"/>
+      <file href="js/coto-hotspots.js"/>
+      <file href="js/coto-logros.js"/>
+      <file href="js/coto-media.js"/>
+      <file href="js/coto-minijuego.js"/>
+      <file href="js/coto-player.js"/>
+      <file href="js/coto-quiz.js"/>
+      <file href="js/coto-ui.js"/>
+      <file href="js/curso.js"/>
+      <file href="js/fx.js"/>
+      <file href="js/motor-slides.js"/>
+      <file href="js/narrador.js"/>
+      <file href="js/scorm-api.js"/>
+      <file href="js/xapi.js"/>
+      <file href="video/aterosclerosis.mp4"/>
+      <file href="video/colesterol-alto.mp4"/>
+      <file href="video/diabetes.mp4"/>
+      <file href="video/fallecimiento-por-ent.mp4"/>
+      <file href="video/hipertension-arterial.mp4"/>
+      <file href="video/obesidad.mp4"/>
+      <file href="video/portada.mp4"/>
+      <file href="video/riesgo-cardiovascular.mp4"/>
+      <file href="video/sedentarismo.mp4"/>
+      <file href="video/tabaquismo.mp4"/>
+      <file href="video/unidad1.mp4"/>
+      <file href="video/unidad2.mp4"/>
+    </resource>
+  </resources>
+
+</manifest>

@@ -1,0 +1,48 @@
+/* ============================================================
+   assets.css · Prevención cardiovascular (COTO · Servicio Médico)
+   Capas/decoración propias de ESTE curso. Con el patrón "captura
+   íntegra" (ver CLAUDE.md §2.8) no hay piezas con alfa separadas del
+   fondo — lo único puntual de este curso es la variante de
+   reproductor CIRCULAR ("Fallecimiento por ENT" y "Aterosclerosis",
+   ver captura del cliente) además del reproductor rectangular
+   estándar que ya cubre diapositivas.css con .d-shot-hit.
+   ============================================================ */
+
+/* Pulso sutil de invitación a reproducir, solo en los botones de video
+   (rectangular y circular) — se apaga con prefers-reduced-motion junto
+   con el resto de las animaciones (regla global de coto-base.css). */
+/* NO se declara `[data-video-play]{position:relative}` (BUG REAL, ver
+   abajo). El `::after` ya tiene contexto de posicionamiento: los 7
+   botones con este atributo son `.d-shot-hit`, que el kit declara
+   `position:absolute` en coto-shot-stage.css — y un absolute también
+   posiciona a sus pseudo-elementos.
+   El bug que causaba: `[data-video-play]` y `.d-shot-hit` tienen la
+   MISMA especificidad (0,1,0), y assets.css carga DESPUÉS del kit, así
+   que ese `relative` le ganaba al `absolute`. El motor posiciona cada
+   hitbox con `left/top` inline calculados desde data-l/data-t, que con
+   `relative` se interpretan como desplazamiento desde su posición
+   estática: los 7 botones de video terminaban ~400px por debajo de la
+   captura, fuera de la diapositiva y tapados. Estaba enmascarado
+   porque diapositivas.css (que carga aún después) repetía
+   `.d-shot-hit{position:absolute}` y volvía a ganar — o sea que el
+   curso dependía de una declaración duplicada para funcionar.
+   Lo detectó `tools/tests/hitbox-click-check.mjs` al sacar esa copia. */
+/* EL PULSO SE SACÓ (pedido del cliente: "no usar recuadro en
+   contenedores de video rectangulares porque queda mal").
+   Era un aro animado infinito dibujado sobre el borde del hitbox, y
+   sobre estas tarjetas competía con el marco del reproductor que el
+   arte YA dibuja: dos bordes redondeados, uno encima del otro, uno de
+   ellos latiendo. El `::after` ahora es el botón de play que aparece al
+   pasar el mouse — ver diapositivas.css, § "Tarjetas de video". */
+
+/* Estilos de los efectos que fabrica fx.js: movidos a css/coto-fx.css
+   (kit-base v1.6) — antes vivían acá porque el kit no traía hoja de
+   estilos propia para sus efectos; ya está corregido en el kit. */
+
+/* Toast de puntos/logros (gamificación liviana, ver curso.js) */
+.d-award-toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%) translateY(12px);
+  background:var(--brand-navy);color:#fff;padding:.65rem 1.2rem;border-radius:var(--r-pill);
+  font-family:var(--font-body);font-weight:700;font-size:.85rem;box-shadow:var(--shadow-pop);
+  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:95;
+  display:flex;align-items:center;gap:.5rem}
+.d-award-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}

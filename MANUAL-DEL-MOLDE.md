@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.105**.
+Vigente para **kit-base v1.9.106**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -308,6 +308,10 @@ python3 tools/build-zip.py                                 # el zip para el LMS
 - **Se porta por partes, nunca se copia un archivo encima.**
 - **Algo sube al kit cuando lo necesita un segundo curso** (§4 del
   diario).
+- **Cada versión se prueba contra DOS cursos**: el sintético del arnés y
+  el curso de prueba real (`sh curso-prueba/probar.sh`, que arma una copia
+  de "Prevención cardiovascular" con el kit actual y corre la suite). Los
+  dos en verde antes de entregar (§7.55).
 - **Todo test nuevo se prueba en las dos direcciones**: verde con el kit
   sano, ROJO con el bug puesto a propósito. Un test que no se vio fallar
   no se sabe si mira algo (§7.13).

@@ -1,0 +1,109 @@
+/* ============================================================
+   pulido.css · Prevención cardiovascular (COTO · Servicio Médico)
+   Ajustes finales de coherencia de ESTE curso — última capa, después
+   de diapositivas.css/assets.css.
+   ============================================================ */
+
+/* El fundido al cambiar de imagen en "Factores de riesgo cardiovascular"
+   ya NO se maneja acá: lo hace `initShotSwap()` del kit (coto-media.js,
+   v1.9.51) con `.d-shot-img--fade`, definido en coto-shot-stage.css.
+   Se sacaron `#factores-img{transition}` y `#factores-img.is-swapping`,
+   que eran la versión a mano de lo mismo y ya no las escribe nadie. */
+
+/* El botón de tab no debe verse "clickeado" con un recuadro visible
+   permanente — solo feedback de foco/hover (ya cubierto en
+   diapositivas.css); el estado "activo" real lo comunica la propia
+   imagen (pestaña resaltada, horneada en el webp).
+   `.is-active` (no `.active`): es la clase que marca `initShotSwap()`,
+   mientras que `.active` la ponía el sistema de capas `[data-layers]`
+   del motor, que esta diapositiva ya no usa. */
+.d-factores-tabs .d-shot-hit.is-active{outline:2px solid color-mix(in srgb,var(--cat-strong) 55%,transparent);outline-offset:2px}
+
+/* ============================================================
+   LIENZO EN PANTALLAS MÁS ANCHAS QUE 2:1  ·  candidato a kit v1.4
+   ------------------------------------------------------------
+   coto-shot-stage.css v1.3 resuelve el caso TABLET (proporción de
+   .d-stage entre 1.5 y 1.9): llena la pantalla y deja que `cover`
+   recorte los COSTADOS dentro del margen de seguridad de 13% que el PDF
+   ya trae vacío por diseño. Pero no cubre el caso simétrico y mucho más
+   frecuente: una ventana MÁS ANCHA que 2:1, donde el lienzo fijo deja
+   franjas laterales. Medido en este curso: 1366×768 → 35px por lado,
+   1280×720 → 40px, una ventana no maximizada de 1600×800 → 120px.
+
+   Mismo razonamiento que el §6.9, con los ejes cambiados: si la ventana
+   es más ancha que el diseño, para llenarla hay que recortar ARRIBA y
+   ABAJO, y ahí el PDF tiene 8% de margen vacío garantizado a cada lado.
+   Cuánto se recorta al llenar el ancho, en función de la proporción A
+   de .d-stage:  recorte_total = 1 − 2/A.
+   El presupuesto es 8% + 8% = 16%, así que se puede llenar sin tocar
+   contenido real mientras  1 − 2/A ≤ 0.16  →  A ≤ 2.38.
+     · A = 2.11 (1366×768)  → recorta 5.2%  (2.6% por lado)
+     · A = 2.35 (1600×800)  → recorta 14.9% (7.4% por lado)
+     · A = 2.61 (ultrawide) → recortaría 23.4%: SE PASA del margen, así
+       que queda fuera del rango y vuelve al lienzo fijo con franjas.
+   El tope de 2.38 es exactamente el punto donde se agota el margen del
+   8%; por eso el rango llega hasta ahí y ni un punto más.
+
+   El piso arranca en 1.9 (donde termina el rango tablet del kit) y no en
+   2.0, para no dejar un hueco sin cubrir: entre 1.9 y 2.0 la pantalla es
+   apenas más angosta que el diseño, así que `cover` recorta de costado
+   en vez de arriba/abajo — 2.5% por lado en el peor caso, contra 13% de
+   margen disponible. Con el rango del kit (1.5–1.9) y este (1.9–2.38),
+   la banda 1.5–2.38 queda cubierta de punta a punta. En 1.9 exacto
+   aplican los dos con las mismas declaraciones: no hay conflicto.
+   ============================================================ */
+@container (min-aspect-ratio: 1.9/1) and (max-aspect-ratio: 2.38/1) {
+  .d-shot-slide--bg-layered > .d-shot,
+  .d-shot-slide--bg-video > .d-shot,
+  .slide-cierre .d-cierre-shot .d-shot {
+    aspect-ratio: auto;
+    width: 100cqw;
+    height: 100cqh;
+  }
+}
+
+/* El texto del botón "Anterior/Siguiente" en mobile muy angosto ya lo
+   resuelve css/coto-player-bottom.css (kit) — no duplicarlo acá. */
+
+/* ⚠️ ACÁ ESTABA `@media (max-width:600px){ .modal-card--video{width:96vw} }`
+   y también pisaba el estándar del kit (v1.9.102, lo encontró
+   `popup-video-medida`). Era del tiempo en que el ancho del pop-up
+   era `min(760px,100%)` fijo: en un teléfono eso daba el 100% menos el
+   padding del envoltorio, y de ahí el "queda angostísimo en mobile".
+   Hoy el estándar del kit ya resuelve el caso — `min(1040px, 94vw, …)`
+   da 367px en un teléfono de 390, contra los 374 de este 96vw: siete
+   píxeles de diferencia, y los del kit son los correctos, porque el
+   94vw es justo el aire que la ✕ flotante necesita para no quedar
+   pegada al borde. Ver el bloque ESTÁNDAR en coto-media.css. */
+@media (max-width:600px){
+}
+
+/* ============================================================
+   RESUMEN IMPRIMIBLE ("Imprimir resumen" en el cierre)
+   ------------------------------------------------------------
+   .d-summary vive oculto (display:none) fuera de impresión — solo se
+   muestra bajo body.printing-summary (togglada por initSummaryPrint en
+   curso.js justo antes de window.print()). BUG REAL evitado acá: sin
+   esto, "Imprimir resumen" imprimía la app en vivo tal cual —
+   .d-app es position:fixed y casi todas las diapositivas están
+   [hidden] — resultado: una página en blanco o cortada, nunca un
+   resumen legible. Mismo patrón que "Surtido sin venta".
+   ============================================================ */
+.d-summary{display:none}
+@media print{
+  body.printing-summary .d-app,
+  body.printing-summary #d-confetti,
+  body.printing-summary .modal{display:none!important}
+  body.printing-summary{background:#fff}
+  body.printing-summary .d-summary{display:block!important;max-width:720px;margin:0 auto;color:#000}
+  body.printing-summary .d-summary-hd{border-bottom:3px solid var(--cat);padding-bottom:.6rem;margin-bottom:1.2rem}
+  body.printing-summary .d-summary-hd h1{font-family:var(--font-title);font-weight:900;color:var(--cat-ink);margin:0 0 .2rem}
+  body.printing-summary .d-summary-hd p{margin:0;color:var(--text-soft);font-weight:700}
+  body.printing-summary .d-summary h2{font-family:var(--font-title);font-size:1.1rem;color:var(--brand-navy);margin:1.3rem 0 .5rem}
+  body.printing-summary .d-summary-gloss{display:grid;gap:.1rem;margin:0}
+  body.printing-summary .d-summary-gloss > div{display:grid;grid-template-columns:170px 1fr;gap:.8rem;padding:.35rem 0;border-bottom:1px solid var(--line)}
+  body.printing-summary .d-summary-gloss dt{font-weight:900;color:var(--cat-ink)}
+  body.printing-summary .d-summary-gloss dd{margin:0}
+  body.printing-summary .d-summary ul{margin:.3rem 0 0;padding-left:1.2rem}
+  body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
+}
