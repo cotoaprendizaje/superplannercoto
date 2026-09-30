@@ -14382,7 +14382,7 @@ tiene video de fondo, y lo encontró un curso real.
 ### Qué es
 
 **`curso-prueba/`**, en la raíz del kit: los archivos PROPIOS de
-"Prevención cardiovascular" (47: `index.html`, sus tres CSS, `curso.js`,
+"Prevención cardiovascular" (45: `index.html`, sus tres CSS, `curso.js`,
 `imsmanifest.xml`, `img/` y los videos placeholder de 0 bytes), y
 ninguno del kit. **`curso-prueba/probar.sh`** arma cada vez una copia
 fresca, le aplica el kit ACTUAL con `actualizar-kit.mjs --aplicar`, la
