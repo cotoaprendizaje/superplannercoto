@@ -14654,3 +14654,59 @@ Queda escrito así:
 Verificado: el generador copia el prompt nuevo, `actualizar-kit` lo
 ofrece como "nuevo en el kit" a un curso existente, `build-zip.py` lo deja
 fuera del zip del LMS, y `check-conteos` da rojo con la versión cambiada.
+
+## 7.59 Los tres pendientes del kit (kit-base v1.9.110)
+
+### 1 · `video-fondo.mjs`: el chequeo del arranque en mudo no podía fallar
+
+El punto 5 (con el autoplay CON SONIDO rechazado, el video tiene que
+arrancar igual en mudo, §7.18 K10) tenía dos agujeros encimados:
+
+- **Se salteaba siempre.** Miraba los .mp4 del curso, que en producción
+  son placeholders de 0 bytes (`readyState` 0 → "el archivo no está",
+  sin medir), y en un curso sin video de fondo el test terminaba sin
+  hacer nada. El arnés no tiene video de fondo y el curso de prueba los
+  tiene en placeholder: nunca se midió.
+- **La política de autoplay no existía.** El test lanzaba Chromium con
+  `--autoplay-policy=document-user-activation-required`; MEDIDO: en este
+  Chromium un `play()` con sonido y sin gesto se ACEPTA. Con el reintento
+  en mudo arrancado del kit, el test daba verde igual.
+
+Ahora: sirve el webm real que fabrica `reproductor-video` en lugar de todo
+.mp4, inyecta una diapositiva de video de fondo y llama a `initBgVideos()`
+si el curso no tiene (los puntos 1-4, que son del marcado del curso, no
+aplican en ese caso), y simula la política con un `play()` interceptado
+que rechaza con `NotAllowedError` si el video no está mudo y no hubo
+gesto. Verificado en los dos cursos: verde con el kit, ROJO con el
+reintento en mudo quitado ("el video está cargado y NO se reproduce"),
+en la diapositiva inyectada del arnés y en la portada real de cardio.
+
+`video-autoplay-ios` (que ya simulaba el rechazo a mano) se saltea a
+propósito los cursos sin video de fondo (decisión de v1.9.82); en el
+curso de prueba sí mide, y con el reintento quitado da rojo. Queda así.
+
+### 2 · `visual-regress.mjs`: un cambio de color de todo el curso pasaba
+
+Con `filter: hue-rotate(90deg)` sobre todo el curso del arnés, la
+herramienta daba verde: el cambio movía entre 0,40% y 0,85% de los
+píxeles (las láminas son casi todo blanco y gris, y un gris rotado sigue
+siendo gris) y el umbral era 1%. Bajarlo sin más daba falsas alarmas en
+el curso de prueba (0,84% y 0,67% en corridas idénticas): eran los
+AVISOS pasajeros ("Desbloqueaste ENT del glosario", "Logro: Unidad 2
+completa"), que aparecen o no según el milisegundo de la captura. Ahora
+se esconden avisos y confeti antes de capturar, y el umbral es 0,2%.
+Medido en los dos cursos: tres corridas sin cambios en verde (ruido
+máximo 0,09%), y con el tono rotado, rojo.
+
+### 3 · Clases `.d-*` sin uso: no había restos
+
+De las 314 clases `.d-*` del CSS del kit, 9 no aparecen ni en el kit ni
+en el marcado o el CSS propio de los siete cursos (arnés, curso de
+prueba y los cinco auditados). Las nueve están en
+`coto-base-addendum-v1.8.css` y son piezas del CATÁLOGO, con su sección y
+su marcado de ejemplo: `.d-hit-ring` (resaltar el ícono, §6.10.3),
+`.d-ticks` (tildes de avance), `.d-hotspot-card` (cartel de una zona),
+`.d-steps-body` (cuerpo de la barra de pasos) y `.d-instr-note` (nota del
+pop-up de instrucciones, cuyo contrato sigue vigente). Que ningún curso
+las haya usado no las vuelve restos. No se borra nada; si alguna vez se
+quiere adelgazar el catálogo, esta es la lista.

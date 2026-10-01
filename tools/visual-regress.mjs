@@ -42,7 +42,7 @@
    Uso:
      node visual-regress.mjs <url>              # compara contra baseline
      node visual-regress.mjs <url> --update      # graba la baseline nueva
-     node visual-regress.mjs <url> --threshold 0.015  # % de píxeles distintos tolerado (default .01 = 1%)
+     node visual-regress.mjs <url> --threshold 0.005  # fracción de píxeles distintos tolerada (default .002 = 0,2%)
      node visual-regress.mjs <url> id1 id2       # solo esas diapositivas
    Exit code 1 si algún diff supera el umbral. */
 
@@ -60,7 +60,13 @@ if (!url || url.startsWith('--')) {
 }
 const rest = argv.slice(1);
 const UPDATE = rest.includes('--update');
-let THRESHOLD = 0.01;
+/* 0,2% y no 1% (kit-base v1.9.110). Con 1%, un cambio de color de TODO
+   el curso pasaba: rotarle el tono 90° a "seguridad-higiene" movía entre
+   el 0,40% y el 0,85% de los píxeles, porque las láminas son casi todo
+   blanco y gris y un gris rotado sigue siendo gris. El ruido real,
+   medido en el curso del arnés y en el de prueba (tres corridas sin
+   cambios, con los avisos escondidos, ver abajo), no pasa del 0,09%. */
+let THRESHOLD = 0.002;
 const tIdx = rest.indexOf('--threshold');
 if (tIdx !== -1) THRESHOLD = parseFloat(rest[tIdx + 1]);
 const only = rest.filter((a, i) => a !== '--update' && a !== '--threshold' && !(tIdx !== -1 && i === tIdx + 1));
@@ -77,6 +83,13 @@ await page.emulateMedia({ reducedMotion: 'reduce' });
 await page.goto(url);
 await page.waitForTimeout(500);
 await page.keyboard.press('Escape').catch(() => {});
+/* Lo PASAJERO no es diseño (v1.9.110): un aviso de logro o de glosario
+   desbloqueado, o el confeti, aparecen o no según en qué milisegundo cae
+   la captura. MEDIDO en el curso de prueba: el aviso "Desbloqueaste ENT
+   del glosario" y "Logro: Unidad 2 completa" daban 0,84% y 0,67% de
+   diferencia en corridas idénticas — más que el cambio de color que esta
+   herramienta tiene que agarrar. */
+await page.addStyleTag({ content: '.d-award-toast, .toast, #d-confetti, .d-confetti { visibility: hidden !important; }' });
 
 const slideIds = await page.evaluate(() =>
   Array.from(document.querySelectorAll('[data-slide]')).map(s => s.getAttribute('data-slide'))

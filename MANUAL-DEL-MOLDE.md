@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.109**.
+Vigente para **kit-base v1.9.110**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -337,6 +337,9 @@ python3 tools/build-zip.py                                 # el zip para el LMS
 - **Todo test nuevo se prueba en las dos direcciones**: verde con el kit
   sano, ROJO con el bug puesto a propósito. Un test que no se vio fallar
   no se sabe si mira algo (§7.13).
+- **El navegador de pruebas no aplica la política de autoplay**: un
+  `play()` con sonido y sin gesto se acepta. Un test que necesita ese
+  rechazo lo simula interceptando `play()` (§7.59).
 - **Cuidado con el verde por ausencia**: si la pieza no está, el test no
   la saltea; la inyecta y la mide. Y una medida que da `NaN` es rojo, no
   verde (§7.47, §7.52).

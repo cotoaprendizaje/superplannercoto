@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.109** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.110** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -408,6 +408,21 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.110 — los tres pendientes del kit
+
+Ver CLAUDE.md §7.59.
+
+- **`video-fondo.mjs` mide el arranque en mudo de verdad.** Sirve un video
+  real, inyecta una diapositiva de video de fondo si el curso no tiene, y
+  simula la política de autoplay (el navegador de pruebas no la aplica).
+  Antes ese chequeo no podía fallar.
+- **`visual-regress.mjs`**: umbral de 0,2% (antes 1%, que dejaba pasar un
+  cambio de color de todo el curso) y esconde avisos y confeti antes de
+  cada captura (eran el ruido).
+- **Clases sin uso**: revisadas contra el kit y los siete cursos; las
+  nueve que no usa nadie son piezas del catálogo, no restos. No se borra
+  nada.
 
 ### v1.9.109 — la forma de trabajar, escrita: retomar un curso y relevar al kit
 

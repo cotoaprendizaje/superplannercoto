@@ -22,13 +22,15 @@
         video **igual termine reproduciéndose**, en mudo, en vez de
         quedarse congelado en el poster.
 
-   El punto 5 solo se puede medir con la política real del navegador:
-   sin `--autoplay-policy=document-user-activation-required` el
-   navegador de pruebas deja pasar cualquier autoplay y el bug no
-   existe. Por eso este test lanza su propio Chromium.
+   El punto 5 solo se puede medir con la política de autoplay del
+   navegador, y el flag `--autoplay-policy` de abajo NO la aplica en este
+   Chromium (medido, v1.9.110): por eso se simula con un `play()`
+   interceptado. Ver el comentario junto a `addInitScript`.
 */
 import { report, requireUrl } from './_shared.mjs';
 import { chromium } from 'playwright-core';
+import fs from 'fs';
+import path from 'path';
 
 const url = requireUrl();
 
@@ -58,7 +60,57 @@ const browser = await chromium.launch({
   executablePath,
   args: ['--no-sandbox', '--autoplay-policy=document-user-activation-required']
 });
+/* Un video REAL para el punto 5 (kit-base v1.9.110). Antes este test
+   miraba los .mp4 del curso, que durante la producción son placeholders
+   de 0 bytes: `readyState` 0, "el archivo no está", y el punto 5 se
+   salteaba. En el curso del arnés no hay video de fondo y en el curso de
+   prueba los videos son placeholders, así que el reintento en mudo —el
+   arreglo que costó una entrega— no lo había medido NUNCA nadie. Mismo
+   webm que fabrica `reproductor-video` (MediaRecorder sobre un canvas),
+   servido en lugar de todo .mp4. Los puntos 1-4 leen atributos y no se
+   enteran. */
+const ARCHIVO = path.join(process.env.TMPDIR || '/tmp', 'coto-prueba-video.webm');
+if (!fs.existsSync(ARCHIVO)) {
+  const p0 = await browser.newPage();
+  await p0.goto('about:blank');
+  const b64 = await p0.evaluate(async () => {
+    const c = document.createElement('canvas'); c.width = 320; c.height = 180;
+    const ctx = c.getContext('2d'); let t = 0;
+    const iv = setInterval(() => { t++; ctx.fillStyle = `hsl(${t * 9},70%,50%)`; ctx.fillRect(0, 0, 320, 180); }, 50);
+    const rec = new MediaRecorder(c.captureStream(20), { mimeType: 'video/webm' });
+    const trozos = []; rec.ondataavailable = e => trozos.push(e.data);
+    rec.start(); await new Promise(r => setTimeout(r, 6000)); rec.stop(); clearInterval(iv);
+    await new Promise(r => { rec.onstop = r; });
+    const u = new Uint8Array(await new Blob(trozos, { type: 'video/webm' }).arrayBuffer());
+    let s = ''; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+    return btoa(s);
+  });
+  fs.writeFileSync(ARCHIVO, Buffer.from(b64, 'base64'));
+  await p0.close();
+}
+const CUERPO = fs.readFileSync(ARCHIVO);
 const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+await page.route('**/*.mp4', (r) => r.fulfill({ status: 200, contentType: 'video/webm', body: CUERPO }));
+/* La política de autoplay, SIMULADA (kit-base v1.9.110). El
+   `--autoplay-policy=document-user-activation-required` de arriba no la
+   aplica este Chromium: MEDIDO, un `play()` con sonido y sin ningún gesto
+   se ACEPTA. O sea que el punto 5 nunca podía fallar acá —ni con el
+   reintento en mudo arrancado del kit—. Se reproduce lo que hacen Safari y
+   Chrome de verdad: sin gesto del alumno, `play()` con sonido rechaza con
+   `NotAllowedError`; mudo, se permite. Se instala antes de que cargue el
+   curso y se apaga con el primer gesto real. */
+await page.addInitScript(() => {
+  let huboGesto = false;
+  ['pointerdown', 'keydown', 'touchstart'].forEach((t) =>
+    window.addEventListener(t, () => { huboGesto = true; }, { capture: true }));
+  const original = HTMLMediaElement.prototype.play;
+  HTMLMediaElement.prototype.play = function () {
+    if (!huboGesto && !this.muted) {
+      return Promise.reject(new DOMException("play() failed because the user didn't interact with the document first.", 'NotAllowedError'));
+    }
+    return original.apply(this, arguments);
+  };
+});
 const fails = [];
 await page.goto(url);
 await page.waitForTimeout(400);
@@ -69,10 +121,27 @@ const slides = await page.evaluate(() =>
     hayVideo: !!s.querySelector('video.d-shot-video')
   })));
 
+/* Sin video de fondo en el curso, los puntos 1-4 no tienen marcado que
+   revisar (son del curso), pero el 5 es del KIT: se arma una diapositiva
+   de video de fondo y se llama a `initBgVideos()` (v1.9.110). */
+let inyectado = null;
 if (!slides.length) {
-  report('video-fondo', []);              // el curso no usa el patrón: nada que verificar
-  await browser.close();
-  process.exit(process.exitCode || 0);
+  inyectado = await page.evaluate(() => {
+    if (typeof window.initBgVideos !== 'function' || !window.motor) return null;
+    const todas = Array.from(document.querySelectorAll('[data-slide]'));
+    const activa = document.querySelector('.slide.is-active');
+    const sl = todas.find((s) => s !== activa);
+    if (!sl) return null;
+    sl.classList.add('d-shot-slide', 'd-shot-slide--bg-video');
+    const shot = document.createElement('div');
+    shot.className = 'd-shot'; shot.setAttribute('data-shot', '');
+    shot.innerHTML = '<video class="d-shot-video" playsinline preload="metadata" data-sin-poster>' +
+      '<source src="video/zz-prueba-fondo.mp4" type="video/mp4"></video>';
+    sl.insertBefore(shot, sl.firstChild);
+    window.initBgVideos({});
+    return sl.getAttribute('data-slide');
+  });
+  if (!inyectado) fails.push('el curso no tiene video de fondo y no se pudo armar uno de prueba (¿falta `initBgVideos`?).');
 }
 
 for (const s of slides) {
@@ -159,7 +228,7 @@ for (const s of slides) {
 }
 
 /* 5 · con el autoplay bloqueado, el video igual tiene que arrancar. */
-const primera = slides.find((s) => s.hayVideo);
+const primera = inyectado ? { id: inyectado, hayVideo: true } : slides.find((s) => s.hayVideo);
 if (primera) {
   await page.evaluate((id) => { if (window.motor && window.motor.gotoId) window.motor.gotoId(id); }, primera.id);
   await page.waitForTimeout(2000);
@@ -167,9 +236,12 @@ if (primera) {
     const vid = document.querySelector(`[data-slide="${id}"] video.d-shot-video`);
     return vid ? { pausado: vid.paused, t: vid.currentTime, listo: vid.readyState } : null;
   }, primera.id);
-  /* readyState 0 = el archivo no está (placeholder de 0 bytes): eso es
-     un estado válido y esperado durante la producción, no un fallo. */
-  if (est && est.listo > 0 && est.pausado && est.t === 0) {
+  /* Con el webm servido arriba, readyState 0 ya no es "el placeholder
+     todavía no está": es que el video de prueba no cargó, y entonces no
+     hay medición. Se dice, en vez de dar verde. */
+  if (!est || est.listo === 0) {
+    fails.push(`"${primera.id}": el video de prueba no llegó a cargar (readyState 0): no se pudo medir el arranque.`);
+  } else if (est.pausado && est.t === 0) {
     fails.push(`"${primera.id}": el video está cargado y NO se reproduce. Dos causas posibles, y ` +
       'conviene descartarlas en este orden: (a) nadie llamó a `initBgVideos()` — la pieza está y ' +
       'el cable no, que es la falla más común de este molde (§7.17); o (b) el autoplay CON SONIDO ' +
