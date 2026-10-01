@@ -548,28 +548,16 @@
   background:var(--cat-soft);color:var(--text-soft);font-size:.9rem;line-height:1.45}
 
 /* ============================================================
-   Unidad 2: ilustración viva + progreso de la unidad
+   Unidad 2: progreso de la unidad
+   ------------------------------------------------------------
+   Acá estaban `.d-ilustra-zona` y `.d-ilustra-cartel`, la "ilustración
+   viva": una zona clickeable sobre el dibujo y un cartel de dato que
+   aparecía al pasar el mouse. Las quitó el cliente — *"prefiero que no
+   tengan nada esas ilus"*— después de ver el cartel cayendo encima del
+   chip de "Factor N de 6". Se van también de acá y no solo del JS: una
+   regla sin marcado que la use es un selector que el próximo que lea
+   este archivo va a buscar en el DOM y no va a encontrar.
    ============================================================ */
-/* La zona sobre la ilustración no se tiñe: la ilustración ya es a color y
-   cualquier velo la ensucia. Se usa una elevación mínima. */
-.d-ilustra-zona{background:transparent;border-radius:20px;transition:transform .2s ease}
-.d-ilustra-zona:hover{background:transparent}
-.d-ilustra-zona.is-on{transform:scale(1.02)}
-.d-ilustra-zona:focus-visible{outline:3px solid var(--cat-strong);outline-offset:4px}
-
-/* El cartel se apoya SOBRE el tercio inferior de la ilustración. Estas
-   diapositivas no tienen ningún hueco libre del tamaño necesario (medido:
-   la banda inferior izquierda queda dentro del margen de seguridad), así
-   que el dato se revela encima del dibujo y desaparece al salir: es un
-   reveal temporal, no tapa nada de forma permanente. */
-.d-ilustra-cartel{position:absolute;display:flex;align-items:flex-start;pointer-events:none;
-  animation:d-ilu-in .18s ease both}
-@keyframes d-ilu-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.d-ilustra-cartel p{margin:0;width:100%;
-  background:color-mix(in srgb,var(--brand-navy) 92%,transparent);color:#fff;
-  border-radius:var(--r-sm);padding:.55rem .75rem;text-align:left;
-  font-size:clamp(.55rem,1cqw,.88rem);line-height:1.35;
-  box-shadow:0 10px 26px color-mix(in srgb,#000 30%,transparent)}
 
 /* Fila de avance de la unidad 2 (etiqueta + tildes). */
 .d-u2-prog{position:absolute;display:flex;align-items:center;justify-content:flex-end;
@@ -593,11 +581,9 @@
 .d-u2-tick.is-here{transform:scale(1.25);border-color:var(--cat-strong)}
 .d-u2-tick.is-here.is-done{border-color:#2e7d32}
 
-/* Pop-up de predicción */
 @media (prefers-reduced-motion:reduce){
-  .d-ilustra-zona,.d-u2-tick{transition:none}
-  .d-ilustra-zona.is-on,.d-u2-tick.is-here{transform:none}
-  .d-ilustra-cartel{animation:none}
+  .d-u2-tick{transition:none}
+  .d-u2-tick.is-here{transform:none}
 }
 
 /* ---- Gráfico de barras de las Américas (hover / foco / tap) ---- */
@@ -620,8 +606,14 @@
    al gráfico — "se pisan", reporte real del cliente. Sumado al padding
    más generoso de abajo, da aire real sin comerse el margen de
    seguridad del 8%. */
+/* El `@keyframes` vivía con `.d-ilustra-cartel` y se llamaba `d-ilu-in`.
+   Al sacar la "ilustración viva" se fue con ella y dejó a ESTE cartel
+   —que es de otra diapositiva— animando contra un nombre inexistente:
+   sin error, sin aviso, simplemente sin entrada. Vuelve acá, con el
+   nombre de lo que hace y al lado de su único usuario. */
+@keyframes d-cartel-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .d-barra-cartel{position:absolute;display:flex;align-items:flex-start;pointer-events:none;
-  animation:d-ilu-in .18s ease both}
+  animation:d-cartel-in .18s ease both}
 .d-barra-cartel p{margin:0;width:100%;
   background:color-mix(in srgb,var(--brand-navy) 94%,transparent);color:#fff;
   border-radius:var(--r-sm);padding:.7rem 1rem;text-align:left;

@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.107**.
+Vigente para **kit-base v1.9.108**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -197,6 +197,11 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 - **Para apagar algo del kit, copiar su selector COMPLETO.**
   `:not(:has(...))` sube la especificidad y una receta más corta no
   apaga nada (§7.16).
+- **Toda `animation` apunta a un `@keyframes` que existe.** Uno que falta
+  no da error: el elemento aparece sin animar y nadie lo reporta. Al subir
+  algo de un curso al kit, sus `@keyframes` suben con él. Lo vigila
+  `tools/check-keyframes.mjs`, dentro de `npm run test:kit`; en un curso,
+  `node tools/check-keyframes.mjs css` (§7.57).
 - **Un comentario CSS no puede contener su propio cierre** (`*/`): cierra
   el comentario y se lleva la regla siguiente sin avisar. Lo agarra
   `check-comentarios-css` (§7.43).
@@ -293,6 +298,7 @@ npm run check-assets                                       # peso de imágenes
 node tools/check-css-duplicates.mjs css/*.css             # reglas que se pisan
 node tools/check-raw-cat-colors.mjs                        # hex de categoría a mano
 node tools/check-globals.mjs js                            # globales publicados dos veces
+node tools/check-keyframes.mjs css                         # animaciones sin @keyframes
 python3 tools/build-zip.py                                 # el zip para el LMS
 ```
 

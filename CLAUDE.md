@@ -14586,3 +14586,40 @@ copia del kit de cardio. Copiarlos habría borrado: la marca
 
 **`curso-prueba/` pasa a ser el cardio nuevo** (45 archivos propios, el
 mismo único cambio: llamar a `initPrediccion()`).
+
+## 7.57 Las animaciones del repaso, que faltaban desde v1.9.64 (kit-base v1.9.108)
+
+Relevo de "Prevención cardiovascular" rotulado "v1.9.109" (numeración
+de ese chat; "reemplaza al 108", que nunca llegó acá). De sus siete
+archivos, cuatro eran los mismos de §7.56, ya portados, solo con el
+número de versión cambiado en los comentarios. Lo nuevo:
+
+- **Tres `@keyframes` que nunca estuvieron.** `coto-repaso.css` anima
+  `d-repaso-in`, `d-repaso-shake` y `d-repaso-celebrate`, y ninguno estaba
+  declarado en el kit: se quedaron en el `assets.css` de "Seguridad
+  alimentaria" cuando la tira subió, en **v1.9.64** (§7.12). El relevo lo
+  atribuía al traslado de §7.48 (v1.9.99); MEDIDO que es anterior: "Pedidos
+  de PLU set" (~v1.9.81) y "Seguridad de la información" (~v1.9.71) tienen
+  el mismo hueco. O sea que en todo curso salvo alimentaria la pregunta
+  entraba sin animación, y errar o acertar no temblaba ni festejaba. Sin
+  error, sin aviso: nadie lo reporta porque nadie sabe qué tendría que
+  haber visto. Los tres se agregaron, idénticos a los de alimentaria.
+- **`tools/check-keyframes.mjs`** (nuevo, en `npm run test:kit`): toda
+  `animation` tiene que apuntar a un `@keyframes` que exista. Lee el CSS
+  sin comentarios, salta las palabras del atajo (`ease`, `infinite`…) y
+  los tiempos, y lista como aviso —no como fallo— los `@keyframes`
+  declarados y sin usar. Verificado: rojo en el kit de v1.9.107 con los
+  tres nombres, verde con el arreglo. Al subirla se le agregó leer el
+  nombre del fallback de `var(--x, nombre …)`; `d-ken-burns` sigue
+  listado como "sin usar", y es correcto: el kit lo trae apagado
+  (`var(--d-ken-burns, none)`) y lo prende el curso. Pasada sobre los
+  cursos: PLU y Seguridad tal cual, rojo con los tres; los tres puestos al
+  día y el cardio nuevo, verdes.
+- **`achicar-ilustracion.py`**: solo documentación — cómo calcular
+  `--fin` y `--arriba` (el bloque mide los mismos píxeles en toda
+  pantalla mientras la lámina se encoge, así que manda la pantalla
+  apaisada más chica) y dos trampas medidas.
+- **`curso-prueba/`** pasa al cardio de esta vuelta (cambió `curso.js` y
+  `diapositivas.css`). Ese cardio llegó **sin `kit-version.json`**: su
+  chat nunca corrió `actualizar-kit`, así que su copia del kit sigue
+  vieja (sin, por ejemplo, el arreglo del video de fondo de §7.54).

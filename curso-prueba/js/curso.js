@@ -242,45 +242,33 @@
      2520x1260 (las 6 ilustraciones son distintas). */
   var U2 = [
     { id: 'colesterol-alto', nombre: 'Colesterol alto', video: 'video/colesterol-alto.mp4',
-      ilustra: { l: 60.25, t: 20.81, w: 22.60, h: 39.25 },
-      dato: 'Se detecta con un análisis de sangre de rutina: no hace falta ningún estudio especial.',
       q: '¿Qué parte de la población argentina tiene el colesterol elevado?',
       opts: ['9%', '29%', '49%'], ok: 1,
-      why: 'Casi 3 de cada 10 personas. Y como no da síntomas, la mayoría se entera recién en un análisis.' },
+      why: 'Casi 3 de cada 10 personas, y sin síntomas.' },
     { id: 'hipertension-arterial', nombre: 'Hipertensión arterial', video: 'video/hipertension-arterial.mp4',
-      ilustra: { l: 56.27, t: 20.81, w: 27.25, h: 39.89 },
-      dato: 'Se mide con un tensiómetro en menos de 1 minuto, sin pinchazos ni preparación previa.',
       q: '¿Qué parte de la población argentina tiene hipertensión arterial?',
       opts: ['14%', '34%', '54%'], ok: 1,
-      why: 'Más de 3 de cada 10 personas. Como no presenta síntomas iniciales, se la llama "la enfermedad silenciosa".' },
+      why: 'Más de 3 de cada 10. La llaman "la silenciosa".' },
     { id: 'diabetes-detalle', nombre: 'Diabetes', video: 'video/diabetes.mp4',
-      ilustra: { l: 61.46, t: 20.81, w: 18.20, h: 36.60 },
-      dato: 'Se detecta con un análisis de sangre que mide la glucemia, el nivel de azúcar en sangre.',
       /* Dos de las seis preguntas entraban en DOS renglones y por eso la
          tarjeta pedía 161px en una banda de 150 (notebook 1366x768) — y
          el cliente lo vio como scroll y opciones cortadas. Acortadas a
          un renglón sin perder el sentido; las otras cuatro ya entraban. */
       q: '¿Cuál es el factor de riesgo cardiovascular MÁS relevante?',
       opts: ['El colesterol alto', 'La diabetes', 'El sedentarismo'], ok: 1,
-      why: 'La diabetes. Sostenida en el tiempo daña corazón, vasos sanguíneos, ojos, riñones y nervios.' },
+      why: 'La diabetes: daña corazón, vasos, ojos y riñones.' },
     { id: 'obesidad-detalle', nombre: 'Sobrepeso y obesidad', video: 'video/obesidad.mp4',
-      ilustra: { l: 57.16, t: 20.81, w: 25.53, h: 39.26 },
-      dato: 'Se detecta con balanza y cinta métrica: el IMC relaciona el peso con la altura.',
       q: '¿Qué parte de la población argentina tiene sobrepeso u obesidad?',
       opts: ['31,6%', '61,6%', '81,6%'], ok: 1,
-      why: '6 de cada 10 personas. Junto con el sedentarismo (64,9%), es de los factores más extendidos del país.' },
+      why: '6 de cada 10 personas: de los más extendidos.' },
     { id: 'sedentarismo-detalle', nombre: 'Sedentarismo', video: 'video/sedentarismo.mp4',
-      ilustra: { l: 55.97, t: 20.81, w: 24.05, h: 38.72 },
-      dato: 'La OMS pide 150 minutos semanales de actividad moderada: son 30 minutos, 5 días.',
       q: '¿Qué parte de los adultos no llega al mínimo de actividad física?',
       opts: ['24,9%', '44,9%', '64,9%'], ok: 2,
-      why: 'Casi 2 de cada 3 personas. Por eso conviene pensarlo en bloques chicos: 30 minutos, 5 días por semana.' },
+      why: 'Casi 2 de cada 3. Mejor en bloques de 30 minutos.' },
     { id: 'tabaquismo-detalle', nombre: 'Tabaquismo', video: 'video/tabaquismo.mp4',
-      ilustra: { l: 62.09, t: 20.81, w: 15.60, h: 35.98 },
-      dato: 'La fuerza de voluntad rara vez alcanza sola: hay métodos validados y profesionales especializados.',
       q: 'Al dejar de fumar, ¿cuándo empieza a bajar el riesgo cardiovascular?',
       opts: ['De inmediato', 'Al año', 'Recién a los 10 años'], ok: 0,
-      why: 'De inmediato, y sigue bajando de forma progresiva. Nunca es tarde para dejar.' }
+      why: 'De inmediato, y sigue bajando. Nunca es tarde.' }
   ];
 
   function mezclar(arr) {
@@ -421,12 +409,40 @@
     return !estado.predicciones[id] && !estado.prediccionesMal[id];
   }
 
+  /* ---- Gate por MINI PRÁCTICA ----
+     BUG REAL, el segundo camino al mismo cartel, y éste estaba desde
+     antes: la diapositiva de la mini práctica NO trababa. Se pulsaba
+     "Siguiente" sin contestar ninguna pregunta, se caminaba hasta el
+     final y el cierre aparecía BLOQUEADO — "🔒 Hacé la mini práctica
+     para desbloquear el cierre del curso" — con el botón del footer en
+     "Fin" y sin ninguna forma de seguir. Un callejón sin salida: la
+     única salida era volver atrás, y el cartel no lo dice.
+     Reportado por el cliente con una foto de ese cartel: *"esto está
+     apareciendo al final del curso, lo cual no debería ser así"*.
+     REPRODUCIDO: `evaluacion → consejos` sin contestar nada, y el
+     cierre con `unlocked` ausente y el candado a la vista.
+
+     El cierre ya exigía la práctica; lo que faltaba era pedirla EN su
+     diapositiva, que es donde el alumno puede hacer algo al respecto.
+     Con esto el cartel del candado queda, en la práctica, inalcanzable
+     navegando — sigue puesto para el reingreso con el progreso a medias,
+     que es su caso legítimo.
+
+     Se exige COMPLETARLA, no acertar: `estado.quiz.done` lo marca
+     `registrar()` (coto-quiz) al contestar la última, sin mirar el
+     puntaje. */
+  function faltaPractica(slideEl) {
+    if (!slideEl || !slideEl.querySelector('[data-quiz]')) return false;
+    return !(estado.quiz && estado.quiz.done);
+  }
+
   function bloqueada(slideEl) {
     if (!slideEl) return false;
     if (faltanPopups(slideEl).length) return true;
     if (slideEl.getAttribute('data-slide') === 'factores-riesgo' && faltanFactores().length) return true;
     if (faltanVideos(slideEl).length > 0) return true;
-    return faltaRepaso(slideEl);
+    if (faltaRepaso(slideEl)) return true;
+    return faltaPractica(slideEl);
   }
 
   function nudge(el) {
@@ -474,6 +490,11 @@
       if (faltaRepaso(slideEl)) {
         toast('Respondé el repaso rápido antes de seguir.');
         nudge(slideEl && slideEl.querySelector('.d-repaso'));
+        return;
+      }
+      if (faltaPractica(slideEl)) {
+        toast('Completá la mini práctica antes de seguir.');
+        nudge(slideEl && slideEl.querySelector('[data-quiz]'));
       }
     });
   }
@@ -494,16 +515,11 @@
      algo CLICKEABLE o algo que haya que LEER: sería un botón invisible
      o media frase cortada, y desde una PC no se nota nunca.
 
-     Las coordenadas de `ilustra` están medidas contra el arte real
-     (2520x1260) y NO se tocan como dato: la ilustración sigue exactamente
-     donde el diseñador la puso. Lo que se acota es la CAJA que ponemos
-     encima — la zona clickeable y el cartel de texto. Perder ese último
-     1-2% de zona no cuesta nada (la ilustración mide ~35% de ancho), y
-     gana que en tablet no haya nada tocable fuera de alcance. */
+     Lo usa la tira de repaso para que su borde derecho no caiga en esa
+     franja. `anchoSeguro()` vivía acá y se fue con la "ilustración
+     viva": era la única que lo usaba, y una función que nadie llama
+     envejece peor que una que no existe. */
   var MARGEN_SEGURO = 12.22;
-  function anchoSeguro(l, w) {
-    return +(Math.min(l + w, 100 - MARGEN_SEGURO) - l).toFixed(2);
-  }
 
   function initUnidad2DOM() {
     U2.forEach(function (f, i) {
@@ -511,64 +527,29 @@
       var shot = slide && slide.querySelector('[data-shot]');
       if (!shot) return;
 
-      // --- ilustración viva: zona + cartel
-      var zona = document.createElement('button');
-      zona.type = 'button';
-      zona.className = 'd-shot-hit d-ilustra-zona';
-      zona.setAttribute('data-hit', '');
-      zona.setAttribute('data-ilustra', f.id);
-      zona.setAttribute('data-l', f.ilustra.l); zona.setAttribute('data-t', f.ilustra.t);
-      zona.setAttribute('data-w', anchoSeguro(f.ilustra.l, f.ilustra.w));
-      zona.setAttribute('data-h', f.ilustra.h);
-      zona.innerHTML = '<span class="sr-only">' + f.nombre + ': ' + f.dato + '</span>';
-      shot.appendChild(zona);
+      /* ---- LAS ILUSTRACIONES NO LLEVAN NADA ENCIMA ----
+         Acá vivía la "ilustración viva": una zona clickeable sobre el
+         dibujo y un cartel de dato que aparecía al pasar el mouse. Se
+         la quitó por pedido del cliente: *"podemos sacarle la
+         interacción con ese bloque de texto a todas esas ilustraciones?
+         no me convencen, al final prefiero que no tengan nada esas
+         ilus"*. Lo mandó con una foto de la lámina de hipertensión donde
+         el cartel caía ENCIMA del chip de "Factor 2 de 6" y de sus
+         tildes, que es lo que terminó de decidirlo.
 
-      var cartel = document.createElement('div');
-      cartel.className = 'd-ilustra-cartel';
-      cartel.setAttribute('data-place', '');
-      cartel.setAttribute('data-l', f.ilustra.l);
-      // Ancho completo de la ilustración: ya no comparte renglón con nada.
-      cartel.setAttribute('data-w', anchoSeguro(f.ilustra.l, f.ilustra.w));
-      /* ---- DEBAJO de la ilustración, no encima (pedido del cliente) ----
-         Antes el cartel se apoyaba en el tercio inferior de la ilustración
-         (`t + h*0.72`), o sea le tapaba el dibujo justo cuando el alumno
-         acababa de pasar el mouse por ahí.
+         No se perdió contenido: los seis datos repetían lo que la propia
+         lámina ya dice en su columna de texto ("Cómo se detecta: …",
+         "Recomendación semanal (OMS): …", "Acompañamiento: …"), que es
+         además lo que el bloque `.sr-only` de cada diapositiva le lee a
+         un lector de pantalla, y el "cómo se detecta cada uno" vuelve a
+         aparecer en el resumen del cierre.
 
-         Va en una BANDA FIJA, la misma para los seis factores, y no
-         pegado al borde de cada ilustración. El motivo es medido: las seis
-         ilustraciones terminan a alturas muy distintas (78,3% la más
-         corta, 86,7% la más alta), así que "justo debajo de cada una"
-         daría un cartel que salta de lugar entre diapositiva y
-         diapositiva — y en las dos más altas no hay lugar: tabaquismo
-         deja 0,2% libre antes del margen de seguridad vertical del 8%.
-         Con la banda fija, el cartel aparece siempre en el mismo renglón
-         —debajo del arte— y termina exactamente en el 92%, que es el
-         límite de seguridad. */
-      /* ---- ARRIBA de la ilustración ----
-         Tercera ubicación de este cartel, y la eligió el cliente:
-         *"de última el texto ese de la ill ponelo arriba de la ill"*.
-         Lo que lo obliga es el repaso: abajo de la ilustración hay un
-         solo renglón libre y lo necesita la tira (ver más abajo), así
-         que el cartel se muda al de arriba — que está libre porque el
-         chip de "Factor N de 6" termina en 13,80%.
-
-         Arranca en 14,60 para no pisarlo y mide 7,40, o sea 14,60-22,00.
-         Las seis ilustraciones arrancan entre 13,81% (tabaquismo) y
-         23,25% (obesidad), así que en las más altas el cartel se apoya
-         sobre el primer tramo del arte. Eso es aceptable y es el mismo
-         criterio de siempre: el cartel es TRANSITORIO —solo está
-         mientras el alumno pasa el mouse por la ilustración— y lo que
-         tiene que quedar siempre despejado es lo permanente.
-         ⚠️ Los números declarados NO son los que se miden: `place()`
-         posiciona contra el arte y el `.slide` es un poco más bajo que
-         el lienzo 2:1, así que todo cae ~1 punto más abajo de lo
-         escrito (medido: un bloque declarado 82,00-92,00 renderizaba
-         82,8-93,1). Acá sobra margen para los dos lados. */
-      cartel.setAttribute('data-t', '14.60');
-      cartel.setAttribute('data-h', '7.40');
-      cartel.hidden = true;
-      cartel.innerHTML = '<p>' + f.dato + '</p>';
-      shot.appendChild(cartel);
+         Tres ubicaciones tuvo ese cartel —sobre el tercio inferior del
+         dibujo, en una banda fija debajo del arte, y arriba de la
+         ilustración— y la que lo sacó de la cancha fue la cuarta
+         conversación sobre lo mismo. Si alguna vez vuelve, el cartel
+         necesita un renglón PROPIO: no hay lugar libre entre el chip de
+         progreso (termina en 19,79%) y el arte (arranca en 20,79%). */
 
       /* --- TIRA DE REPASO, abajo de la ilustración y sin tocarla ---
          Quinto y último envase de estas 6 preguntas. Los cuatro
@@ -581,14 +562,16 @@
          Las dos cosas se resolvieron juntas, y una es de ARTE:
            · `tools/achicar-ilustracion.py` (del kit) mueve y achica la
              ilustración horneada en cada .webp para que las SEIS ocupen
-             la MISMA franja: 20,81 declarado, 20,79-68,57% medido.
+             la MISMA franja: 23,50-75,07 declarado, 23,49-75,00% medido.
              El renglón de arriba lo marca la caja del título, como
              pidió el cliente (*"el margen superior lo debe marcar la
              caja del título 'tabaquismo'"*): la caja va de 12,62% a
-             19,76% en las seis, y la ilustración arranca 1 punto abajo
-             de su borde inferior. En esa misma franja entra el chip
-             "Factor N de 6", que está en la MISMA columna y ahora
-             cierra con la caja del título (19,79% contra 19,76%: 0,2px).
+             19,76% en las seis, y el chip "Factor N de 6" —que está en
+             la MISMA columna— se alinea con ella por arriba, terminando
+             en 17,96%. La ilustración arranca 5,5 puntos (43px) más
+             abajo: es el aire que pidió el cliente después de ver la
+             primera versión, donde había 1 solo punto y se leía
+             pegado.
            · `tools/bajar-tarjeta.py` (del kit) baja la TARJETA DE VIDEO
              horneada de cada lámina hasta que las seis terminen en el
              mismo renglón, 90,95%. Venían desparejas —85,71% en
@@ -666,7 +649,22 @@
       tira.setAttribute('data-repaso', f.id);
       tira.setAttribute('data-no-tapa-arte', '');
       tira.innerHTML =
-        '<b class="d-repaso-title"><span class="d-repaso-title-ic" aria-hidden="true">🔍</span>Repaso rápido</b>' +
+        /* El rótulo "Repaso rápido" deja de OCUPAR un renglón, pero no
+           se borra: queda `.sr-only`, visible solo para un lector de
+           pantalla, que sin él se encuentra una pregunta suelta sin
+           saber qué es.
+           Por qué se fue de la vista: ese renglón mide 26px en notebook
+           —4,2 puntos de la lámina— y era lo único que había para
+           liberar. El cliente pidió aire entre el chip y la ilustración
+           y además la ilustración más grande, y las dos cosas salen del
+           mismo lugar: entre la caja del título y el renglón de abajo
+           hay 70 puntos fijos donde tienen que entrar el aire, el dibujo
+           y esta tarjeta. Sin este renglón la tarjeta pasa de 22,07 a
+           15,28 puntos (notebook 1366x768, que es el tamaño que manda) y
+           con eso alcanza para 5,5 puntos de aire Y +7,8% de dibujo.
+           Las tres opciones y el recuadro verde de la devolución dejan
+           claro qué es la tarjeta sin necesidad del rótulo. */
+        '<b class="sr-only">Repaso rápido</b>' +
         '<div class="d-repaso-item is-current" data-repaso-item data-repaso-ok="' + f.ok + '">' +
           '<p class="d-repaso-q">' + f.q + '</p>' +
           '<div class="d-repaso-btns">' +
@@ -701,13 +699,20 @@
          mitad derecha como más alta que la izquierda (*"factor debería
          estar a la misma altura que la caja de obesidad... y así bajar
          toda la mitad derecha hacia abajo"*). Con 15,34 la tinta del
-         chip termina en 19,79% y la caja del título en 19,76%: 0,03
-         puntos, 0,2px.
+         chip se alinea con la caja del título por ARRIBA (12,63 contra
+         12,62) y no por abajo, que es la otra lectura del mismo renglón.
+         El motivo es el aire: terminando en 17,96 en vez de 19,79 le
+         deja 1,8 puntos más de separación a la ilustración sin que el
+         dibujo pierda nada. Pedido del cliente: *"no da que quede así de
+         pegado, ahí meterle un buen espacio de aire entre ambas cosas"*.
+         El aire total queda en 5,5 puntos (43px): 1,8 los pone el chip y
+         los 3,7 restantes salen de que la ilustración arranque en 23,50
+         en vez de 20,81.
          El chip no se apoya en ningún detalle del arte, así que en vez de
          angostarlo (le reflowearía el rótulo) se CORRE a la izquierda
          hasta que su borde derecho entre en el margen seguro. */
       prog.setAttribute('data-l', (100 - MARGEN_SEGURO - 35).toFixed(2));
-      prog.setAttribute('data-t', '15.34');
+      prog.setAttribute('data-t', '13.56');
       prog.setAttribute('data-w', '35.00'); prog.setAttribute('data-h', '5.20');
       var tildes = U2.map(function (o) {
         return '<span class="d-u2-tick" data-u2-tick="' + o.video + '" role="img">' +
@@ -733,31 +738,6 @@
       t.classList.toggle('is-done', visto);
       t.classList.toggle('is-here', !!f && f.id === actualId);
       t.setAttribute('aria-label', (f ? f.nombre : '') + (visto ? ': video visto' : ': video pendiente'));
-    });
-  }
-
-  /* ---- Ilustración viva: los 3 disparadores (mouse, teclado, táctil) ---- */
-  function initIlustraciones() {
-    document.querySelectorAll('[data-ilustra]').forEach(function (zona) {
-      var shot = zona.closest('.d-shot');
-      var cartel = shot && shot.querySelector('.d-ilustra-cartel');
-      if (!cartel) return;
-      /* No hay turno ni reparto con el repaso: el cartel se fue al
-         renglón de ARRIBA de la ilustración (14,60-22,00) y la tira del
-         repaso se quedó con el de abajo, así que no comparten espacio
-         con nada y se ven los dos a la vez. Los dos pasos anteriores
-         —superponerlos y turnarlos, y después partirles el renglón— los
-         rechazó el cliente, en ese orden. */
-      function abrir() { cartel.hidden = false; zona.classList.add('is-on'); }
-      function cerrar() { cartel.hidden = true; zona.classList.remove('is-on'); }
-      zona.addEventListener('mouseenter', abrir);
-      zona.addEventListener('focus', abrir);
-      zona.addEventListener('mouseleave', cerrar);
-      zona.addEventListener('blur', cerrar);
-      zona.addEventListener('click', function () {
-        if (zona.classList.contains('is-on')) cerrar(); else abrir();
-      });
-      document.addEventListener('slidechange', cerrar);
     });
   }
 
@@ -1195,7 +1175,6 @@
       b.addEventListener('click', function () { Etapas.mostrar(b.getAttribute('data-step')); });
     });
 
-    initIlustraciones();
     initRepasoFactor();
     initGates();
 
@@ -1243,7 +1222,14 @@
         Logros.unlock('practica');
         Logros.award(20, 'práctica completada');
       },
-      onFinish: function () { Cierre.unlockCierre(); syncQuizRunning(); },
+      /* `_syncNav()` acá también: la diapositiva de la práctica traba el
+         avance (`faltaPractica`), así que al completarla hay que
+         refrescar la nav en el mismo momento. */
+      onFinish: function () {
+        Cierre.unlockCierre();
+        syncQuizRunning();
+        if (window.motor) motor._syncNav();
+      },
       narrate: function (el) { Narrador.speak(Narrador.textOf(el), 'slide'); },
       /* El "repasar" de una respuesta incorrecta puede apuntar a una
          DIAPOSITIVA o a un POP-UP.

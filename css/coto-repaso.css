@@ -95,6 +95,44 @@
 .d-repaso-next:active{ transform: translateY(0); }
 .d-repaso-item::before{ content: attr(data-repaso-n); position: absolute; left: 0; top: .05rem; width: 1.45rem; height: 1.45rem; border-radius: 50%; background: var(--surface-2); color: var(--text-dim); font-size: .72rem; font-weight: 800; display: grid; place-items: center; border: 1.5px solid var(--line); transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s cubic-bezier(.22, 1.4, .4, 1); }
 .d-repaso-arrow:disabled{ opacity: .35; cursor: default; }
+/* ---- Los tres `@keyframes` del repaso (kit-base v1.9.108) ----
+   NO ESTABAN, y el efecto era silencioso. Cuando la tira se mudó de
+   "Seguridad Alimentaria" al kit, las reglas vinieron y los
+   `@keyframes` se quedaron en el `assets.css` de ESE curso. Resultado:
+   en alimentaria las tres animaciones corren, y en cualquier curso
+   nuevo armado del kit —"Prevención cardiovascular" entre ellos— las
+   tres `animation:` apuntan a un nombre inexistente. El navegador no
+   avisa: simplemente no animan.
+
+   Lo que se perdía: la entrada de la pregunta, el temblor al errar y el
+   festejo al acertar. Nada roto a la vista, y por eso sobrevivió cinco
+   vueltas de revisión sobre esta misma tarjeta.
+
+   El traslado fue el de kit-base v1.9.64 (§7.12): faltan desde ahí, y
+   por eso tampoco animan en "Pedidos de PLU set" ni en "Seguridad de la
+   información" (medido con la herramienta de abajo). Lo encontró "Prevención cardiovascular" barriendo
+   el CSS; desde ahora lo vigila `tools/check-keyframes.mjs`, en
+   `npm run test:kit`.
+
+   ⚠️ Al aplicar este parche sobre "Seguridad Alimentaria", los tres de
+   su `css/assets.css` quedan de más y se pueden borrar. */
+@keyframes d-repaso-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes d-repaso-celebrate {
+  0% { transform: scale(1) rotate(0); }
+  35% { transform: scale(1.1) rotate(-2deg); }
+  60% { transform: scale(.97) rotate(1.5deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@keyframes d-repaso-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
 .d-repaso-item.is-current{ display: flex; flex-direction: column; animation: d-repaso-in .32s cubic-bezier(.2, .8, .3, 1) both; }
 .d-repaso-btns button::before{ font-size: .9em; }
 .d-repaso-btns button:disabled{ cursor: default; }

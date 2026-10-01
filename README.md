@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.107** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.108** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -92,6 +92,7 @@ kit-base/
 │   ├── achicar-ilustracion.py — achica la ilustración HORNEADA en una lámina para hacerle
 │   │                           lugar a un bloque; reescribe el arte, se niega si el fondo
 │   │                           no es liso (v1.9.105)
+│   ├── check-keyframes.mjs   — toda `animation` con su `@keyframes` (v1.9.108)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
 │   └── tests/                — suite pass/fail genérica, 57 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
@@ -405,6 +406,21 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.108 — las animaciones del repaso, que faltaban desde v1.9.64
+
+Ver CLAUDE.md §7.57. Relevo de "Prevención cardiovascular" (su "v1.9.109").
+
+- **`coto-repaso.css`**: los tres `@keyframes` de la tira de repaso
+  (entrada de la pregunta, temblor al errar, festejo al acertar) nunca
+  subieron al kit: se quedaron en el `assets.css` de "Seguridad
+  alimentaria" en v1.9.64. En todo otro curso las tres animaciones no
+  corrían. Ahora están.
+- **`tools/check-keyframes.mjs`** (nuevo, en `npm run test:kit`): toda
+  `animation` tiene que apuntar a un `@keyframes` que exista.
+- **`achicar-ilustracion.py`**: documenta cómo calcular `--fin` y
+  `--arriba` (la pantalla apaisada más chica es la que manda).
+- **`curso-prueba/`** pasa al cardio de esta vuelta.
 
 ### v1.9.107 — los cursos viejos auditados, la mini práctica que no se registraba, y cinco tests corregidos
 

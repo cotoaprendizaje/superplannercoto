@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""achicar-ilustracion.py · kit-base v1.9.105 — Área Aprendizaje (COTO)
+"""achicar-ilustracion.py · kit-base v1.9.105 (doc de --fin/--arriba: v1.9.108) — Área Aprendizaje (COTO)
 
 Achica una ILUSTRACIÓN HORNEADA en la lámina de una diapositiva, para
 hacerle lugar abajo a un bloque (una tira de repaso, una ficha, un
@@ -21,6 +21,50 @@ cerrar, y las cuatro primeras se verificaron por coordenadas y estaban
 mal. Lo que lo resolvió fue achicar las seis ilustraciones para que
 terminaran todas en la misma altura, y verificar contando PÍXELES
 (`tools/tests/bloque-no-tapa-arte.mjs`).
+
+CÓMO ELEGIR `--fin` Y `--arriba` (lo que costó cinco vueltas)
+-------------------------------------------------------------
+Estos dos números NO se eligen a ojo ni "probando hasta que entre". Se
+calculan, y el cálculo es siempre el mismo:
+
+    --arriba  = donde termina lo que hay encima (el chip de progreso,
+                la caja del título) + el aire que se quiera
+    --fin     = renglón de abajo − ALTO DEL BLOQUE EN SU PEOR CASO − aire
+
+El alto del bloque hay que MEDIRLO, en puntos del alto de la lámina, y
+en el peor caso de tres ejes a la vez:
+
+  1. **el tamaño de pantalla más chico que se soporte en apaisado.** Es
+     el que manda, y por una razón que no se ve a ojo: el bloque mide
+     los MISMOS PÍXELES en todas las pantallas (su fuente tiene tope
+     máximo, por legibilidad) mientras la lámina se encoge. MEDIDO en
+     "Prevención cardiovascular", la misma tarjeta:
+
+         escritorio 1600x900   lámina 780px   tarjeta 143px → 18,3 pts
+         notebook   1366x768   lámina 648px   tarjeta 143px → 22,1 pts
+         iPad apaisado         lámina 658px   tarjeta 130px → 19,8 pts
+
+     Calcular con el escritorio y después abrir el curso en un notebook
+     es la forma más rápida de que el bloque termine encima del dibujo.
+  2. **el estado más alto del bloque**, no el que trae. Una tarjeta que
+     despliega su devolución al contestar crece, y ése es el estado que
+     tiene que entrar.
+  3. **el peor contenido de la serie.** Una pregunta de dos renglones
+     donde las otras cinco entran en uno cuesta 18px más.
+
+Y dos trampas medidas, para no perder el tiempo:
+
+  · **Apretar paddings no sirve.** De 143px se baja a 138: menos de un
+    punto de lámina.
+  · **Poner la pregunta y las opciones en el mismo renglón EMPEORA** en
+    pantallas chicas. En notebook la tarjeta mide 535px y la pregunta al
+    lado de los botones se parte en tres renglones: 143px → 166px.
+
+Lo único que mueve la aguja de verdad es sacar un RENGLÓN entero del
+bloque. En este curso, el rótulo "Repaso rápido" valía 26px (4,2 puntos)
+y llevarlo a `.sr-only` —se sigue leyendo en un lector de pantalla, deja
+de ocupar lugar— bajó la tarjeta de 22,07 a 15,28 puntos. Eso alcanzó
+para 5,5 puntos de aire arriba Y 7,8% más de dibujo.
 
 CÓMO
 ----
