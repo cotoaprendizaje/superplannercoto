@@ -14623,3 +14623,34 @@ número de versión cambiado en los comentarios. Lo nuevo:
   `diapositivas.css` y seis láminas, achicadas con `achicar-ilustracion.py`). Ese cardio llegó **sin `kit-version.json`**: su
   chat nunca corrió `actualizar-kit`, así que su copia del kit sigue
   vieja (sin, por ejemplo, el arreglo del video de fondo de §7.54).
+
+## 7.58 La forma de trabajar, escrita: retomar un curso y relevar al kit (kit-base v1.9.109)
+
+Cierre de la Fase 0. Lo que más costó en las vueltas de §7.54–§7.57 no
+fueron los bugs sino el circuito: relevos escritos contra copias viejas
+del kit (el chat de cardio nunca había corrido `actualizar-kit`), y con
+números de versión propios que chocaban con los del kit ("v1.9.107" y
+"v1.9.109" de cardio contra la v1.9.107 y v1.9.108 de acá). Copiar sus
+archivos completos habría borrado cinco arreglos en una sola vuelta.
+
+Queda escrito así:
+
+- **Cada curso se trabaja en su chat; este chat es solo del kit.**
+- **Cada sesión sobre un curso existente empieza con `actualizar-kit`**
+  y los pasos que avise. El texto para arrancar ese chat es
+  **`PROMPT-RETOMAR-CURSO.md`** (nuevo): se adjuntan el zip del curso y el
+  del kit más nuevo, sirve en el chat viejo o en uno nuevo. Viaja con cada
+  curso (generador + `_kit-archivos.mjs`), queda fuera del zip del LMS, y
+  `check-conteos` vigila la versión que dice.
+- **Los relevos se rotulan por curso y fecha**, dicen de qué versión del
+  kit partieron (`kit-version.json`), y separan lo probado de lo supuesto.
+  Las versiones las pone solo este chat. En `PROMPT-CURSO-NUEVO.md`, en el
+  nuevo prompt y en el manual (§9).
+- **En este chat**, cada relevo se porta por partes, con test en las dos
+  direcciones, las dos suites en verde (arnés y `curso-prueba`), diario +
+  manual + changelog, un commit en `claude/kit-base` y el zip de vuelta,
+  que los cursos toman con `actualizar-kit`.
+
+Verificado: el generador copia el prompt nuevo, `actualizar-kit` lo
+ofrece como "nuevo en el kit" a un curso existente, `build-zip.py` lo deja
+fuera del zip del LMS, y `check-conteos` da rojo con la versión cambiada.

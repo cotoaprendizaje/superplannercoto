@@ -67,7 +67,7 @@ import zipfile
 EXCLUIR_DIRS = {'node_modules', '.git', '__pycache__', '.pytest_cache', '.kit-anterior',
                 'curso-prueba'}
 EXCLUIR_ARCH = {'.DS_Store', 'Thumbs.db'}
-ARCHIVOS_DE_TRABAJO = {'PROMPT-CURSO-NUEVO.md', 'MANUAL-DEL-MOLDE.md', 'header-boilerplate.html',
+ARCHIVOS_DE_TRABAJO = {'PROMPT-CURSO-NUEVO.md', 'PROMPT-RETOMAR-CURSO.md', 'MANUAL-DEL-MOLDE.md', 'header-boilerplate.html',
                        'simulador-boilerplate.html'}
 
 

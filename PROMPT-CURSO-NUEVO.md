@@ -17,7 +17,7 @@ entre `<>` y adjuntar el zip de `kit-base/` + el PDF del diseñador.
 ## ✂️ Copiar desde acá
 
 Vas a armar un curso SCORM del molde "Área Aprendizaje (COTO)" usando el
-kit adjunto (`kit-base/`, v1.9.108). Antes de escribir una línea, leé del
+kit adjunto (`kit-base/`, v1.9.109). Antes de escribir una línea, leé del
 kit:
 
 - **`MANUAL-DEL-MOLDE.md`, entero.** Son las reglas vigentes, cortas y
@@ -203,5 +203,15 @@ Lo que hace útil a un relay: que distinga lo que YA probaste de lo que
 solo suponés, y que diga cómo lo mediste. Un relay que dice "esto es
 mío, esto es del kit, y esto último lo verifiqué así" vale el doble que
 uno con más hallazgos sin comprobar.
+
+Y dos reglas de forma, que ya costaron confusiones:
+
+- **Rotulá el relevo por curso y fecha, nunca con un número de versión
+  del kit.** Las versiones las pone solo el chat del kit.
+- **Decí de qué versión del kit partiste** (`kit-version.json`).
+
+Cuando el curso vuelva más adelante (correcciones, una edición nueva),
+se retoma con `PROMPT-RETOMAR-CURSO.md`, que viaja en su carpeta: arranca
+siempre poniéndolo al día con `actualizar-kit`.
 
 ## ✂️ Hasta acá

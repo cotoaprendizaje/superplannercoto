@@ -132,6 +132,9 @@ fs.copyFileSync(path.join(KIT_ROOT, 'PROMPT-CURSO-NUEVO.md'), path.join(destinoA
    viaja con el curso, así que sin esto el chat que retoma la carpeta no
    tiene las reglas a mano. */
 fs.copyFileSync(path.join(KIT_ROOT, 'MANUAL-DEL-MOLDE.md'), path.join(destinoAbs, 'MANUAL-DEL-MOLDE.md'));
+/* Y el de retomarlo (v1.9.109): cuando el curso vuelva por correcciones,
+   el procedimiento ya está en su carpeta. */
+fs.copyFileSync(path.join(KIT_ROOT, 'PROMPT-RETOMAR-CURSO.md'), path.join(destinoAbs, 'PROMPT-RETOMAR-CURSO.md'));
 fs.copyFileSync(path.join(KIT_ROOT, 'package.json'), path.join(destinoAbs, 'package.json'));
 if (fs.existsSync(path.join(KIT_ROOT, 'package-lock.json'))) {
   fs.copyFileSync(path.join(KIT_ROOT, 'package-lock.json'), path.join(destinoAbs, 'package-lock.json'));

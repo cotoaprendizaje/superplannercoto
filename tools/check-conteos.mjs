@@ -59,7 +59,8 @@ const AFIRMACIONES = [
   /* v1.9.104: el paso 4 del prompt decía "los 17" con 53 tests, y ningún
      patrón lo miraba. Y el manual declara para qué versión vale. */
   ['PROMPT-CURSO-NUEVO.md', /npm test\s+# los (\d+)/, 'tests'],
-  ['MANUAL-DEL-MOLDE.md', /Vigente para \*\*kit-base v([\d.]+)\*\*/, 'version']
+  ['MANUAL-DEL-MOLDE.md', /Vigente para \*\*kit-base v([\d.]+)\*\*/, 'version'],
+  ['PROMPT-RETOMAR-CURSO.md', /el del kit-base\s+\(v([\d.]+)\)/, 'version']
 ];
 
 const fallos = [];

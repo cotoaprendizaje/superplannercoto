@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.108**.
+Vigente para **kit-base v1.9.109**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -279,7 +279,14 @@ del curso con:
 - **síntoma**, **causa medida en el código real**, y **cómo lo
   verificaste**;
 - **qué probaste y qué solo suponés**, separado;
-- **la versión del kit** sobre la que se encontró (`kit-version.json`).
+- **la versión del kit** sobre la que se encontró (`kit-version.json`);
+- **rotulado por curso y fecha, nunca con un número de versión del kit**:
+  las versiones las pone solo el chat del kit (§7.58).
+
+**Cada sesión de trabajo sobre un curso que ya existe empieza
+poniéndolo al día** (`actualizar-kit`, y los pasos que avise). Así lo que
+se encuentre está escrito contra el kit de hoy. El texto para arrancar
+ese chat es `PROMPT-RETOMAR-CURSO.md`.
 
 Se puede parchear la copia local del curso para no frenar la entrega,
 pero el arreglo de verdad lo aplica el chat del kit. **Nunca se relevan

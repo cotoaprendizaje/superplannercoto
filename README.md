@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.108** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.109** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -26,6 +26,8 @@ kit-base/
 ├── curso-prueba/      — SOLO en la rama del kit, no en el zip: los archivos propios de
 │                        "Prevención cardiovascular" + probar.sh, que les aplica el kit
 │                        actual y corre la suite (v1.9.106)
+├── PROMPT-RETOMAR-CURSO.md — el texto para retomar un curso que ya existe: lo pone al
+│                        día con actualizar-kit antes de tocar nada (v1.9.109)
 ├── MANUAL-DEL-MOLDE.md — las reglas VIGENTES, cortas (v1.9.104). Viaja con cada
 │                        curso; CLAUDE.md es el diario (el porqué de cada una)
 ├── js/
@@ -406,6 +408,19 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.109 — la forma de trabajar, escrita: retomar un curso y relevar al kit
+
+Ver CLAUDE.md §7.58.
+
+- **`PROMPT-RETOMAR-CURSO.md`** (nuevo): el texto para pegar en el chat
+  de un curso que ya existe. Arranca siempre con `actualizar-kit` (y los
+  pasos que avise), sigue con el manual y la suite, y cierra con la
+  entrega al LMS y el formato del relevo. Viaja con cada curso (lo copia
+  el generador y lo lleva `actualizar-kit`); no entra al zip del LMS.
+- **Relevos: rotulados por curso y fecha, nunca con un número de versión
+  del kit**, y diciendo de qué versión partieron. En el prompt de curso
+  nuevo y en el manual.
 
 ### v1.9.108 — las animaciones del repaso, que faltaban desde v1.9.64
 
