@@ -10754,7 +10754,7 @@ const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣",
   // Suben cuando cambia la lista. Sirve para dos cosas: que nadie se quede con
   // la ronda de hoy jugada y las frases viejas, y que el equipo pueda volver a
   // tirar el mismo día en que estrenamos frases nuevas.
-  FRASES_V = 4,
+  FRASES_V = 5,
   // El chiste es de la oficina, nunca de una persona. Nos reímos del SCORM,
   // del PDF de 80 megas, del archivo "final_v2_ahora_si" y de este mismo
   // Planner —de nadie del equipo—: una frase que caiga mal la lee todo el
@@ -10792,6 +10792,49 @@ const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣",
   "Estás a un clic de acordarte de algo que te olvidaste",
   "Tildá una tarjeta y sentite alguien 🏆",
   "El Planner te mira. No dice nada, pero mira.",
+  // ===== Las que empujan =====
+  // Alentar sin cartel de aeropuerto: nada de "perseguí tus sueños". Lo que
+  // levanta un martes a las tres de la tarde es que alguien te diga que con
+  // avanzar un poco alcanza, no que seas extraordinaria.
+  "Ese curso que te da miedo empezar: empezalo mal. Después se arregla.",
+  "Hoy alcanza con dejarlo mejor que ayer",
+  "Nadie se acuerda del curso perfecto que nunca se publicó",
+  "El borrador feo de hoy es el curso bueno de noviembre",
+  "No hace falta ver todo el camino. Solo el próximo paso.",
+  "Terminar es una habilidad. La estás practicando.",
+  "Pedí ayuda: es más rápido que el orgullo",
+  "Avanzá tres centímetros. Mañana son seis.",
+  "Hoy no hace falta ser brillante. Hace falta estar.",
+  "Alguien va a aprender algo gracias a esto. Esa es toda la razón.",
+  "El catálogo existe porque alguien, un martes cualquiera, se sentó a hacerlo",
+  "Lo hiciste difícil porque nadie te dijo que se podía fácil. Igual lo hiciste.",
+  "Si sale bien fue tu laburo. Si sale mal fue el Moodle. Repetí conmigo.",
+  "Lo que hoy te sale pesado, en marzo lo vas a hacer de memoria",
+  // ===== Las de cine =====
+  // Guiños, no citas: la gracia está en que la película se cruce con el SCORM,
+  // el PDF de 80 megas y la carpeta que alguien renombró.
+  "Que la fuerza te acompañe. Y el SCORM también, ojalá. ⚔️",
+  "Houston, tenemos un curso sin portada 🚀",
+  "Hoy vamos a necesitar un servidor más grande 🦈",
+  "Nadie pone al Edu Point en un rincón 💃",
+  "Al infinito y más allá. O al menos hasta la fecha de publicación. 🤠",
+  "Toto, me parece que ya no estamos en el Excel 🌪",
+  "Un curso para gobernarlos a todos. Igual hay 83. 💍",
+  "Mi tesoro… el original sin comprimir 💍",
+  "La vida encuentra la forma. El SCORM, a veces. 🦖",
+  "Hay 80 megas en ese PDF y nadie sabe qué hay adentro. Es Jurassic Park.",
+  "Otra vez el mismo feedback. Hoy es el día de la marmota. 🔁",
+  "Corré, que cierra la ventana de publicación 🏃",
+  "Te hago una oferta que no vas a poder rechazar: tildá una tarjeta 🎩",
+  "Vine a tomar mate y a subir SCORMs. Y se me acabó el mate. 🧉",
+  "El guion dice «insertar imagen acá». La imagen no existe. Esto es Matrix.",
+  "Elegí la pastilla roja y ahora sabés cómo funciona Moodle por dentro 💊",
+  "E.T. llamar a soporte 📞",
+  "Esto no es una carpeta desordenada: es una instalación artística 🎨",
+  "Que empiecen los juegos: cinco áreas y un solo lugar en la home 🏹",
+  "Avengers, reunidos: hay que revisar los textos 🛡",
+  "Sígueme el juego — la locutora, a mitad del guion",
+  "Volvé al futuro: el curso de 2018 te necesita ⏳",
 ];
 // Las frases que ya salieron hoy, sin contar la propia. Dos personas con la
 // misma frase el mismo día le saca la gracia: lo divertido del widget es
@@ -10945,6 +10988,25 @@ function renderFraseWidget() {
 // Mismo patrón que la ruleta del Planner: colapsada a un botón chico
 // que despliega la máquina + el historial, en vez de una tarjeta
 // siempre abierta compitiendo con el resto de Inicio.
+// Cuánto puede medir el panel de la CotoFrase sin irse de la pantalla. Cuelga
+// de la 🎰, que vive abajo en Inicio, así que el lugar disponible cambia con
+// el scroll: se mide cada vez en vez de clavarse.
+function cotofraseAlto() {
+  const pop = document.querySelector("#cotofracePop");
+  if (!pop || pop.classList.contains("hidden")) return;
+  const lanzador = pop.closest(".cotofrase-launcher");
+  if (!lanzador) return;
+  const r = lanzador.getBoundingClientRect(),
+    hayAbajo = window.innerHeight - r.bottom - 16,
+    hayArriba = r.top - 16,
+    // La 🎰 vive abajo en Inicio: muchas veces no queda lugar para desplegar
+    // hacia abajo. Entonces se abre para arriba, como cualquier menú que no
+    // entra, en vez de salirse de la pantalla.
+    haciaArriba = hayAbajo < 300 && hayArriba > hayAbajo;
+  (pop.classList.toggle("arriba", haciaArriba),
+    (pop.style.maxHeight = Math.max(200, Math.round(haciaArriba ? hayArriba : hayAbajo)) + "px"));
+}
+(window.addEventListener("scroll", cotofraseAlto, true), window.addEventListener("resize", cotofraseAlto));
 function cotofraseLauncherHTML() {
   return (
     '<div class="cotofrase-launcher">\n    <button class="cotofrase-fab" data-action="cotofrase:toggle" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>\n    <div class="cotofrase-pop hidden" id="cotofracePop">\n      ' +
@@ -12825,7 +12887,7 @@ document.addEventListener("click", (ev) => {
     }
     case "cotofrase:toggle": {
       const el7c = $("#cotofracePop");
-      if (el7c) el7c.classList.toggle("hidden");
+      if (el7c) ((el7c.classList.toggle("hidden")), cotofraseAlto());
       break;
     }
     case "agendaAviso:cerrar": {
