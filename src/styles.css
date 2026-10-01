@@ -7337,9 +7337,21 @@ html {
   color: var(--ink);
 }
 @media (max-width: 760px) {
+  .rep-chart {
+    gap: 3px;
+    padding-inline: 0;
+    overflow-x: visible;
+  }
   .rep-bar-col {
-    flex-basis: 28px;
-    min-width: 28px;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .rep-bar-lbl {
+    font-size: 8.5px;
+    letter-spacing: 0;
+  }
+  .rep-bar-n {
+    font-size: 9px;
   }
 }
 .rep-modal-list {
@@ -10125,4 +10137,58 @@ button.mat-ct:hover {
   background: var(--surface-2);
   color: var(--ink-soft);
   box-shadow: inset 1px 0 0 var(--line);
+}
+
+/* ===== El teléfono =====
+   Dos cosas que en pantalla angosta quedaban torcidas y no se ven en el
+   escritorio. */
+
+/* Las solapas de Técnico y del Mapa se acomodaban cada una a su ancho y
+   terminaban escalonadas en tres renglones distintos —"Grilla" sola arriba,
+   "Métodos de matriculación" ocupando una fila entera—. En dos columnas
+   parejas entran las cuatro y se leen como un grupo. */
+@media (max-width: 620px) {
+  .mapa-secciones {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .mapa-sec {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 8px;
+    text-align: center;
+    line-height: 1.2;
+  }
+}
+
+/* La barra de Técnico tiene doce embudos: en el teléfono se envolvían en
+   cuatro renglones y, entre eso y el buscador, no quedaba nada de pantalla
+   para el primer curso. Ahora los embudos van en un solo renglón que se
+   arrastra de costado — ocupan el alto de uno, no de cuatro. */
+@media (max-width: 760px) {
+  .tbar {
+    gap: 8px var(--sp-3);
+    padding: var(--sp-2);
+  }
+  .tbar-embudos {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .tbar-embudos::-webkit-scrollbar {
+    display: none;
+  }
+  .tbar-f {
+    flex: none;
+  }
+  /* El contador se iba al borde derecho, justo abajo del "+" flotante, que lo
+     tapaba. Pegado a la izquierda se lee. */
+  .tbar-fin {
+    margin-left: 0;
+  }
 }
