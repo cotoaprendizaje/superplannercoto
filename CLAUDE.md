@@ -14619,7 +14619,7 @@ número de versión cambiado en los comentarios. Lo nuevo:
   `--fin` y `--arriba` (el bloque mide los mismos píxeles en toda
   pantalla mientras la lámina se encoge, así que manda la pantalla
   apaisada más chica) y dos trampas medidas.
-- **`curso-prueba/`** pasa al cardio de esta vuelta (cambió `curso.js` y
-  `diapositivas.css`). Ese cardio llegó **sin `kit-version.json`**: su
+- **`curso-prueba/`** pasa al cardio de esta vuelta (cambiaron `curso.js`,
+  `diapositivas.css` y seis láminas, achicadas con `achicar-ilustracion.py`). Ese cardio llegó **sin `kit-version.json`**: su
   chat nunca corrió `actualizar-kit`, así que su copia del kit sigue
   vieja (sin, por ejemplo, el arreglo del video de fondo de §7.54).
