@@ -179,6 +179,17 @@
 .d-repaso-marco{ position: absolute; display: flex; align-items: flex-start; overflow: hidden; }
 .d-repaso-marco > .d-repaso{ max-height: 100%; }
 
+/* `--abajo`: la tarjeta se apoya en el BORDE INFERIOR de la banda en vez
+   del superior (kit-base v1.9.107; lo trajo "Prevención cardiovascular"). Para una tira apoyada sobre una
+   lámina es lo que hace falta casi siempre: la tarjeta CRECE al
+   contestar (la devolución se despliega), y creciendo hacia arriba su
+   borde de abajo se queda quieto — que es el que el ojo usa para leerla
+   como "esto va acá abajo". Alineada arriba, contestar la empuja hacia
+   el borde de la lámina y hay que declarar la banda del tamaño del
+   estado más alto, desperdiciando el resto mientras está sin contestar.
+   Pedido que lo motivó: *"ubicalo bien abajo de la ilustración"*. */
+.d-repaso-marco--abajo{ align-items: flex-end; }
+
 /* ---- Opciones EN COLUMNA (kit-base v1.9.100) ----
    `.d-repaso-btns` reparte los botones en fila, que es lo correcto para
    un Verdadero/Falso: dos palabras cortas, una al lado de la otra.
@@ -242,4 +253,77 @@
   .d-repaso-item p, .d-repaso-item dd { font-size: .66rem; line-height: 1.25; }
   .d-repaso-arrow { width: 1.6rem; height: 1.6rem; }
   .d-repaso-count { font-size: .66rem; }
+}
+
+/* ---- `--suelto`: la tira SALE del lienzo cuando el lienzo no la aguanta ----
+   kit-base v1.9.107.
+
+   POR QUÉ. Una tira colocada con `data-place` tiene su banda en % del
+   lienzo, pero su texto tiene un piso en píxeles que no baja más
+   (`clamp(.78rem, 1.15cqw, .9rem)` y compañía, por legibilidad). O sea:
+   cuanto más chica la pantalla, MENOS banda hay y MÁS ALTA es la
+   tarjeta. Se cruzan. MEDIDO en "Prevención cardiovascular", la misma
+   tarjeta:
+
+       escritorio 1600x900   banda 176px   necesita 163px
+       notebook   1366x768   banda 150px   necesita 161px
+       iPad apaisado         banda 145px   necesita 146px
+       iPad vertical         banda  89px   necesita 156px
+       iPhone vertical       banda  43px   necesita 240px
+
+   El cliente lo reportó como tres síntomas de un mismo hecho: *"el
+   recuadro del repaso se ve con scroll, tapa parte de la ilustración y
+   las opciones de respuesta quedan cortadas (la última no se llega a
+   ver)"*.
+
+   LA SALIDA. Un lienzo 2:1 en una pantalla vertical NO llena la
+   pantalla: deja franjas vacías arriba y abajo. MEDIDO: 262px abajo en
+   iPad vertical, 143px en iPhone vertical. Cuando la banda no alcanza y
+   esa franja sí, la tira se va ahí, a todo el ancho — y a todo el ancho
+   además necesita MENOS alto, porque el texto deja de envolverse.
+
+   Quién decide es el curso, que mide; esta clase es solo el modo de
+   dibujarla. En apaisado no hay franja libre (el lienzo llena la
+   pantalla) y la tira se queda donde está: ahí el que tiene que entrar
+   en la banda es el contenido.
+
+   ⚠️ LOS `!important` NO SON PEREZA. `place()` (motor-slides) escribe
+   left/top/width/height INLINE desde un ResizeObserver y un listener de
+   `load` que quedaron capturados en closures al construir el motor, así
+   que quitarle `data-place` al bloque NO los detiene: siguen
+   escribiendo. MEDIDO: sin esto la tarjeta quedaba pegada a la derecha,
+   237px de ancho en vez de 630, porque el `left` inline sobrevivía. En
+   CSS un `!important` sí le gana a un inline sin `!important`.
+
+   `--tira-arriba` lo pone el curso: es el borde inferior del arte, para
+   que la franja de la tarjeta empiece justo donde termina la lámina. */
+.d-repaso-marco--suelto{
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; bottom: 0 !important;
+  top: var(--tira-arriba, auto) !important;
+  width: auto !important; height: auto !important;
+  display: flex; justify-content: center; align-items: center;
+  overflow: visible;
+  /* el marco ocupa toda la franja pero NO tiene que robar el clic a lo
+     que haya debajo; la tarjeta sí lo recibe */
+  pointer-events: none;
+}
+/* El ancho deja libre la columna de los botones flotantes de los dos
+   lados: sin eso la tarjeta queda por debajo del engranaje y de la
+   ayuda. */
+.d-repaso-marco--suelto > .d-repaso{
+  width: min(calc(100% - 190px), 720px);
+  pointer-events: auto;
+  /* TOPE a la franja libre, no `none`. BUG REAL que encontró medir los
+     píxeles en vertical: en iPhone vertical la franja libre mide 143px y
+     la tarjeta CONTESTADA necesita 180, así que centrada se desbordaba
+     por las dos puntas y la de arriba caía SOBRE EL DIBUJO — 3.140
+     píxeles tapados en hipertensión y en obesidad.
+     Con el tope no se desborda nunca: queda centrada mientras entra
+     (iPad vertical: 112px en 261) y en el caso extremo scrollea los 37px
+     que le faltan. El orden de prioridades es ése: primero no tapar el
+     dibujo, después no tapar la barra de navegación, y recién al final
+     evitar el scroll. */
+  max-height: 100%;
+  overflow: auto;
 }

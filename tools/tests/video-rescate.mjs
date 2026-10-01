@@ -79,6 +79,13 @@ else {
 await page.evaluate(() => {
   window.__set = [];
   const v = document.getElementById('d-video-player');
+  /* Sin reproductor no hay a quién espiar todavía: el camino de
+     inyección de más abajo crea el `<video>` y le instala el espía
+     (kit-base v1.9.107). Sin este guard el test REVENTABA con
+     "defineProperty called on non-object" justo en los cursos que el
+     comentario de arriba promete revisar ("Seguridad de la
+     información", NOA: anteriores al reproductor en pop-up). */
+  if (!v) return;
   const d = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'src');
   Object.defineProperty(v, 'src', { configurable: true,
                                     get() { return d.get.call(this); },
@@ -167,7 +174,16 @@ await page.waitForTimeout(800);
 const bucle = await page.evaluate(() => window.__set.length);
 if (bucle > 2) fallos.push(`10 "emptied" seguidos re-engancharon ${bucle} veces: es un bucle`);
 
-await page.evaluate(() => { window.__set.length = 0; document.querySelector('[data-popup="video-player"] [data-popup-close]').click(); });
+/* Si el ✕ no cerró, se cierra por el motor (kit-base v1.9.107): el motor
+   engancha los `[data-popup-close]` AL ARRANCAR, así que el del pop-up
+   que inyecta este test (cursos sin reproductor) no hace nada al clic, el
+   pop-up seguía abierto y el test acusaba "el <video> quedó con src". En
+   un curso con el reproductor en su marcado, el clic alcanza. */
+await page.evaluate(() => {
+  window.__set.length = 0;
+  document.querySelector('[data-popup="video-player"] [data-popup-close]').click();
+  if (document.querySelector('[data-popup="video-player"].open')) window.motor.closePopup();
+});
 await page.waitForTimeout(600);
 const trasCerrar = await page.evaluate(() => ({ sets: window.__set.slice(), src: document.getElementById('d-video-player').getAttribute('src') }));
 if (trasCerrar.sets.length) fallos.push('al cerrar el pop-up el rescate volvió a enganchar el video: no se suelta el archivo');

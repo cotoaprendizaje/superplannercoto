@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.106** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.107** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -93,7 +93,7 @@ kit-base/
 │   │                           lugar a un bloque; reescribe el arte, se niega si el fondo
 │   │                           no es liso (v1.9.105)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 56 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 57 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -166,7 +166,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 56, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 57, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -405,6 +405,28 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.107 — los cursos viejos auditados, la mini práctica que no se registraba, y cinco tests corregidos
+
+Ver CLAUDE.md §7.56.
+
+- **Mini práctica (bug grave del kit, relevo de cardio):** contestar la
+  última pregunta y seguir con "Siguiente" no registraba la práctica, así
+  que el cierre quedaba con candado, sin puntos ni logro. Ahora se
+  registra al contestar la última, y la locución pasa a la devolución.
+  Test nuevo `mini-practica-registro.mjs` (57 tests). Para decorar la
+  pantalla de resultado hay un gancho nuevo, `onResult`; `actualizar-kit`
+  avisa a los cursos que la decoraban desde `onFinish` (PLU).
+- **`actualizar-kit` avisa la narración doble** de los cursos anteriores
+  a v1.9.71 (NOA), con la línea a sacar.
+- **`build-zip.py`** rechaza (y borra) un zip con el manifiesto fuera de
+  la raíz.
+- **`coto-repaso.css`**: `--suelto` y `--abajo` para la tira de repaso.
+- **`bloque-no-tapa-arte`** mide en seis tamaños.
+- **Cinco tests corregidos** que acusaban al curso por defectos propios
+  (`locucion-segundos`, `repaso-tira`, `mini-practica`, `video-rescate`,
+  más `_shared.mjs` con `openCourse(url, ctx)`).
+- **`curso-prueba/`** pasa a ser el cardio corregido.
 
 ### v1.9.106 — el curso de prueba: cada versión del kit contra un curso real
 

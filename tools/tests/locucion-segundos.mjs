@@ -153,7 +153,9 @@ if (!/^\d+:\d\d$/.test(a.total || '') || a.total === '0:00') {
   fails.push(`el total del reloj (#d-narr-total) dice "${a.total}" — tiene que ser la duración en m:ss.`);
 }
 if (!/^\d+:\d\d$/.test(a.reloj || '')) {
-  fails.push(`el transcurrido del reloj (#d-narr-time) dice "${a.reloj}" — tiene que ser m:ss.`);
+  fails.push(a.reloj === undefined
+    ? 'el header no trae el reloj de la locución (`#d-narr-time`): es un header anterior a la barra en segundos (v1.9.92); se toma del `index-boilerplate.html` del kit.'
+    : `el transcurrido del reloj (#d-narr-time) dice "${a.reloj}" — tiene que ser m:ss.`);
 }
 
 /* ---------- 2 · el pulgar corre SOLO, sin cambiar de fragmento ---------- */
@@ -197,7 +199,11 @@ const salto = await page.evaluate(() => {
   r.dispatchEvent(new Event('input', { bubbles: true }));
   r.dispatchEvent(new Event('change', { bubbles: true }));
   const q = window.Narrador.progreso();
-  return { objetivo, index: q.index, seg: q.seg, total: q.total, reloj: document.getElementById('d-narr-time').textContent };
+  /* `|| {}` como en el bloque 1 (kit-base v1.9.107): un header anterior
+     a v1.9.92 no trae `#d-narr-time`, y sin esto el test REVENTABA con
+     un TypeError en vez de decirlo (MEDIDO en "Pedidos de PLU set"). El
+     faltante lo reporta el chequeo del reloj, con nombre. */
+  return { objetivo, index: q.index, seg: q.seg, total: q.total, reloj: (document.getElementById('d-narr-time') || {}).textContent };
 });
 if (!/^\d+:\d\d$/.test(salto.reloj || '') || salto.reloj === '0:00') {
   fails.push(`arrastrar la barra y soltarla dejó el reloj en "${salto.reloj}": el transcurrido se fue a cero ` +

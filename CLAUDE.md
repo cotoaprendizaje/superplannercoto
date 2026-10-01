@@ -14421,3 +14421,168 @@ Por qué cardio y no alimentaria: §7.54 — puesta al día, cardio pasa
 
 Cada versión se entrega con las DOS suites en verde: la del arnés y
 `sh curso-prueba/probar.sh`. Está en §0.1 y en el manual.
+
+## 7.56 Los tres cursos hechos con kits anteriores, cinco tests que acusaban al curso, y el registro de la mini práctica (kit-base v1.9.107)
+
+Fase 0, paso 4: auditar los cursos que ya estaban terminados con kits
+viejos —"Pedidos de PLU set a Compras" (kit ~v1.9.81), "Seguridad de la
+información" (~v1.9.71) y "Uso de Sucursales 3 - NOA" (~v1.9.67)— para
+decidir qué hacer con cada uno. En la misma vuelta llegó un relevo de
+"Prevención cardiovascular" con dos bugs del kit.
+
+### ¿Tienen arreglos propios dentro del kit? No.
+
+Comparando solo código (sin comentarios) y descartando toda línea que
+aparezca en dos o más de los cinco cursos (eso es kit viejo, no edición
+propia), quedaron pocas candidatas y las tres resultaron versiones viejas
+del kit: el certificado imprimible de NOA (el kit lo sacó a propósito en
+v1.9.64), las filas fijas del chrome en teléfono de PLU (pasaron a tokens
+después) y vocabulario de locución (`plu`, `nfc`) que el kit ya tiene.
+NOA pone su vocabulario donde corresponde (`addFixes` en su `curso.js`).
+
+### El riesgo de actualizarlos es bajo, con UNA trampa
+
+- Los tres tienen el MISMO `scorm-api.js` que el kit actual, y el estado
+  que retoma el alumno lo escribe su `curso.js`, que `actualizar-kit` no
+  toca: el formato del progreso guardado no cambia.
+- **La trampa: NOA narra cada diapositiva DOS veces al actualizarlo.**
+  Su `curso.js` (anterior a v1.9.71) tiene su propio `slidechange` →
+  `speakSlide()`, y desde v1.9.71 `initPlayer()` también narra. Medido
+  (`locucion-control`: dos locuciones encimadas al entrar); sacada esa
+  línea, verde. **`actualizar-kit` ahora lo avisa**, con la línea, antes
+  de aplicar. Heurística: busca `speakSlide(` en las 15 líneas siguientes
+  a cada `addEventListener('slidechange'`, salvo que el curso ya pase
+  `speakOnSlideChange: false`, y blanqueando antes los comentarios de
+  bloque (la primera versión avisaba en "Seguridad alimentaria", que
+  tiene `speakSlide()` dentro de un comentario que explica justamente por
+  qué NO llamarla). Probado en los siete cursos: avisa solo en NOA.
+
+### Cinco tests acusaban al CURSO por un defecto propio
+
+Cada uno, verificado después en las dos direcciones (verde en el curso,
+rojo con el bug del kit puesto):
+
+- **`locucion-segundos` reventaba** con un TypeError en un header anterior
+  a la barra en segundos (PLU, Seguridad, NOA) en vez de decirlo. Ahora
+  reporta "el header no trae `#d-narr-time`".
+- **`repaso-tira` inyectaba su tira de prueba "en la cuarta
+  diapositiva"**, y en PLU la cuarta es un video de fondo: "la tira se sale
+  1118px" de una tira que el curso ni tiene. Ahora elige una diapositiva
+  común. Rojo en PLU con `es-la-correcta` quitado del kit.
+- **`mini-practica` clickeaba respuestas invisibles** cuando la práctica
+  vive en una capa que se habilita después (la parte 2 de la práctica de
+  PLU). Ahora muestra la capa como lo hace el motor. Con eso mide lo que
+  sí es real en PLU: cuatro opciones que no entran en un teléfono acostado
+  y sin botón "Continuar".
+- **`video-rescate` reventaba** (`defineProperty called on non-object`) en
+  los cursos sin reproductor en pop-up, que es justo el caso que su propio
+  comentario prometía revisar. Y una vez arreglado, acusaba "el <video>
+  quedó con src": el motor engancha los `[data-popup-close]` al arrancar,
+  y la ✕ del pop-up que inyecta el test llegaba después y no hacía nada.
+  Ahora, si el clic no cerró, cierra por el motor. Rojo con el
+  `removeAttribute('src')` del cierre quitado del kit.
+- `video-fondo` y `minijuego` ya se habían corregido en §7.54/§7.55.
+
+### Lo que queda en cada curso, puesto al día (todo del CURSO)
+
+Suite de v1.9.107 sobre una copia de cada uno con `actualizar-kit`
+aplicado. Ninguno de estos rojos es del kit.
+
+**Pedidos de PLU set (6 de 57).** Sin `initPrediccion`; sin el panel de
+recursos ni su botón; header anterior a la barra de locución en segundos;
+íconos del índice repetidos; la mini práctica con 4 opciones (el molde son
+3: no entra en teléfono acostado y queda sin "Continuar"); la actividad
+"¿es un PLU set?" con botones fuera de pantalla en teléfono acostado. **Y
+al actualizar, pasar su `onFinish` a `onResult`** (si no, pierde el
+veredicto y el logro "Aprobado"; `actualizar-kit` lo avisa).
+**En producción hoy le pega el bug de la mini práctica**: quien contesta
+las cuatro y no pulsa "Ver resultado" queda con "Te falta el quiz final",
+sin los puntos ni el logro.
+
+**Seguridad de la información (11 de 57).** Sin `initPrediccion`; sin el
+botón de recursos en el header; header anterior a la barra en segundos;
+íconos del índice; sin el reproductor de video en pop-up del molde (no lo
+usa: sin efecto para el alumno); tiras de repaso en el formato viejo (sin
+colocar); los botones "1" y "2" de las tandas de "uso responsable" al
+94–99% de la lámina, que con el tamaño de toque del kit actual se salen
+por abajo; la barra superior desborda en iPad 10"; la flecha de "página
+siguiente" del visor (convenio, contraseñas) cae en la franja que se
+recorta en tablet.
+
+**Uso de Sucursales 3 - NOA (16 de 57).** **Al actualizar, sacar la
+línea 1427 de `curso.js`** (`speakSlide(motor.current());`) o la
+locución sale doble (`actualizar-kit` lo avisa). Además: sin
+`initPrediccion`; sin panel de recursos ni botón; header viejo; íconos del
+índice; sin reproductor en pop-up (no lo usa); puntos y logros con
+implementación propia en vez de `initLogros` (funcionan, fuera del
+estándar); glosario partido en dos listas; tiras de repaso de opción
+múltiple con el ✓/✕ de verdadero/falso (con el CSS del kit actual,
+SEÑALAN la correcta antes de contestar); la tira no escala con la lámina
+en iPad vertical; el minijuego recortado en teléfono acostado; dos frases
+pegadas en "objetivos"; la portada sin `poster` (negro mientras carga);
+los botones de los videos de fondo sin texto visible.
+
+**Seguridad alimentaria** (de §7.54): íconos del índice, sin
+`initPrediccion`, sin panel de recursos, tiras de opción múltiple con el
+✓ de verdadero/falso.
+
+**Los cuatro usan video de fondo**, la pieza que más arreglos de iPad
+recibió después de sus versiones (el último recién funciona desde
+v1.9.105). Es el motivo más fuerte para actualizar si hay alumnos con
+iPad.
+
+### El relevo de cardio (su "v1.9.107"): portado por partes
+
+El relevo traía `coto-quiz.js`, `coto-repaso.css`, `_shared.mjs`,
+`build-zip.py` y `bloque-no-tapa-arte.mjs` COMPLETOS, escritos contra la
+copia del kit de cardio. Copiarlos habría borrado: la marca
+`d-slide-quiz` de v1.9.98, la explicación corregida de §7.48 en
+`coto-repaso.css`, el filtro del 416 de §7.55, la exclusión de
+`curso-prueba/` del zip y el autochequeo de §7.54. Se portó cada cambio:
+
+- **`coto-quiz.js` — la práctica no se registraba (BUG DEL KIT, grave).**
+  `setState({done})`, `onFirstFinish()` y `onFinish()` vivían en
+  `finish()`, que corre solo al pulsar "Ver resultado". Quien contestaba
+  las tres y seguía con el "Siguiente" del curso dejaba el cierre con
+  candado, sin puntos ni logro. Ahora `registrar()` (idempotente) corre al
+  contestar la última. Y al contestar se narra la devolución, que corta la
+  lectura de la pregunta. **Test nuevo `mini-practica-registro.mjs`** (57
+  tests): arma su propia práctica con espías, contesta las tres sin tocar
+  "Ver resultado". Rojo con el kit anterior (0 registros, 0 devoluciones
+  narradas), verde con el arreglo; pulsar "Ver resultado" después no
+  registra de nuevo.
+- **Y el arreglo, tal como vino, le rompía la pantalla de resultado a
+  PLU.** "Pedidos de PLU set" usa `onFinish` para DECORAR la pantalla de
+  resultado (un veredicto, y ahí mismo otorga el logro "Aprobado"), con un
+  `setTimeout(0)`. Con `onFinish` corriendo al contestar la última, esa
+  pantalla todavía no existe y su función sale sin hacer nada. MEDIDO en
+  la copia de PLU puesta al día: sin veredicto. Cardio, en cambio, usa
+  `onFinish` como "práctica completa" (desbloquea el cierre). Los dos
+  significados son válidos, así que se separaron: `onFinish` = práctica
+  completa (al contestar la última, una vez) y **`onResult` nuevo** = la
+  pantalla de resultado ya dibujada (recibe la caja, corre cada vez que se
+  ve). `actualizar-kit` avisa si el curso toca `.d-quiz-result` sin usar
+  `onResult` (solo PLU, de los siete). Verificado en PLU: con su línea
+  pasada a `onResult`, el veredicto vuelve y el aviso desaparece. El test
+  cubre que `onResult` no corra antes y corra con la caja dibujada (rojo
+  sin la llamada).
+- **`coto-repaso.css`**: `--suelto` (la tira sale del lienzo a la franja
+  libre en pantallas verticales) y **`--abajo`**, que en §7.54 había
+  quedado afuera porque ningún curso lo usaba: ahora cardio usa los dos, y
+  cardio es el curso de prueba.
+- **`bloque-no-tapa-arte.mjs` mide en seis tamaños** (a 1600x900 daba
+  verde con el bug del iPad vertical) y mapea contra `.d-shot-img`. Se
+  conservó el autochequeo, y se corrigió que sin bloques marcados hacía
+  `process.exit(0)` adentro del loop, salteando el autochequeo. Sobre el
+  cardio nuevo: 72 mediciones en verde (teléfono apaisado como aviso, que
+  es la excepción declarada); con `--suelto` quitado del kit, rojo en las
+  12 de iPad vertical.
+- **`_shared.mjs`**: `openCourse(url, ctx)` opcional, sin perder el 416.
+- **`build-zip.py`** rechaza un zip con el `imsmanifest.xml` fuera de la
+  raíz (el cliente no podía subir un paquete con una carpeta de más).
+  Agregado al subirlo: el zip rechazado SE BORRA — quedaba en disco y se
+  podía subir igual. Probado: carpeta contenedora → exit 1 y sin zip;
+  carpeta del curso → zip bien; el propio kit (sin manifiesto) → pasa.
+
+**`curso-prueba/` pasa a ser el cardio nuevo** (45 archivos propios, el
+mismo único cambio: llamar a `initPrediccion()`).

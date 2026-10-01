@@ -102,6 +102,52 @@ try {
   llamadasFaltantes = [...plantilla].filter((n) => !delCurso.has(n)).sort();
 } catch (e) {}
 
+/* ---- Narración DOBLE: el riesgo de actualizar un curso anterior a v1.9.71 ----
+   (kit-base v1.9.107). Desde v1.9.71 `initPlayer()` narra cada
+   diapositiva solo, con el `speakSlide` que recibe. Un curso armado
+   antes tenía su PROPIO `slidechange` → `speakSlide(...)`; al ponerlo al
+   día quedan los dos y cada diapositiva arranca con dos locuciones
+   encimadas. MEDIDO en "Uso de Sucursales 3 - NOA" (`locucion-control`).
+   El arreglo es del curso —sacar esa línea, o pasarle
+   `speakOnSlideChange: false` a `initPlayer`—, así que acá solo se
+   avisa, con la línea. Es una heurística: busca la llamada dentro de
+   las 15 líneas siguientes a cada `addEventListener('slidechange'`. */
+let narracionDoble = [];
+try {
+  /* Los comentarios de bloque se blanquean conservando los saltos de
+     línea (así los números de línea siguen valiendo). Sin esto avisaba
+     en "Seguridad alimentaria", que tiene `speakSlide()` dentro de un
+     comentario que explica justamente por qué NO llamarla ahí. */
+  const lineas = fs.readFileSync(path.join(CURSO, 'js/curso.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' ')).split('\n');
+  const apagada = lineas.some((l) => /speakOnSlideChange\s*:\s*false/.test(l) && !/^\s*\/\//.test(l));
+  if (!apagada) {
+    lineas.forEach((l, i) => {
+      if (!/addEventListener\(\s*['"]slidechange['"]/.test(l) || /^\s*\/\//.test(l)) return;
+      for (let j = i; j < Math.min(lineas.length, i + 15); j++) {
+        if (/^\s*\/\//.test(lineas[j])) continue;
+        if (/\bspeakSlide\s*\(/.test(lineas[j])) { narracionDoble.push(j + 1); break; }
+        if (j > i && /^\s*\}\s*\)\s*;/.test(lineas[j])) break;
+      }
+    });
+  }
+} catch (e) {}
+
+/* ---- `onFinish` de la mini práctica cambió de momento (kit-base v1.9.107) ----
+   Ahora corre al CONTESTAR LA ÚLTIMA pregunta (la práctica está completa
+   aunque el alumno no pulse "Ver resultado"), cuando la pantalla de
+   resultado todavía no existe. Un curso que la decoraba desde `onFinish`
+   —"Pedidos de PLU set": veredicto y logro "Aprobado" sobre
+   `.d-quiz-result`— se queda sin las dos cosas. El gancho para eso es
+   `onResult`. Se avisa si el curso toca `.d-quiz-result` y no usa
+   `onResult`. */
+let decoraResultado = false;
+try {
+  const codigo = fs.readFileSync(path.join(CURSO, 'js/curso.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  decoraResultado = /d-quiz-result/.test(codigo) && !/\bonResult\s*:/.test(codigo);
+} catch (e) {}
+
 /* ---- informe ---- */
 const L = (t, xs) => { if (xs.length) console.log(`\n${t} (${xs.length}):\n  ` + xs.join('\n  ')); };
 console.log(`Curso: ${CURSO}`);
@@ -117,6 +163,20 @@ if (llamadasFaltantes.length) {
   console.log(`\nℹ La plantilla de js/curso.js del kit llama en su arranque a funciones que el curso no llama:\n  ` +
     llamadasFaltantes.join(', ') +
     '\n  js/curso.js es del curso y no se toca: revisá si corresponde agregarlas (una pieza nueva que nadie llama no hace nada).');
+}
+
+if (narracionDoble.length) {
+  console.log(`\n⚠️ js/curso.js narra la diapositiva en su propio \`slidechange\` (línea ${narracionDoble.join(', ')}),` +
+    '\n  y desde v1.9.71 `initPlayer()` ya lo hace solo: actualizado, cada diapositiva arranca con DOS' +
+    '\n  locuciones encimadas. Sacar esa llamada a `speakSlide`, o pasarle `speakOnSlideChange: false`' +
+    '\n  a `initPlayer`. (js/curso.js es del curso: no se toca.)');
+}
+
+if (decoraResultado) {
+  console.log('\n⚠️ js/curso.js decora la pantalla de resultado de la mini práctica (`.d-quiz-result`), y' +
+    '\n  desde v1.9.107 `onFinish` corre al contestar la última pregunta, ANTES de que esa pantalla' +
+    '\n  exista. Pasar lo que pinta el resultado (y lo que se otorga ahí) a `onResult`, que recibe la' +
+    '\n  caja ya dibujada. `onFinish` queda para lo que significa "práctica completa".');
 }
 
 const bloqueantes = plan.editados.length + plan.sinRegistro.length;

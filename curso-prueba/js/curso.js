@@ -242,37 +242,41 @@
      2520x1260 (las 6 ilustraciones son distintas). */
   var U2 = [
     { id: 'colesterol-alto', nombre: 'Colesterol alto', video: 'video/colesterol-alto.mp4',
-      ilustra: { l: 58.09, t: 21.98, w: 26.91, h: 46.73 },
+      ilustra: { l: 60.25, t: 20.81, w: 22.60, h: 39.25 },
       dato: 'Se detecta con un análisis de sangre de rutina: no hace falta ningún estudio especial.',
       q: '¿Qué parte de la población argentina tiene el colesterol elevado?',
       opts: ['9%', '29%', '49%'], ok: 1,
       why: 'Casi 3 de cada 10 personas. Y como no da síntomas, la mayoría se entera recién en un análisis.' },
     { id: 'hipertension-arterial', nombre: 'Hipertensión arterial', video: 'video/hipertension-arterial.mp4',
-      ilustra: { l: 53.44, t: 20.48, w: 32.91, h: 48.17 },
+      ilustra: { l: 56.27, t: 20.81, w: 27.25, h: 39.89 },
       dato: 'Se mide con un tensiómetro en menos de 1 minuto, sin pinchazos ni preparación previa.',
       q: '¿Qué parte de la población argentina tiene hipertensión arterial?',
       opts: ['14%', '34%', '54%'], ok: 1,
       why: 'Más de 3 de cada 10 personas. Como no presenta síntomas iniciales, se la llama "la enfermedad silenciosa".' },
     { id: 'diabetes-detalle', nombre: 'Diabetes', video: 'video/diabetes.mp4',
-      ilustra: { l: 57.54, t: 16.35, w: 26.04, h: 52.37 },
+      ilustra: { l: 61.46, t: 20.81, w: 18.20, h: 36.60 },
       dato: 'Se detecta con un análisis de sangre que mide la glucemia, el nivel de azúcar en sangre.',
-      q: 'De todos los factores de riesgo, ¿cuál es el MÁS relevante en las enfermedades cardiovasculares?',
+      /* Dos de las seis preguntas entraban en DOS renglones y por eso la
+         tarjeta pedía 161px en una banda de 150 (notebook 1366x768) — y
+         el cliente lo vio como scroll y opciones cortadas. Acortadas a
+         un renglón sin perder el sentido; las otras cuatro ya entraban. */
+      q: '¿Cuál es el factor de riesgo cardiovascular MÁS relevante?',
       opts: ['El colesterol alto', 'La diabetes', 'El sedentarismo'], ok: 1,
       why: 'La diabetes. Sostenida en el tiempo daña corazón, vasos sanguíneos, ojos, riñones y nervios.' },
     { id: 'obesidad-detalle', nombre: 'Sobrepeso y obesidad', video: 'video/obesidad.mp4',
-      ilustra: { l: 55.13, t: 23.25, w: 29.59, h: 45.49 },
+      ilustra: { l: 57.16, t: 20.81, w: 25.53, h: 39.26 },
       dato: 'Se detecta con balanza y cinta métrica: el IMC relaciona el peso con la altura.',
       q: '¿Qué parte de la población argentina tiene sobrepeso u obesidad?',
       opts: ['31,6%', '61,6%', '81,6%'], ok: 1,
       why: '6 de cada 10 personas. Junto con el sedentarismo (64,9%), es de los factores más extendidos del país.' },
     { id: 'sedentarismo-detalle', nombre: 'Sedentarismo', video: 'video/sedentarismo.mp4',
-      ilustra: { l: 51.81, t: 16.59, w: 32.38, h: 52.11 },
+      ilustra: { l: 55.97, t: 20.81, w: 24.05, h: 38.72 },
       dato: 'La OMS pide 150 minutos semanales de actividad moderada: son 30 minutos, 5 días.',
-      q: '¿Qué parte de la población de 18 años o más no llega al mínimo de actividad física recomendado?',
+      q: '¿Qué parte de los adultos no llega al mínimo de actividad física?',
       opts: ['24,9%', '44,9%', '64,9%'], ok: 2,
       why: 'Casi 2 de cada 3 personas. Por eso conviene pensarlo en bloques chicos: 30 minutos, 5 días por semana.' },
     { id: 'tabaquismo-detalle', nombre: 'Tabaquismo', video: 'video/tabaquismo.mp4',
-      ilustra: { l: 58.00, t: 13.81, w: 23.78, h: 54.85 },
+      ilustra: { l: 62.09, t: 20.81, w: 15.60, h: 35.98 },
       dato: 'La fuerza de voluntad rara vez alcanza sola: hay métodos validados y profesionales especializados.',
       q: 'Al dejar de fumar, ¿cuándo empieza a bajar el riesgo cardiovascular?',
       opts: ['De inmediato', 'Al año', 'Recién a los 10 años'], ok: 0,
@@ -395,11 +399,34 @@
   function faltanFactores() {
     return TOTAL_FACTORES.filter(function (id) { return !estado.factoresExplorados[id]; });
   }
+  /* ---- Gate por REPASO RÁPIDO ----
+     Corrección del cliente: *"se puede avanzar con «Siguiente» sin haber
+     respondido el repaso. El botón «Siguiente» debe habilitarse recién
+     cuando se responde"*.
+     Cambia una decisión de producto anterior —el repaso estaba pensado
+     como refuerzo que no trababa— y se aplica solo a las 6 diapositivas
+     de factor, que son las que tienen tira.
+     Cuenta como respondida tanto la acertada como la fallada: el gate
+     pide PARTICIPAR, no acertar. Si pidiera acertar, una respuesta mala
+     dejaría el curso trabado para siempre.
+     Va DESPUÉS del gate de video a propósito: la tira recién aparece
+     cuando el video está visto, así que primero se pide el video y
+     después el repaso, que es el orden en que se ven en pantalla. */
+  function faltaRepaso(slideEl) {
+    var id = slideEl && slideEl.getAttribute('data-slide');
+    if (!id) return false;
+    var esFactor = U2.some(function (f) { return f.id === id; });
+    if (!esFactor) return false;
+    if (faltanVideos(slideEl).length) return false;   // primero el video
+    return !estado.predicciones[id] && !estado.prediccionesMal[id];
+  }
+
   function bloqueada(slideEl) {
     if (!slideEl) return false;
     if (faltanPopups(slideEl).length) return true;
     if (slideEl.getAttribute('data-slide') === 'factores-riesgo' && faltanFactores().length) return true;
-    return faltanVideos(slideEl).length > 0;
+    if (faltanVideos(slideEl).length > 0) return true;
+    return faltaRepaso(slideEl);
   }
 
   function nudge(el) {
@@ -442,6 +469,11 @@
       if (faltanVideos(slideEl).length) {
         toast('Mirá el video antes de seguir.');
         nudge(slideEl && slideEl.querySelector('[data-hit][data-video]'));
+        return;
+      }
+      if (faltaRepaso(slideEl)) {
+        toast('Respondé el repaso rápido antes de seguir.');
+        nudge(slideEl && slideEl.querySelector('.d-repaso'));
       }
     });
   }
@@ -547,18 +579,43 @@
          vuelta *"que tenga la misma distancia en todos"*.
 
          Las dos cosas se resolvieron juntas, y una es de ARTE:
-           · `achicar-ilustraciones.py` (al lado del curso) achica la
-             ilustración horneada en cada .webp para que las SEIS
-             terminen en 68,60%. Eso libera entre 9,6 y 18 puntos según
-             el factor — las que más se achican son justo las que más
-             bajaban, así que además quedan parejas entre sí.
-           · La tira va ANCLADA ARRIBA en un renglón fijo (69,50
-             declarado, 70,01% medido) y crece hacia ABAJO al contestar.
-             Anclada abajo —como estaba— la distancia hasta la
-             ilustración cambiaba con el alto de la tarjeta, que no es
-             el mismo en los seis (99px donde la pregunta entra en un
-             renglón, 117px donde entra en dos). Anclada arriba, la
-             separación es 1,41 puntos EN LOS SEIS.
+           · `tools/achicar-ilustracion.py` (del kit) mueve y achica la
+             ilustración horneada en cada .webp para que las SEIS ocupen
+             la MISMA franja: 20,81 declarado, 20,79-68,57% medido.
+             El renglón de arriba lo marca la caja del título, como
+             pidió el cliente (*"el margen superior lo debe marcar la
+             caja del título 'tabaquismo'"*): la caja va de 12,62% a
+             19,76% en las seis, y la ilustración arranca 1 punto abajo
+             de su borde inferior. En esa misma franja entra el chip
+             "Factor N de 6", que está en la MISMA columna y ahora
+             cierra con la caja del título (19,79% contra 19,76%: 0,2px).
+           · `tools/bajar-tarjeta.py` (del kit) baja la TARJETA DE VIDEO
+             horneada de cada lámina hasta que las seis terminen en el
+             mismo renglón, 90,95%. Venían desparejas —85,71% en
+             sedentarismo contra 90,95% en hipertensión, 5,2 puntos—
+             porque todas miden lo mismo (35,3 puntos) pero arrancan
+             justo abajo del texto, y el texto no tiene la misma
+             cantidad de renglones en las seis. Se bajaron al renglón de
+             hipertensión, que es la más baja, así que ninguna sube ni
+             se acerca al texto: queda entre 5,2 y 9 puntos de aire.
+           · Con eso, la tira va ANCLADA ABAJO (`--abajo`) en 90,95%, y
+             las dos mitades de la lámina cierran en el mismo renglón
+             arriba y abajo. Pedido del cliente: *"factor debería estar
+             a la misma altura que la caja de obesidad"* y, sobre el
+             borde de abajo, *"y si podemos hacer que abajo pase lo
+             mismo"*.
+             Anclada abajo la tarjeta CRECE HACIA ARRIBA al contestar
+             (la devolución se despliega) y su borde inferior no se
+             mueve, que es el que el ojo usa para leer la alineación.
+             El alto declarado de la banda (22,00) cubre el estado más
+             alto de los doce, sedentarismo contestado, que mide 21,15.
+
+         Las dos alternativas que se descartaron, medidas con el test de
+         píxeles en los 6 factores x 2 estados: una sola línea SIN tocar
+         el arte tapa 39 píxeles de la alfombra de sedentarismo, y anclar
+         cada tira a SU propia tarjeta tapa 4.631 — en sedentarismo la
+         tira contestada tendría que subir hasta 64,56% y la tarjeta
+         termina en 68,57%. Ésta da 0 en los doce.
 
          Las opciones van en FILA (`.d-repaso-btns` sin `--col`) y sin el
          chip de "Repaso completo": las dos cosas bajan la tarjeta de
@@ -573,17 +630,41 @@
          diabetes — el fleco de antialias del reescalado más el ruido de
          compresión del WebP, invisible pero distinto de cero. */
       var marco = document.createElement('div');
-      marco.className = 'd-repaso-marco';
+      marco.className = 'd-repaso-marco d-repaso-marco--abajo';
       marco.setAttribute('data-place', '');
-      marco.setAttribute('data-l', f.ilustra.l);
-      marco.setAttribute('data-w', anchoSeguro(f.ilustra.l, f.ilustra.w));
-      marco.setAttribute('data-t', '69.50');
+      /* `data-no-tapa-arte` va en la TIRA, no en este marco: con la
+         tarjeta anclada abajo, la banda arranca por encima del borde de
+         la ilustración a propósito (es donde la tarjeta crece al
+         contestar) y es transparente, así que medirla a ella daría un
+         falso positivo. Lo que no puede pisar el dibujo es la tarjeta
+         visible. Lo mira `bloque-no-tapa-arte.mjs` (kit), que cuenta
+         cuántos píxeles de DIBUJO caen dentro del rectángulo renderizado
+         y falla si hay uno. Es el test que faltaba: las cuatro
+         ubicaciones anteriores se habían verificado por coordenadas y
+         las cuatro estaban mal. */
+      /* Ancho FIJO y el mismo en las seis, NO el de la ilustración.
+         BUG REAL, lo agarró `repaso-tira`: la tira venía tomando el
+         ancho de `f.ilustra`, así que al achicar las ilustraciones la
+         tira se angostó con ellas — y una tarjeta más angosta es más
+         ALTA. MEDIDO: diabetes pasó a necesitar 197px en una caja de
+         174 y scrolleaba, que es exactamente lo que la regla del kit
+         prohíbe. Con un ancho propio, achicar el arte no le toca el
+         alto a la tarjeta, y de paso las seis quedan idénticas.
+         48,50 arranca después de la columna de texto (que en la lámina
+         más ancha, diabetes, llega al 46,8%) y termina en el margen de
+         seguridad lateral. */
+      marco.setAttribute('data-l', '48.50');
+      marco.setAttribute('data-w', (100 - MARGEN_SEGURO - 48.50).toFixed(2));
+      /* 67,91 declarado + 22,00 de alto = base en 90,95% medido, el
+         renglón donde ahora terminan las seis tarjetas de video. */
+      marco.setAttribute('data-t', '67.91');
       marco.setAttribute('data-h', '22.00');
       marco.setAttribute('data-narrate-last', '');
       marco.hidden = true;
       var tira = document.createElement('div');
       tira.className = 'd-repaso d-repaso--factor';
       tira.setAttribute('data-repaso', f.id);
+      tira.setAttribute('data-no-tapa-arte', '');
       tira.innerHTML =
         '<b class="d-repaso-title"><span class="d-repaso-title-ic" aria-hidden="true">🔍</span>Repaso rápido</b>' +
         '<div class="d-repaso-item is-current" data-repaso-item data-repaso-ok="' + f.ok + '">' +
@@ -615,14 +696,18 @@
       prog.className = 'd-u2-prog';
       prog.setAttribute('data-place', '');
       /* El chip sube a un renglón ARRIBA de la ilustración: el de abajo
-         ahora es del cartel del dato. Los 8,6% lo dejan justo dentro del
-         margen de seguridad vertical (8%) y por encima de la ilustración
-         más alta de las seis (tabaquismo arranca en 13,8%).
+         ahora es del cartel del dato. Y va a la ALTURA DE LA CAJA DEL
+         TÍTULO, no pegado al margen de seguridad: el cliente leía la
+         mitad derecha como más alta que la izquierda (*"factor debería
+         estar a la misma altura que la caja de obesidad... y así bajar
+         toda la mitad derecha hacia abajo"*). Con 15,34 la tinta del
+         chip termina en 19,79% y la caja del título en 19,76%: 0,03
+         puntos, 0,2px.
          El chip no se apoya en ningún detalle del arte, así que en vez de
          angostarlo (le reflowearía el rótulo) se CORRE a la izquierda
          hasta que su borde derecho entre en el margen seguro. */
       prog.setAttribute('data-l', (100 - MARGEN_SEGURO - 35).toFixed(2));
-      prog.setAttribute('data-t', '8.60');
+      prog.setAttribute('data-t', '15.34');
       prog.setAttribute('data-w', '35.00'); prog.setAttribute('data-h', '5.20');
       var tildes = U2.map(function (o) {
         return '<span class="d-u2-tick" data-u2-tick="' + o.video + '" role="img">' +
@@ -761,6 +846,11 @@
             estado.prediccionesMal[f.id] = true;
           }
           persistir();
+          /* El repaso traba el avance (`faltaRepaso`), así que al
+             contestarlo hay que avisarle a la nav: sin esto "Siguiente"
+             queda deshabilitado hasta el próximo `slidechange`, que es
+             justo lo que el gate acaba de impedir. */
+          if (window.motor) window.motor._syncNav();
         });
       });
     });
@@ -768,9 +858,86 @@
     document.addEventListener('slidechange', function () {
       pintarProgresoU2();
       refrescar();
+      acomodarTiras();
     });
     refrescar();
     pintarProgresoU2();
+    acomodarTiras();
+    window.addEventListener('resize', acomodarTiras);
+  }
+
+  /* ---- La tira se va al espacio libre cuando la lámina no la aguanta ----
+     Corrección del cliente, probada en iPad vertical: *"el recuadro del
+     repaso se ve con scroll, tapa parte de la ilustración y las opciones
+     de respuesta quedan cortadas (la última no se llega a ver).
+     Ubicarlo más abajo para que se vea completo, sin scroll y sin tapar
+     el dibujo"*.
+
+     No es un problema de ubicación: la banda mide un % del lienzo pero el
+     texto de la tarjeta tiene un piso en píxeles, así que cuanto más
+     chica la pantalla menos banda hay y más alta es la tarjeta. MEDIDO,
+     la misma tarjeta: 176px de banda contra 163 de tarjeta en escritorio,
+     y 89 contra 156 en iPad vertical. Se cruzan.
+
+     Y un lienzo 2:1 en una pantalla vertical no la llena: deja franjas
+     vacías. MEDIDO: 262px abajo en iPad vertical, 143 en iPhone vertical.
+     Ahí se va la tira, a todo el ancho — donde además necesita MENOS
+     alto, porque el texto deja de envolverse: 112px contra 156.
+
+     En apaisado no hay franja libre y la tira se queda sobre la lámina,
+     que es como se aprobó. Para que entre ahí se acortaron a un renglón
+     las dos preguntas que entraban en dos (diabetes y sedentarismo): con
+     eso las seis necesitan 143px en los 150 del notebook y 130 en los 145
+     del iPad apaisado.
+
+     LÍMITE CONOCIDO, y no tiene arreglo por geometría: en TELÉFONO
+     APAISADO el escenario mide 170px de alto, la lámina lo llena entero
+     y no queda franja libre, mientras la tarjeta necesita 213. Ahí sigue
+     el modo compacto con scroll que ya trae el kit
+     (`@media (max-height: 480px)` en coto-repaso.css). */
+  function acomodarTiras() {
+    U2.forEach(function (f) {
+      var slide = document.querySelector('[data-slide="' + f.id + '"]');
+      if (!slide) return;
+      var marco = slide.querySelector('.d-repaso-marco');
+      var tira = marco && marco.querySelector('.d-repaso');
+      var shot = slide.querySelector('[data-shot]');
+      var img = slide.querySelector('.d-shot-img');
+      if (!marco || !tira || !shot || !img) return;
+      var ir = img.getBoundingClientRect();
+      var sr = slide.getBoundingClientRect();
+      if (!ir.height || !sr.height) return;
+
+      /* `scrollHeight` y no `clientHeight`: lo que importa es lo que la
+         tarjeta NECESITA, que en la banda chica es justamente lo que no
+         entra. Los 24px son el aire mínimo contra la lámina y el pie. */
+      var libre = sr.bottom - ir.bottom;
+      var afuera = libre >= tira.scrollHeight + 24;
+      var yaAfuera = marco.classList.contains('d-repaso-marco--suelto');
+      if (afuera === yaAfuera) {
+        if (afuera) marco.style.setProperty('--tira-arriba', Math.round(ir.bottom - sr.top) + 'px');
+        return;
+      }
+      if (afuera) {
+        /* Sale del `.d-shot` porque el `.d-shot` tiene `overflow:hidden`:
+           desde adentro no hay forma de dibujar nada por debajo del
+           borde del arte. Y se le saca `data-place` para que
+           `_initShots()` no lo vuelva a contar — aunque eso NO alcanza
+           para frenar a `place()`, que escribe desde closures ya
+           capturados; de eso se encarga el `!important` de la clase. */
+        marco.removeAttribute('data-place');
+        marco.removeAttribute('style');
+        marco.classList.add('d-repaso-marco--suelto');
+        if (marco.parentElement === shot) slide.appendChild(marco);
+        marco.style.setProperty('--tira-arriba', Math.round(ir.bottom - sr.top) + 'px');
+      } else {
+        marco.classList.remove('d-repaso-marco--suelto');
+        marco.removeAttribute('style');
+        if (marco.parentElement !== shot) shot.appendChild(marco);
+        marco.setAttribute('data-place', '');
+        if (window.motor && motor._initShots) motor._initShots();
+      }
+    });
   }
 
   /* ============================================================

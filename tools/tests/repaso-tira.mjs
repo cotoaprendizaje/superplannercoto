@@ -49,8 +49,14 @@ const total = await page.evaluate(() => {
 /* ---- si el curso no tiene tiras colocadas, se arman dos ---- */
 await page.evaluate(() => {
   if (document.querySelector('[data-slide] [data-repaso]')) return;
-  const slides = document.querySelectorAll('[data-slide]');
-  const sl = slides[Math.min(3, slides.length - 2)];
+  const slides = [...document.querySelectorAll('[data-slide]')];
+  /* Una diapositiva COMÚN, no una captura ni el cierre (kit-base
+     v1.9.107). Antes era "la cuarta", a ciegas, y en "Pedidos de PLU
+     set" la cuarta es una `.d-shot-slide--bg-video`: el lienzo de prueba
+     metido ahí no se diagrama como una lámina y el test acusaba "la tira
+     se sale de la lámina 1118px" sobre una tira que el curso ni tiene. */
+  const comun = slides.filter((s, i) => i > 0 && !s.matches('.d-shot-slide, .slide-cierre'));
+  const sl = comun[Math.min(2, comun.length - 1)] || slides[Math.min(3, slides.length - 2)];
   if (!sl) return;
   /* Una lámina de 1440x720 (el 2:1 de trabajo, §2.6): con una imagen
      sin tamaño natural `_initShots()` no tiene contra qué medir. */

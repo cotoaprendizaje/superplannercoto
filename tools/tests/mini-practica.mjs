@@ -79,6 +79,22 @@ for (const vp of VPS) {
   await page.waitForTimeout(900);
   await page.evaluate(() => window.motor.closePopup && window.motor.closePopup());
   await page.waitForTimeout(500);
+  /* Si la práctica vive en una CAPA (`[data-panel]`) que se habilita
+     después de otra actividad, se muestra esa capa y se esconden sus
+     hermanas, como hace el motor al cambiar de capa (kit-base v1.9.107).
+     MEDIDO en "Pedidos de PLU set": el quiz es la parte 2 de una práctica
+     en dos capas, el test clickeaba respuestas invisibles, nunca llegaba
+     al resultado y lo reportaba como falla del curso. */
+  await page.evaluate(() => {
+    let n = document.querySelector('[data-quiz]');
+    while (n && !n.matches('[data-slide]')) {
+      if (n.matches('[data-panel]') && n.parentElement) {
+        n.parentElement.querySelectorAll(':scope > [data-panel]').forEach((p) => { p.hidden = p !== n; });
+      }
+      n = n.parentElement;
+    }
+  });
+  await page.waitForTimeout(300);
 
   /* ---- medida del estado ACTUAL de la diapositiva ---- */
   const medir = () => page.evaluate((id) => {

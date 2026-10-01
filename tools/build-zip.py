@@ -172,8 +172,50 @@ def construir(raiz, salida, excluir_nombres=()):
             '`unzip` lo reporta como zip dañado' % desparejos[:5])
         roto = z.testzip()
         assert roto is None, 'entrada corrupta: %s' % roto
+        nombres = z.namelist()
         n = len(z.filelist)
+    try:
+        revisar_raiz_scorm(nombres, raiz)
+    except SystemExit:
+        # Un zip rechazado NO queda en disco (kit-base v1.9.107, al subir
+        # el chequeo): si quedaba, igual se podía subir al LMS por error.
+        os.remove(salida)
+        raise
     return n, os.path.getsize(salida)
+
+
+def revisar_raiz_scorm(nombres, raiz):
+    """Un paquete SCORM lleva el `imsmanifest.xml` en la RAÍZ del zip.
+
+    ⚠️ ESTE CHEQUEO SE PAGÓ CARO. Se entregó un curso empaquetado con un
+    nivel de carpeta de más —`prevencioncardiovascular/imsmanifest.xml`
+    en vez de `imsmanifest.xml`— porque se le pasó a este script la
+    carpeta CONTENEDORA en vez de la del curso. Moodle busca el
+    manifiesto en la raíz; con ese nivel extra rechaza el paquete al
+    subirlo. El cliente lo encontró intentando subirlo: *"no está para
+    scorm"*.
+
+    Y lo que no alcanzó para evitarlo: `check-manifest` había dado verde,
+    porque corre sobre la CARPETA de trabajo y ahí el manifiesto sí está
+    en su lugar. Ninguna verificación sobre la carpeta puede ver un nivel
+    que se agrega al empaquetar. Hay que mirar el zip.
+
+    Solo avisa cuando hay un manifiesto y está mal puesto: un zip que no
+    es un paquete SCORM (el propio kit-base, un parche) no lleva
+    manifiesto y pasa sin decir nada."""
+    manifiestos = [n for n in nombres if n.endswith('imsmanifest.xml')]
+    if not manifiestos:
+        return
+    if 'imsmanifest.xml' in manifiestos:
+        return
+    hondo = sorted(manifiestos, key=lambda n: n.count('/'))[0]
+    carpeta = hondo.rsplit('/', 1)[0]
+    raise SystemExit(
+        'El zip tiene el manifiesto en %r y no en la raíz, así que el LMS lo va a\n'
+        'rechazar. Pasale la carpeta DEL CURSO, no la que la contiene:\n'
+        '    python3 build-zip.py %s %s\n'
+        'en vez de                %s'
+        % (hondo, os.path.join(raiz, carpeta), '<salida.zip>', raiz))
 
 
 def main():

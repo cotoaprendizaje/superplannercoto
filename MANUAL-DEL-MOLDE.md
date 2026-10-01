@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.106**.
+Vigente para **kit-base v1.9.107**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -72,6 +72,11 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   npm run actualizar-kit -- ../<carpeta>             # muestra el plan
   npm run actualizar-kit -- ../<carpeta> --aplicar   # lo aplica, con respaldo
   ```
+
+  Si avisa que **`curso.js` narra en su propio `slidechange`** (cursos
+  anteriores a v1.9.71), hay que sacar esa llamada a `speakSlide` o
+  pasarle `speakOnSlideChange: false` a `initPlayer`: si no, cada
+  diapositiva arranca con dos locuciones encimadas (§7.56).
 
   Si el plan marca un archivo **EDITADO A MANO**, frena: casi siempre es
   un arreglo que tiene que subir al kit antes de pisarlo. `--forzar` lo
@@ -147,6 +152,10 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 - **Si escribís el marcado de una pieza y no llamás su `init`,
   `contrato-cableado` te lo dice con la consecuencia.** Es la falla más
   cara que tuvo el molde: la pieza está y el cable no (§7.17).
+- **Mini práctica: `onFinish` = práctica completa; `onResult` = pantalla
+  de resultado.** `onFinish` corre al contestar la última pregunta (el
+  alumno puede no pulsar "Ver resultado"); lo que decora la pantalla de
+  resultado va en `onResult`, que recibe la caja ya dibujada (§7.56).
 - **No escribir un listener de `slidechange` para narrar**: ya lo hace
   `initPlayer`, y quedarían dos (§7.17).
 - **Los umbrales de la medalla se calculan**, no se eligen: bronce = el

@@ -33,10 +33,19 @@ function mensajeDeConsola(msg) {
   return url ? `${msg.text()}  ← ${url}` : msg.text();
 }
 
-export async function openCourse(url) {
+/* `ctx` es OPCIONAL (kit-base v1.9.107, relevo de "Prevención
+   cardiovascular"). Medir en un solo tamaño fue lo que dejó pasar el bug
+   más caro de esa vuelta: `bloque-no-tapa-arte` daba verde a 1600x900 y
+   en seis tamaños fallaba 26 de 48. Con esto cualquier test puede
+   repetirse en otro tamaño sin reescribir su andamiaje: se le pasa un
+   perfil de `devices` o un `{ viewport }`. Sin argumento, 1600x900 de
+   escritorio, como siempre. */
+export async function openCourse(url, ctx) {
   const executablePath = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
   const browser = await chromium.launch({ executablePath, args: ['--no-sandbox'] });
-  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+  const page = ctx
+    ? await (await browser.newContext(ctx)).newPage()
+    : await browser.newPage({ viewport: { width: 1600, height: 900 } });
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', msg => {

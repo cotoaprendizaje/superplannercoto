@@ -84,6 +84,18 @@
     var onFirstFinish = opts.onFirstFinish || noop;
     var onAnswer = opts.onAnswer || noop;
     var onFinish = opts.onFinish || noop;
+    /* `onResult` (kit-base v1.9.107): corre cuando la pantalla de
+       resultado YA ESTÁ DIBUJADA, cada vez que se ve (reintentos
+       incluidos). Es el lugar para decorarla.
+       Hace falta separarlo de `onFinish` desde que `onFinish` corre al
+       CONTESTAR LA ÚLTIMA (ver `registrar()`): ese es el momento en que la
+       práctica queda completa, pero la pantalla de resultado todavía no
+       existe. MEDIDO en "Pedidos de PLU set": su `onFinish` pintaba un
+       veredicto sobre `.d-quiz-result` —y otorgaba ahí el logro
+       "Aprobado"— con un `setTimeout(0)`; corriendo antes del resultado,
+       no encontraba la caja y salía sin hacer nada. `actualizar-kit` avisa
+       a los cursos que tocan `.d-quiz-result` sin `onResult`. */
+    var onResult = opts.onResult || noop;
     var narrate = opts.narrate || noop;
     var goToRelated = opts.goToRelated || noop;
     var track = opts.track || noop;
@@ -179,9 +191,24 @@
         if (ok) { streak++; mface.textContent = streak >= 3 ? '🤩' : '😄'; mtext.textContent = pick(streak >= 3 ? HOT : HAPPY); mascot.className = 'd-quiz-mascot happy'; }
         else { streak = 0; mface.textContent = '🤔'; mtext.textContent = pick(OOPS); mascot.className = 'd-quiz-mascot oops'; }
         onAnswer(ok, streak);
+        /* La locución PASA A LA DEVOLUCIÓN (kit-base v1.9.107). Pedido del
+           cliente: *"si el colaborador responde mientras la locución
+           todavía está leyendo la pregunta, la locución tiene que cortarse
+           y pasar directamente a leer la retroalimentación"*.
+           MEDIDO antes de esto: al responder no se emitía NADA — la
+           locución seguía leyendo la pregunta y sus opciones encima de una
+           devolución que ya estaba en pantalla.
+           No hace falta cancelar a mano: `Narrador.speak()` arranca con un
+           `cancel()`, así que narrar la devolución corta lo que había. Se
+           usa el `narrate` inyectado y no `Narrador` directo, que es el
+           contrato del módulo. */
+        narrate(fb);
         mascot.hidden = false;
         updateStreakChip();
         aBtn.hidden = true; nBtn.hidden = false; nBtn.textContent = cur + 1 < QUIZ.length ? 'Siguiente' : 'Ver resultado';
+        /* Contestada la última, la práctica ESTÁ completa: se registra acá
+           y no en `finish()`. Ver el comentario de `registrar()`. */
+        if (cur + 1 >= QUIZ.length) registrar();
         // iOS + pantalla completa: mover el foco dispara el cartel de
         // Safari. Ver `focoBloqueado()` en motor-slides.js — se usa la
         // del kit, no una copia, justamente para no volver a dejar una
@@ -197,10 +224,44 @@
       if (slideEl && !slideEl.hidden) narrate(body);
     }
 
-    function resetQuiz() { QUIZ = sampleQuiz(); cur = 0; answers = new Array(QUIZ.length).fill(-1); streak = 0; updateStreakChip(); renderQ(); }
+    function resetQuiz() { QUIZ = sampleQuiz(); cur = 0; answers = new Array(QUIZ.length).fill(-1); streak = 0; registrado = false; updateStreakChip(); renderQ(); }
 
-    function finish() {
-      var correct = answers.filter(function (a, i) { return a === QUIZ[i].ok; }).length;
+    function aciertos() {
+      return answers.filter(function (a, i) { return a === QUIZ[i].ok; }).length;
+    }
+
+    /* ---- `registrar()` — COMPLETAR la práctica ≠ MIRAR el resultado ----
+       kit-base v1.9.107. BUG REAL reportado por el cliente, y de los
+       caros: *"después de responder las 3 preguntas de la mini práctica,
+       la última diapositiva muestra «Hacé la mini práctica para
+       desbloquear el cierre», como si no se hubiera completado... y al
+       tocar «Fin» el curso no se cierra"*.
+
+       La causa: todo esto vivía dentro de `finish()`, y `finish()` corre
+       SOLO al pulsar el botón de la última pregunta, que dice "Ver
+       resultado". El alumno contesta las tres, lee la devolución de la
+       tercera, da la práctica por terminada —lo está: no queda ninguna
+       pregunta— y sigue con el "Siguiente" del CURSO. Nunca pulsó "Ver
+       resultado", así que no se guardó el estado, no se otorgó el logro
+       ni los puntos, y `onFinish()` nunca desbloqueó el cierre.
+
+       REPRODUCIDO en iPad: con las tres contestadas y sin pulsar "Ver
+       resultado", la diapositiva de cierre queda sin la clase `unlocked`,
+       con el candado visible, sin la captura del cierre y con el botón
+       del footer en "Fin" en vez de "Finalizar curso" — los cuatro
+       síntomas del reporte, a la vez.
+
+       Ahora se registra al contestar la última, y la pantalla de
+       resultado queda como lo que es: una pantalla. Idempotente, porque
+       las dos puertas pueden pasar por acá en la misma vuelta (contestar
+       y después pulsar el botón) y los intentos no pueden contarse dos
+       veces. */
+    var registrado = false;
+
+    function registrar() {
+      if (registrado) return;
+      registrado = true;
+      var correct = aciertos();
       var prev = getState();
       var firstTime = !(prev && prev.done);
       var prevBest = (prev && prev.best) || 0;
@@ -209,6 +270,12 @@
       if (firstTime) onFirstFinish(correct, QUIZ.length);
       renderDots();
       onFinish();
+    }
+
+    function finish() {
+      registrar();
+      var correct = aciertos();
+      renderDots();
       var wrongIdx = []; answers.forEach(function (a, i) { if (a !== QUIZ[i].ok) wrongIdx.push(i); });
       var reviewHtml = wrongIdx.length
         ? '<div class="d-quiz-review"><p class="rv-title">Para repasar</p><ul>' + wrongIdx.map(function (i) {
@@ -231,6 +298,7 @@
           goToRelated(it.related);
         });
       });
+      onResult(body.querySelector('.d-quiz-result'), aciertos(), QUIZ.length);
     }
 
     var st = getState();
