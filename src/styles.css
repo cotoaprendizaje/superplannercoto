@@ -7854,10 +7854,34 @@ html {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  z-index: 26;
+  /* Por encima del "+" flotante, que está en 38: con el panel abierto el
+     botón le pasaba por arriba y le comía el renglón a la última frase. */
+  z-index: 40;
+  /* Y con tope de alto: cada persona que tira suma un renglón, y a la quinta
+     el panel se iba por abajo de la pantalla. Scrollea adentro suyo. */
+  /* El tope real lo pone cotofraseAlto() al abrirlo, porque depende de dónde
+     esté la página; este es el que vale hasta que esa medición corra. */
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Aire arriba y abajo para que el contenedor con scroll no recorte la
+     sombra de las dos tarjetas. */
+  padding-block: 4px;
+}
+/* Con el panel entero scrolleando, la lista no necesita su propio scroll:
+   dos barras una adentro de la otra son imposibles de usar. */
+.cotofrase-pop .frase-list {
+  max-height: none;
+  overflow: visible;
 }
 .cotofrase-pop.hidden {
   display: none;
+}
+/* Cuando abajo no entra, el panel se despliega hacia arriba. Lo decide
+   cotofraseAlto() midiendo el lugar que queda de cada lado. */
+.cotofrase-pop.arriba {
+  top: auto;
+  bottom: calc(100% + 10px);
 }
 /* En un teléfono el contenedor mide menos que los 320 px del popup. */
 @media (max-width: 400px) {
