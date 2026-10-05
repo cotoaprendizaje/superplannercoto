@@ -234,6 +234,39 @@ for (const f of [...reemplazar, ...plan.agregar]) {
 for (const f of plan.quitar) fs.rmSync(path.join(CURSO, f));
 fs.writeFileSync(path.join(CURSO, 'kit-version.json'), JSON.stringify(registroDeVersion(KIT, CURSO), null, 2) + '\n');
 
+/* ---- El manifiesto acompaña al kit (kit-base v1.9.117) ----
+   Relevo de "Prevención cardiovascular", 2026-10-05: después de actualizar,
+   `check-manifest` daba ROJO por 7 módulos nuevos del kit (coto-piezas,
+   coto-visor…) que se copiaron al curso y el `imsmanifest.xml` no
+   declaraba; y sacarlos del paquete ponía en rojo `kit-intacto`, que los
+   exige. Las dos herramientas tiraban para lados opuestos.
+   La convención del kit es que el manifiesto enumera TODO lo servido
+   (check-manifest, v1.9.95), así que se cumple acá: todo archivo DEL KIT
+   que está en una carpeta servida y no figura, se declara; lo que el kit
+   sacó, se quita. Los archivos propios del curso no se tocan: si falta
+   uno, lo sigue marcando `check-manifest`. */
+const SERVIDAS = /^(css|js|img|fonts|video|doc|audio)\//;
+const manifiestoPath = path.join(CURSO, 'imsmanifest.xml');
+if (fs.existsSync(manifiestoPath)) {
+  let xml = fs.readFileSync(manifiestoPath, 'utf8');
+  const declarados = new Set(Array.from(xml.matchAll(/<file\s+href="([^"]+)"/g)).map((m) => decodeURIComponent(m[1])));
+  const sumar = [...nuevos].filter((f) => SERVIDAS.test(f) && fs.existsSync(path.join(CURSO, f)) && !declarados.has(f)).sort();
+  const sacar = plan.quitar.filter((f) => declarados.has(f));
+  for (const f of sacar) xml = xml.replace(new RegExp('[ \\t]*<file\\s+href="' + f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"\\s*/>\\r?\\n?'), '');
+  if (sumar.length) {
+    const cierre = xml.indexOf('</resource>');
+    if (cierre >= 0) {
+      const sangria = (xml.match(/\n([ \t]*)<file\s/) || [, '      '])[1];
+      xml = xml.slice(0, cierre).replace(/[ \t]*$/, '') + sumar.map((f) => `${sangria}<file href="${f}"/>\n`).join('') +
+        xml.slice(cierre).replace(/^/, (xml.slice(0, cierre).match(/\n([ \t]*)$/) || [, '    '])[1]);
+    }
+  }
+  if (sumar.length || sacar.length) {
+    fs.writeFileSync(manifiestoPath, xml);
+    console.log(`  imsmanifest.xml: ${sumar.length} archivo(s) del kit declarado(s), ${sacar.length} quitado(s).`);
+  }
+}
+
 console.log(`\n✓ Curso llevado a v${versionNueva}: ${reemplazar.length} reemplazado(s), ${plan.agregar.length} agregado(s), ${plan.quitar.length} sacado(s).`);
 if (respaldar.length) console.log(`  Respaldo de lo reemplazado o sacado: ${path.relative(CURSO, dirRespaldo)}/`);
 console.log('  Siguiente: correr la suite del curso (npm test) antes de empaquetar.');

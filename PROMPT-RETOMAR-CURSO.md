@@ -16,7 +16,7 @@ falta viaja en los dos zips.
 
 Vamos a retomar el curso **`<NOMBRE DEL CURSO>`**, del molde "Área
 Aprendizaje (COTO)". Te adjunto el zip del curso y el del kit-base
-(v1.9.116). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
+(v1.9.117). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
 
 ### Paso 1 — antes de tocar nada, poner el curso al día con el kit
 
@@ -32,6 +32,12 @@ kit no puede hacer solo, y si no se hacen el curso queda peor que antes
 Si marca archivos del kit **editados a mano**, NO los pises sin
 mirarlos: anotá qué tenían, porque suelen ser arreglos que tienen que
 subir al kit.
+
+Si el curso tiene `curso.json` + `marco.html` (está en datos), el
+contenido se edita ahí y el index se arma con
+`node tools/armar-curso.mjs <carpeta-del-curso>`; nunca se edita el
+`index.html` a mano. Los dos archivos viajan dentro del zip del curso
+desde kit v1.9.117.
 
 ### Paso 2 — leer las reglas
 

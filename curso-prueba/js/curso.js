@@ -67,8 +67,7 @@
 
   /* ---------- Catálogo de logros (CONTENIDO del curso) ----------
      Formato de `initLogros` (coto-logros.js): id corto y estable — viaja
-     en suspend_data, que en SCORM 1.2 tiene 4096 caracteres contados.
-     El catálogo está en `curso.json` → `logros`. */
+     en suspend_data, que en SCORM 1.2 tiene 4096 caracteres contados. */
   var BADGES = datosDelCurso('logros', []);   // en curso.json (Fase 1, kit v1.9.113)
 
   var estado = {
@@ -279,10 +278,8 @@
 
   /* ---------- Banco de la mini práctica ----------
      NO cuenta para la nota: la evaluación final es un cuestionario
-     aparte en Moodle (CLAUDE.md §3.11). `initMiniQuiz` sortea
-     `porIntento` preguntas del banco y mezcla las opciones en cada
-     intento. El banco y los mensajes están en `curso.json` → `practica`
-     (Fase 1, kit v1.9.113): acá queda solo cómo se usan. */
+     aparte en Moodle (CLAUDE.md §3.11). `initMiniQuiz` sortea `size`
+     preguntas de acá y mezcla las opciones en cada intento. */
   var PRACTICA = datosDelCurso('practica', {});   // banco, preguntas por intento y mensajes: curso.json
 
   /* ---------- Premio final: umbrales de medalla ----------
@@ -299,9 +296,8 @@
      restantes salen de acertar los repasos y de la racha. Por eso el
      bronce arranca en el piso real y no en 0 — una medalla que se
      obtiene sin hacer nada no premia nada.
-     La LÓGICA (medallaDe/pintarMedalla) vive en coto-cierre.js; los
-     umbrales, que sí son de este curso, están en `curso.json` →
-     `medallas`. */
+     La LÓGICA (medallaDe/pintarMedalla) vive en coto-cierre.js; acá
+     quedan solo los umbrales, que sí son de este curso. */
   var MEDALLAS = datosDelCurso('medallas', []);   // los umbrales: curso.json
 
   /* ============================================================
@@ -896,7 +892,23 @@
        y en el LMS queda "incomplete" para siempre, sin que nada en
        pantalla lo delate. Se registran ANTES de `new Motor(document)`
        porque el constructor emite su primer `slidechange` adentro. */
+    /* ---- No pisar dónde quedó el alumno ANTES de ofrecerle volver ----
+       BUG REAL, y del molde (relevado al kit: relevo Prevención
+       cardiovascular, 2026-10-05). Este listener se registra antes de
+       `new Motor(document)` para no perderse la primera diapositiva, pero
+       el motor arranca SIEMPRE en la portada, así que ese primer
+       `slidechange` escribía `portada` en `lesson_location` — y
+       `initResume()` (coto-player.js), que corre después, leía `portada`
+       y no mostraba el cartel "Retomá donde dejaste". MEDIDO con un LMS
+       simulado: escritura de `portada` a los 179 ms, lectura a los
+       184 ms. El cartel no podía aparecer nunca, y ya pasaba en el
+       v1.9.110 entregado.
+       Se saltea solo lo que pasa DURANTE la construcción del motor: lo
+       que el alumno navega después se guarda como siempre, que es lo que
+       mide `scorm-tracking`. */
+    var arrancando = true;
     document.addEventListener('slidechange', function (e) {
+      if (arrancando) return;
       if (window.SCORM) SCORM.setLocation(e.detail.id);
     });
     document.addEventListener('courseend', function () {
@@ -918,6 +930,7 @@
     initUnidad2DOM();
 
     window.motor = new Motor(document);
+    arrancando = false;   // ver el listener de `setLocation`, arriba
 
     /* Puntos y logros. Va DESPUÉS del motor y ANTES de `restaurar()`:
        pinta el HUD en 0/N al crearse y `restaurar()` lo repinta con lo
@@ -950,6 +963,20 @@
     // Chrome genérico del kit
     initPopupNarration();
     initPopupStagger();
+    /* Las dos que la plantilla v1.9.116 llama y este curso no
+       (las avisó `actualizar-kit`). Hoy NO hacen nada acá, y está bien:
+       · `initPrediccion()` solo cablea los `[data-pred]` del marcado, y
+         este curso no tiene ninguno A PROPÓSITO — el pop-up de
+         predicción antes de cada video lo rechazó el cliente y se
+         reemplazó por la tira de repaso. Se llama igual para que una
+         pregunta así, si algún día vuelve, no quede dibujada y muerta
+         (la pieza está, el cable no). Lo exige el test `prediccion`.
+       · `initEntradaGenerica()` anima la entrada de las diapositivas con
+         `data-entrada`, y ninguna la lleva. Ponérsela a introducción,
+         objetivos, índice y consejos es un cambio VISIBLE que el
+         cliente no pidió en este curso: queda como opción. */
+    initEntradaGenerica();
+    initPrediccion();
     initStatPopups();
     initPrefetchNeighbors();
     initSummaryPrint();
@@ -1012,11 +1039,6 @@
     initBgVideos();
     initVideoPlayer(vistoOpts);
     initInlineCircleVideos(vistoOpts);
-    /* Curso de prueba del kit (kit-base v1.9.106): la plantilla de
-       `curso.js` llama a `initPrediccion()` en su arranque y este curso
-       —hecho antes de que existiera— no. Es el ÚNICO cambio respecto del
-       curso entregado; sin él, `prediccion` da rojo por cableado. */
-    initPrediccion();
 
     /* El gate de "mirá el video" comparte el MISMO registro de vistos
        que los 3 patrones de arriba (`vistoOpts`), así que mirar el

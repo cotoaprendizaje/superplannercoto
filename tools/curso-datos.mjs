@@ -207,8 +207,17 @@ function atributosSlide(d, i) {
   };
 }
 
+/* `notas` (v1.9.117, relevo de "Prevención cardiovascular"): los
+   comentarios que documentaban una pieza —decisiones, pedidos del
+   cliente, cómo se midió algo— viajan con ella y el armador los vuelve a
+   escribir como comentarios al principio de la pieza. Sin esto, pasar un
+   curso a datos borraba su memoria: en cardio eran 49 comentarios. */
+function armarNotas(notas, ind) {
+  return (notas || []).map((n) => `${ind}<!--${n}-->\n`).join('');
+}
+
 export function armarDiapositiva(d, i, ind = '    ', medallas) {
-  const abre = `${ind}<section${attrs(atributosSlide(d, i))}>\n`;
+  const abre = `${ind}<section${attrs(atributosSlide(d, i))}>\n` + armarNotas(d.notas, ind + '  ');
   const cierra = `${ind}</section>`;
   if (d.tipo === 'html') return abre + `${ind}  ${d.html}\n` + cierra;
   /* La mini práctica: el título se VE (no es `sr-only`), la bajada no se
@@ -268,8 +277,8 @@ export function armarDiapositivas(lista, ind = '    ', medallas) {
 const CHECK = '<svg class="ix-ck" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-check"/></svg>';
 
 export function armarIndice(ix, ind = '        ') {
-  if (ix.html != null) return ix.html;
-  let out = `${ind}<p id="d-sidenav-progress" class="d-sidenav-progress" aria-live="polite"></p>\n`;
+  if (ix.html != null) return armarNotas(ix.notas, ind) + ix.html;
+  let out = armarNotas(ix.notas, ind) + `${ind}<p id="d-sidenav-progress" class="d-sidenav-progress" aria-live="polite"></p>\n`;
   if (ix.objetivos && ix.objetivos.length) {
     out += `${ind}<div class="d-obj-progress" aria-live="polite">\n` +
       /* `diapo` es opcional: desde v1.9.98 el progreso de un objetivo se
@@ -310,11 +319,12 @@ export function armarGlosario(lista, titulos, ind = '          ') {
 /* ---------- fichas: los pop-ups de contenido ---------- */
 
 export function armarFicha(f, ind = '  ') {
-  if (f.tipo === 'html') return ind + f.html;
+  if (f.tipo === 'html') return armarNotas(f.notas, ind) + ind + f.html;
   /* Variantes medidas en los cursos (v1.9.115): encabezado claro
      (`claro`), clases extra en la ventana (`claseModal`, PLU:
      `modal--ficha`) o en la tarjeta (`claseTarjeta`, `d-wide`). */
   return `${ind}<div class="${esc(clases('modal', f.claseModal))}" data-popup="${esc(f.id)}" role="dialog" aria-modal="true" aria-label="${esc(f.etiqueta)}">\n` +
+    armarNotas(f.notas, ind + '  ') +
     `${ind}  <div class="modal-back" data-popup-close></div>\n` +
     `${ind}  <div class="${esc(clases('modal-card', f.claseTarjeta))}">\n` +
     `${ind}    <div class="${f.claro ? 'modal-hd' : 'modal-hd modal-hd--dark'}">\n` +

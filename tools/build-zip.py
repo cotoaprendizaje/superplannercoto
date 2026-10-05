@@ -67,10 +67,21 @@ import zipfile
 EXCLUIR_DIRS = {'node_modules', '.git', '__pycache__', '.pytest_cache', '.kit-anterior',
                 'curso-prueba'}
 EXCLUIR_ARCH = {'.DS_Store', 'Thumbs.db'}
-# `curso.json` y `marco.html` (v1.9.111): los DATOS de un curso armado con
-# `armar-curso.mjs`. El LMS solo necesita el `index.html` que salió de ellos.
+# `curso.json` y `marco.html` SÍ viajan (v1.9.117, relevo de "Prevención
+# cardiovascular"): en v1.9.111 se dejaban fuera, y un curso en datos que
+# volvía por su zip del LMS —que es "el zip del curso" que pide
+# PROMPT-RETOMAR-CURSO.md— llegaba SIN sus datos, con un index generado que
+# nadie podía regenerar. Son ~100 KB que el LMS ignora.
+# `package.json`, `package-lock.json`, `spec-motor-slides.md`,
+# `minijuego-boilerplate.html` y la carpeta `tools/` (v1.9.117, mismo
+# relevo): `actualizar-kit` los copia al curso porque `npm test` los
+# necesita, y el zip del LMS salía con 176 entradas en vez de 77 (87 de
+# `tools/`, tests y un video de prueba incluidos). Al retomar, los vuelve a
+# copiar `actualizar-kit` desde el kit nuevo.
 ARCHIVOS_DE_TRABAJO = {'PROMPT-CURSO-NUEVO.md', 'PROMPT-RETOMAR-CURSO.md', 'MANUAL-DEL-MOLDE.md', 'header-boilerplate.html',
-                       'simulador-boilerplate.html', 'curso.json', 'marco.html'}
+                       'simulador-boilerplate.html', 'package.json', 'package-lock.json', 'spec-motor-slides.md',
+                       'minijuego-boilerplate.html'}
+CARPETAS_DE_TRABAJO = {'tools'}
 
 
 def juntar(raiz, excluir_nombres=()):
@@ -123,6 +134,8 @@ def juntar(raiz, excluir_nombres=()):
             # sesión y se usa en otra, así que el error habría aparecido
             # recién en el próximo curso, lejos de su causa.
             if not es_kit and len(partes) == 1 and partes[0] in ARCHIVOS_DE_TRABAJO:
+                continue
+            if not es_kit and len(partes) > 1 and partes[0] in CARPETAS_DE_TRABAJO:
                 continue
             items.append((abs_p, rel.replace(os.sep, '/')))
     return items

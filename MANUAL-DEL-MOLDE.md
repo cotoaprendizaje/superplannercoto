@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.116**.
+Vigente para **kit-base v1.9.117**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -69,6 +69,9 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   (`npm test`). Si no, es un bug del kit: se releva antes de seguir.
 - **El curso sabe de qué versión del kit es**: `kit-version.json`, con
   una huella de cada archivo del kit. No se edita a mano (§7.51).
+- **`actualizar-kit` también declara en `imsmanifest.xml`** los archivos
+  del kit que agrega (y quita los que el kit sacó): sin eso
+  `check-manifest` y `kit-intacto` tiraban para lados opuestos (§7.66).
 - **Poner el curso al día con un kit nuevo** se hace desde el kit
   NUEVO, nunca copiando archivos:
 
@@ -360,6 +363,11 @@ python3 tools/build-zip.py                                 # el zip para el LMS
 - **Los cursos nuevos nacen como datos** (v1.9.116). Los que ya existen
   pueden pasarse con `extraer-curso.mjs` cuando se los retome; no es
   obligatorio (§7.65).
+- **Las `notas` guardan los comentarios** de cada diapositiva, ficha y del
+  índice: el extractor los junta y el armador los vuelve a escribir. Una
+  decisión que no viaja con su pieza se pierde (§7.66).
+- **`curso.json` y `marco.html` viajan dentro del zip del curso** (el LMS
+  los ignora): es la forma de poder retomarlo desde ese zip (§7.66).
 - **`initVideoPlayer()` se llama siempre** (lo hace la plantilla): el
   reproductor del pop-up está en el chrome de todo curso. Llamarla dos
   veces no rompe nada; la segunda solo engancha disparadores nuevos

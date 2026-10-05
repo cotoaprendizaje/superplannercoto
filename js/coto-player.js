@@ -1256,7 +1256,10 @@
     function initResume() {
       var bar = document.getElementById('d-resume');
       if (!bar || !global.SCORM) return;
-      var id = global.SCORM.getLocation();
+      /* La ubicación con la que ABRIÓ el curso, no la de ahora: para
+         cuando esto corre, el primer `slidechange` del motor ya escribió
+         la portada encima (kit-base v1.9.117, test `retomar`). */
+      var id = (global.SCORM.getLocationInicial && global.SCORM.getLocationInicial()) || global.SCORM.getLocation();
       if (!id) return;
       var first = global.motor && global.motor.slides[0];
       if (first && id === first.getAttribute('data-slide')) return; // ya está al principio

@@ -11,6 +11,10 @@
         {
           "texto": "Curso Prevención cardiovascular, Área Servicio Médico."
         }
+      ],
+      "notas": [
+        " `preload=\"metadata\"` y NO `\"auto\"` (kit-base v1.9.99). `auto` quiere\n             decir \"bajá el archivo entero ya\", y este curso lo tenía en sus TRES\n             videos de fondo. Es la presión que causa el cuelgue que reportó el\n             cliente: iOS tiene un tope de medios decodificables a la vez y,\n             cuando lo pasa, desaloja uno sin avisar — el desalojado se queda\n             negro y deja de responder. Con `metadata` el navegador trae la\n             duración y el primer cuadro, y el resto lo baja al reproducir.\n             Es lo que usa el curso modelo en sus cuatro. ",
+        " Vacío A PROPÓSITO: desde v1.9.83 el kit le pone el ícono, el\n             `<span>` con el rótulo y el `aria-label` según el modo en que\n             quede el video (`initBgVideos` → `rotularTap`), y solo lo hace\n             si el botón NO trae marcado propio. Este botón traía un ▶\n             dibujado a mano: el kit lo respetaba y se quedaba sin texto\n             visible —un ícono suelto no dice qué hace— y encima el ▶ era\n             engañoso, porque el video ya está corriendo y lo que ofrece es\n             el AUDIO. Lo detectó `video-tap-chip`. "
       ]
     },
     {
@@ -32,6 +36,10 @@
             "Aplicar hábitos saludables para prevenirlas."
           ]
         }
+      ],
+      "notas": [
+        " El título de la diapositiva es \"Introducción\" porque es lo PRIMERO\n           que la locución tiene que decir (pedido del cliente: \"decir\n           «Introducción» y leer el texto de la introducción; después decir\n           «Objetivos de aprendizaje» y leer cada objetivo\"). El kit narra el\n           título antes del cuerpo, así que nombrándolo así el orden sale\n           solo — y `narracion-titulos` sigue en verde, que es la regla de\n           que ninguna diapositiva arranque a mitad de una explicación.\n           El segundo tramo lo abre su propio párrafo, más abajo.\n           En el índice lateral la entrada dice \"Introducción y objetivos\",\n           que es el nombre completo de la lámina. ",
+        " El orden hablado es \"Introducción\" + su texto, y después\n           \"Objetivos de aprendizaje\" + cada objetivo (pedido del cliente).\n           Antes la locución arrancaba por el título de la diapositiva\n           (\"Objetivos de aprendizaje\") y recién entonces leía la\n           introducción: decía el segundo tema primero.\n           Los objetivos van en `<li>` y SIN las letras A/B/C: por voz,\n           \"A. Identificar…\" se escucha como una sigla suelta. Las letras\n           siguen en el arte, que es donde sirven para referirse a uno. "
       ]
     },
     {
@@ -57,6 +65,9 @@
           "texto": "Contiene: Colesterol alto, Hipertensión arterial, Diabetes, Obesidad, Sedentarismo, Tabaquismo.",
           "saltear": true
         }
+      ],
+      "notas": [
+        " Los subpuntos van en su PROPIO `<p data-narrate-skip>`, no en un\n             `<span>` dentro del párrafo: `textOf()` filtra por NODO y lee el\n             `textContent` completo del que pasa el filtro, así que un span\n             marcado adentro de un `<p>` sin marcar no saca nada.\n             Siguen enteros para un\n             lector de pantalla —que necesita saber qué hay en cada unidad—\n             pero la locución dice solo el número y el nombre de la unidad.\n             Pedido del cliente, y es exactamente para lo que el kit trae\n             ese atributo: \"la locución ACOMPAÑA a la lámina, el lector la\n             REEMPLAZA\". Leer los 12 puntos en voz alta acá es la lista que\n             el alumno ya está viendo dibujada. "
       ]
     },
     {
@@ -65,7 +76,10 @@
       "titulo": "Unidad 1 — Enfermedades no transmisibles (ENT)",
       "video": "video/unidad1.mp4",
       "poster": "img/unidad1.webp",
-      "avanceSolo": true
+      "avanceSolo": true,
+      "notas": [
+        " Vacío A PROPÓSITO: desde v1.9.83 el kit le pone el ícono, el\n             `<span>` con el rótulo y el `aria-label` según el modo en que\n             quede el video (`initBgVideos` → `rotularTap`), y solo lo hace\n             si el botón NO trae marcado propio. Este botón traía un ▶\n             dibujado a mano: el kit lo respetaba y se quedaba sin texto\n             visible —un ícono suelto no dice qué hace— y encima el ▶ era\n             engañoso, porque el video ya está corriendo y lo que ofrece es\n             el AUDIO. Lo detectó `video-tap-chip`. "
+      ]
     },
     {
       "id": "que-son-ent",
@@ -126,6 +140,10 @@
         {
           "texto": "Las Enfermedades No Transmisibles, ENT, son afecciones de larga duración que no se transmiten de persona a persona, y representan uno de los mayores desafíos para la salud pública actual. Las ENT causan el 74% de las muertes en el mundo, más de 41 millones de personas al año. 1 de cada 3 de esas muertes ocurre en personas menores de 70 años. 4 de cada 5 personas mueren por alguna ENT. Estos son los principales tipos de ENT: enfermedades cardiovasculares, cáncer, enfermedades respiratorias crónicas y diabetes."
         }
+      ],
+      "notas": [
+        " Los 4 círculos de tipos de ENT dibujados en el arte se vuelven\n             botones (pedido del cliente). Coordenadas MEDIDAS en píxeles\n             sobre el render de 2520x1260 (círculo + su etiqueta), no\n             estimadas a ojo — ver CLAUDE.md §3.4. ",
+        " Orden de LECTURA, no de diseño (corrección del cliente): la\n             locución venía arrancando por el dato de la ilustración (\"4 de\n             cada 5\") antes del párrafo principal. El orden es el que sigue\n             el ojo en la lámina: párrafo, sus dos viñetas, el dato grande de\n             la derecha y recién al final el pie que presenta los 4 círculos.\n             Los tipos van en el orden en que están DIBUJADOS\n             (cardiovasculares · cáncer · respiratorias · diabetes); el texto\n             anterior los leía con diabetes tercera. "
       ]
     },
     {
@@ -203,6 +221,11 @@
         {
           "texto": "En América, las ENT son la principal causa de muerte, muy por encima de otras patologías: 5,2 millones de personas mueren al año por esta causa, lo que representa 8 de cada 10 fallecimientos en la región. Distribución del total de muertes por ENT, todas las edades: enfermedades cardiovasculares 36,7%, cáncer 24,6%, enfermedades respiratorias crónicas 8,6%, diabetes mellitus 6,4%, otras ENT 23,8%."
         }
+      ],
+      "notas": [
+        " Las 5 barras del gráfico se vuelven zonas con hover/foco/tap\n             (pedido del cliente, mismo criterio que la torta). Filas\n             MEDIDAS sobre el render de 2520x1260: separadas 93 px exactas,\n             de la etiqueta (x=1200) al final de la cifra (x=2190). ",
+        " El cartel va en la banda libre de la tarjeta, debajo del eje\n             y de los logos (y 1074-1160 del render, medida barriendo\n             píxeles vacíos): no tapa ninguna barra ni cifra. ",
+        " `data-w` acotado a 40.16 (no 41.67, el ancho medido de la fila):\n             con 41.67 el cartel terminaba en 89.29% y el iPad Pro 12,9\"\n             recorta a partir de 87.78% — le cortaba el borde derecho a un\n             cartel de TEXTO. Lo detectó `video-lienzo-tablet`. "
       ]
     },
     {
@@ -242,6 +265,13 @@
         {
           "texto": "Esta es la distribución de los fallecimientos por ENT en Argentina, según su causa: enfermedades del corazón 40%, cáncer 25%, diabetes 35%. Escuchá el mensaje de nuestro especialista."
         }
+      ],
+      "notas": [
+        " Torta interactiva (pedido del cliente). Se dibuja EXACTAMENTE\n             encima de la torta del arte: centro y radio medidos en píxeles\n             sobre el render de 2520x1260 (círculo perfecto de 574px, centro\n             en 920,727) y pasados a % del lienzo. Los 3 colores son los del\n             arte, muestreados del propio .webp — así el reemplazo es\n             invisible hasta que el alumno interactúa. Los ángulos también\n             salen del arte: 40% arranca a las 12 y sigue en sentido\n             horario.\n             Es un [data-hit] solo para que el motor lo posicione con el\n             mismo sistema de % que las hitboxes (_initShots) — la\n             interacción real está en los 3 <path>, que son botones. ",
+        " ⚠️ Los ángulos NO son los que dan los porcentajes de las\n                 etiquetas: son los MEDIDOS en el arte. El borde entre\n                 \"corazón\" y \"diabetes\" está dibujado a 312°, no a los\n                 306° que darían 40%/35% exactos (el sector de cáncer sí\n                 es 25% clavado). Con los ángulos matemáticos el overlay\n                 quedaba corrido 6° respecto del dibujo — que es lo que\n                 se veía. Manda el arte: este SVG tiene que ser\n                 invisible hasta que alguien interactúa. ",
+        " Tarjeta de información. pointer-events:none es obligatorio:\n               se desborda hacia la derecha del cuadro de la torta y sin eso\n               taparía el botón de play del video del especialista. ",
+        " `--encuadre` con el valor por defecto (`center`), listo para\n             calibrar: un clip 16:9 en un círculo 1:1 obliga a tirar el 44%\n             del ancho, y `cover` recorta por el centro del cuadro — que en\n             estos clips compuestos no es donde está el especialista. El\n             número sale de mirar fallecimiento-por-ent.mp4 reproduciéndose; hasta\n             entonces queda en `center`, que es el comportamiento de siempre. ",
+        " El play de la MARCA calzado sobre el que dibuja el arte, para que\n               sea EL PLAY el que reacciona al mouse y no el círculo (pedido del\n               cliente). Las tres medidas salen del .webp: diámetro 20.0% del\n               hitbox, centro en 50.7% / 49.2%. Ver `--marca` en coto-media.css.\n               Es un <button> porque el hitbox de acá es un <div>: este es el\n               único control real, así que lleva el rótulo. "
       ]
     },
     {
@@ -358,6 +388,11 @@
         {
           "texto": "La aterosclerosis ocurre cuando se acumula placa de colesterol en las arterias. Con el tiempo, esa placa va tapando el paso de la sangre, hasta que puede obstruirlo por completo. Si esto pasa en las arterias del corazón, se lo llama enfermedad coronaria, y sus síntomas van desde dolor de pecho hasta el infarto. Etapas: funciones normales, disfunción endotelial, formación de placa, trombosis."
         }
+      ],
+      "notas": [
+        " Las 4 etapas de la aterosclerosis, dibujadas en el arte, se\n             vuelven zonas interactivas (pedido del cliente, mismo criterio\n             que la torta). Coordenadas MEDIDAS sobre el render de\n             2520x1260: las 4 filas arrancan en y=145, 403, 661 y 919\n             (separadas 258 px exactas) y van del círculo (x=1345) al borde\n             derecho del vaso (x=2115), incluyendo la etiqueta de abajo. ",
+        " `--encuadre` con el valor por defecto (`center`), listo para\n             calibrar: un clip 16:9 en un círculo 1:1 obliga a tirar el 44%\n             del ancho, y `cover` recorta por el centro del cuadro — que en\n             estos clips compuestos no es donde está el especialista. El\n             número sale de mirar aterosclerosis.mp4 reproduciéndose; hasta\n             entonces queda en `center`, que es el comportamiento de siempre. ",
+        " El play de la MARCA calzado sobre el que dibuja el arte, para que\n               sea EL PLAY el que reacciona al mouse y no el círculo (pedido del\n               cliente). Las tres medidas salen del .webp: diámetro 19.5% del\n               hitbox, centro en 50.4% / 50.4%. Ver `--marca` en coto-media.css.\n               Es un <button> porque el hitbox de acá es un <div>: este es el\n               único control real, así que lleva el rótulo. "
       ]
     },
     {
@@ -380,7 +415,10 @@
       ],
       "requisitos": {
         "popupAntes": "control-factores"
-      }
+      },
+      "notas": [
+        " Pestañas que cambian la CAPTURA ENTERA (una variante del PDF por\n           factor). Contrato `initShotSwap` del kit (coto-media.js, v1.9.21):\n           las variantes van en `data-shot-swap-srcs` (mismo orden que los\n           `data-shot-swap-go` de abajo, empezando por el índice = 0) y el\n           módulo se encarga de precargarlas, del fundido corto al cambiar\n           y de marcar `.is-active`/`aria-current` en la pestaña elegida.\n           Antes esto era un grupo `[data-layers]` con el swap de `src`\n           escrito a mano en curso.js — la misma lógica que el kit ya\n           generaliza (ver CLAUDE.md §1). "
+      ]
     },
     {
       "id": "unidad2",
@@ -388,7 +426,11 @@
       "titulo": "Unidad 2 — Las ENT y su prevención",
       "video": "video/unidad2.mp4",
       "poster": "img/unidad2.webp",
-      "avanceSolo": true
+      "avanceSolo": true,
+      "notas": [
+        " Separador Unidad 2 ",
+        " Vacío A PROPÓSITO: desde v1.9.83 el kit le pone el ícono, el\n             `<span>` con el rótulo y el `aria-label` según el modo en que\n             quede el video (`initBgVideos` → `rotularTap`), y solo lo hace\n             si el botón NO trae marcado propio. Este botón traía un ▶\n             dibujado a mano: el kit lo respetaba y se quedaba sin texto\n             visible —un ícono suelto no dice qué hace— y encima el ▶ era\n             engañoso, porque el video ya está corriendo y lo que ofrece es\n             el AUDIO. Lo detectó `video-tap-chip`. "
+      ]
     },
     {
       "id": "colesterol-alto",
@@ -594,7 +636,12 @@
       "antetitulo": "Mini práctica",
       "titulo": "Poné a prueba lo que aprendiste",
       "bajada": "Son 3 preguntas para repasar, cada una con su explicación.",
-      "aviso": "<div class=\"d-aviso-practica\" role=\"note\" data-narrate-skip=\"\">\n          <span class=\"d-aviso-ic\" aria-hidden=\"true\">\n            <svg viewBox=\"0 0 24 24\"><use href=\"#i-info\"></use></svg>\n          </span>\n          <div>\n            <p><b>Esto no es la evaluación del curso.</b> Es una práctica para vos: seguís dentro del contenido, no se guarda ninguna nota y podés repetirla las veces que quieras.</p>\n            <p>La <b>evaluación final</b> es un <b>cuestionario aparte</b>, que vas a encontrar en la plataforma <b>cuando termines de ver todo el contenido</b> del curso.</p>\n          </div>\n        </div>"
+      "aviso": "<div class=\"d-aviso-practica\" role=\"note\" data-narrate-skip=\"\">\n          <span class=\"d-aviso-ic\" aria-hidden=\"true\">\n            <svg viewBox=\"0 0 24 24\"><use href=\"#i-info\"></use></svg>\n          </span>\n          <div>\n            <p><b>Esto no es la evaluación del curso.</b> Es una práctica para vos: seguís dentro del contenido, no se guarda ninguna nota y podés repetirla las veces que quieras.</p>\n            <p>La <b>evaluación final</b> es un <b>cuestionario aparte</b>, que vas a encontrar en la plataforma <b>cuando termines de ver todo el contenido</b> del curso.</p>\n          </div>\n        </div>",
+      "notas": [
+        " 18 · Mini práctica (CAPAS: una pregunta por vez; NO es la evaluación\n         final — esa sigue siendo un cuestionario aparte en Moodle, ver\n         CLAUDE.md §3.11). Mismo patrón que \"Surtido sin venta\": 3 preguntas\n         sorteadas de un banco más grande, opciones mezcladas, con\n         explicación inmediata y link de repaso a la diapositiva relacionada\n         si la respuesta fue incorrecta. Gatea el cierre (initQuiz/unlockCierre\n         en curso.js). ",
+        " `data-narrate-skip` en la bajada y en el aviso (corrección del\n             cliente): los dos repiten PALABRA POR PALABRA el pop-up \"Antes\n             de empezar\", que acaba de narrarse. El motor narra la\n             diapositiva al cerrar ese pop-up (kit §7.17), así que sin esto\n             la locución leía el aviso completo otra vez y recién después la\n             primera pregunta — MEDIDO: 4 oraciones repetidas antes de\n             llegar a \"¿Qué es la aterosclerosis?\".\n             Van con `data-narrate-skip` y NO borrados: el texto sigue\n             entero para un lector de pantalla, que no pasa por `textOf()`\n             y para el que esta diapositiva es la única fuente. ",
+        " Encuadre pedido explícitamente por el cliente: que quede sin\n             lugar a dudas que esto NO es la evaluación del curso. Va como\n             aviso destacado y no como una línea más de la bajada, porque\n             es justo lo que un alumno lee en diagonal y después reclama. "
+      ]
     },
     {
       "id": "consejos",
@@ -639,7 +686,13 @@
       ],
       "nota": "Recordá que la <b>evaluación final</b> es un <b>cuestionario aparte</b>, que vas a encontrar en la plataforma ahora que terminaste todo el contenido.",
       "repaso": "<h3>Repaso rápido de todo el curso</h3>\n            <div class=\"d-cierre-recap-grid\">\n              <div class=\"d-cierre-recap-col\">\n                <h4>Conceptos clave</h4>\n                <dl class=\"d-gloss\">\n                  <div><dt>ENT</dt><dd>Afecciones de larga duración que no se transmiten de persona a persona: cardiovasculares, cáncer, diabetes y respiratorias crónicas.</dd></div>\n                  <div><dt>Aterosclerosis</dt><dd>Placa de colesterol que se acumula en las arterias hasta tapar el paso de la sangre. Avanza en 4 etapas: funciones normales, disfunción endotelial, formación de placa y trombosis.</dd></div>\n                  <div><dt>Enfermedad coronaria</dt><dd>Aterosclerosis en las arterias del corazón; va desde el dolor de pecho hasta el infarto.</dd></div>\n                  <div><dt>IMC</dt><dd>Relación entre peso y altura que se usa para detectar sobrepeso u obesidad.</dd></div>\n                  <div><dt>Factor de riesgo</dt><dd>Condición o hábito que aumenta la probabilidad de desarrollar una enfermedad cardiovascular.</dd></div>\n                </dl>\n              </div>\n              <div class=\"d-cierre-recap-col\">\n                <h4>Los 7 factores de riesgo, en Argentina</h4>\n                <ul>\n                  <li>Sedentarismo — <b>64,9%</b></li>\n                  <li>Sobrepeso y obesidad — <b>61,6%</b></li>\n                  <li>Hipertensión arterial — <b>34%</b></li>\n                  <li>Colesterol elevado — <b>29%</b></li>\n                  <li>Tabaco — <b>22,7%</b></li>\n                  <li>Alcohol en exceso — <b>13,3%</b></li>\n                  <li>Diabetes — <b>12,7%</b></li>\n                </ul>\n                <h4>Cómo se detecta cada uno</h4>\n                <ul>\n                  <li><b>Tensiómetro:</b> presión arterial.</li>\n                  <li><b>Análisis de sangre:</b> colesterol y glucemia.</li>\n                  <li><b>Balanza y cinta métrica:</b> IMC y perímetro abdominal.</li>\n                </ul>\n                \n                <h4>Las cifras del curso</h4>\n                <ul>\n                  <li>Las ENT causan el <b>74%</b> de las muertes en el mundo.</li>\n                  <li>En América son <b>8 de cada 10</b> fallecimientos.</li>\n                  <li>En Argentina, las enfermedades del corazón explican el <b>40%</b> de las muertes por ENT.</li>\n                  <li>Controlando los factores de riesgo se evita hasta el <b>50%</b> de la mortalidad cardiovascular.</li>\n                </ul>\n              </div>\n              <div class=\"d-cierre-recap-col\">\n                <h4>Para recordar</h4>\n                <ul>\n                  <li>Consultá al médico de cabecera al menos <b>una vez al año</b>.</li>\n                  <li>Cumplí con al menos <b>150 minutos semanales</b> de actividad física.</li>\n                  <li>Evitá el tabaco y la exposición al humo ajeno.</li>\n                  <li>Reducí sodio, grasas saturadas y azúcares.</li>\n                  <li>Monitoreá presión arterial, glucemia y colesterol.</li>\n                </ul>\n                <h4>Buenas noticias</h4>\n                <ul>\n                  <li>La hipertensión <b>no da síntomas</b> al principio: por eso se mide, no se espera a sentirla.</li>\n                  <li>Al dejar de fumar, el riesgo baja <b>de inmediato</b> y sigue bajando.</li>\n                  <li>Para dejar el tabaco existen <b>métodos validados</b> y profesionales especializados: la fuerza de voluntad sola rara vez alcanza.</li>\n                  <li>Sumá ejercicios de fuerza muscular <b>2 días por semana</b>.</li>\n                </ul>\n              </div>\n            </div>",
-      "fin": true
+      "fin": true,
+      "notas": [
+        " 20 · Cierre — 2 pasos dentro de la misma diapositiva (no 2\n         diapositivas: el cierre sigue siendo la última/data-slide-end para\n         SCORM/confeti). Bloqueado hasta completar la mini práctica\n         (unlockCierre en curso.js agrega .unlocked + data-nav-cta):\n         1) la captura del PDF sola + botón \"Finalizar curso\" en el footer.\n         2) al hacer clic, se oculta el paso 1 y se revela el resumen\n            (stats, repaso de conceptos, consejos) — ahí arrancan el\n            confeti/sonido/count-up, no al llegar a la diapo. ",
+        " Premio final. Los rangos se muestran SIEMPRE, también\n                 los que no se alcanzaron: si no se ve qué faltaba, la\n                 medalla no motiva nada. ",
+        " \"0/3 · Práctica\" no se entendía (reporte del cliente): el\n                   número solo no dice qué mide. Ahora la etiqueta lo dice\n                   completo. Y se sacó \"Tiempo\": no aporta nada al alumno y\n                   se prestaba a leerse como una marca a superar. ",
+        " \"Las cifras del curso\" estaba en la columna 1, que quedaba\n                     con 790px de contenido contra 430 de esta: las tres\n                     columnas se veían desbalanceadas y el resumen \"aplanado\".\n                     Movido acá quedan parejas (~570 / ~650 / ~660). "
+      ]
     }
   ],
   "indice": {
@@ -789,6 +842,10 @@
         "diapo": "consejos",
         "texto": "Aplicar hábitos saludables para prevenirlas"
       }
+    ],
+    "notas": [
+      " Progreso por OBJETIVO de aprendizaje (kit v1.9.86). Las \"N de 20\n             vistas\" de arriba dicen cuánto NAVEGÓ el alumno; esto dice cuánto\n             de los tres objetivos declarados en la diapositiva \"Objetivos de\n             aprendizaje\" ya cubrió, que es lo que de verdad le importa.\n\n             No necesita JS del curso: cuelga del `refresh()` de\n             `initIndexJumps`, que ya se llama en cada `slidechange`. Lo único\n             que va acá es el MAPEO objetivo → diapositiva de checkpoint, que\n             es contenido:\n\n               A · las enfermedades cardiovasculares y su mecanismo se cierran\n                   en \"Aterosclerosis\", última de la Unidad 1;\n               B · los factores de riesgo quedan cubiertos al terminar los 6\n                   de la Unidad 2, o sea en \"Tabaquismo\";\n               C · los hábitos saludables, en \"Últimos consejos\".\n\n             ⚠️ El `data-obj-check` NO es opcional: un pip sin él queda\n             apagado para siempre (y el kit lo deja así a propósito — un\n             objetivo que se tilda solo es peor que uno que nunca se tilda). ",
+      " \"Práctica y cierre\", y ANTES de la mini práctica: es como lo\n             agrupa el curso modelo (\"Seguridad Alimentaria\"), y además\n             es lo que dice el orden real de las diapositivas — la\n             práctica, los consejos y el cierre son el tramo final, no\n             la cola de la unidad 2. Antes la práctica colgaba de\n             \"Unidad 2\" y el grupo \"Cierre\" arrancaba después. "
     ]
   },
   "glosario": [
@@ -879,21 +936,32 @@
       "etiqueta": "Control de factores de riesgo",
       "titulo": "Un dato para tener en cuenta:",
       "clase": "d-stat-pop",
-      "cuerpo": "<div class=\"icon-circle d-stat-pop-icon\" aria-hidden=\"true\">\n          <svg viewBox=\"0 0 24 24\"><path d=\"M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z\"></path><polyline points=\"6 12 9 12 10.5 9 13.5 15 15 12 18 12\"></polyline></svg>\n        </div>\n        <p class=\"d-stat-pop-lead\">Con un adecuado control y manejo de los factores de riesgo, se puede disminuir</p>\n        <div class=\"d-stat-pop-num-wrap\">\n          <p class=\"d-stat-pop-num\"><span data-count-to=\"50\">0</span><small>%</small></p>\n        </div>\n        <p class=\"d-stat-pop-sub\">de la mortalidad cardiovascular.</p>\n        \n        <div class=\"d-instr-cta\">\n          <button class=\"btn btn-cat btn-ic\" type=\"button\" data-popup-close=\"\">\n            Continuar\n            <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"9 6 15 12 9 18\"></polyline></svg>\n          </button>\n        </div>"
+      "cuerpo": "<div class=\"icon-circle d-stat-pop-icon\" aria-hidden=\"true\">\n          <svg viewBox=\"0 0 24 24\"><path d=\"M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z\"></path><polyline points=\"6 12 9 12 10.5 9 13.5 15 15 12 18 12\"></polyline></svg>\n        </div>\n        <p class=\"d-stat-pop-lead\">Con un adecuado control y manejo de los factores de riesgo, se puede disminuir</p>\n        <div class=\"d-stat-pop-num-wrap\">\n          <p class=\"d-stat-pop-num\"><span data-count-to=\"50\">0</span><small>%</small></p>\n        </div>\n        <p class=\"d-stat-pop-sub\">de la mortalidad cardiovascular.</p>\n        \n        <div class=\"d-instr-cta\">\n          <button class=\"btn btn-cat btn-ic\" type=\"button\" data-popup-close=\"\">\n            Continuar\n            <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"9 6 15 12 9 18\"></polyline></svg>\n          </button>\n        </div>",
+      "notas": [
+        " Control de factores de riesgo (50%) — pop-up \"gate\" al salir de\n       \"Factores de riesgo cardiovascular\" (data-gate-popup en esa\n       diapositiva): se muestra una sola vez por sesión, al cerrarse\n       completa el avance a Unidad 2 automáticamente. ",
+        " Este pop-up SÍ lleva botón, y es la excepción que la regla ya\n             contempla: no es una consulta, es un paso del recorrido. Al\n             cerrarse, el motor completa el avance a la Unidad 2\n             (data-gate-popup), así que \"Continuar\" describe exactamente\n             lo que va a pasar. "
+      ]
     },
     {
       "id": "practica-intro",
       "etiqueta": "Antes de empezar la mini práctica",
       "titulo": "Antes de empezar:",
       "clase": "d-pracintro",
-      "cuerpo": "<div class=\"icon-circle d-pracintro-ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-info\"></use></svg></div>\n        <p class=\"d-pracintro-lead\"><b>Esto no es la evaluación del curso.</b></p>\n        <ul>\n          <li>Son <b>3 preguntas</b> para repasar, cada una con su explicación.</li>\n          <li><b>No se guarda ninguna nota</b> y podés repetirla las veces que quieras.</li>\n          <li>Seguís dentro del contenido del curso: al terminar te queda el cierre.</li>\n        </ul>\n        <p class=\"d-pracintro-eval\">La <b>evaluación final</b> es un <b>cuestionario aparte</b>, que vas a encontrar en la plataforma <b>cuando termines de ver todo el contenido</b>.</p>\n        <div class=\"d-instr-cta\">\n          <button class=\"btn btn-cat btn-ic\" type=\"button\" data-pracintro-go=\"\">\n            <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><use href=\"#i-examen\"></use></svg>\n            Empezar la mini práctica\n          </button>\n        </div>"
+      "cuerpo": "<div class=\"icon-circle d-pracintro-ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-info\"></use></svg></div>\n        <p class=\"d-pracintro-lead\"><b>Esto no es la evaluación del curso.</b></p>\n        <ul>\n          <li>Son <b>3 preguntas</b> para repasar, cada una con su explicación.</li>\n          <li><b>No se guarda ninguna nota</b> y podés repetirla las veces que quieras.</li>\n          <li>Seguís dentro del contenido del curso: al terminar te queda el cierre.</li>\n        </ul>\n        <p class=\"d-pracintro-eval\">La <b>evaluación final</b> es un <b>cuestionario aparte</b>, que vas a encontrar en la plataforma <b>cuando termines de ver todo el contenido</b>.</p>\n        <div class=\"d-instr-cta\">\n          <button class=\"btn btn-cat btn-ic\" type=\"button\" data-pracintro-go=\"\">\n            <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><use href=\"#i-examen\"></use></svg>\n            Empezar la mini práctica\n          </button>\n        </div>",
+      "notas": [
+        " Intro de la mini práctica. Se abre ANTES de la primera pregunta,\n       a pedido del cliente: si el encuadre está solo en la diapositiva,\n       alguien puede empezar a responder creyendo que arrancó la\n       evaluación. Lleva botón porque ARRANCA la actividad (ver la regla\n       de pop-ups más arriba), no porque cierre. ",
+        " Con dos puntos: la frase de arriba INTRODUCE lo que sigue, no es\n             un título suelto. Pedido del cliente, y va igual en el pop-up\n             previo a cada video (\"Un momento, pensemos:\"). "
+      ]
     },
     {
       "id": "ent-cardio",
       "etiqueta": "Enfermedades cardiovasculares",
       "titulo": "Enfermedades cardiovasculares:",
       "clase": "d-ent-pop",
-      "cuerpo": "<div class=\"icon-circle d-ent-pop-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-heart-pulse\"></use></svg></div>\n        <p>Afectan al <b>corazón</b> y a los <b>vasos sanguíneos</b>. Incluyen la enfermedad coronaria, el ACV y la arteriopatía periférica.</p>\n        <ul>\n          <li>Son el tipo de ENT que más muertes causa: <b>36,7%</b> en América y <b>40%</b> en Argentina.</li>\n          <li>Su mecanismo principal es la <b>aterosclerosis</b>: la placa de colesterol va tapando las arterias.</li>\n          <li>Es el tipo de ENT del que se ocupa este curso.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Controlando los factores de riesgo se puede disminuir <b>50%</b> de la mortalidad cardiovascular.</p>"
+      "cuerpo": "<div class=\"icon-circle d-ent-pop-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-heart-pulse\"></use></svg></div>\n        <p>Afectan al <b>corazón</b> y a los <b>vasos sanguíneos</b>. Incluyen la enfermedad coronaria, el ACV y la arteriopatía periférica.</p>\n        <ul>\n          <li>Son el tipo de ENT que más muertes causa: <b>36,7%</b> en América y <b>40%</b> en Argentina.</li>\n          <li>Su mecanismo principal es la <b>aterosclerosis</b>: la placa de colesterol va tapando las arterias.</li>\n          <li>Es el tipo de ENT del que se ocupa este curso.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Controlando los factores de riesgo se puede disminuir <b>50%</b> de la mortalidad cardiovascular.</p>",
+      "notas": [
+        " Los 4 tipos de ENT (se abren desde los círculos de la diapositiva\n       \"¿Qué son las ENT?\"). Todos usan .modal-hd--dark por la regla de\n       consistencia de encabezados (CLAUDE.md §4): en un mismo curso no se\n       mezclan las dos variantes. Los datos son los que ya trae el curso\n       (América: diapositiva \"Las ENT en la región de las Américas\";\n       Argentina: \"Fallecimiento por ENT\") — no se sumó ninguna\n       estadística nueva. "
+      ]
     },
     {
       "id": "ent-cancer",

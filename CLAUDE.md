@@ -15128,3 +15128,85 @@ práctica, logros y medallas; el extractor convierte los cinco cursos sin
 perder nada; los cursos nuevos nacen como datos. Lo que queda como HTML
 son piezas propias de un solo curso. Lo siguiente es la Fase 2: el
 editor visual sobre `curso.json`.
+
+## 7.66 Relevo de "Prevención cardiovascular", 2026-10-05: el primer curso real puesto al día y pasado a datos (kit-base v1.9.117)
+
+El chat de cardio actualizó el curso a v1.9.116, lo pasó a datos (20 de
+20 diapositivas) y mandó un relevo de seis puntos, cada uno con síntoma,
+causa medida y cómo lo verificó. Se verificaron uno por uno contra el
+kit antes de portar nada.
+
+### R1 · "Retomá donde dejaste" no aparecía NUNCA — bug del kit, en todo curso
+
+La plantilla de `curso.js` registra `slidechange → SCORM.setLocation()`
+antes de crear el motor; el motor arranca en la portada y ese primer
+evento escribe `portada` en `cmi.core.lesson_location`. Recién después
+`initResume()` lee la ubicación… y encuentra la portada. **Reproducido en
+el kit**, en un curso recién generado y en el arnés, con el test nuevo.
+
+Arreglo en el kit (no en cada curso, como propuso el relevo):
+`SCORM.init()` guarda la ubicación con la que el LMS ABRIÓ el curso
+(`getLocationInicial()`), y `initResume()` lee esa. El parche local de
+cardio (una bandera en su `curso.js`) puede quedar: no choca.
+
+**Test nuevo `retomar.mjs` (59 tests):** un LMS SCORM 1.2 en memoria con
+un alumno guardado en una diapositiva del medio; exige el cartel y que
+"Continuar" lleve ahí. Rojo con el kit de v1.9.116 en los dos cursos
+("escrituras de ubicación antes de mirar: …=portada"), verde con el
+arreglo; `scorm-tracking` sigue verde. Nadie lo había visto porque
+`scorm-tracking` verifica que la ubicación SE GUARDE, no que al reabrir
+el cartel aparezca.
+
+### R2 · El zip del LMS arrastraba 92 archivos de trabajo
+
+`actualizar-kit` copia al curso todo lo del kit (lo necesita `npm test`),
+y `build-zip.py` solo excluía los prompts, el manual y los boilerplates.
+Medido en un curso nuevo: 139 entradas, 87 de `tools/`. Ahora, en el zip
+de un CURSO (no del kit) quedan fuera `tools/`, `package.json`,
+`package-lock.json`, `spec-motor-slides.md` y
+`minijuego-boilerplate.html`: 50 entradas. El zip del kit no cambia.
+
+### R3 · `check-manifest` y `kit-intacto` tiraban para lados opuestos
+
+`actualizar-kit` agregaba los módulos nuevos del kit (coto-piezas,
+coto-visor, coto-simulador, coto-gescom) sin declararlos en
+`imsmanifest.xml`: `check-manifest` rojo; sacarlos, `kit-intacto` rojo.
+**Reproducido** con el cardio de v1.9.110: con el `actualizar-kit`
+anterior, rojo con exactamente los 7 del relevo. Ahora `actualizar-kit`
+declara todo archivo DEL KIT de una carpeta servida que el manifiesto no
+nombra, y quita los que el kit sacó (los propios del curso no se tocan):
+83 archivos, los mismos a los que llegó a mano el chat de cardio, y una
+segunda corrida no duplica nada. Se eligió declarar y no relajar
+`kit-intacto`, porque la convención es que el manifiesto enumera todo.
+
+### R4 · Pasar a datos borraba los comentarios — campo `notas`
+
+Diapositivas, fichas y el índice tienen `notas`: el extractor junta los
+comentarios de adentro de la pieza y los que tiene justo encima (salvo
+los rótulos de una línea "N · título", que el armador escribe solo), y
+el armador los vuelve a escribir al principio de la pieza. Medido en el
+index de cardio de v1.9.110: 95 comentarios → 36 notas, 47 que ya vivían
+en el marco y 12 rótulos. Ida y vuelta exacta. Lo que se pierde es la
+POSICIÓN exacta adentro de la pieza (todas quedan arriba), no el texto.
+
+### R5 · Los datos no viajaban en el zip del curso
+
+`build-zip.py` dejaba fuera `curso.json` y `marco.html` (v1.9.111), y el
+zip del LMS es "el zip del curso" que pide `PROMPT-RETOMAR-CURSO.md`: un
+curso en datos volvía sin sus datos. Ahora viajan adentro (unos 100 KB
+que el LMS ignora). El prompt de retomar lo dice.
+
+### R6 · Tres piezas sin modelar (informativo)
+
+Torta, cartel de barras y pestañas de `initShotSwap`. Quedan como HTML;
+las pestañas son un patrón del kit, así que se modelan cuando un segundo
+curso las use.
+
+### El curso de prueba es ahora el cardio entregado
+
+`curso-prueba/` pasa a ser el cardio que devolvió el chat (sus 45
+archivos propios, sus `curso.json` y `marco.html`), con dos agregados
+de este chat para que el curso de prueba siga ejercitando el formato:
+las 36 notas recuperadas del index de v1.9.110 (mismos ids) y la
+práctica, logros y medallas pasados de su `curso.js` a `curso.json`
+(como en v1.9.113; el curso real todavía los tiene en su `curso.js`).

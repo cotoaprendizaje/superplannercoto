@@ -110,6 +110,7 @@
   /* ============================================================
      API PÚBLICA — lo único que consume experiencia.js
      ============================================================ */
+  var ubicacionInicial = '';
   var SCORM = {
     masteryScore: MASTERY,
     connected: false,
@@ -122,6 +123,14 @@
         INITIALIZED = (ok === 'true' || ok === true);
       }
       this.connected = INITIALIZED;
+      /* La ubicación con la que el LMS ABRIÓ el curso (kit-base v1.9.117).
+         Se guarda acá porque el curso la pisa enseguida: la plantilla
+         registra `slidechange → setLocation()` antes de crear el motor, y
+         el motor arranca en la portada. `initResume()` lee ESTA, no la del
+         momento — si no, el cartel "Retomá donde dejaste" no aparecía
+         nunca (relevo de "Prevención cardiovascular", 2026-10-05: escritura
+         de `portada` a los 179 ms, lectura a los 184 ms). */
+      ubicacionInicial = get('cmi.core.lesson_location') || '';
 
       // Al entrar: si estaba "not attempted", pasa a "incomplete".
       var status = get('cmi.core.lesson_status');
@@ -173,6 +182,8 @@
       set('cmi.core.lesson_location', String(id).slice(0, 255));
     },
     getLocation: function () { return get('cmi.core.lesson_location'); },
+    /* Dónde estaba el alumno cuando se abrió el curso (ver `init`). */
+    getLocationInicial: function () { return ubicacionInicial; },
 
     /* Persiste el estado de la experiencia (secciones, puntos, logros).
        Objeto → JSON acotado a 4096 chars (límite CMI de SCORM 1.2). */

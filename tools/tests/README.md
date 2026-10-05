@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.116 · Área Aprendizaje (COTO)
+kit-base v1.9.117 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 58 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 59 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de

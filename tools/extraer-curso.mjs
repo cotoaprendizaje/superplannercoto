@@ -310,9 +310,32 @@ const r = await page.evaluate((html) => { try {
     return d;
   }
 
+  /* ---- notas: los comentarios que documentan cada pieza (v1.9.117) ----
+     Los de ADENTRO de la pieza y los que tiene justo encima (sin nada más
+     en el medio que espacios). Se saltean los rótulos de una línea tipo
+     "<!-- 3 · Separador Unidad 1 -->": el armador los vuelve a escribir
+     solo, con el título. */
+  const ROTULO = /^\s*\d+\s*·[^\n]*$/;
+  function notasDe(el) {
+    const previas = [];
+    for (let p = el.previousSibling; p && (p.nodeType === 8 || (p.nodeType === 3 && !p.nodeValue.trim())); p = p.previousSibling) {
+      if (p.nodeType === 8 && !ROTULO.test(p.nodeValue)) previas.unshift(p.nodeValue);
+    }
+    const internas = [];
+    const it = document.createNodeIterator(el, NodeFilter.SHOW_COMMENT);
+    for (let n = it.nextNode(); n; n = it.nextNode()) internas.push(n.nodeValue);
+    const todas = previas.concat(internas);
+    return todas.length ? todas : undefined;
+  }
+
   const main = doc.querySelector('main.d-stage');
   const secciones = Array.from(main.querySelectorAll(':scope > section.slide'));
-  const diapositivas = secciones.map(leerDiapositiva);
+  const diapositivas = secciones.map((sec, i) => {
+    const d = leerDiapositiva(sec, i);
+    const notas = notasDe(sec);
+    if (notas) d.notas = notas;
+    return d;
+  });
   const titulos = {};
   for (const d of diapositivas) if (d.titulo != null) titulos[d.id] = d.titulo;
 
@@ -343,6 +366,10 @@ const r = await page.evaluate((html) => { try {
     }
     if (ok && igual(nav, dentroDe(nav, CD.armarIndice(ix, '')))) indice = ix;
     else indice = { html: interno(nav) };
+    const notasIx = [];
+    const itn = document.createNodeIterator(nav, NodeFilter.SHOW_COMMENT);
+    for (let n = itn.nextNode(); n; n = itn.nextNode()) notasIx.push(n.nodeValue);
+    if (notasIx.length) indice.notas = notasIx;
   }
 
   /* ---- glosario ---- */
@@ -385,6 +412,8 @@ const r = await page.evaluate((html) => { try {
     if (claseExtra(m, ['modal'])) f.claseModal = claseExtra(m, ['modal']);
     if (claseExtra(card, ['modal-card'])) f.claseTarjeta = claseExtra(card, ['modal-card']);
     if (!hd.classList.contains('modal-hd--dark')) f.claro = true;
+    const nf = notasDe(m);
+    if (nf) f.notas = nf;
     if (igual(m, desde(CD.armarFicha(f, '')))) { fichas.push(f); fichasEl.push(m); }
   }
 
