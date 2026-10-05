@@ -17,7 +17,7 @@ entre `<>` y adjuntar el zip de `kit-base/` + el PDF del diseñador.
 ## ✂️ Copiar desde acá
 
 Vas a armar un curso SCORM del molde "Área Aprendizaje (COTO)" usando el
-kit adjunto (`kit-base/`, v1.9.115). Antes de escribir una línea, leé del
+kit adjunto (`kit-base/`, v1.9.116). Antes de escribir una línea, leé del
 kit:
 
 - **`MANUAL-DEL-MOLDE.md`, entero.** Son las reglas vigentes, cortas y
@@ -71,6 +71,17 @@ Con `--tipo simulador` suma `js/escenario.js` (el archivo de DATOS, que
 es lo primero que se llena) y `simulador-boilerplate.html` (el marcado
 del riel, la hoja de ruta y los pop-ups). El motor y su CSS ya viajan
 con el kit.
+
+**El curso nace como DATOS** (kit v1.9.116): además del index, quedan
+`curso.json` (el contenido: diapositivas, zonas, locución, índice,
+glosario, fichas, práctica, logros, medallas) y `marco.html` (el resto
+del index). **El contenido se escribe en `curso.json`, no en el
+`index.html`**, y el index se arma con `node tools/armar-curso.mjs .`
+después de cada cambio. Qué es cada campo: `tools/curso-datos.mjs` y la
+sección 11 del manual. Lo que el formato todavía no modela (una pieza
+propia del curso) va como `{ "tipo": "html" }` dentro de `curso.json`.
+`curso.js` lee la práctica, los logros y las medallas con
+`datosDelCurso()`; no se escriben ahí.
 
 **No adaptar el `index.html` de otro curso a mano.** Ese era el método
 viejo y es donde el contrato se rompe en silencio: `initPlayer()` no

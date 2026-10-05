@@ -33,6 +33,7 @@
    una lista copiada acá que podría quedar desactualizada. */
 
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 /* El catálogo canónico de íconos de TIPO vive en un archivo propio y es
@@ -48,7 +49,8 @@ const KIT_ROOT = path.join(AQUI, '..');
 function parseArgs(argv) {
   const out = { _: [] };
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === '--titulo') out.titulo = argv[++i];
+    if (argv[i] === '--sin-datos') out.sinDatos = true;
+    else if (argv[i] === '--titulo') out.titulo = argv[++i];
     else if (argv[i] === '--cat') out.cat = argv[++i];
     else if (argv[i] === '--tipo') out.tipo = argv[++i];
     else out._.push(argv[i]);
@@ -534,6 +536,30 @@ fs.writeFileSync(
     JSON.stringify(registroDeVersion(KIT_ROOT, destinoAbs), null, 2) + '\n');
 }
 
+/* ---- El curso nace como DATOS (kit-base v1.9.116, cierre de la Fase 1) ----
+   Se pasa el index recién generado por `extraer-curso.mjs`: queda
+   `curso.json` (el contenido) + `marco.html` (el resto), y el index pasa a
+   ser un archivo ARMADO (`armar-curso.mjs`). El extractor verifica que
+   armar desde los datos dé el mismo curso; si algo falla —por ejemplo, no
+   hay Chromium en la máquina— el curso queda como antes, con el index a
+   mano, y se avisa. `--sin-datos` lo saltea a propósito. */
+let comoDatos = false;
+if (!args.sinDatos) {
+  const r = spawnSync(process.execPath, [path.join(AQUI, 'extraer-curso.mjs'), destinoAbs], { encoding: 'utf8' });
+  comoDatos = r.status === 0 && fs.existsSync(path.join(destinoAbs, 'curso.json'));
+  /* Y el index se vuelve a escribir DESDE los datos: es el mismo curso
+     (el extractor lo verificó), pero así es literalmente el archivo armado
+     y `actualizar-kit` no lo toma por editado a mano. */
+  if (comoDatos) {
+    const a = spawnSync(process.execPath, [path.join(AQUI, 'armar-curso.mjs'), destinoAbs], { encoding: 'utf8' });
+    comoDatos = a.status === 0;
+  }
+  if (!comoDatos) {
+    console.warn('⚠️ No se pudo pasar el curso a datos (curso.json + marco.html); queda con el index.html a mano.\n  ' +
+      (((r.stderr || '') + (r.stdout || '')).split('\n').find((l) => /Error|✗/.test(l)) || 'sin detalle').trim().slice(0, 200));
+  }
+}
+
 console.log(`✓ Curso creado en ${destinoAbs}`);
 if (esSimulador) {
   console.log('  Tipo SIMULADOR: `js/escenario.js` (los datos) y `simulador-boilerplate.html`');
@@ -542,5 +568,11 @@ if (esSimulador) {
   console.log('  las proporciones salen de ahí — ver CLAUDE.md §7.27.');
 }
 console.log(`  index.html generado: chrome completo y cableado + ${SECCIONES.length} diapositivas vacías.`);
+if (comoDatos) {
+  console.log('  El curso está como DATOS: el contenido se edita en curso.json (el resto del index en marco.html)');
+  console.log('  y el index se arma con `node tools/armar-curso.mjs .`. No editar index.html a mano.');
+}
 console.log('  Siguiente: CLAUDE.md §7 pasos 1-2 (PDF → decidir captura vs. HTML real por');
-console.log('  diapositiva), después llenar las <section data-slide> y escribir js/curso.js.');
+console.log(comoDatos
+  ? '  diapositiva), después llenar las diapositivas en curso.json y escribir js/curso.js.'
+  : '  diapositiva), después llenar las <section data-slide> y escribir js/curso.js.');

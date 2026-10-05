@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.115**.
+Vigente para **kit-base v1.9.116**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -61,6 +61,10 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   elaborados, flota-propia, gestion-comercial, mantenimiento,
   no-alimentos, recursos-humanos, salon, seguridad, seguridad-higiene,
   servicio-medico, sistemas, tci, zona-cumples, zona-e, zona-gourmet.
+- **El curso nace como datos** (`curso.json` + `marco.html`, v1.9.116):
+  el contenido se escribe en `curso.json` y el index se arma con
+  `node tools/armar-curso.mjs <carpeta>`. Ver la sección 11. Con
+  `--sin-datos` sale el index a mano de antes (§7.65).
 - **Recién generado tiene que dar la suite entera en verde**
   (`npm test`). Si no, es un bug del kit: se releva antes de seguir.
 - **El curso sabe de qué versión del kit es**: `kit-version.json`, con
@@ -327,7 +331,7 @@ python3 tools/build-zip.py                                 # el zip para el LMS
 
 ---
 
-## 11 · El curso como datos (en construcción, Fase 1)
+## 11 · El curso como datos
 
 - **Un curso puede guardarse como `curso.json` + `marco.html`** en vez de
   un index escrito a mano: el contenido (diapositivas, zonas, locución,
@@ -353,8 +357,13 @@ python3 tools/build-zip.py                                 # el zip para el LMS
 - **Los rangos de medalla del cierre no se escriben**: salen de
   `medallas`. Solo un curso que los cuenta de otra forma (en logros, por
   ejemplo) los trae en `rangos` (§7.63).
-- **Por ahora los cursos se siguen haciendo como siempre.** Falta que
-  `new-course.mjs` arranque un curso directamente como datos (§7.63).
+- **Los cursos nuevos nacen como datos** (v1.9.116). Los que ya existen
+  pueden pasarse con `extraer-curso.mjs` cuando se los retome; no es
+  obligatorio (§7.65).
+- **`initVideoPlayer()` se llama siempre** (lo hace la plantilla): el
+  reproductor del pop-up está en el chrome de todo curso. Llamarla dos
+  veces no rompe nada; la segunda solo engancha disparadores nuevos
+  (§7.65).
 
 ---
 
@@ -369,10 +378,12 @@ python3 tools/build-zip.py                                 # el zip para el LMS
 - **Se porta por partes, nunca se copia un archivo encima.**
 - **Algo sube al kit cuando lo necesita un segundo curso** (§4 del
   diario).
-- **Cada versión se prueba contra DOS cursos**: el sintético del arnés y
+- **Cada versión se prueba contra TRES cursos**: el sintético del arnés,
   el curso de prueba real (`sh curso-prueba/probar.sh`, que arma una copia
-  de "Prevención cardiovascular" con el kit actual y corre la suite). Los
-  dos en verde antes de entregar (§7.55).
+  de "Prevención cardiovascular" con el kit actual y corre la suite) y un
+  curso RECIÉN GENERADO con `new-course.mjs` (el arnés está enriquecido a
+  mano y esconde lo que la plantilla deja sin cablear). Los tres en verde
+  antes de entregar (§7.55, §7.65).
 - **Todo test nuevo se prueba en las dos direcciones**: verde con el kit
   sano, ROJO con el bug puesto a propósito. Un test que no se vio fallar
   no se sabe si mira algo (§7.13).

@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.115** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.116** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -408,6 +408,17 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.116 — cierre de la Fase 1: los cursos nacen como datos
+
+Ver CLAUDE.md §7.65.
+
+- **`new-course.mjs` arma el curso como `curso.json` + `marco.html`** (con
+  `--sin-datos`, como antes). Tipo de diapositiva nuevo: `texto`.
+- **Bug de la plantilla**: `initVideoPlayer()` venía comentado y un curso
+  nuevo con su primer video quedaba con el reproductor sin controles.
+  Ahora se llama siempre, y llamarlo dos veces ya no duplica la barra.
+- La suite se corre también sobre un curso recién generado.
 
 ### v1.9.115 — Fase 1: el formato crece con lo que los cursos repiten
 

@@ -225,6 +225,12 @@ const r = await page.evaluate((html) => { try {
         atributosVideo: resto(v, ['class', 'playsinline', 'preload', 'poster', 'aria-hidden']),
         atributosTap: resto(shot.children[1], ['class', 'type', 'hidden']),
         contenidoTap: interno(shot.children[1]) || undefined };
+    } else if (cls === 'slide' && h.length >= 1 && h[0].matches('h2[data-slide-title]:not(.sr-only)') && h[0].attributes.length === 1 &&
+        h.slice(1).every((x, k, arr) => (x.tagName === 'P' && !x.attributes.length) ||
+          (k === arr.length - 1 && x.matches('div.d-confetti#d-confetti')))) {
+      d = { id: base.id, tipo: 'texto', titulo: interno(h[0]),
+        parrafos: h.slice(1).filter((x) => x.tagName === 'P').map(interno) };
+      if (sec.querySelector(':scope > .d-confetti')) d.confeti = true;
     } else if (cls === 'slide slide-cierre d-shot-slide') {
       d = leerCierre(sec, base);
     } else if (cls === 'slide' && h.length === 1 && h[0].matches('div.slide-inner') && h[0].attributes.length === 1 &&

@@ -1383,6 +1383,15 @@
     var popupId = opts.popupId || 'video-player';
     var visto = vistoAPI(opts);
     if (!player) return;
+    /* Una SEGUNDA llamada no vuelve a montar nada (kit-base v1.9.116):
+       solo engancha los disparadores nuevos. Antes cada llamada sumaba
+       otra barra de controles y otro juego de escuchas sobre el mismo
+       reproductor, y el aviso de "Recuperando…" se prendía en la barra
+       que nadie veía. Pasó cuando la plantilla de curso.js empezó a
+       llamarla siempre y `reproductor-video`, en un curso sin video,
+       inyecta su disparador y la llama otra vez. Las opciones de la
+       segunda llamada se ignoran: valen las de la primera. */
+    if (player.__cotoVP) { player.__cotoVP.enganchar(); return; }
 
     player.addEventListener('error', function () { mostrarErrorVideo(player); });
     sinPiP(player); // ver el comentario largo de `sinPiP` arriba
@@ -1565,11 +1574,17 @@
     }
     reproductorPopup = { abrir: abrir, popupId: popupId, player: player };
 
-    document.querySelectorAll('[data-video-play]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        abrir(btn.getAttribute('data-video'), btn.getAttribute('data-video-title'));
+    function enganchar() {
+      document.querySelectorAll('[data-video-play]').forEach(function (btn) {
+        if (btn.__cotoVP) return;
+        btn.__cotoVP = true;
+        btn.addEventListener('click', function () {
+          abrir(btn.getAttribute('data-video'), btn.getAttribute('data-video-title'));
+        });
       });
-    });
+    }
+    player.__cotoVP = { enganchar: enganchar };
+    enganchar();
 
     // Al cerrar el pop-up hay que soltar el archivo: sin esto el video
     // sigue descargando/sonando de fondo en algunos navegadores.

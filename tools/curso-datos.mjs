@@ -127,6 +127,7 @@ const CLASE_TIPO = {
   lamina: 'slide d-shot-slide d-shot-slide--bg-layered',
   'video-fondo': 'slide d-shot-slide d-shot-slide--bg-video',
   practica: 'slide',
+  texto: 'slide',
   cierre: 'slide slide-cierre d-shot-slide'
 };
 
@@ -215,6 +216,14 @@ export function armarDiapositiva(d, i, ind = '    ', medallas) {
      preguntas (cardio pone ahí "esto no es la evaluación del curso").
      Las preguntas no van acá: son `practica.banco`, en los datos. */
   if (d.tipo === 'cierre') return abre + armarCierre(d, ind, medallas) + cierra;
+  /* `texto` (v1.9.116): título VISIBLE y párrafos. Es lo que arma
+     `new-course.mjs` en cada diapositiva antes de que tenga contenido real;
+     un curso puede dejarla así si la diapositiva es de puro texto. */
+  if (d.tipo === 'texto') {
+    return abre + `${ind}  <h2 data-slide-title>${d.titulo}</h2>\n` +
+      (d.parrafos || []).map((t) => `${ind}  <p>${t}</p>\n`).join('') +
+      (d.confeti ? `${ind}  <div class="d-confetti" id="d-confetti" aria-hidden="true"></div>\n` : '') + cierra;
+  }
   if (d.tipo === 'practica') {
     return abre + `${ind}  <div class="slide-inner">\n` +
       (d.antetitulo != null ? `${ind}    <span class="slide-eyebrow">${d.antetitulo}</span>\n` : '') +

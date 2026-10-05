@@ -15065,3 +15065,66 @@ La diapositiva de factores (que tiene `data-shot-swap` en el `.d-shot`)
 pasa de `html` a `lamina`, con sus pestañas como zona `html`: cardio
 queda con las 20 diapositivas en datos. El `curso.json` del curso de
 prueba se actualizó con el extractor nuevo; el marco no cambió.
+
+## 7.65 Cierre de la Fase 1: los cursos nacen como datos (kit-base v1.9.116)
+
+### `new-course.mjs` arma el curso como `curso.json` + `marco.html`
+
+Después de generar el index como siempre, lo pasa por
+`extraer-curso.mjs` (que verifica que armar desde los datos dé el mismo
+curso) y vuelve a escribir el index con `armar-curso.mjs`, así es
+literalmente el archivo armado y `actualizar-kit` no lo toma por editado
+a mano. Si el paso falla (por ejemplo, una máquina sin Chromium), el
+curso queda con el index a mano de siempre y se avisa con la línea del
+error. `--sin-datos` lo saltea a propósito. Probado las tres cosas: con
+datos (7/7 diapositivas en datos, sin aviso de `actualizar-kit`), sin
+Chromium (`CHROMIUM_PATH` inexistente → aviso y curso a mano) y con
+`--sin-datos`.
+
+Para que un curso recién generado no quede como HTML tal cual, el formato
+suma el tipo **`texto`**: título VISIBLE y párrafos (más el confeti del
+cierre provisorio), que es lo que arma el generador en cada diapositiva
+antes de que tenga contenido real.
+
+La plantilla de `curso.js` lee los logros con `datosDelCurso('logros', [])`
+y el ejemplo de la práctica muestra `datosDelCurso('practica', {})`.
+
+El prompt de curso nuevo y el manual dicen ahora: el contenido se
+escribe en `curso.json`, y el index se arma.
+
+### Bug del kit encontrado al correr la suite sobre un curso nuevo
+
+Un curso recién generado daba ROJO en `reproductor-video`: "el
+reproductor del pop-up no tiene barra propia: `montarControles()` no se
+está llamando". También con `--sin-datos`, o sea que no era del formato:
+la plantilla de `curso.js` traía `initVideoPlayer()` COMENTADO ("solo si
+el curso tiene video"), pero el `#d-video-player` está en el chrome de
+TODO curso. Un curso nuevo que sumaba su primer video quedaba con el
+reproductor sin controles propios hasta que alguien se acordara. El
+arnés no lo mostraba porque su script de armado (`enriquecer.py`) le
+agrega esa llamada a mano: el verde del arnés escondía el hueco de la
+plantilla. Es la falla de siempre: la pieza está y el cable no.
+
+Arreglado en dos partes:
+- la plantilla llama `initVideoPlayer({})` siempre;
+- `initVideoPlayer` (coto-media.js) tolera una SEGUNDA llamada: no monta
+  otra barra ni otro juego de escuchas, solo engancha los disparadores
+  nuevos. Sin esto, con la plantilla llamándola y el test llamándola de
+  nuevo al inyectar su disparador, quedaban dos barras y el aviso de
+  "Recuperando el video…" se prendía en la que nadie mira (rojo en el
+  punto M10 del test, medido). Con el arreglo: verde en el curso nuevo y
+  en el arnés.
+
+**Regla nueva para el kit:** la suite se corre también sobre un curso
+RECIÉN GENERADO, no solo sobre el arnés (que está enriquecido a mano) y
+el curso de prueba. Es la única forma de ver lo que la plantilla deja
+sin cablear.
+
+### Estado de la Fase 1
+
+Cerrada: el formato cubre diapositivas de lámina, video de fondo,
+práctica, cierre y texto; zonas, locución, índice, glosario, fichas,
+práctica, logros y medallas; el extractor convierte los cinco cursos sin
+perder nada; los cursos nuevos nacen como datos. Lo que queda como HTML
+son piezas propias de un solo curso. Lo siguiente es la Fase 2: el
+editor visual sobre `curso.json`.

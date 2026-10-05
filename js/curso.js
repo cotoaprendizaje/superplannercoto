@@ -57,12 +57,13 @@
                no 'el-alumno-abrio-todas-las-fichas'.
        ic    · emoji de la tarjeta obtenida (bloqueada muestra 🔒).
        txt   · qué logró, en pasado, una vez obtenido.
-       pista · qué hay que hacer, mientras sigue bloqueado. */
-  var BADGES = [
-    // { id: 'explorador', nom: 'Explorador', ic: '🔎',
-    //   txt: 'Abriste todas las fichas del curso.',
-    //   pista: 'Abrí todas las fichas para desbloquearlo.' },
-  ];
+       pista · qué hay que hacer, mientras sigue bloqueado.
+     El catálogo va en `curso.json` → `logros` (Fase 1, kit v1.9.113): el
+     armador lo pone en el index y esto lo lee. Ejemplo de una entrada:
+       { "id": "explorador", "nom": "Explorador", "ic": "🔎",
+         "txt": "Abriste todas las fichas del curso.",
+         "pista": "Abrí todas las fichas para desbloquearlo." } */
+  var BADGES = window.datosDelCurso ? datosDelCurso('logros', []) : [];
   var Logros = null;   // lo crea boot(), cuando el DOM ya existe
 
   /* Puntos y logros viajan en las claves `p` y `b` — las MISMAS que ya
@@ -332,8 +333,16 @@
     //   onPerder: function (porque) { if (window.XAPI) XAPI.failed(COURSE_SLUG, porque); }
     // });
 
-    // Video rectangular en pop-up, y video de una capa [data-layers]:
-    // initVideoPlayer({ … });
+    /* El reproductor del pop-up de video (`#d-video-player`) viene en el
+       chrome de TODO curso, así que se inicializa siempre (kit-base
+       v1.9.116). Estuvo comentado hasta acá: un curso recién generado al
+       que se le sumaba su primer video tenía el reproductor sin controles
+       propios —`montarControles()` nunca corría— y `reproductor-video` lo
+       marcaba en rojo. El curso del arnés no lo mostraba porque su script
+       de armado agregaba la llamada a mano. Pasarle `{ seen, markSeen }`
+       si el curso exige ver los videos para avanzar. */
+    initVideoPlayer({});
+    // Video de una capa [data-layers]:
     // initLayerVideos({ … });
     // Precarga del contenido de un pop-up antes de abrirlo:
     // initPopupPrefetch();
@@ -350,7 +359,9 @@
     // initInlineCircleVideos({ … });
 
     // Solo si el curso tiene mini-quiz/minijuego (coto-quiz.js):
-    // initMiniQuiz({ bank: …, onFirstFinish: function (score) { … } });
+    // El banco va en curso.json → practica (banco, porIntento, mensajes):
+    // var PRACTICA = datosDelCurso('practica', {});
+    // initMiniQuiz({ bank: PRACTICA.banco, size: PRACTICA.porIntento, onFirstFinish: function (score) { … } });
 
     // Cierre (coto-cierre.js):
     // initCierreCelebration({ … });
