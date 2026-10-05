@@ -15011,3 +15011,57 @@ es la medida de avance de la Fase 1 de acá en adelante.
 piezas propias. Verificado contra el cardio de v1.9.113: las 20
 diapositivas sin cambios en `visual-regress` (dos corridas), ida y vuelta
 exacta, y las dos suites en verde.
+
+## 7.64 Fase 1: el formato crece con lo que los cursos repiten (kit-base v1.9.115)
+
+### `extraer-curso.mjs --porque`
+
+Para cada pieza que queda como HTML, el extractor dice por qué: "forma
+no reconocida" (con la estructura que encontró) o la PRIMERA diferencia
+entre la original y la que arma el formato. Corrido sobre los cinco
+cursos, agrupado por causa, es la lista de trabajo de la Fase 1: se
+suma al formato lo que se repite, no lo que tiene un curso solo.
+
+### Lo que se sumó (todo medido en al menos dos cursos)
+
+- **Atributos extra en la lámina**: `atributosShot` (lo que el curso le
+  cuelga al `.d-shot`: `data-doc-slide`, `data-shot-swap`…) y
+  `atributosImagen` (`loading="lazy"`, un `id`). Seguridad de la
+  información tenía TODAS sus láminas con `loading="lazy"`.
+- **Variantes del video de fondo**: `precarga` (`preload="auto"`, anterior
+  a v1.9.99), `oculto: false` (sin `aria-hidden`), póster opcional,
+  `atributosVideo`, y el botón de audio con rótulo o contenido propios
+  (`atributosTap`, `contenidoTap`: marcado anterior a v1.9.83).
+- **Zonas**: `datos` también en `popup` (NOA: `data-ficha-trigger`) y
+  `adorno` (HTML después del texto: el tilde de "ya lo viste").
+- **Índice**: el objetivo sin `diapo` (progreso contado por grupo,
+  v1.9.98). Tres cursos quedaban con el índice entero como HTML por eso.
+- **Fichas**: encabezado claro (`claro`), `claseModal`, `claseTarjeta`.
+  Las ventanas del chrome del kit (índice, glosario, logros, recursos,
+  reproductor) se excluyen por nombre: son del marco.
+
+### Cobertura
+
+| curso | diapositivas | zonas | índice | v1.9.114 → v1.9.115 |
+|---|---|---|---|---|
+| Prevención cardiovascular | 20/20 | 22/25 | sí | 19 → 20 diapositivas |
+| Seguridad alimentaria | 21/26 | 6/22 | no | 17 → 21 |
+| Pedidos de PLU set | 11/14 | 12/14 | sí | igual |
+| Uso de Sucursales 3 - NOA | 11/12 | 10/16 | sí (antes no) | 7 → 11 |
+| Seguridad de la información | 16/21 | 23/62 | sí (antes no) | 0 → 16 |
+
+En los cinco, armar desde los datos sigue dando el mismo curso.
+
+Lo que queda como HTML es, en su mayoría, pieza PROPIA de cada curso:
+las piezas que se revelan de Seguridad de la información (28 de sus
+zonas), los paneles de información y los repasos de alimentaria, los
+minijuegos, las 10 ventanas con lámina de NOA (`modal-card--shot`, un
+patrón de un solo curso). Esas no se modelan hasta que un segundo curso
+las use.
+
+### Cardio
+
+La diapositiva de factores (que tiene `data-shot-swap` en el `.d-shot`)
+pasa de `html` a `lamina`, con sus pestañas como zona `html`: cardio
+queda con las 20 diapositivas en datos. El `curso.json` del curso de
+prueba se actualizó con el extractor nuevo; el marco no cambió.

@@ -1,6 +1,6 @@
 {
   "name": "kit-base-coto-aprendizaje",
-  "version": "1.9.114",
+  "version": "1.9.115",
   "private": true,
   "description": "Herramientas de verificación (Playwright) para cursos SCORM del molde Área Aprendizaje (COTO). Ver README.md y CLAUDE.md.",
   "scripts": {

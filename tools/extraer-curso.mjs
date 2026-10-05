@@ -29,7 +29,11 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright-core';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
-const carpeta = process.argv[2];
+const carpeta = process.argv.slice(2).find((a) => !a.startsWith('--'));
+/* `--porque`: por cada pieza que quedó como HTML, la primera diferencia
+   entre la original y la que arma el formato. Es la lista de trabajo
+   para hacer crecer el formato. */
+const POR_QUE = process.argv.includes('--porque');
 if (!carpeta) {
   console.error('Uso: node tools/extraer-curso.mjs <carpeta-del-curso>');
   process.exit(2);
@@ -74,7 +78,25 @@ const r = await page.evaluate((html) => { try {
   // El contenedor (el <nav>, el <dl>) queda en el marco: se compara el
   // contenido armado DENTRO de una copia vacía del contenedor original.
   const dentroDe = (el, interior) => { const c = el.cloneNode(false); c.innerHTML = interior; return c; };
-  const igual = (original, armado) => !!armado && CD.mismaHuella(CD.huellaDom(original), CD.huellaDom(armado));
+  /* `igual` además se acuerda de la PRIMERA diferencia que encontró: es el
+     "por qué" de cada pieza que queda como HTML (`--porque`). */
+  let ultimoMotivo = '';
+  const igual = (original, armado) => {
+    if (!armado) { ultimoMotivo = 'el armador no pudo armarla'; return false; }
+    const a = CD.huellaDom(original), b = CD.huellaDom(armado);
+    if (CD.mismaHuella(a, b)) return true;
+    const n = Math.max(a.filas.length, b.filas.length);
+    for (let i = 0; i < n; i++) {
+      if (a.filas[i] !== b.filas[i]) {
+        ultimoMotivo = `original «${(a.filas[i] || '(nada)').trim().slice(0, 140)}» / armada «${(b.filas[i] || '(nada)').trim().slice(0, 140)}»`;
+        return false;
+      }
+    }
+    ultimoMotivo = 'mismo marcado, distinto texto (espacios entre palabras)';
+    return false;
+  };
+  const forma = (el) => `forma no reconocida: <${el.tagName.toLowerCase()} class="${el.getAttribute('class') || ''}"> con ` +
+    (Array.from(el.children).map((c) => c.tagName.toLowerCase() + (c.className && typeof c.className === 'string' ? '.' + c.className.trim().split(/\s+/).join('.') : '')).join(', ') || 'nada adentro');
   const hijos = (el) => Array.from(el.children);
 
   /* ---- zonas ---- */
@@ -107,6 +129,11 @@ const r = await page.evaluate((html) => { try {
         clase: claseExtra(el, base), ...posDe(el) };
     } else if (el.matches('button.d-shot-hit[data-popup-trigger]')) {
       z = { tipo: 'popup', abre: el.getAttribute('data-popup-trigger'), texto, clase: claseExtra(el, ['d-shot-hit']), ...posDe(el) };
+      const extra = {};
+      for (const a of el.attributes) {
+        if (a.name.startsWith('data-') && !['data-hit', 'data-popup-trigger', 'data-l', 'data-t', 'data-w', 'data-h'].includes(a.name)) extra[a.name.slice(5)] = a.value;
+      }
+      if (Object.keys(extra).length) z.datos = extra;
     } else if (el.matches('button.d-shot-hit')) {
       const datos = {};
       for (const a of el.attributes) {
@@ -114,12 +141,18 @@ const r = await page.evaluate((html) => { try {
       }
       z = { tipo: 'boton', datos, texto, clase: claseExtra(el, ['d-shot-hit']), ...posDe(el) };
     }
+    if (z && (z.tipo === 'popup' || z.tipo === 'boton')) {
+      const tras = [];
+      let pasado = false;
+      for (const c of hijos(el)) { if (pasado) tras.push(externo(c)); if (c === sr) pasado = true; }
+      if (tras.length) z.adorno = tras.join('');
+    }
     if (z) {
       let armado = null;
       try { armado = desde(CD.armarZona(z, '')); } catch (e) { armado = null; }
       if (igual(el, armado)) return z;
     }
-    return { tipo: 'html', html: externo(el) };
+    return { tipo: 'html', html: externo(el), _motivo: z ? ultimoMotivo : forma(el) };
   }
 
   /* ---- locución ---- */
@@ -135,7 +168,7 @@ const r = await page.evaluate((html) => { try {
       } else ok = false;
     }
     if (ok && el.attributes.length === 1 && el.className === 'sr-only' && igual(el, desde(CD.armarNarracion(bloques, '')))) return bloques;
-    return { html: externo(el) };
+    return { html: externo(el), _motivo: ok ? ultimoMotivo : forma(el) };
   }
 
   /* ---- diapositivas ---- */
@@ -162,7 +195,14 @@ const r = await page.evaluate((html) => { try {
     const cls = sec.getAttribute('class');
     const h = hijos(sec);
     const shot = h[1];
-    const shotLimpio = shot && shot.matches('div.d-shot[data-shot]') && shot.attributes.length === 2 && shot.className === 'd-shot';
+    const shotLimpio = shot && shot.matches('div.d-shot[data-shot]') && shot.className === 'd-shot';
+    /* Lo que el curso le cuelga al contenedor de la lámina o a su imagen
+       (`data-doc-slide`, `loading="lazy"`…): viaja tal cual. */
+    const resto = (el, conocidos) => {
+      const o = {};
+      for (const a of el.attributes) if (!conocidos.includes(a.name)) o[a.name] = a.value;
+      return Object.keys(o).length ? o : undefined;
+    };
     const narr = h[2];
     const formaOk = h.length >= 2 && h.length <= 3 && h[0].matches('h2[data-slide-title].sr-only') && shotLimpio &&
       (!narr || narr.matches('div.sr-only'));
@@ -170,12 +210,21 @@ const r = await page.evaluate((html) => { try {
     if (formaOk && cls === 'slide d-shot-slide d-shot-slide--bg-layered' && shot.firstElementChild &&
         shot.firstElementChild.matches('img.d-shot-img')) {
       d = { id: base.id, tipo: 'lamina', titulo: base.titulo, imagen: shot.firstElementChild.getAttribute('src'),
+        atributosShot: resto(shot, ['class', 'data-shot']),
+        atributosImagen: resto(shot.firstElementChild, ['class', 'src', 'alt', 'aria-hidden']),
         zonas: hijos(shot).slice(1).map(leerZona) };
     } else if (formaOk && cls === 'slide d-shot-slide d-shot-slide--bg-video' && shot.children.length === 2 &&
         shot.children[0].matches('video.d-shot-video') && shot.children[1].matches('button.d-shot-video-tap')) {
       const v = shot.children[0];
       const s = v.querySelector('source');
-      d = { id: base.id, tipo: 'video-fondo', titulo: base.titulo, video: s && s.getAttribute('src'), poster: v.getAttribute('poster') };
+      d = { id: base.id, tipo: 'video-fondo', titulo: base.titulo, video: s && s.getAttribute('src'),
+        poster: v.hasAttribute('poster') ? v.getAttribute('poster') : undefined,
+        precarga: v.getAttribute('preload') !== 'metadata' ? (v.getAttribute('preload') || undefined) : undefined,
+        oculto: v.getAttribute('aria-hidden') === 'true' ? undefined : false,
+        atributosShot: resto(shot, ['class', 'data-shot']),
+        atributosVideo: resto(v, ['class', 'playsinline', 'preload', 'poster', 'aria-hidden']),
+        atributosTap: resto(shot.children[1], ['class', 'type', 'hidden']),
+        contenidoTap: interno(shot.children[1]) || undefined };
     } else if (cls === 'slide slide-cierre d-shot-slide') {
       d = leerCierre(sec, base);
     } else if (cls === 'slide' && h.length === 1 && h[0].matches('div.slide-inner') && h[0].attributes.length === 1 &&
@@ -202,7 +251,7 @@ const r = await page.evaluate((html) => { try {
       try { armado = desde(CD.armarDiapositiva(d, i, '', datos.medallas)); } catch (e) { armado = null; }
       if (igual(sec, armado)) return d;
     }
-    const crudo = { id: base.id, tipo: 'html', clase: cls };
+    const crudo = { id: base.id, tipo: 'html', clase: cls, _motivo: d ? ultimoMotivo : forma(sec) };
     if (base.titulo !== undefined) crudo.titulo = base.titulo;
     for (const k of ['requisitos', 'avanceSolo', 'fin', 'atributos']) if (base[k] !== undefined) crudo[k] = base[k];
     crudo.html = interno(sec);
@@ -223,6 +272,9 @@ const r = await page.evaluate((html) => { try {
     const recap = q('.d-cierre-recap');
     if (!img || !recap) return null;
     const d = { id: base.id, tipo: 'cierre', titulo: base.titulo, imagen: img.getAttribute('src') };
+    const extraImg = {};
+    for (const a of img.attributes) if (!['class', 'src', 'alt', 'aria-hidden'].includes(a.name)) extraImg[a.name] = a.value;
+    if (Object.keys(extraImg).length) d.atributosImagen = extraImg;
     const lock = q(':scope > p.locked');
     if (lock) d.bloqueo = interno(lock);
     if (narr) d.narracion = leerNarracion(narr);
@@ -268,7 +320,7 @@ const r = await page.evaluate((html) => { try {
       if (h.id === 'd-sidenav-progress') continue;
       if (h.matches('.d-obj-progress')) {
         ix.objetivos = Array.from(h.querySelectorAll('.d-obj-pip')).map((p) => ({
-          letra: p.getAttribute('data-obj-pip'), diapo: p.getAttribute('data-obj-check'),
+          letra: p.getAttribute('data-obj-pip'), diapo: p.getAttribute('data-obj-check') || undefined,
           texto: (p.getAttribute('title') || '').replace(/^.*? · /, '')
         }));
       } else if (h.matches('span.d-sidenav-group')) {
@@ -312,15 +364,21 @@ const r = await page.evaluate((html) => { try {
   /* ---- fichas ---- */
   const fichasEl = [];
   const fichas = [];
+  /* Las ventanas del CHROME del kit (índice, glosario, logros, recursos,
+     reproductor) son del marco, no contenido, aunque tengan la misma forma. */
+  const DEL_MARCO = ['sidenav', 'glosario', 'logros', 'recursos', 'video-player'];
   for (const m of doc.querySelectorAll('.modal')) {
-    if (m.className !== 'modal') continue;
+    if (DEL_MARCO.includes(m.getAttribute('data-popup')) || /modal--drawer/.test(m.className)) continue;
     const card = m.querySelector(':scope > .modal-card');
-    const hd = card && card.querySelector(':scope > .modal-hd.modal-hd--dark');
+    const hd = card && card.querySelector(':scope > .modal-hd');
     const bd = card && card.querySelector(':scope > .modal-bd');
     const h3 = hd && hd.querySelector('h3');
-    if (!card || card.className !== 'modal-card' || !hd || !bd || !h3) continue;
+    if (!card || !hd || !bd || !h3) continue;
     const f = { id: m.getAttribute('data-popup'), etiqueta: m.getAttribute('aria-label'), titulo: interno(h3),
       clase: claseExtra(bd, ['modal-bd']), cuerpo: interno(bd) };
+    if (claseExtra(m, ['modal'])) f.claseModal = claseExtra(m, ['modal']);
+    if (claseExtra(card, ['modal-card'])) f.claseTarjeta = claseExtra(card, ['modal-card']);
+    if (!hd.classList.contains('modal-hd--dark')) f.claro = true;
     if (igual(m, desde(CD.armarFicha(f, '')))) { fichas.push(f); fichasEl.push(m); }
   }
 
@@ -427,6 +485,13 @@ const r = await page.evaluate((html) => { try {
   }
 
   /* ---- informe ---- */
+  informe.porque = {};
+  const sacarMotivo = (obj, rotulo) => { if (obj && obj._motivo) { informe.porque[rotulo] = obj._motivo; delete obj._motivo; } };
+  for (const d of diapositivas) {
+    sacarMotivo(d, `diapositiva "${d.id}"`);
+    (d.zonas || []).forEach((z, k) => sacarMotivo(z, `diapositiva "${d.id}", zona ${k + 1}`));
+    if (d.narracion && !Array.isArray(d.narracion)) sacarMotivo(d.narracion, `diapositiva "${d.id}", locución`);
+  }
   for (const d of diapositivas) {
     if (d.tipo === 'html') informe.comoHtml.push(`diapositiva "${d.id}"`);
     else {
@@ -458,5 +523,8 @@ console.log(`✓ ${path.join(carpeta, 'curso.json')} y marco.html escritos. Arma
 console.log(`  Pasaron a datos: ${r.informe.modeladas.length} piezas.`);
 if (r.informe.comoHtml.length) {
   console.log(`  Quedaron como HTML tal cual (${r.informe.comoHtml.length}):`);
-  for (const x of r.informe.comoHtml) console.log('    · ' + x);
+  for (const x of r.informe.comoHtml) {
+    console.log('    · ' + x);
+    if (POR_QUE && r.informe.porque[x]) console.log('        ' + r.informe.porque[x]);
+  }
 }

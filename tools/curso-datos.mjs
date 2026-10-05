@@ -80,9 +80,13 @@ export function armarZona(z, ind = '        ') {
   if (z.tipo === 'html') return ind + z.html;
   const sr = `<span class="sr-only">${z.texto}</span>`;
   if (z.tipo === 'popup' || z.tipo === 'boton') {
-    const d = z.tipo === 'popup' ? { 'data-popup-trigger': z.abre } : datos(z.datos);
+    /* `datos` en un popup: los `data-*` que el curso le cuelga además del
+       disparador (NOA: `data-ficha-trigger`, para su propio registro). */
+    const d = z.tipo === 'popup' ? { 'data-popup-trigger': z.abre, ...datos(z.datos) } : datos(z.datos);
+    /* `adorno`: HTML que el curso pone dentro del botón después del texto
+       (un tilde de "ya lo viste", por ejemplo). */
     return `${ind}<button${attrs({ class: clases('d-shot-hit', z.clase), 'data-hit': true, ...d, ...pos(z) })}>\n` +
-      `${ind}  ${sr}\n${ind}</button>`;
+      `${ind}  ${sr}\n` + (z.adorno != null ? `${ind}  ${z.adorno}\n` : '') + `${ind}</button>`;
   }
   if (z.tipo === 'video') {
     return `${ind}<button${attrs({ class: clases('d-shot-hit', z.clase), 'data-hit': true, 'data-video-play': true,
@@ -156,7 +160,7 @@ export function armarCierre(d, ind, medallas) {
   if (d.bloqueo != null) out += `${ind}  <p class="locked">${d.bloqueo}</p>\n`;
   out += `${ind}  <div class="d-cierre-shot" data-cierre-step="shot">\n` +
     `${ind}    <div class="d-shot" data-shot>\n` +
-    `${ind}      <img class="d-shot-img" src="${esc(d.imagen)}" alt="" aria-hidden="true">\n` +
+    `${ind}      <img${attrs({ class: 'd-shot-img', src: d.imagen, alt: '', 'aria-hidden': 'true', ...(d.atributosImagen || {}) })}>\n` +
     `${ind}    </div>\n` + armarNarracion(d.narracion, ind + '    ') +
     `${ind}  </div>\n` +
     `${ind}  <div class="slide-inner d-cierre-summary" data-cierre-step="summary" hidden>\n` +
@@ -222,15 +226,20 @@ export function armarDiapositiva(d, i, ind = '    ', medallas) {
   const h2 = `${ind}  <h2 data-slide-title class="sr-only">${d.titulo}</h2>\n`;
   let shot;
   if (d.tipo === 'lamina') {
-    shot = `${ind}  <div class="d-shot" data-shot>\n` +
-      `${ind}    <img class="d-shot-img" src="${esc(d.imagen)}" alt="" aria-hidden="true">\n` +
+    shot = `${ind}  <div${attrs({ class: 'd-shot', 'data-shot': true, ...(d.atributosShot || {}) })}>\n` +
+      `${ind}    <img${attrs({ class: 'd-shot-img', src: d.imagen, alt: '', 'aria-hidden': 'true', ...(d.atributosImagen || {}) })}>\n` +
       (d.zonas || []).map((z) => armarZona(z, ind + '    ') + '\n').join('') +
       `${ind}  </div>\n`;
   } else if (d.tipo === 'video-fondo') {
-    shot = `${ind}  <div class="d-shot" data-shot>\n` +
-      `${ind}    <video class="d-shot-video" playsinline preload="metadata" poster="${esc(d.poster)}" aria-hidden="true">\n` +
+    /* Variantes medidas en los cursos: `preload="auto"` (anterior a
+       v1.9.99), sin `aria-hidden`, sin póster, un `data-video` propio.
+       `precarga` y `oculto` cubren las dos primeras; lo demás va en
+       `atributosVideo`. */
+    shot = `${ind}  <div${attrs({ class: 'd-shot', 'data-shot': true, ...(d.atributosShot || {}) })}>\n` +
+      `${ind}    <video${attrs({ class: 'd-shot-video', playsinline: true, preload: d.precarga || 'metadata',
+        poster: d.poster == null ? null : d.poster, 'aria-hidden': d.oculto === false ? null : 'true', ...(d.atributosVideo || {}) })}>\n` +
       `${ind}      <source src="${esc(d.video)}" type="video/mp4">\n${ind}    </video>\n` +
-      `${ind}    <button class="d-shot-video-tap" type="button" hidden></button>\n` +
+      `${ind}    <button${attrs({ class: 'd-shot-video-tap', type: 'button', hidden: true, ...(d.atributosTap || {}) })}>${d.contenidoTap || ''}</button>\n` +
       `${ind}  </div>\n`;
   } else {
     throw new Error(`diapositiva "${d.id}": tipo desconocido "${d.tipo}"`);
@@ -254,7 +263,9 @@ export function armarIndice(ix, ind = '        ') {
   let out = `${ind}<p id="d-sidenav-progress" class="d-sidenav-progress" aria-live="polite"></p>\n`;
   if (ix.objetivos && ix.objetivos.length) {
     out += `${ind}<div class="d-obj-progress" aria-live="polite">\n` +
-      ix.objetivos.map((o) => `${ind}  <span class="d-obj-pip" data-obj-pip="${esc(o.letra)}" data-obj-check="${esc(o.diapo)}" title="${esc(o.letra + ' · ' + o.texto)}">${esc(o.letra)}</span>\n`).join('') +
+      /* `diapo` es opcional: desde v1.9.98 el progreso de un objetivo se
+         puede contar por GRUPO del índice, y entonces el pip no lo trae. */
+      ix.objetivos.map((o) => `${ind}  <span${attrs({ class: 'd-obj-pip', 'data-obj-pip': o.letra, 'data-obj-check': o.diapo || null, title: o.letra + ' · ' + o.texto })}>${esc(o.letra)}</span>\n`).join('') +
       `${ind}  <span class="d-obj-progress-lbl" data-obj-lbl></span>\n${ind}</div>\n`;
   }
   for (const g of ix.grupos) {
@@ -291,10 +302,13 @@ export function armarGlosario(lista, titulos, ind = '          ') {
 
 export function armarFicha(f, ind = '  ') {
   if (f.tipo === 'html') return ind + f.html;
-  return `${ind}<div class="modal" data-popup="${esc(f.id)}" role="dialog" aria-modal="true" aria-label="${esc(f.etiqueta)}">\n` +
+  /* Variantes medidas en los cursos (v1.9.115): encabezado claro
+     (`claro`), clases extra en la ventana (`claseModal`, PLU:
+     `modal--ficha`) o en la tarjeta (`claseTarjeta`, `d-wide`). */
+  return `${ind}<div class="${esc(clases('modal', f.claseModal))}" data-popup="${esc(f.id)}" role="dialog" aria-modal="true" aria-label="${esc(f.etiqueta)}">\n` +
     `${ind}  <div class="modal-back" data-popup-close></div>\n` +
-    `${ind}  <div class="modal-card">\n` +
-    `${ind}    <div class="modal-hd modal-hd--dark">\n` +
+    `${ind}  <div class="${esc(clases('modal-card', f.claseTarjeta))}">\n` +
+    `${ind}    <div class="${f.claro ? 'modal-hd' : 'modal-hd modal-hd--dark'}">\n` +
     `${ind}      <button class="modal-x" data-popup-close aria-label="Cerrar">✕</button>\n` +
     `${ind}      <h3 style="margin:0;color:inherit">${f.titulo}</h3>\n` +
     `${ind}    </div>\n` +

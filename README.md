@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.114** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.115** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -408,6 +408,18 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.115 — Fase 1: el formato crece con lo que los cursos repiten
+
+Ver CLAUDE.md §7.64.
+
+- **`extraer-curso.mjs --porque`**: dice por qué cada pieza quedó como HTML.
+- **El formato suma** atributos extra en láminas e imágenes (`loading="lazy"`),
+  variantes del video de fondo, datos y adornos en zonas, objetivos del
+  índice sin diapositiva y variantes de fichas.
+- **Cobertura**: Seguridad de la información pasa de 0 a 16 de 21
+  diapositivas; NOA de 7 a 11 de 12; alimentaria de 17 a 21 de 26;
+  cardio, 20 de 20.
 
 ### v1.9.114 — Fase 1, tercera parte: el cierre como datos
 
