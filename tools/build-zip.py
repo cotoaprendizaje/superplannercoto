@@ -67,8 +67,10 @@ import zipfile
 EXCLUIR_DIRS = {'node_modules', '.git', '__pycache__', '.pytest_cache', '.kit-anterior',
                 'curso-prueba'}
 EXCLUIR_ARCH = {'.DS_Store', 'Thumbs.db'}
+# `curso.json` y `marco.html` (v1.9.111): los DATOS de un curso armado con
+# `armar-curso.mjs`. El LMS solo necesita el `index.html` que salió de ellos.
 ARCHIVOS_DE_TRABAJO = {'PROMPT-CURSO-NUEVO.md', 'PROMPT-RETOMAR-CURSO.md', 'MANUAL-DEL-MOLDE.md', 'header-boilerplate.html',
-                       'simulador-boilerplate.html'}
+                       'simulador-boilerplate.html', 'curso.json', 'marco.html'}
 
 
 def juntar(raiz, excluir_nombres=()):

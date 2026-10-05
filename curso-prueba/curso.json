@@ -1,0 +1,880 @@
+{
+  "formato": 1,
+  "diapositivas": [
+    {
+      "id": "portada",
+      "tipo": "video-fondo",
+      "titulo": "Prevención cardiovascular",
+      "video": "video/portada.mp4",
+      "poster": "img/portada.webp",
+      "narracion": [
+        {
+          "texto": "Curso Prevención cardiovascular, Área Servicio Médico."
+        }
+      ]
+    },
+    {
+      "id": "objetivos",
+      "tipo": "lamina",
+      "titulo": "Introducción",
+      "imagen": "img/objetivos.webp",
+      "narracion": [
+        {
+          "texto": "La salud y prevención es un tema fundamental para nuestra compañía, por eso desarrollamos este curso, el cual te dará el conocimiento y las herramientas para que puedas conocer y prevenir las ENT, enfermedades no transmisibles. Estos conocimientos fueron desarrollados por el área de Servicio Médico Central, quienes están a tu disposición ante cualquier duda o necesidad."
+        },
+        {
+          "texto": "Objetivos de aprendizaje:"
+        },
+        {
+          "lista": [
+            "Identificar las principales enfermedades cardiovasculares.",
+            "Conocer los factores de riesgo asociados a estas enfermedades.",
+            "Aplicar hábitos saludables para prevenirlas."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "indice",
+      "tipo": "lamina",
+      "titulo": "Índice de contenidos",
+      "imagen": "img/indice.webp",
+      "requisitos": {
+        "popupAntes": "instrucciones"
+      },
+      "narracion": [
+        {
+          "texto": "Unidad 1: Enfermedades no transmisibles (ENT)."
+        },
+        {
+          "texto": "Contiene: ¿Qué son las ENT?, Las ENT en la región de las Américas, Fallecimiento por ENT en Argentina, Riesgo cardiovascular, Aterosclerosis, Factores de riesgo cardiovascular.",
+          "saltear": true
+        },
+        {
+          "texto": "Unidad 2: Las ENT y su prevención."
+        },
+        {
+          "texto": "Contiene: Colesterol alto, Hipertensión arterial, Diabetes, Obesidad, Sedentarismo, Tabaquismo.",
+          "saltear": true
+        }
+      ]
+    },
+    {
+      "id": "unidad1",
+      "tipo": "video-fondo",
+      "titulo": "Unidad 1 — Enfermedades no transmisibles (ENT)",
+      "video": "video/unidad1.mp4",
+      "poster": "img/unidad1.webp",
+      "avanceSolo": true
+    },
+    {
+      "id": "que-son-ent",
+      "tipo": "lamina",
+      "titulo": "¿Qué son las ENT?",
+      "imagen": "img/que-son-ent.webp",
+      "zonas": [
+        {
+          "tipo": "popup",
+          "abre": "ent-cardio",
+          "texto": "Ver más sobre enfermedades cardiovasculares",
+          "clase": "d-shot-hit--ent",
+          "l": 21.83,
+          "t": 62.14,
+          "w": 12.06,
+          "h": 26.75
+        },
+        {
+          "tipo": "popup",
+          "abre": "ent-cancer",
+          "texto": "Ver más sobre cáncer",
+          "clase": "d-shot-hit--ent",
+          "l": 39.84,
+          "t": 62.14,
+          "w": 6.23,
+          "h": 26.75
+        },
+        {
+          "tipo": "popup",
+          "abre": "ent-respiratorias",
+          "texto": "Ver más sobre enfermedades respiratorias crónicas",
+          "clase": "d-shot-hit--ent",
+          "l": 53.21,
+          "t": 62.14,
+          "w": 9.76,
+          "h": 26.75
+        },
+        {
+          "tipo": "popup",
+          "abre": "ent-diabetes",
+          "texto": "Ver más sobre diabetes",
+          "clase": "d-shot-hit--ent",
+          "l": 70,
+          "t": 62.14,
+          "w": 6.23,
+          "h": 26.75
+        }
+      ],
+      "requisitos": {
+        "popups": [
+          "ent-cardio",
+          "ent-cancer",
+          "ent-respiratorias",
+          "ent-diabetes"
+        ]
+      },
+      "narracion": [
+        {
+          "texto": "Las Enfermedades No Transmisibles, ENT, son afecciones de larga duración que no se transmiten de persona a persona, y representan uno de los mayores desafíos para la salud pública actual. Las ENT causan el 74% de las muertes en el mundo, más de 41 millones de personas al año. 1 de cada 3 de esas muertes ocurre en personas menores de 70 años. 4 de cada 5 personas mueren por alguna ENT. Estos son los principales tipos de ENT: enfermedades cardiovasculares, cáncer, enfermedades respiratorias crónicas y diabetes."
+        }
+      ]
+    },
+    {
+      "id": "ent-americas",
+      "tipo": "lamina",
+      "titulo": "Las ENT en la región de las Américas",
+      "imagen": "img/ent-americas.webp",
+      "zonas": [
+        {
+          "tipo": "boton",
+          "datos": {
+            "barra": "cardio"
+          },
+          "texto": "Enfermedades cardiovasculares: 36,7%",
+          "clase": "d-barra-fila",
+          "l": 47.62,
+          "t": 31.83,
+          "w": 39.29,
+          "h": 7.38
+        },
+        {
+          "tipo": "boton",
+          "datos": {
+            "barra": "cancer"
+          },
+          "texto": "Cáncer: 24,6%",
+          "clase": "d-barra-fila",
+          "l": 47.62,
+          "t": 39.21,
+          "w": 39.29,
+          "h": 7.38
+        },
+        {
+          "tipo": "boton",
+          "datos": {
+            "barra": "diabetes"
+          },
+          "texto": "Diabetes mellitus: 6,4%",
+          "clase": "d-barra-fila",
+          "l": 47.62,
+          "t": 46.59,
+          "w": 39.29,
+          "h": 7.38
+        },
+        {
+          "tipo": "boton",
+          "datos": {
+            "barra": "respiratorias"
+          },
+          "texto": "Enfermedades respiratorias: 8,6%",
+          "clase": "d-barra-fila",
+          "l": 47.62,
+          "t": 53.97,
+          "w": 39.29,
+          "h": 7.38
+        },
+        {
+          "tipo": "boton",
+          "datos": {
+            "barra": "otras"
+          },
+          "texto": "Otras ENT: 23,8%",
+          "clase": "d-barra-fila",
+          "l": 47.62,
+          "t": 61.35,
+          "w": 39.29,
+          "h": 7.38
+        },
+        {
+          "tipo": "html",
+          "html": "<div class=\"d-barra-cartel\" data-place=\"\" data-barra-cartel=\"\" data-l=\"47.62\" data-t=\"87.10\" data-w=\"40.16\" data-h=\"6.83\" hidden=\"\">\n          <p><b data-barra-name=\"\"></b> <span data-barra-txt=\"\"></span></p>\n        </div>"
+        }
+      ],
+      "narracion": [
+        {
+          "texto": "En América, las ENT son la principal causa de muerte, muy por encima de otras patologías: 5,2 millones de personas mueren al año por esta causa, lo que representa 8 de cada 10 fallecimientos en la región. Distribución del total de muertes por ENT, todas las edades: enfermedades cardiovasculares 36,7%, cáncer 24,6%, enfermedades respiratorias crónicas 8,6%, diabetes mellitus 6,4%, otras ENT 23,8%."
+        }
+      ]
+    },
+    {
+      "id": "fallecimiento-ent",
+      "tipo": "lamina",
+      "titulo": "Fallecimiento por ENT en Argentina",
+      "imagen": "img/fallecimiento-ent.webp",
+      "zonas": [
+        {
+          "tipo": "html",
+          "html": "<div class=\"d-shot-hit d-shot-hit--pie\" data-hit=\"\" data-pie=\"\" data-l=\"25.119\" data-t=\"34.921\" data-w=\"22.778\" data-h=\"45.556\">\n          <svg class=\"d-pie-svg\" viewBox=\"0 0 200 200\" role=\"group\" aria-label=\"Distribución de fallecimientos por ENT en Argentina\">\n            \n            <path class=\"d-pie-seg\" data-seg=\"corazon\" style=\"--bx:0.934;--by:-0.358\" fill=\"#008296\" d=\"M100 100 L100.00 0.00 A100 100 0 0 1 166.91 174.31 Z\" tabindex=\"0\" role=\"button\" aria-label=\"Enfermedades del corazón, 40 por ciento\"></path>\n            <path class=\"d-pie-seg\" data-seg=\"diabetes\" style=\"--bx:-0.407;--by:0.914\" fill=\"#1DB5BD\" d=\"M100 100 L166.91 174.31 A100 100 0 0 1 0.00 100.00 Z\" tabindex=\"0\" role=\"button\" aria-label=\"Diabetes, 35 por ciento\"></path>\n            <path class=\"d-pie-seg\" data-seg=\"cancer\" style=\"--bx:-0.707;--by:-0.707\" fill=\"#4FC3C7\" d=\"M100 100 L0 100 A100 100 0 0 1 100 0 Z\" tabindex=\"0\" role=\"button\" aria-label=\"Cáncer, 25 por ciento\"></path>\n          </svg>\n          \n          <div class=\"d-pie-card\" data-pie-card=\"\" hidden=\"\">\n            <p class=\"d-pie-card-pct\"><span data-pie-pct=\"\"></span><small>%</small></p>\n            <p class=\"d-pie-card-name\" data-pie-name=\"\"></p>\n            <p class=\"d-pie-card-txt\" data-pie-txt=\"\"></p>\n          </div>\n        </div>"
+        },
+        {
+          "tipo": "video-circulo",
+          "video": "video/fallecimiento-por-ent.mp4",
+          "tituloVideo": "Mensaje de nuestro especialista: fallecimiento por ENT en Argentina",
+          "texto": "Reproducir video: mensaje de nuestro especialista sobre fallecimiento por ENT en Argentina",
+          "play": {
+            "tam": "20.0%",
+            "x": "50.7%",
+            "y": "49.2%"
+          },
+          "encuadre": "center",
+          "aro": false,
+          "l": 66.27,
+          "t": 23.25,
+          "w": 15.99,
+          "h": 31.98
+        }
+      ],
+      "requisitos": {
+        "visto": [
+          "video/fallecimiento-por-ent.mp4"
+        ]
+      },
+      "narracion": [
+        {
+          "texto": "Esta es la distribución de los fallecimientos por ENT en Argentina, según su causa: enfermedades del corazón 40%, cáncer 25%, diabetes 35%. Escuchá el mensaje de nuestro especialista."
+        }
+      ]
+    },
+    {
+      "id": "riesgo-cardiovascular",
+      "tipo": "lamina",
+      "titulo": "Riesgo cardiovascular",
+      "imagen": "img/riesgo-cardiovascular.webp",
+      "zonas": [
+        {
+          "tipo": "video",
+          "video": "video/riesgo-cardiovascular.mp4",
+          "tituloVideo": "Riesgo cardiovascular",
+          "texto": "Reproducir video: riesgo cardiovascular — enfermedad coronaria, ACV, arteriopatía periférica.",
+          "play": {
+            "tam": "14.1%",
+            "x": "49.9%",
+            "y": "41.8%"
+          },
+          "l": 33.41,
+          "t": 39.92,
+          "w": 33.49,
+          "h": 43.81
+        }
+      ],
+      "requisitos": {
+        "visto": [
+          "video/riesgo-cardiovascular.mp4"
+        ]
+      },
+      "narracion": [
+        {
+          "texto": "En el siguiente video aprenderemos cuáles son los riesgos cardiovasculares y los factores que los producen."
+        }
+      ]
+    },
+    {
+      "id": "aterosclerosis",
+      "tipo": "lamina",
+      "titulo": "Aterosclerosis",
+      "imagen": "img/aterosclerosis.webp",
+      "zonas": [
+        {
+          "tipo": "boton",
+          "datos": {
+            "etapa": "1"
+          },
+          "texto": "Etapa 1: funciones normales",
+          "clase": "d-shot-hit--etapa",
+          "l": 53.37,
+          "t": 11.51,
+          "w": 30.56,
+          "h": 15.16
+        },
+        {
+          "tipo": "boton",
+          "datos": {
+            "etapa": "2"
+          },
+          "texto": "Etapa 2: disfunción endotelial",
+          "clase": "d-shot-hit--etapa",
+          "l": 53.37,
+          "t": 31.98,
+          "w": 30.56,
+          "h": 15
+        },
+        {
+          "tipo": "boton",
+          "datos": {
+            "etapa": "3"
+          },
+          "texto": "Etapa 3: formación de placa",
+          "clase": "d-shot-hit--etapa",
+          "l": 53.37,
+          "t": 52.46,
+          "w": 30.56,
+          "h": 15.56
+        },
+        {
+          "tipo": "boton",
+          "datos": {
+            "etapa": "4"
+          },
+          "texto": "Etapa 4: trombosis",
+          "clase": "d-shot-hit--etapa",
+          "l": 53.37,
+          "t": 72.94,
+          "w": 30.56,
+          "h": 15.48
+        },
+        {
+          "tipo": "video-circulo",
+          "video": "video/aterosclerosis.mp4",
+          "tituloVideo": "Aterosclerosis",
+          "texto": "Reproducir video: aterosclerosis",
+          "play": {
+            "tam": "19.5%",
+            "x": "50.4%",
+            "y": "50.4%"
+          },
+          "encuadre": "center",
+          "aro": false,
+          "l": 23.13,
+          "t": 55.32,
+          "w": 15.68,
+          "h": 31.35
+        }
+      ],
+      "requisitos": {
+        "visto": [
+          "video/aterosclerosis.mp4"
+        ]
+      },
+      "narracion": [
+        {
+          "texto": "La aterosclerosis ocurre cuando se acumula placa de colesterol en las arterias. Con el tiempo, esa placa va tapando el paso de la sangre, hasta que puede obstruirlo por completo. Si esto pasa en las arterias del corazón, se lo llama enfermedad coronaria, y sus síntomas van desde dolor de pecho hasta el infarto. Etapas: funciones normales, disfunción endotelial, formación de placa, trombosis."
+        }
+      ]
+    },
+    {
+      "id": "factores-riesgo",
+      "tipo": "html",
+      "clase": "slide d-shot-slide d-shot-slide--bg-layered",
+      "titulo": "Factores de riesgo cardiovascular",
+      "requisitos": {
+        "popupAntes": "control-factores"
+      },
+      "html": "<h2 data-slide-title=\"\" class=\"sr-only\">Factores de riesgo cardiovascular</h2>\n      \n      <div class=\"d-shot\" data-shot=\"\" data-shot-swap=\"factores\" data-shot-swap-srcs=\"img/factores/index.webp|img/factores/hipertension.webp|img/factores/colesterol.webp|img/factores/diabetes.webp|img/factores/obesidad.webp|img/factores/sedentarismo.webp|img/factores/tabaco.webp|img/factores/alcohol.webp\">\n        <img class=\"d-shot-img\" id=\"factores-img\" src=\"img/factores/index.webp\" alt=\"\" aria-hidden=\"true\">\n        <div class=\"d-factores-tabs\">\n          <button class=\"d-shot-hit d-shot-hit--factor\" data-hit=\"\" data-shot-swap-go=\"1\" data-factor=\"hipertension\" data-l=\"19.82\" data-t=\"25.00\" data-w=\"8.33\" data-h=\"18.25\"><span class=\"sr-only\">Hipertensión arterial</span></button>\n          <button class=\"d-shot-hit d-shot-hit--factor\" data-hit=\"\" data-shot-swap-go=\"2\" data-factor=\"colesterol\" data-l=\"28.95\" data-t=\"25.00\" data-w=\"8.33\" data-h=\"18.25\"><span class=\"sr-only\">Colesterol elevado</span></button>\n          <button class=\"d-shot-hit d-shot-hit--factor\" data-hit=\"\" data-shot-swap-go=\"3\" data-factor=\"diabetes\" data-l=\"38.13\" data-t=\"25.00\" data-w=\"8.33\" data-h=\"18.25\"><span class=\"sr-only\">Diabetes</span></button>\n          <button class=\"d-shot-hit d-shot-hit--factor\" data-hit=\"\" data-shot-swap-go=\"4\" data-factor=\"obesidad\" data-l=\"47.28\" data-t=\"25.00\" data-w=\"8.33\" data-h=\"18.25\"><span class=\"sr-only\">Sobrepeso y obesidad</span></button>\n          <button class=\"d-shot-hit d-shot-hit--factor\" data-hit=\"\" data-shot-swap-go=\"5\" data-factor=\"sedentarismo\" data-l=\"56.47\" data-t=\"25.00\" data-w=\"8.33\" data-h=\"18.25\"><span class=\"sr-only\">Sedentarismo</span></button>\n          <button class=\"d-shot-hit d-shot-hit--factor\" data-hit=\"\" data-shot-swap-go=\"6\" data-factor=\"tabaco\" data-l=\"65.63\" data-t=\"25.00\" data-w=\"8.33\" data-h=\"18.25\"><span class=\"sr-only\">Tabaco</span></button>\n          <button class=\"d-shot-hit d-shot-hit--factor\" data-hit=\"\" data-shot-swap-go=\"7\" data-factor=\"alcohol\" data-l=\"74.80\" data-t=\"25.00\" data-w=\"8.33\" data-h=\"18.25\"><span class=\"sr-only\">Alcohol</span></button>\n\n          <div data-panel=\"index\" class=\"sr-only\">\n            <p>Seleccioná cada factor para conocer su prevalencia en el país: hipertensión arterial, colesterol elevado, diabetes, sobrepeso y obesidad, sedentarismo, tabaco, alcohol.</p>\n          </div>\n          <div data-panel=\"hipertension\" class=\"sr-only\" hidden=\"\">\n            <p>Hipertensión arterial: 34%. El 34% de la población argentina tiene hipertensión arterial. Es uno de los factores de riesgo más comunes para desarrollar enfermedades cardiovasculares.</p>\n          </div>\n          <div data-panel=\"colesterol\" class=\"sr-only\" hidden=\"\">\n            <p>Colesterol elevado: 29%. El 29% de la población argentina tiene el colesterol elevado. Es uno de los principales factores que favorecen la aterosclerosis y las enfermedades del corazón.</p>\n          </div>\n          <div data-panel=\"diabetes\" class=\"sr-only\" hidden=\"\">\n            <p>Diabetes: 12,7%. El 12,7% de la población argentina tiene diabetes o glucemia elevada, y esta cifra viene en aumento. Es un factor de riesgo clave para la salud del corazón.</p>\n          </div>\n          <div data-panel=\"obesidad\" class=\"sr-only\" hidden=\"\">\n            <p>Sobrepeso y obesidad: 61,6%. El 61,6% de la población argentina tiene sobrepeso u obesidad, y esta cifra viene en aumento. El exceso de peso es un factor de riesgo directo para las enfermedades cardiovasculares.</p>\n          </div>\n          <div data-panel=\"sedentarismo\" class=\"sr-only\" hidden=\"\">\n            <p>Sedentarismo: 64,9%. Más de la mitad de la población de 18 años o más no cumple con la actividad física mínima recomendada, y esta cifra viene en aumento. La falta de actividad física es un factor de riesgo relevante.</p>\n          </div>\n          <div data-panel=\"tabaco\" class=\"sr-only\" hidden=\"\">\n            <p>Tabaco: 22,7%. El 22,7% de la población argentina fuma, aunque esta cifra viene bajando en los últimos años, y también descendió la exposición al humo de tabaco ajeno. Aun así, el tabaco sigue siendo uno de los factores que más daña los vasos sanguíneos.</p>\n          </div>\n          <div data-panel=\"alcohol\" class=\"sr-only\" hidden=\"\">\n            <p>Alcohol: 13,3%. El 13,3% de la población consume alcohol en exceso en una misma ocasión, por ejemplo en una salida o celebración. El consumo excesivo de alcohol también es un factor de riesgo para la salud cardiovascular.</p>\n          </div>\n        </div>\n      </div>"
+    },
+    {
+      "id": "unidad2",
+      "tipo": "video-fondo",
+      "titulo": "Unidad 2 — Las ENT y su prevención",
+      "video": "video/unidad2.mp4",
+      "poster": "img/unidad2.webp",
+      "avanceSolo": true
+    },
+    {
+      "id": "colesterol-alto",
+      "tipo": "lamina",
+      "titulo": "Colesterol alto",
+      "imagen": "img/colesterol-alto.webp",
+      "zonas": [
+        {
+          "tipo": "video",
+          "video": "video/colesterol-alto.mp4",
+          "tituloVideo": "Colesterol alto",
+          "texto": "Reproducir video: colesterol alto, análisis de sangre.",
+          "play": {
+            "tam": "11.7%",
+            "x": "49.8%",
+            "y": "47.0%"
+          },
+          "l": 13.06,
+          "t": 55.52,
+          "w": 27.26,
+          "h": 35.48
+        }
+      ],
+      "requisitos": {
+        "visto": [
+          "video/colesterol-alto.mp4"
+        ]
+      },
+      "narracion": [
+        {
+          "texto": "Qué es: el colesterol alto ocurre cuando hay demasiada grasa en la sangre, lo que puede dañar las arterias con el tiempo. Cómo se detecta: mediante un análisis de sangre de rutina. Cómo se trata: con una alimentación saludable, baja en grasas, actividad física regular y, si el médico lo indica, tratamiento farmacológico. Valores ideales: se calculan según el perfil de riesgo cardiovascular de cada persona."
+        }
+      ]
+    },
+    {
+      "id": "hipertension-arterial",
+      "tipo": "lamina",
+      "titulo": "Hipertensión arterial",
+      "imagen": "img/hipertension-arterial.webp",
+      "zonas": [
+        {
+          "tipo": "video",
+          "video": "video/hipertension-arterial.mp4",
+          "tituloVideo": "Hipertensión arterial",
+          "texto": "Reproducir video: hipertensión arterial.",
+          "play": {
+            "tam": "11.7%",
+            "x": "49.8%",
+            "y": "47.4%"
+          },
+          "l": 13.06,
+          "t": 55.63,
+          "w": 27.26,
+          "h": 35.4
+        }
+      ],
+      "requisitos": {
+        "visto": [
+          "video/hipertension-arterial.mp4"
+        ]
+      },
+      "narracion": [
+        {
+          "texto": "Qué es: la hipertensión arterial ocurre cuando la presión de la sangre contra las arterias es demasiado alta, obligando al corazón a esforzarse más de lo normal. Generalmente no presenta síntomas iniciales. Cómo se detecta: se evalúa de forma rápida y sencilla mediante un tensiómetro. Cómo se trata: con una alimentación reducida en sodio, sin sal, actividad física regular y, si el médico lo indica, medicación antihipertensiva."
+        }
+      ]
+    },
+    {
+      "id": "diabetes-detalle",
+      "tipo": "lamina",
+      "titulo": "Diabetes",
+      "imagen": "img/diabetes-detalle.webp",
+      "zonas": [
+        {
+          "tipo": "video",
+          "video": "video/diabetes.mp4",
+          "tituloVideo": "Diabetes",
+          "texto": "Reproducir video: diabetes.",
+          "play": {
+            "tam": "11.2%",
+            "x": "49.8%",
+            "y": "47.2%"
+          },
+          "l": 13.06,
+          "t": 55.52,
+          "w": 27.3,
+          "h": 35.48
+        }
+      ],
+      "requisitos": {
+        "visto": [
+          "video/diabetes.mp4"
+        ]
+      },
+      "narracion": [
+        {
+          "texto": "Qué es: la diabetes es el factor de riesgo más relevante en las enfermedades cardiovasculares. Se caracteriza por niveles elevados de glucosa, azúcar, en sangre que, con el tiempo, puede causar daños severos en el corazón, vasos sanguíneos, ojos, riñones y nervios. Cómo se detecta: mediante un análisis de sangre. Cómo se trata: con alimentación saludable, actividad física regular y, de ser necesario, medicación oral o inyectable, insulina."
+        }
+      ]
+    },
+    {
+      "id": "obesidad-detalle",
+      "tipo": "lamina",
+      "titulo": "Obesidad",
+      "imagen": "img/obesidad-detalle.webp",
+      "zonas": [
+        {
+          "tipo": "video",
+          "video": "video/obesidad.mp4",
+          "tituloVideo": "Obesidad",
+          "texto": "Reproducir video: obesidad.",
+          "play": {
+            "tam": "11.3%",
+            "x": "49.9%",
+            "y": "47.2%"
+          },
+          "l": 13.02,
+          "t": 55.6,
+          "w": 27.26,
+          "h": 35.48
+        }
+      ],
+      "requisitos": {
+        "visto": [
+          "video/obesidad.mp4"
+        ]
+      },
+      "narracion": [
+        {
+          "texto": "Qué es: la obesidad implica una acumulación excesiva de grasa corporal, que incrementa el riesgo de desarrollar otras enfermedades cardiovasculares. Cómo se detecta: de forma sencilla, mediante balanza y cinta métrica, calculando la relación entre peso y altura, Índice de Masa Corporal, IMC. Cómo se trata: con un plan de alimentación saludable ajustado, junto con actividad física adaptada y progresiva."
+        }
+      ]
+    },
+    {
+      "id": "sedentarismo-detalle",
+      "tipo": "lamina",
+      "titulo": "Sedentarismo",
+      "imagen": "img/sedentarismo-detalle.webp",
+      "zonas": [
+        {
+          "tipo": "video",
+          "video": "video/sedentarismo.mp4",
+          "tituloVideo": "Sedentarismo",
+          "texto": "Reproducir video: sedentarismo.",
+          "play": {
+            "tam": "11.3%",
+            "x": "49.7%",
+            "y": "47.2%"
+          },
+          "l": 12.9,
+          "t": 55.43,
+          "w": 27.26,
+          "h": 35.48
+        }
+      ],
+      "requisitos": {
+        "visto": [
+          "video/sedentarismo.mp4"
+        ]
+      },
+      "narracion": [
+        {
+          "texto": "Qué es: la falta de actividad física regular es un factor de riesgo clave que favorece la aparición de enfermedades cardiovasculares y metabólicas. Recomendación semanal de la OMS: al menos 150 minutos de actividad física moderada o 75 minutos de actividad intensa. Fortalecimiento: se recomienda sumar ejercicios de fuerza muscular como mínimo 2 días a la semana."
+        }
+      ]
+    },
+    {
+      "id": "tabaquismo-detalle",
+      "tipo": "lamina",
+      "titulo": "Tabaquismo",
+      "imagen": "img/tabaquismo-detalle.webp",
+      "zonas": [
+        {
+          "tipo": "video",
+          "video": "video/tabaquismo.mp4",
+          "tituloVideo": "Tabaquismo",
+          "texto": "Reproducir video: tabaquismo.",
+          "play": {
+            "tam": "11.6%",
+            "x": "49.9%",
+            "y": "47.1%"
+          },
+          "l": 13.02,
+          "t": 55.64,
+          "w": 27.3,
+          "h": 35.4
+        }
+      ],
+      "requisitos": {
+        "visto": [
+          "video/tabaquismo.mp4"
+        ]
+      },
+      "narracion": [
+        {
+          "texto": "Qué es: el consumo de cigarrillo produce un daño severo en los vasos sanguíneos. Al dejar de fumar, la reducción del riesgo cardiovascular es inmediata y progresiva. Adicción a la nicotina: la fuerza de voluntad raras veces resulta suficiente por sí sola debido al componente adictivo y al síndrome de abstinencia. Acompañamiento: existen métodos validados y profesionales especializados en tabaquismo para brindar tratamiento y contención."
+        }
+      ]
+    },
+    {
+      "id": "evaluacion",
+      "tipo": "html",
+      "clase": "slide",
+      "html": "<div class=\"slide-inner\">\n        <span class=\"slide-eyebrow\">Mini práctica</span>\n        <h2 data-slide-title=\"\">Poné a prueba lo que aprendiste</h2>\n        \n        <p class=\"slide-lead\" data-narrate-skip=\"\">Son 3 preguntas para repasar, cada una con su explicación.</p>\n        \n        <div class=\"d-aviso-practica\" role=\"note\" data-narrate-skip=\"\">\n          <span class=\"d-aviso-ic\" aria-hidden=\"true\">\n            <svg viewBox=\"0 0 24 24\"><use href=\"#i-info\"></use></svg>\n          </span>\n          <div>\n            <p><b>Esto no es la evaluación del curso.</b> Es una práctica para vos: seguís dentro del contenido, no se guarda ninguna nota y podés repetirla las veces que quieras.</p>\n            <p>La <b>evaluación final</b> es un <b>cuestionario aparte</b>, que vas a encontrar en la plataforma <b>cuando termines de ver todo el contenido</b> del curso.</p>\n          </div>\n        </div>\n        <div data-quiz=\"\"></div>\n      </div>"
+    },
+    {
+      "id": "consejos",
+      "tipo": "lamina",
+      "titulo": "Últimos consejos",
+      "imagen": "img/consejos.webp",
+      "narracion": [
+        {
+          "texto": "Últimos consejos: consultá al médico de cabecera al menos una vez al año. Cumplí con al menos 150 minutos semanales de actividad física. Evitá el consumo de tabaco y la exposición al humo ajeno. Reducí el consumo de sodio, grasas saturadas y azúcares. Monitoreá periódicamente presión arterial, glucemia y colesterol."
+        }
+      ]
+    },
+    {
+      "id": "cierre",
+      "tipo": "html",
+      "clase": "slide slide-cierre d-shot-slide",
+      "titulo": "Cierre del curso",
+      "fin": true,
+      "html": "<h2 data-slide-title=\"\" class=\"sr-only\">Cierre del curso</h2>\n      <p class=\"locked\">🔒 Hacé la mini práctica para desbloquear el cierre del curso.</p>\n      <div class=\"d-cierre-shot\" data-cierre-step=\"shot\">\n        <div class=\"d-shot\" data-shot=\"\">\n          <img class=\"d-shot-img\" src=\"img/cierre.webp\" alt=\"\" aria-hidden=\"true\">\n        </div>\n        <div class=\"sr-only\">\n          <p>¡Felicitaciones! Completaste con éxito el curso \"Prevención cardiovascular\". Ahora conocés los principales factores de riesgo cardiovascular y cómo prevenirlos. ¡Gracias por tu compromiso! Sos parte fundamental en el cuidado de tu salud y la de tu equipo. Recordá que ya estás habilitado para realizar la evaluación. ¡Muchos éxitos!</p>\n        </div>\n      </div>\n      <div class=\"slide-inner d-cierre-summary\" data-cierre-step=\"summary\" hidden=\"\">\n        <div class=\"d-cierre-cols\">\n          <div class=\"d-cierre-results\">\n            <p class=\"who\" hidden=\"\">¡Hola, <span id=\"d-cert-name\"></span>! 👋</p>\n            \n            <div class=\"d-medalla\" data-medalla=\"\">\n              <div class=\"d-medalla-ic\" data-medalla-ic=\"\" aria-hidden=\"true\">🥉</div>\n              <div>\n                <p class=\"d-medalla-tit\">Medalla de <b data-medalla-nombre=\"\">bronce</b></p>\n                <p class=\"d-medalla-sub\" data-medalla-sub=\"\"></p>\n              </div>\n            </div>\n            <ol class=\"d-medalla-rangos\" data-medalla-rangos=\"\" aria-label=\"Cómo se obtiene cada medalla\">\n              <li data-rango=\"oro\"><span aria-hidden=\"true\">🥇</span><b>Oro</b><i>130 puntos o más</i></li>\n              <li data-rango=\"plata\"><span aria-hidden=\"true\">🥈</span><b>Plata</b><i>de 115 a 129</i></li>\n              <li data-rango=\"bronce\"><span aria-hidden=\"true\">🥉</span><b>Bronce</b><i>menos de 115</i></li>\n            </ol>\n            <div class=\"d-cert-stats\">\n              \n              <div class=\"s\"><b id=\"d-cert-score\">–</b><span>Respuestas correctas</span></div>\n              <div class=\"s\"><b id=\"d-cert-points\">–</b><span>Puntos</span></div>\n              <div class=\"s\"><b id=\"d-cert-badges\">–</b><span>Logros</span></div>\n              <div class=\"s\"><b id=\"d-cert-tries\">–</b><span>Intentos de práctica</span></div>\n            </div>\n            <p class=\"d-cert-note\">Recordá que la <b>evaluación final</b> es un <b>cuestionario aparte</b>, que vas a encontrar en la plataforma ahora que terminaste todo el contenido.</p>\n            <div class=\"cta\">\n              <button class=\"btn btn-cat\" type=\"button\" data-popup-trigger=\"logros\">Ver mis logros 🏆</button>\n              <button class=\"btn btn-cat-ghost\" type=\"button\" id=\"d-summary-print\" title=\"Abre el diálogo de impresión: elegí &quot;Guardar como PDF&quot; para descargarlo\">Imprimir resumen 📄</button>\n            </div>\n          </div>\n          <div class=\"d-cierre-recap\">\n            <h3>Repaso rápido de todo el curso</h3>\n            <div class=\"d-cierre-recap-grid\">\n              <div class=\"d-cierre-recap-col\">\n                <h4>Conceptos clave</h4>\n                <dl class=\"d-gloss\">\n                  <div><dt>ENT</dt><dd>Afecciones de larga duración que no se transmiten de persona a persona: cardiovasculares, cáncer, diabetes y respiratorias crónicas.</dd></div>\n                  <div><dt>Aterosclerosis</dt><dd>Placa de colesterol que se acumula en las arterias hasta tapar el paso de la sangre. Avanza en 4 etapas: funciones normales, disfunción endotelial, formación de placa y trombosis.</dd></div>\n                  <div><dt>Enfermedad coronaria</dt><dd>Aterosclerosis en las arterias del corazón; va desde el dolor de pecho hasta el infarto.</dd></div>\n                  <div><dt>IMC</dt><dd>Relación entre peso y altura que se usa para detectar sobrepeso u obesidad.</dd></div>\n                  <div><dt>Factor de riesgo</dt><dd>Condición o hábito que aumenta la probabilidad de desarrollar una enfermedad cardiovascular.</dd></div>\n                </dl>\n              </div>\n              <div class=\"d-cierre-recap-col\">\n                <h4>Los 7 factores de riesgo, en Argentina</h4>\n                <ul>\n                  <li>Sedentarismo — <b>64,9%</b></li>\n                  <li>Sobrepeso y obesidad — <b>61,6%</b></li>\n                  <li>Hipertensión arterial — <b>34%</b></li>\n                  <li>Colesterol elevado — <b>29%</b></li>\n                  <li>Tabaco — <b>22,7%</b></li>\n                  <li>Alcohol en exceso — <b>13,3%</b></li>\n                  <li>Diabetes — <b>12,7%</b></li>\n                </ul>\n                <h4>Cómo se detecta cada uno</h4>\n                <ul>\n                  <li><b>Tensiómetro:</b> presión arterial.</li>\n                  <li><b>Análisis de sangre:</b> colesterol y glucemia.</li>\n                  <li><b>Balanza y cinta métrica:</b> IMC y perímetro abdominal.</li>\n                </ul>\n                \n                <h4>Las cifras del curso</h4>\n                <ul>\n                  <li>Las ENT causan el <b>74%</b> de las muertes en el mundo.</li>\n                  <li>En América son <b>8 de cada 10</b> fallecimientos.</li>\n                  <li>En Argentina, las enfermedades del corazón explican el <b>40%</b> de las muertes por ENT.</li>\n                  <li>Controlando los factores de riesgo se evita hasta el <b>50%</b> de la mortalidad cardiovascular.</li>\n                </ul>\n              </div>\n              <div class=\"d-cierre-recap-col\">\n                <h4>Para recordar</h4>\n                <ul>\n                  <li>Consultá al médico de cabecera al menos <b>una vez al año</b>.</li>\n                  <li>Cumplí con al menos <b>150 minutos semanales</b> de actividad física.</li>\n                  <li>Evitá el tabaco y la exposición al humo ajeno.</li>\n                  <li>Reducí sodio, grasas saturadas y azúcares.</li>\n                  <li>Monitoreá presión arterial, glucemia y colesterol.</li>\n                </ul>\n                <h4>Buenas noticias</h4>\n                <ul>\n                  <li>La hipertensión <b>no da síntomas</b> al principio: por eso se mide, no se espera a sentirla.</li>\n                  <li>Al dejar de fumar, el riesgo baja <b>de inmediato</b> y sigue bajando.</li>\n                  <li>Para dejar el tabaco existen <b>métodos validados</b> y profesionales especializados: la fuerza de voluntad sola rara vez alcanza.</li>\n                  <li>Sumá ejercicios de fuerza muscular <b>2 días por semana</b>.</li>\n                </ul>\n              </div>\n            </div>\n          </div>\n        </div>\n      </div>"
+    }
+  ],
+  "indice": {
+    "grupos": [
+      {
+        "titulo": "Inicio",
+        "items": [
+          {
+            "diapo": "portada",
+            "icono": "i-flag",
+            "rotulo": "Portada",
+            "tipo": "portada"
+          },
+          {
+            "diapo": "objetivos",
+            "icono": "i-target",
+            "rotulo": "Introducción y objetivos",
+            "tipo": "objetivos"
+          },
+          {
+            "diapo": "indice",
+            "icono": "i-grid",
+            "rotulo": "Índice de contenidos",
+            "tipo": "indice"
+          }
+        ]
+      },
+      {
+        "titulo": "Unidad 1 — Enfermedades no transmisibles (ENT)",
+        "items": [
+          {
+            "diapo": "unidad1",
+            "icono": "i-layers",
+            "rotulo": "Unidad 1",
+            "tipo": "unidad"
+          },
+          {
+            "diapo": "que-son-ent",
+            "icono": "i-info",
+            "rotulo": "¿Qué son las ENT?"
+          },
+          {
+            "diapo": "ent-americas",
+            "icono": "i-globe",
+            "rotulo": "Las ENT en la región de las Américas"
+          },
+          {
+            "diapo": "fallecimiento-ent",
+            "icono": "i-chart-pie",
+            "rotulo": "Fallecimiento por ENT en Argentina"
+          },
+          {
+            "diapo": "riesgo-cardiovascular",
+            "icono": "i-heart-pulse",
+            "rotulo": "Riesgo cardiovascular (video)"
+          },
+          {
+            "diapo": "aterosclerosis",
+            "icono": "i-vessel",
+            "rotulo": "Aterosclerosis"
+          },
+          {
+            "diapo": "factores-riesgo",
+            "icono": "i-riesgo",
+            "rotulo": "Factores de riesgo cardiovascular"
+          }
+        ]
+      },
+      {
+        "titulo": "Unidad 2 — Las ENT y su prevención",
+        "items": [
+          {
+            "diapo": "unidad2",
+            "icono": "i-layers",
+            "rotulo": "Unidad 2",
+            "tipo": "unidad"
+          },
+          {
+            "diapo": "colesterol-alto",
+            "icono": "i-droplet",
+            "rotulo": "Colesterol alto"
+          },
+          {
+            "diapo": "hipertension-arterial",
+            "icono": "i-gauge",
+            "rotulo": "Hipertensión arterial"
+          },
+          {
+            "diapo": "diabetes-detalle",
+            "icono": "i-droplet-plus",
+            "rotulo": "Diabetes"
+          },
+          {
+            "diapo": "obesidad-detalle",
+            "icono": "i-scale",
+            "rotulo": "Obesidad"
+          },
+          {
+            "diapo": "sedentarismo-detalle",
+            "icono": "i-couch",
+            "rotulo": "Sedentarismo"
+          },
+          {
+            "diapo": "tabaquismo-detalle",
+            "icono": "i-cigarette",
+            "rotulo": "Tabaquismo"
+          }
+        ]
+      },
+      {
+        "titulo": "Práctica y cierre",
+        "items": [
+          {
+            "diapo": "evaluacion",
+            "icono": "i-examen",
+            "rotulo": "Mini práctica",
+            "tipo": "evaluacion"
+          },
+          {
+            "diapo": "consejos",
+            "icono": "i-bulb",
+            "rotulo": "Últimos consejos",
+            "tipo": "consejos"
+          },
+          {
+            "diapo": "cierre",
+            "icono": "i-medal",
+            "rotulo": "Cierre y resumen",
+            "tipo": "cierre"
+          }
+        ]
+      }
+    ],
+    "objetivos": [
+      {
+        "letra": "A",
+        "diapo": "aterosclerosis",
+        "texto": "Identificar las principales enfermedades cardiovasculares"
+      },
+      {
+        "letra": "B",
+        "diapo": "tabaquismo-detalle",
+        "texto": "Conocer los factores de riesgo asociados a estas enfermedades"
+      },
+      {
+        "letra": "C",
+        "diapo": "consejos",
+        "texto": "Aplicar hábitos saludables para prevenirlas"
+      }
+    ]
+  },
+  "glosario": [
+    {
+      "termino": "ENT",
+      "diapo": "que-son-ent",
+      "def": "Enfermedades No Transmisibles: afecciones de larga duración que no se transmiten de persona a persona. Los principales tipos son las cardiovasculares, el cáncer, la diabetes y las respiratorias crónicas."
+    },
+    {
+      "termino": "Aterosclerosis",
+      "diapo": "aterosclerosis",
+      "def": "Acumulación de placa de colesterol en las arterias que, con el tiempo, dificulta o impide el paso de la sangre. Avanza en 4 etapas: funciones normales, disfunción endotelial, formación de placa y trombosis."
+    },
+    {
+      "termino": "Disfunción endotelial",
+      "diapo": "aterosclerosis",
+      "def": "Segunda etapa de la aterosclerosis: la capa interna de la arteria pierde su funcionamiento normal y empieza a acumularse la placa."
+    },
+    {
+      "termino": "Trombosis",
+      "diapo": "aterosclerosis",
+      "def": "Última etapa de la aterosclerosis: la placa obstruye por completo el paso de la sangre en la arteria."
+    },
+    {
+      "termino": "Enfermedad coronaria",
+      "diapo": "aterosclerosis",
+      "def": "Aterosclerosis en las arterias del corazón; sus síntomas van desde el dolor de pecho hasta el infarto."
+    },
+    {
+      "termino": "Factor de riesgo",
+      "diapo": "factores-riesgo",
+      "def": "Condición o hábito que aumenta la probabilidad de desarrollar una enfermedad cardiovascular. Los 7 que trabaja este curso son: hipertensión arterial, colesterol elevado, diabetes, sobrepeso y obesidad, sedentarismo, tabaco y alcohol."
+    },
+    {
+      "termino": "Colesterol elevado",
+      "diapo": "colesterol-alto",
+      "def": "Exceso de grasa en la sangre que puede dañar las arterias con el tiempo. Se detecta con un análisis de sangre de rutina. Afecta al <b>29%</b> de la población argentina."
+    },
+    {
+      "termino": "Hipertensión arterial",
+      "diapo": "hipertension-arterial",
+      "def": "Presión de la sangre contra las arterias por encima de los valores saludables, que obliga al corazón a esforzarse de más. Generalmente <b>no presenta síntomas iniciales</b>. Afecta al <b>34%</b> de la población argentina."
+    },
+    {
+      "termino": "Tensiómetro",
+      "diapo": "hipertension-arterial",
+      "def": "Instrumento con el que se mide la presión arterial de forma rápida y sencilla."
+    },
+    {
+      "termino": "Diabetes",
+      "diapo": "diabetes-detalle",
+      "def": "Niveles elevados de glucosa en sangre que, sostenidos en el tiempo, dañan corazón, vasos sanguíneos, ojos, riñones y nervios. Es el factor de riesgo más relevante en las enfermedades cardiovasculares."
+    },
+    {
+      "termino": "Glucemia",
+      "diapo": "diabetes-detalle",
+      "def": "Nivel de azúcar en sangre. Es uno de los valores que conviene monitorear de forma periódica."
+    },
+    {
+      "termino": "Obesidad",
+      "diapo": "obesidad-detalle",
+      "def": "Acumulación excesiva de grasa corporal que incrementa el riesgo de desarrollar enfermedades cardiovasculares. El <b>61,6%</b> de la población argentina tiene sobrepeso u obesidad."
+    },
+    {
+      "termino": "IMC",
+      "diapo": "obesidad-detalle",
+      "def": "Índice de Masa Corporal: relación entre peso y altura, calculada con balanza y cinta métrica, que se usa para detectar sobrepeso u obesidad."
+    },
+    {
+      "termino": "Sedentarismo",
+      "diapo": "sedentarismo-detalle",
+      "def": "Falta de actividad física regular. El <b>64,9%</b> de la población de 18 años o más no cumple con el mínimo recomendado."
+    },
+    {
+      "termino": "Actividad física moderada",
+      "diapo": "sedentarismo-detalle",
+      "def": "La que acelera la respiración y el pulso sin llegar a agitar, como caminar rápido. La OMS recomienda al menos <b>150 minutos semanales</b> (o <b>75 minutos</b> si la actividad es intensa)."
+    },
+    {
+      "termino": "Síndrome de abstinencia",
+      "diapo": "tabaquismo-detalle",
+      "def": "Conjunto de síntomas que aparecen al dejar de consumir una sustancia adictiva como la nicotina. Es la razón por la que la fuerza de voluntad rara vez alcanza por sí sola para dejar de fumar."
+    }
+  ],
+  "fichas": [
+    {
+      "id": "control-factores",
+      "etiqueta": "Control de factores de riesgo",
+      "titulo": "Un dato para tener en cuenta:",
+      "clase": "d-stat-pop",
+      "cuerpo": "<div class=\"icon-circle d-stat-pop-icon\" aria-hidden=\"true\">\n          <svg viewBox=\"0 0 24 24\"><path d=\"M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z\"></path><polyline points=\"6 12 9 12 10.5 9 13.5 15 15 12 18 12\"></polyline></svg>\n        </div>\n        <p class=\"d-stat-pop-lead\">Con un adecuado control y manejo de los factores de riesgo, se puede disminuir</p>\n        <div class=\"d-stat-pop-num-wrap\">\n          <p class=\"d-stat-pop-num\"><span data-count-to=\"50\">0</span><small>%</small></p>\n        </div>\n        <p class=\"d-stat-pop-sub\">de la mortalidad cardiovascular.</p>\n        \n        <div class=\"d-instr-cta\">\n          <button class=\"btn btn-cat btn-ic\" type=\"button\" data-popup-close=\"\">\n            Continuar\n            <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><polyline points=\"9 6 15 12 9 18\"></polyline></svg>\n          </button>\n        </div>"
+    },
+    {
+      "id": "practica-intro",
+      "etiqueta": "Antes de empezar la mini práctica",
+      "titulo": "Antes de empezar:",
+      "clase": "d-pracintro",
+      "cuerpo": "<div class=\"icon-circle d-pracintro-ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-info\"></use></svg></div>\n        <p class=\"d-pracintro-lead\"><b>Esto no es la evaluación del curso.</b></p>\n        <ul>\n          <li>Son <b>3 preguntas</b> para repasar, cada una con su explicación.</li>\n          <li><b>No se guarda ninguna nota</b> y podés repetirla las veces que quieras.</li>\n          <li>Seguís dentro del contenido del curso: al terminar te queda el cierre.</li>\n        </ul>\n        <p class=\"d-pracintro-eval\">La <b>evaluación final</b> es un <b>cuestionario aparte</b>, que vas a encontrar en la plataforma <b>cuando termines de ver todo el contenido</b>.</p>\n        <div class=\"d-instr-cta\">\n          <button class=\"btn btn-cat btn-ic\" type=\"button\" data-pracintro-go=\"\">\n            <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><use href=\"#i-examen\"></use></svg>\n            Empezar la mini práctica\n          </button>\n        </div>"
+    },
+    {
+      "id": "ent-cardio",
+      "etiqueta": "Enfermedades cardiovasculares",
+      "titulo": "Enfermedades cardiovasculares:",
+      "clase": "d-ent-pop",
+      "cuerpo": "<div class=\"icon-circle d-ent-pop-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-heart-pulse\"></use></svg></div>\n        <p>Afectan al <b>corazón</b> y a los <b>vasos sanguíneos</b>. Incluyen la enfermedad coronaria, el ACV y la arteriopatía periférica.</p>\n        <ul>\n          <li>Son el tipo de ENT que más muertes causa: <b>36,7%</b> en América y <b>40%</b> en Argentina.</li>\n          <li>Su mecanismo principal es la <b>aterosclerosis</b>: la placa de colesterol va tapando las arterias.</li>\n          <li>Es el tipo de ENT del que se ocupa este curso.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Controlando los factores de riesgo se puede disminuir <b>50%</b> de la mortalidad cardiovascular.</p>"
+    },
+    {
+      "id": "ent-cancer",
+      "etiqueta": "Cáncer",
+      "titulo": "Cáncer:",
+      "clase": "d-ent-pop",
+      "cuerpo": "<div class=\"icon-circle d-ent-pop-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-cells\"></use></svg></div>\n        <p>Crecimiento <b>descontrolado de células</b> que puede aparecer en casi cualquier órgano del cuerpo.</p>\n        <ul>\n          <li>Es el segundo tipo de ENT en muertes: <b>24,6%</b> en América y <b>25%</b> en Argentina.</li>\n          <li>Comparte factores de riesgo con las enfermedades cardiovasculares: <b>tabaco</b>, alcohol, obesidad y sedentarismo.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Por eso los hábitos que trabaja este curso protegen bastante más que al corazón.</p>"
+    },
+    {
+      "id": "ent-respiratorias",
+      "etiqueta": "Enfermedades respiratorias crónicas",
+      "titulo": "Enfermedades respiratorias crónicas:",
+      "clase": "d-ent-pop",
+      "cuerpo": "<div class=\"icon-circle d-ent-pop-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-lungs\"></use></svg></div>\n        <p>Afectan las <b>vías respiratorias</b> y los <b>pulmones</b>, y se sostienen en el tiempo.</p>\n        <ul>\n          <li>Causan el <b>8,6%</b> de las muertes por ENT en América.</li>\n          <li>El <b>tabaco</b> es su principal factor de riesgo evitable.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Dejar de fumar mejora al mismo tiempo la salud respiratoria y la cardiovascular.</p>"
+    },
+    {
+      "id": "ent-diabetes",
+      "etiqueta": "Diabetes",
+      "titulo": "Diabetes:",
+      "clase": "d-ent-pop",
+      "cuerpo": "<div class=\"icon-circle d-ent-pop-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-droplet-plus\"></use></svg></div>\n        <p>Niveles elevados de <b>glucosa en sangre</b> que, sostenidos en el tiempo, dañan corazón, vasos sanguíneos, ojos, riñones y nervios.</p>\n        <ul>\n          <li>Causa el <b>6,4%</b> de las muertes por ENT en América y el <b>35%</b> en Argentina.</li>\n          <li>Es también uno de los <b>7 factores de riesgo</b> cardiovascular que vas a ver más adelante.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Es el factor de riesgo más relevante en las enfermedades cardiovasculares.</p>"
+    }
+  ]
+}

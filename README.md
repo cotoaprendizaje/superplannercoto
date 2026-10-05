@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.110** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.111** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -408,6 +408,26 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.111 — Fase 1, primera parte: el curso como datos
+
+Ver CLAUDE.md §7.60.
+
+- **`curso.json` + `marco.html`**: un curso puede guardarse como datos
+  (diapositivas, zonas, locución, índice, glosario, fichas) más un marco
+  con huecos. `tools/armar-curso.mjs <curso>` arma el `index.html`;
+  `tools/extraer-curso.mjs <curso>` convierte un curso hecho a mano y
+  verifica cada pieza (lo que no se modela queda como HTML tal cual).
+  Formato y armado: `tools/curso-datos.mjs`.
+- **El curso de prueba se guarda como datos** y `probar.sh` lo arma en
+  cada corrida, comprobando que extraer y armar sean inversos.
+- **`actualizar-kit`** avisa si el index de un curso armado desde datos
+  fue editado a mano. **`build-zip.py`** deja los datos fuera del zip.
+- **`visual-regress.mjs`** fija el azar (`Math.random` con semilla): la
+  mini práctica baraja preguntas y daba falsas alarmas 2 de cada 5 veces.
+
+Opcional: los cursos se siguen haciendo como siempre hasta que el
+formato cubra evaluación y cierre.
 
 ### v1.9.110 — los tres pendientes del kit
 

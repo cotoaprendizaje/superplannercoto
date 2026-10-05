@@ -79,6 +79,22 @@ fs.mkdirSync(BASELINE_DIR, { recursive: true });
 const browser = await chromium.launch({ executablePath: CHROMIUM_PATH, args: ['--no-sandbox'] });
 const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
 await page.emulateMedia({ reducedMotion: 'reduce' });
+/* El AZAR, fijo (kit-base v1.9.111). La mini práctica (`coto-quiz.js`)
+   baraja el banco y las opciones con `Math.random()`, así que cada carga
+   muestra otras preguntas. MEDIDO en el curso de prueba: el MISMO index
+   contra su propia baseline daba 1,20% de diferencia en "evaluacion" 2 de
+   cada 5 corridas — la herramienta acusaba un cambio que no existía, y
+   el "tres corridas en verde" de v1.9.110 fue suerte. Con un generador
+   de semilla fija (mulberry32) cada carga baraja igual. */
+await page.addInitScript(() => {
+  let s = 0x2f6b1d3a;
+  Math.random = () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+});
 
 await page.goto(url);
 await page.waitForTimeout(500);

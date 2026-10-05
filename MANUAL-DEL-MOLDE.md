@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.110**.
+Vigente para **kit-base v1.9.111**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -319,7 +319,27 @@ python3 tools/build-zip.py                                 # el zip para el LMS
 
 ---
 
-## 11 · Mantener el kit (solo en el chat del kit)
+## 11 · El curso como datos (en construcción, Fase 1)
+
+- **Un curso puede guardarse como `curso.json` + `marco.html`** en vez de
+  un index escrito a mano: el contenido (diapositivas, zonas, locución,
+  índice, glosario, fichas) en el JSON, y el resto del index en el marco
+  con huecos. `node tools/armar-curso.mjs <curso>` escribe el index
+  (§7.60).
+- **En un curso así, el `index.html` es generado: no se edita a mano.**
+  El cambio se hace en `curso.json` (o en el marco) y se vuelve a armar.
+  `actualizar-kit` avisa si el index no es el que sale de los datos.
+- **Convertir un curso existente**: `node tools/extraer-curso.mjs
+  <curso>`. Verifica cada pieza y lo que todavía no sabe modelar lo deja
+  como HTML tal cual; si el curso armado no diera igual al original, no
+  escribe nada. Es opcional.
+- **Por ahora los cursos se siguen haciendo como siempre.** El formato
+  todavía no cubre la mini práctica ni el cierre; cuando los cubra, pasa
+  a ser la forma de arrancar un curso nuevo.
+
+---
+
+## 12 · Mantener el kit (solo en el chat del kit)
 
 - **Cada relevo se verifica contra el código real** antes de aplicarlo.
   Un diagnóstico correcto no vuelve correcta la conclusión; y si el
@@ -351,5 +371,12 @@ python3 tools/build-zip.py                                 # el zip para el LMS
   `tools/tests/README.md`, y **este manual actualizado si cambió una
   regla**. `npm run test:kit` (con `check-conteos`) agarra los números
   que el kit dice de sí mismo.
+- **`visual-regress` fija el azar** (`Math.random` con semilla): sin eso la
+  mini práctica baraja otras preguntas en cada carga y la herramienta
+  acusa cambios que no existen (§7.60).
+- **El curso de prueba se guarda como datos** (`curso-prueba/curso.json` +
+  `marco.html`); `probar.sh` lo arma y verifica que extraer y armar sigan
+  siendo inversos. Un cambio a `curso-datos.mjs` que rompa eso corta la
+  corrida (§7.60).
 - **El exportador GIFT de evaluaciones no va al kit** (decisión fija).
 - La rama `claude/kit-base` del repo guarda una versión por commit.

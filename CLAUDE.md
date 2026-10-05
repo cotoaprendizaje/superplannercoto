@@ -14710,3 +14710,108 @@ su marcado de ejemplo: `.d-hit-ring` (resaltar el ícono, §6.10.3),
 pop-up de instrucciones, cuyo contrato sigue vigente). Que ningún curso
 las haya usado no las vuelve restos. No se borra nada; si alguna vez se
 quiere adelgazar el catálogo, esta es la lista.
+
+## 7.60 Fase 1, primera parte: el curso como datos (kit-base v1.9.111)
+
+### Qué es
+
+Un curso puede describirse en DOS archivos en vez de un `index.html`
+escrito a mano:
+
+- **`curso.json`**: el CONTENIDO. Diapositivas (tipo, título, imagen o
+  video, zonas tocables con sus coordenadas, requisitos para avanzar,
+  locución), índice lateral, glosario y fichas (los pop-ups de contenido
+  con título oscuro).
+- **`marco.html`**: todo el resto del index (barra superior, botones
+  flotantes, ventanas fijas, scripts) con huecos `<!--{{DIAPOSITIVAS}}-->`,
+  `<!--{{INDICE}}-->`, `<!--{{GLOSARIO}}-->`, `<!--{{FICHAS}}-->` y
+  `{{TOTAL}}`.
+
+`tools/armar-curso.mjs <curso>` junta los dos y escribe el `index.html`.
+`tools/extraer-curso.mjs <curso>` hace el camino inverso desde un curso
+hecho a mano. El formato y el armado viven en `tools/curso-datos.mjs`:
+son funciones puras que usa el armador en Node y el extractor dentro del
+navegador. Es la base del editor visual (Fase 2): el editor no va a ser
+más que una pantalla que edita `curso.json`.
+
+Tipos de diapositiva modelados: `lamina` (captura con zonas encima) y
+`video-fondo`. Tipos de zona: `popup`, `video` (abre el reproductor),
+`video-circulo` (video en el círculo, con play de marca) y `boton`
+(cualquier `.d-shot-hit` con sus `data-*`). Lo que el formato todavía no
+modela viaja como `{ "tipo": "html" }` y se reproduce tal cual: es lo que
+permite convertir un curso entero sin perder nada, y lo que cada versión
+de la Fase 1 va a ir achicando.
+
+### Cómo se sabe que no pierde nada
+
+**El extractor verifica cada pieza antes de aceptarla.** Lee una zona,
+una locución, una diapositiva, el índice, el glosario o una ficha, la
+vuelve a armar con el MISMO código del armador y la compara con la
+original (`huellaDom`: misma estructura, mismos atributos, mismo texto;
+ignora comentarios, sangría, orden de atributos y de clases, espacios en
+`style`, y "70.00" contra "70" en coordenadas). Si no da igual, la pieza
+queda como `html`. Al final arma el index entero y lo compara con el
+original; si no da igual, sale con error y no escribe nada.
+
+Probado al revés con dos sabotajes al armador:
+- perder la clase extra de las zonas `popup` → el extractor deja esas
+  cuatro zonas de "¿Qué son las ENT?" como `html` y el curso sigue igual;
+- no reemplazar `{{TOTAL}}` → el extractor se niega y no escribe nada.
+
+### Cardio convertido
+
+De "Prevención cardiovascular" pasaron a datos 20 piezas: 15 de las 20
+diapositivas (con sus zonas y locución), el índice con sus objetivos, el
+glosario (16 términos) y 6 fichas. Quedan como `html` cinco: tres piezas
+propias de cardio (el cartel de las barras de "ent-americas", la torta de
+"fallecimiento-ent" y las pestañas de "factores-riesgo") y dos que van en
+la próxima versión ("evaluacion" y "cierre"). Index de 1.632 líneas →
+`curso.json` de 880 y `marco.html` de 744 (el marco conserva sus
+comentarios; los de las partes que pasaron a datos no viajan).
+
+Medido sobre el cardio armado desde los datos, contra el original:
+- `visual-regress`: las 20 diapositivas sin cambios, tres corridas; y con
+  la imagen de "consejos" cambiada en `curso.json`, 45,72% → rojo;
+- la suite entera: 57/57;
+- extraer el index armado devuelve EXACTAMENTE el mismo `curso.json` y
+  `marco.html`, byte a byte, dos vueltas seguidas.
+
+### El curso de prueba ahora se guarda como datos
+
+`curso-prueba/` ya no tiene `index.html`: guarda `curso.json` +
+`marco.html`, y `probar.sh` arma el index en cada corrida. Antes de la
+suite comprueba que extraer ese index devuelva los mismos dos archivos:
+si el armador y el extractor dejan de ser inversos, corta ahí. El index
+original de cardio queda en la historia de la rama (v1.9.110).
+
+### Lo que acompaña
+
+- **`actualizar-kit` avisa** si un curso con `curso.json` + `marco.html`
+  tiene un `index.html` que no es el que sale de los datos: alguien lo
+  editó a mano y ese cambio se pierde la próxima vez que se arme.
+  Probado: sin aviso con el index recién armado; con un acento cambiado
+  a mano en el index, avisa.
+- **`build-zip.py`** deja afuera `curso.json` y `marco.html` en el zip de
+  un curso: el LMS solo necesita el index armado.
+
+### `visual-regress` daba falsas alarmas con la mini práctica
+
+Al comparar el cardio armado apareció 1,19% de diferencia en
+"evaluacion". No era el armado: el index ORIGINAL contra su propia
+baseline daba lo mismo 2 de cada 5 corridas. `coto-quiz.js` baraja el
+banco y las opciones con `Math.random()`, así que cada carga muestra
+otras preguntas detrás de la ventana de "Antes de empezar". Ahora
+`visual-regress` reemplaza `Math.random` por un generador de semilla fija
+(mulberry32) antes de cargar la página. Con eso: 6 de 6 corridas en
+verde con el original.
+
+**Corrección a §7.59:** las "tres corridas sin cambios en verde" que se
+contaron ahí para el curso de prueba fueron suerte: la práctica pudo
+haber caído distinto en cualquiera de ellas.
+
+### Lo que NO cambia todavía
+
+Los cursos se siguen armando como siempre (`new-course.mjs` y el index
+a mano) hasta que el formato cubra evaluación y cierre. Convertir un
+curso existente con `extraer-curso.mjs` es opcional y seguro; nadie
+está obligado a migrar.

@@ -148,6 +148,24 @@ try {
   decoraResultado = /d-quiz-result/.test(codigo) && !/\bonResult\s*:/.test(codigo);
 } catch (e) {}
 
+/* ---- un curso armado desde datos con el index editado a mano (v1.9.111) ----
+   Si el curso tiene `curso.json` + `marco.html`, su `index.html` es un
+   archivo GENERADO (`armar-curso.mjs`). Un cambio hecho directo en el
+   index se pierde la próxima vez que alguien lo arme. Se avisa si el index
+   que hay no es el que sale de los datos. */
+let indexDesviado = null;
+if (fs.existsSync(path.join(CURSO, 'curso.json')) && fs.existsSync(path.join(CURSO, 'marco.html'))) {
+  try {
+    const { armarIndex } = await import('./curso-datos.mjs');
+    const armado = armarIndex(JSON.parse(fs.readFileSync(path.join(CURSO, 'curso.json'), 'utf8')),
+      fs.readFileSync(path.join(CURSO, 'marco.html'), 'utf8'));
+    const actual = fs.existsSync(path.join(CURSO, 'index.html')) ? fs.readFileSync(path.join(CURSO, 'index.html'), 'utf8') : '';
+    if (armado !== actual) indexDesviado = 'el index.html no es el que sale de curso.json + marco.html';
+  } catch (e) {
+    indexDesviado = 'curso.json o marco.html no se pueden armar (' + e.message + ')';
+  }
+}
+
 /* ---- informe ---- */
 const L = (t, xs) => { if (xs.length) console.log(`\n${t} (${xs.length}):\n  ` + xs.join('\n  ')); };
 console.log(`Curso: ${CURSO}`);
@@ -177,6 +195,13 @@ if (decoraResultado) {
     '\n  desde v1.9.107 `onFinish` corre al contestar la última pregunta, ANTES de que esa pantalla' +
     '\n  exista. Pasar lo que pinta el resultado (y lo que se otorga ahí) a `onResult`, que recibe la' +
     '\n  caja ya dibujada. `onFinish` queda para lo que significa "práctica completa".');
+}
+
+if (indexDesviado) {
+  console.log(`\n⚠️ Este curso se arma desde datos, y ${indexDesviado}.` +
+    '\n  Si alguien editó el index a mano, ese cambio se pierde la próxima vez que se arme: pasarlo a' +
+    '\n  curso.json (o al marco) y volver a armar con `node tools/armar-curso.mjs <curso>`. Si lo que' +
+    '\n  cambió son los datos y nadie armó todavía, alcanza con armar.');
 }
 
 const bloqueantes = plan.editados.length + plan.sinRegistro.length;
