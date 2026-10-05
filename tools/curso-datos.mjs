@@ -28,8 +28,18 @@ export const HUECOS = {
   indice: '<!--{{INDICE}}-->',
   glosario: '<!--{{GLOSARIO}}-->',
   fichas: '<!--{{FICHAS}}-->',
+  datos: '<!--{{DATOS}}-->',
   total: '{{TOTAL}}'
 };
+
+/* Lo que el curso usa desde `curso.js` y no es marcado (v1.9.113): el
+   banco de la mini práctica, los logros, las medallas. Viajan dentro del
+   index como un bloque `<script type="application/json"
+   id="d-curso-datos">` —el navegador no lo ejecuta— y `curso.js` los lee
+   con `datosDelCurso('practica')` (coto-ui.js). Así el contenido sale de
+   `curso.js` sin que el curso tenga que cargar un archivo aparte (un
+   `fetch` de un .json no anda abriendo el curso desde el disco). */
+export const CLAVES_DATOS = ['practica', 'logros', 'medallas'];
 
 export function esc(s) {
   return String(s == null ? '' : s)
@@ -111,7 +121,8 @@ export function armarNarracion(n, ind = '      ') {
 
 const CLASE_TIPO = {
   lamina: 'slide d-shot-slide d-shot-slide--bg-layered',
-  'video-fondo': 'slide d-shot-slide d-shot-slide--bg-video'
+  'video-fondo': 'slide d-shot-slide d-shot-slide--bg-video',
+  practica: 'slide'
 };
 
 function atributosSlide(d, i) {
@@ -133,6 +144,18 @@ export function armarDiapositiva(d, i, ind = '    ') {
   const abre = `${ind}<section${attrs(atributosSlide(d, i))}>\n`;
   const cierra = `${ind}</section>`;
   if (d.tipo === 'html') return abre + `${ind}  ${d.html}\n` + cierra;
+  /* La mini práctica: el título se VE (no es `sr-only`), la bajada no se
+     narra, y `aviso` es HTML libre que va entre la bajada y las
+     preguntas (cardio pone ahí "esto no es la evaluación del curso").
+     Las preguntas no van acá: son `practica.banco`, en los datos. */
+  if (d.tipo === 'practica') {
+    return abre + `${ind}  <div class="slide-inner">\n` +
+      (d.antetitulo != null ? `${ind}    <span class="slide-eyebrow">${d.antetitulo}</span>\n` : '') +
+      `${ind}    <h2 data-slide-title>${d.titulo}</h2>\n` +
+      (d.bajada != null ? `${ind}    <p class="slide-lead" data-narrate-skip>${d.bajada}</p>\n` : '') +
+      (d.aviso != null ? `${ind}    ${d.aviso}\n` : '') +
+      `${ind}    <div data-quiz></div>\n${ind}  </div>\n` + cierra;
+  }
   const h2 = `${ind}  <h2 data-slide-title class="sr-only">${d.titulo}</h2>\n`;
   let shot;
   if (d.tipo === 'lamina') {
@@ -217,12 +240,27 @@ export function armarFicha(f, ind = '  ') {
     `${ind}    </div>\n${ind}  </div>\n${ind}</div>`;
 }
 
+/* ---------- los datos para curso.js ---------- */
+
+export function armarDatos(curso) {
+  const datos = {};
+  for (const k of CLAVES_DATOS) if (curso[k] !== undefined) datos[k] = curso[k];
+  if (!Object.keys(datos).length) return '';
+  // `<` escapado: un "</script>" dentro de un texto cerraría el bloque.
+  const json = JSON.stringify(datos).replace(/</g, '\\u003c');
+  return `<script type="application/json" id="d-curso-datos">${json}</script>`;
+}
+
 /* ---------- el index.html entero ---------- */
 
 export function armarIndex(curso, marco) {
   const titulos = {};
   for (const d of curso.diapositivas) if (d.titulo != null) titulos[d.id] = d.titulo;
-  const faltan = Object.entries(HUECOS).filter(([k, h]) => k !== 'total' && !marco.includes(h)).map(([, h]) => h);
+  /* El hueco de DATOS solo hace falta si hay datos: un marco anterior a
+     v1.9.113 no lo tiene y sigue armando igual. */
+  const datos = armarDatos(curso);
+  const faltan = Object.entries(HUECOS)
+    .filter(([k, h]) => k !== 'total' && !(k === 'datos' && !datos) && !marco.includes(h)).map(([, h]) => h);
   if (faltan.length) throw new Error('al marco le faltan los huecos ' + faltan.join(', '));
   const total = String(curso.diapositivas.length);
   /* Funciones de reemplazo, no strings: un `$` en el contenido (un precio,
@@ -232,6 +270,7 @@ export function armarIndex(curso, marco) {
     .replace(HUECOS.indice, () => armarIndice(curso.indice).replace(/^ +/, ''))
     .replace(HUECOS.glosario, () => armarGlosario(curso.glosario, titulos).replace(/^ +/, ''))
     .replace(HUECOS.fichas, () => (curso.fichas || []).map((f) => armarFicha(f)).join('\n').replace(/^ +/, ''))
+    .replace(HUECOS.datos, () => datos)
     .split(HUECOS.total).join(total);
 }
 

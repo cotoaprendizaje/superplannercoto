@@ -176,6 +176,21 @@ const r = await page.evaluate((html) => { try {
       const v = shot.children[0];
       const s = v.querySelector('source');
       d = { id: base.id, tipo: 'video-fondo', titulo: base.titulo, video: s && s.getAttribute('src'), poster: v.getAttribute('poster') };
+    } else if (cls === 'slide' && h.length === 1 && h[0].matches('div.slide-inner') && h[0].attributes.length === 1 &&
+        h[0].lastElementChild && h[0].lastElementChild.matches('div[data-quiz]')) {
+      /* La mini práctica: [antetítulo] título [bajada] [aviso] <div data-quiz>.
+         El aviso es UN elemento cualquiera (HTML libre); si hay más, la
+         verificación de abajo la manda a `html`. */
+      const partes = hijos(h[0]).slice(0, -1);
+      d = { id: base.id, tipo: 'practica' };
+      if (partes[0] && partes[0].matches('span.slide-eyebrow')) d.antetitulo = interno(partes.shift());
+      const h2 = partes.shift();
+      if (h2 && h2.matches('h2[data-slide-title]')) {
+        d.titulo = interno(h2);
+        if (partes[0] && partes[0].matches('p.slide-lead[data-narrate-skip]')) d.bajada = interno(partes.shift());
+        if (partes.length === 1) d.aviso = externo(partes.shift());
+      }
+      if (partes.length || d.titulo === undefined) d = null;
     }
     if (d) {
       for (const k of ['requisitos', 'avanceSolo', 'fin', 'atributos']) if (base[k] !== undefined) d[k] = base[k];
@@ -324,6 +339,18 @@ const r = await page.evaluate((html) => { try {
     const vp = doc.querySelector('[data-popup="video-player"]') || doc.querySelector('.d-app');
     vp.parentNode.insertBefore(hueco(CD.HUECOS.fichas), vp);
   }
+  /* Los datos para curso.js (v1.9.113): si el index ya los trae, se leen
+     y su lugar queda como hueco; si no, el hueco va antes del primer
+     script, que es donde el armador los pone. */
+  const datos = {};
+  const bloqueDatos = doc.getElementById('d-curso-datos');
+  if (bloqueDatos) {
+    Object.assign(datos, JSON.parse(bloqueDatos.textContent));
+    bloqueDatos.parentNode.replaceChild(hueco(CD.HUECOS.datos), bloqueDatos);
+  } else {
+    const primerScript = doc.querySelector('body script[src]');
+    if (primerScript) primerScript.parentNode.insertBefore(hueco(CD.HUECOS.datos), primerScript);
+  }
   // total de diapositivas: el contador y la barra de progreso.
   const total = String(secciones.length);
   const thumb = doc.querySelector('[data-slide-thumb]');
@@ -342,6 +369,7 @@ const r = await page.evaluate((html) => { try {
   const doctype = /^<!DOCTYPE html>/i.test(html.trimStart()) ? '<!DOCTYPE html>\n' : '';
   const marco = doctype + doc.documentElement.outerHTML + '\n';
   const curso = { formato: 1, diapositivas, indice, glosario, fichas };
+  for (const k of CD.CLAVES_DATOS) if (datos[k] !== undefined) curso[k] = datos[k];
 
   /* ---- la prueba: el index armado tiene que ser el mismo curso ---- */
   const armado = CD.armarIndex(curso, marco);

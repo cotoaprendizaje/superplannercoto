@@ -67,21 +67,9 @@
 
   /* ---------- Catálogo de logros (CONTENIDO del curso) ----------
      Formato de `initLogros` (coto-logros.js): id corto y estable — viaja
-     en suspend_data, que en SCORM 1.2 tiene 4096 caracteres contados. */
-  var BADGES = [
-    { id: 'unidad1', nom: 'Unidad 1 completa', ic: '📘',
-      txt: 'Recorriste toda la Unidad 1.',
-      pista: 'Terminá la Unidad 1 para desbloquearlo.' },
-    { id: 'unidad2', nom: 'Unidad 2 completa', ic: '📗',
-      txt: 'Recorriste toda la Unidad 2.',
-      pista: 'Terminá la Unidad 2 para desbloquearlo.' },
-    { id: 'practica', nom: 'Práctica hecha', ic: '🏅',
-      txt: 'Completaste la mini práctica.',
-      pista: 'Completá la mini práctica para desbloquearlo.' },
-    { id: 'curso', nom: 'Curso completo', ic: '🎓',
-      txt: 'Terminaste "Prevención cardiovascular".',
-      pista: 'Llegá al cierre del curso para desbloquearlo.' }
-  ];
+     en suspend_data, que en SCORM 1.2 tiene 4096 caracteres contados.
+     El catálogo está en `curso.json` → `logros`. */
+  var BADGES = datosDelCurso('logros', []);   // en curso.json (Fase 1, kit v1.9.113)
 
   var estado = {
     factoresExplorados: {},
@@ -291,46 +279,11 @@
 
   /* ---------- Banco de la mini práctica ----------
      NO cuenta para la nota: la evaluación final es un cuestionario
-     aparte en Moodle (CLAUDE.md §3.11). `initMiniQuiz` sortea `size`
-     preguntas de acá y mezcla las opciones en cada intento. */
-  var QUIZ_BANK = [
-    { q: '¿Qué son las ENT?',
-      opts: ['Afecciones de larga duración que no se transmiten de persona a persona.', 'Enfermedades que se contagian por contacto directo.', 'Solo las enfermedades cardiovasculares.'], ok: 0,
-      why: 'Las ENT (Enfermedades No Transmisibles) son afecciones de larga duración que no se transmiten de persona a persona: cardiovasculares, cáncer, diabetes y respiratorias crónicas.',
-      related: 'que-son-ent', relatedLabel: '¿Qué son las ENT?' },
-    { q: '¿Cuál es la principal causa de muerte en la región de las Américas, según este curso?',
-      opts: ['Las enfermedades cardiovasculares.', 'Los accidentes de tránsito.', 'Las enfermedades respiratorias agudas.'], ok: 0,
-      why: 'En América, las enfermedades cardiovasculares son la principal causa de muerte: representan el 36,7% del total de muertes por ENT.',
-      related: 'ent-americas', relatedLabel: 'Las ENT en la región de las Américas' },
-    { q: '¿Qué es la aterosclerosis?',
-      opts: ['La acumulación de placa de colesterol en las arterias.', 'Una infección viral del corazón.', 'Un tipo de arritmia cardíaca.'], ok: 0,
-      why: 'La aterosclerosis ocurre cuando se acumula placa de colesterol en las arterias, tapando de a poco el paso de la sangre.',
-      related: 'aterosclerosis', relatedLabel: 'Aterosclerosis' },
-    { q: '¿Cómo se detecta la hipertensión arterial?',
-      opts: ['De forma rápida y sencilla, con un tensiómetro.', 'Solo con un análisis de sangre.', 'Con una radiografía de tórax.'], ok: 0,
-      why: 'La hipertensión arterial se evalúa de forma rápida y sencilla mediante un tensiómetro — y generalmente no presenta síntomas iniciales.',
-      related: 'hipertension-arterial', relatedLabel: 'Hipertensión arterial' },
-    { q: '¿Qué mide el IMC (Índice de Masa Corporal)?',
-      opts: ['La relación entre peso y altura, para detectar sobrepeso u obesidad.', 'La cantidad de colesterol en sangre.', 'La presión arterial en reposo.'], ok: 0,
-      why: 'El IMC calcula la relación entre peso y altura, y es una forma sencilla de detectar sobrepeso u obesidad junto con la cinta métrica.',
-      related: 'obesidad-detalle', relatedLabel: 'Obesidad' },
-    { q: 'Según la OMS, ¿cuántos minutos semanales de actividad física moderada se recomiendan como mínimo?',
-      opts: ['150 minutos.', '30 minutos.', '400 minutos.'], ok: 0,
-      why: 'La OMS recomienda al menos 150 minutos semanales de actividad física moderada (o 75 minutos de actividad intensa).',
-      related: 'sedentarismo-detalle', relatedLabel: 'Sedentarismo' },
-    { q: 'Al dejar de fumar, ¿cuándo empieza a bajar el riesgo cardiovascular?',
-      opts: ['De inmediato, y sigue bajando de forma progresiva.', 'Recién después de 10 años.', 'No baja si ya se fumó muchos años.'], ok: 0,
-      why: 'Al dejar de fumar, la reducción del riesgo cardiovascular es inmediata y progresiva — nunca es tarde para dejar.',
-      related: 'tabaquismo-detalle', relatedLabel: 'Tabaquismo' },
-    { q: 'Con un adecuado control y manejo de los factores de riesgo, ¿cuánto se puede reducir la mortalidad cardiovascular?',
-      opts: ['Un 50%.', 'Un 5%.', 'No se puede reducir.'], ok: 0,
-      why: 'Con un adecuado control y manejo de los factores de riesgo, se puede disminuir hasta un 50% de la mortalidad cardiovascular.',
-      related: 'control-factores', relatedLabel: 'Control de factores de riesgo' },
-    { q: '¿Cuál de estas es una recomendación real de "Últimos consejos" de este curso?',
-      opts: ['Consultar al médico de cabecera al menos una vez al año.', 'Solo hace falta consultar al médico si hay síntomas.', 'Medir la presión una sola vez en la vida alcanza.'], ok: 0,
-      why: 'Uno de los últimos consejos del curso es consultar al médico de cabecera al menos una vez al año, además de monitorear presión, glucemia y colesterol periódicamente.',
-      related: 'consejos', relatedLabel: 'Últimos consejos' }
-  ];
+     aparte en Moodle (CLAUDE.md §3.11). `initMiniQuiz` sortea
+     `porIntento` preguntas del banco y mezcla las opciones en cada
+     intento. El banco y los mensajes están en `curso.json` → `practica`
+     (Fase 1, kit v1.9.113): acá queda solo cómo se usan. */
+  var PRACTICA = datosDelCurso('practica', {});   // banco, preguntas por intento y mensajes: curso.json
 
   /* ---------- Premio final: umbrales de medalla ----------
      Salen del puntaje REAL alcanzable, no de números redondos:
@@ -346,13 +299,10 @@
      restantes salen de acertar los repasos y de la racha. Por eso el
      bronce arranca en el piso real y no en 0 — una medalla que se
      obtiene sin hacer nada no premia nada.
-     La LÓGICA (medallaDe/pintarMedalla) vive en coto-cierre.js; acá
-     quedan solo los umbrales, que sí son de este curso. */
-  var MEDALLAS = [
-    { id: 'oro',    desde: 130, nombre: 'oro',    icono: '🥇' },
-    { id: 'plata',  desde: 115, nombre: 'plata',  icono: '🥈' },
-    { id: 'bronce', desde: 0,   nombre: 'bronce', icono: '🥉' }
-  ];
+     La LÓGICA (medallaDe/pintarMedalla) vive en coto-cierre.js; los
+     umbrales, que sí son de este curso, están en `curso.json` →
+     `medallas`. */
+  var MEDALLAS = datosDelCurso('medallas', []);   // los umbrales: curso.json
 
   /* ============================================================
      GATE DE AVANCE (regla de contenido de este curso)
@@ -1204,11 +1154,11 @@
 
     /* ---- Mini práctica (coto-quiz.js) ---- */
     initMiniQuiz({
-      bank: QUIZ_BANK,
-      size: 3,
-      happyMessages: ['¡Correcto!', '¡Bien ahí!', '¡Eso es!'],
-      hotMessages: ['¡Imparable! Seguís en racha 🔥', '¡Así se cuida el corazón!'],
-      oopsMessages: ['No pasa nada, aprendamos de esta.', 'Casi… mirá por qué.', 'Revisá la explicación y seguimos.'],
+      bank: PRACTICA.banco || [],
+      size: PRACTICA.porIntento,
+      happyMessages: (PRACTICA.mensajes || {}).bien,
+      hotMessages: (PRACTICA.mensajes || {}).racha,
+      oopsMessages: (PRACTICA.mensajes || {}).error,
       getState: function () { return estado.quiz || null; },
       setState: function (q, intentos) { estado.quiz = q; estado.quizAttempts = intentos; persistir(); },
       onAnswer: function (correcta, racha) {

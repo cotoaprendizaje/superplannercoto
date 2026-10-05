@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.112**.
+Vigente para **kit-base v1.9.113**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -341,9 +341,14 @@ python3 tools/build-zip.py                                 # el zip para el LMS
   <curso>`. Verifica cada pieza y lo que todavía no sabe modelar lo deja
   como HTML tal cual; si el curso armado no diera igual al original, no
   escribe nada. Es opcional.
+- **Lo que `curso.js` usa y no es marcado también va en `curso.json`**:
+  `practica` (banco, `porIntento`, mensajes), `logros` y `medallas`. El
+  armador los pone en el index y `curso.js` los lee con
+  `datosDelCurso('practica', {})`. No se escriben otra vez en `curso.js`
+  (§7.62).
 - **Por ahora los cursos se siguen haciendo como siempre.** El formato
-  todavía no cubre la mini práctica ni el cierre; cuando los cubra, pasa
-  a ser la forma de arrancar un curso nuevo.
+  todavía no cubre el cierre; cuando lo cubra, pasa a ser la forma de
+  arrancar un curso nuevo.
 
 ---
 

@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.112** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.113** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -408,6 +408,18 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.113 — Fase 1, segunda parte: la mini práctica como datos
+
+Ver CLAUDE.md §7.62.
+
+- **`curso.json` puede traer `practica`, `logros` y `medallas`**: el
+  armador los escribe en el index como `<script type="application/json"
+  id="d-curso-datos">` y `curso.js` los lee con **`datosDelCurso()`**
+  (nuevo en `coto-ui.js`). El contenido de la práctica sale de `curso.js`.
+- **Tipo de diapositiva `practica`** en el formato.
+- **Cardio**: su `curso.js` ya no trae banco, logros ni medallas; la
+  práctica se comporta idéntica (mismas preguntas, mismo resultado).
 
 ### v1.9.112 — una sola voz a la vez, y el botón ▶/■ de la locución
 

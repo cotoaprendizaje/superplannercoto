@@ -14893,3 +14893,64 @@ Las dos direcciones:
 | arnés (2 combinaciones) | verde | 1 fallo ("Repetir" con el video sonando) |
 | cardio (26) | verde | 15 fallos |
 | arnés sin videos (inyectado) | verde | 2 fallos (los dos órdenes con el play nativo) |
+
+## 7.62 Fase 1, segunda parte: la mini práctica, los logros y las medallas como datos (kit-base v1.9.113)
+
+### El canal: datos para `curso.js` dentro del index
+
+Hasta acá `curso.json` describía MARCADO. Pero el contenido de una mini
+práctica —sus preguntas, opciones, explicaciones— no está en el HTML:
+estaba escrito dentro de `curso.js` (`QUIZ_BANK`), igual que el catálogo
+de logros (`BADGES`) y los umbrales de medalla (`MEDALLAS`).
+
+Ahora `curso.json` puede traer tres claves más —`practica` (`banco`,
+`porIntento`, `mensajes.bien|racha|error`), `logros` y `medallas`— y el
+armador las escribe en el index como
+`<script type="application/json" id="d-curso-datos">`, en el hueco
+`<!--{{DATOS}}-->` del marco (antes del primer script). El navegador no
+lo ejecuta. `curso.js` los lee con **`datosDelCurso(clave, porDefecto)`**
+(nuevo en `coto-ui.js`): sin el bloque o sin la clave devuelve
+`porDefecto`, así un curso puede pasar a datos de a una pieza; un JSON
+roto queda en consola en vez de tragarse.
+
+Por qué un bloque dentro del index y no un `curso.json` que se baje con
+`fetch`: un `fetch` de un archivo local no anda si el curso se abre
+desde el disco, y el index ya es el único archivo que el armador
+escribe. El `<` del JSON va escapado (`<`) para que un texto con
+`</script>` no cierre el bloque.
+
+Un marco anterior a v1.9.113 no tiene el hueco: sigue armando igual
+mientras el curso no tenga datos; si los tiene, el armador lo pide. El
+extractor deja el hueco siempre (y si el index ya trae el bloque, lo lee).
+
+### El tipo `practica`
+
+La diapositiva de la mini práctica pasa a ser un tipo:
+`antetitulo`, `titulo` (visible, no `sr-only`), `bajada` (no se narra),
+`aviso` (un elemento de HTML libre entre la bajada y las preguntas; cardio
+pone ahí "esto no es la evaluación") y el `<div data-quiz>`, que arma el
+kit. Las preguntas no van en la diapositiva: son `practica.banco`.
+
+### Cardio
+
+- "evaluacion" pasó de `html` a `practica`. Quedan como `html` las tres
+  piezas propias (barras, torta, factores) y "cierre".
+- Su `curso.js` ya no trae el banco (9 preguntas), los mensajes, los 4
+  logros ni las 3 medallas: los lee de `curso.json`. Bajó de 1.375 a
+  1.325 líneas, y lo que queda es lógica. Los arreglos se pasaron
+  EVALUÁNDOLOS desde el código (no copiándolos a mano).
+
+Verificado contra el cardio de v1.9.112 (banco dentro de `curso.js`):
+- `visual-regress`: 20 diapositivas sin cambios, tres corridas;
+- la práctica, con el azar fijo: las mismas tres preguntas en el mismo
+  orden con las mismas opciones, las mismas devoluciones, el mismo
+  resultado; 4 logros en el panel y el mismo contador;
+- armar y extraer sigue siendo ida y vuelta exacta;
+- al revés: cardio armado SIN `practica` → `mini-practica` da rojo ("la
+  pregunta tiene 0 opciones"). Un banco que no llega no pasa callado.
+
+### Lo que falta de la Fase 1
+
+El cierre (con el resumen imprimible y los rangos de medalla, que hoy se
+escriben a mano y repiten los umbrales de `medallas`), y después que
+`new-course.mjs` arranque los cursos directamente como datos.

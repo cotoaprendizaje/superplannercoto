@@ -1085,6 +1085,33 @@
     });
   }
 
+  /* ---- datosDelCurso(clave, porDefecto) — kit-base v1.9.113 (Fase 1) ----
+     Un curso armado desde `curso.json` (tools/armar-curso.mjs) trae su
+     contenido no-marcado —el banco de la mini práctica, los logros, las
+     medallas— en un bloque `<script type="application/json"
+     id="d-curso-datos">` dentro del index. Esto lo lee:
+
+       var QUIZ_BANK = datosDelCurso('practica', {}).banco;
+       var BADGES    = datosDelCurso('logros', []);
+
+     Sin el bloque (un curso hecho a mano), o sin esa clave, devuelve
+     `porDefecto`: un curso puede pasar a datos de a una pieza. Se parsea
+     una sola vez. Un JSON roto NO se traga en silencio: queda en consola,
+     porque un curso sin banco de preguntas tiene que verse roto, no vacío. */
+  var _datosCurso = null;
+  function datosDelCurso(clave, porDefecto) {
+    if (_datosCurso === null) {
+      _datosCurso = {};
+      var el = document.getElementById('d-curso-datos');
+      if (el) {
+        try { _datosCurso = JSON.parse(el.textContent) || {}; }
+        catch (e) { if (global.console) console.error('[datosDelCurso] el bloque #d-curso-datos no es JSON válido:', e); }
+      }
+    }
+    if (clave == null) return _datosCurso;
+    return Object.prototype.hasOwnProperty.call(_datosCurso, clave) ? _datosCurso[clave] : porDefecto;
+  }
+
   global.CotoUI = {
     initTiempoActivo: initTiempoActivo,
     tiempoActivoMs: tiempoActivoMs,
@@ -1228,4 +1255,5 @@
   global.initSummaryPrint = initSummaryPrint;
   global.initIndexJumps = initIndexJumps;
   global.initPopupPrefetch = initPopupPrefetch;
+  global.datosDelCurso = datosDelCurso;
 })(window);
