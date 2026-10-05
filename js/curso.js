@@ -21,7 +21,7 @@
      6. CSS propio del curso en diapositivas.css (nunca en los .css
         del kit) + assets.css si hace falta
      7. imsmanifest.xml con la lista real de archivos
-     8. Antes de entregar: correr tools/tests/*.mjs (los 57, exit 0 en
+     8. Antes de entregar: correr tools/tests/*.mjs (los 58, exit 0 en
         todos) y tools/verify-hitboxes.mjs para inspección visual
    ============================================================ */
 (function () {

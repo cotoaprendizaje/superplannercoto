@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.111 · Área Aprendizaje (COTO)
+kit-base v1.9.112 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 57 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 58 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -17,7 +17,7 @@ le hable — nació de un bug real en el que ningún curso escuchaba
 `courseend`, así que el alumno terminaba todo y en el LMS quedaba
 "incomplete" para siempre, sin que ningún test lo notara.
 
-⚠️ **Quince tests se arman su propio marcado** en vez de mirar el del
+⚠️ **Dieciséis tests se arman su propio marcado** en vez de mirar el del
 curso: `objetivos-progreso.mjs` y `recursos-panel.mjs` (kit v1.9.86),
 `minijuego.mjs` y `corte-directo.mjs` (v1.9.87), y
 `locucion-segundos.mjs` (v1.9.92: le escribe texto propio a la
@@ -42,6 +42,11 @@ suelta la fuente estuvo seis versiones sin hacer nada, y
 de fondo. Y `bloque-no-tapa-arte.mjs` (v1.9.105) se autoverifica
 siempre con una lámina dibujada en canvas: un bloque en el hueco tiene
 que dar 0 píxeles de dibujo y uno encima del dibujo tiene que detectarse.
+Y `una-sola-voz.mjs` (v1.9.112) sirve un webm CON AUDIO fabricado al
+vuelo (`$TMPDIR/coto-prueba-video-audio.webm`) y, si el curso no tiene
+ningún video, le agrega uno con controles nativos a una diapositiva que
+se narra: la regla de una sola voz vive en `narrador.js` y vale para
+cualquier video, así que siempre hay algo que medir.
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

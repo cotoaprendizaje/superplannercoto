@@ -522,6 +522,33 @@ html.d-ios.d-fullscreen .d-top { padding-left: 64px; }
 }
 .d-narr-foot { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
 
+/* ---- Reproducir / Detener (kit-base v1.9.112) ----
+   Un solo botón redondo que alterna ▶/■ a la izquierda de la barra. Se
+   eligió sobre dos botones con texto ("Reproducir" / "Detener") porque
+   es el gesto de cualquier reproductor y no le suma un renglón a un
+   panel que ya trae estado, barra, velocidad y Repetir.
+   El ícono lo decide `.is-hablando`, que pone `initNarrateTimeline` desde
+   el mismo `progreso()` que mueve la barra: no pueden contar cosas
+   distintas. */
+.d-narr-row { display: flex; align-items: center; gap: .55rem; }
+.d-narr-row .d-narr-range { flex: 1; min-width: 0; }
+.d-narr-toggle {
+  flex: none; width: 34px; height: 34px; padding: 0; border: none; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer;
+  background: var(--cat-strong); color: #fff;
+  box-shadow: 0 3px 8px -2px color-mix(in srgb, var(--cat-strong) 60%, transparent);
+  transition: background .15s, transform .15s, opacity .15s;
+}
+.d-narr-toggle:hover:not(:disabled) { transform: scale(1.06); }
+.d-narr-toggle:focus-visible { outline: 3px solid var(--cat-strong); outline-offset: 2px; }
+.d-narr-toggle:disabled { opacity: .35; cursor: not-allowed; box-shadow: none; }
+.d-narr-toggle svg { width: 16px; height: 16px; fill: currentColor; }
+.d-narr-toggle .ic-stop { display: none; }
+.d-narr-toggle.is-hablando .ic-play { display: none; }
+.d-narr-toggle.is-hablando .ic-stop { display: block; }
+/* Los tiempos se alinean con la BARRA, no con el borde del panel. */
+.d-narr-row + .d-narr-times { margin-left: calc(34px + .55rem + 2px); }
+
 /* ---- Atajo de velocidad dentro del panel de Locución ----
    Pareja de `initRateQuick()` (coto-player.js). −/valor/+ en vez de un
    slider: el panel es angosto y un range de 0,75 a 1,40 ahí adentro
@@ -552,6 +579,8 @@ html.d-ios.d-fullscreen .d-top { padding-left: 64px; }
 
 @media (prefers-reduced-motion: reduce) {
   .d-audio-pop { transition: none; }
+  .d-narr-toggle { transition: none; }
+  .d-narr-toggle:hover:not(:disabled) { transform: none; }
   .d-narr-status .dot { animation: none; }
 }
 

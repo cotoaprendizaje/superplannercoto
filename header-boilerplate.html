@@ -185,7 +185,17 @@
                no tenía forma de saber si estaba roto o si no había
                nada que escuchar. Lo pinta `initNarrateTimeline()`. -->
           <p class="d-narr-estado" id="d-narr-estado"></p>
-          <input class="d-narr-range" id="d-narr-range" type="range" min="0" max="0" value="0" step="0.1" disabled aria-label="Avance de la locución, en segundos: arrastrá para adelantar o volver atrás">
+          <!-- Reproducir / Detener en UN botón que alterna ▶/■, al lado de la
+               barra, como cualquier reproductor (kit-base v1.9.112). Pedido del
+               cliente: *"estaría bueno que el menú de la locución tenga un botón
+               de play y stop"*. Detener corta y deja la barra donde iba;
+               Reproducir sigue desde esa frase, o empieza de nuevo si había
+               terminado. No apaga la locución del curso: para eso está el botón
+               "Locución". Lo cablea `initNarrateTimeline` (coto-player.js). -->
+          <div class="d-narr-row">
+            <button class="d-narr-toggle" id="d-narr-toggle" type="button" aria-label="Reproducir la locución" title="Reproducir" disabled><svg class="ic-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.2v13.6a.8.8 0 0 0 1.2.7l10.6-6.8a.8.8 0 0 0 0-1.4L9.2 4.5A.8.8 0 0 0 8 5.2z"/></svg><svg class="ic-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></svg></button>
+            <input class="d-narr-range" id="d-narr-range" type="range" min="0" max="0" value="0" step="0.1" disabled aria-label="Avance de la locución, en segundos: arrastrá para adelantar o volver atrás">
+          </div>
           <div class="d-narr-times"><span id="d-narr-time">0:00</span><span id="d-narr-total">0:00</span></div>
           <p class="d-narr-hint">Arrastrá para adelantar o volver atrás.</p>
           <div class="d-narr-foot">

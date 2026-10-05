@@ -503,6 +503,10 @@
       var status = document.getElementById('d-narr-status');
       var estado = document.getElementById('d-narr-estado');
       var hint = document.querySelector('.d-narr-hint');
+      /* Reproducir / Detener (kit-base v1.9.112): un botón que alterna.
+         Opcional — un curso con el marcado viejo, sin `#d-narr-toggle`,
+         queda exactamente como estaba. */
+      var toggleBtn = document.getElementById('d-narr-toggle');
       if (!range || !replayBtn || !('speechSynthesis' in global)) return;
 
       var arrastrando = false;
@@ -538,6 +542,17 @@
         var hay = !!(p && p.total);
         range.disabled = !hay;
         replayBtn.disabled = !hay;
+        /* "Hablando" sale del mismo `progreso()` que mueve la barra, así
+           los botones y la barra no pueden contar cosas distintas. */
+        var encendida = !!(global.Narrador && global.Narrador.isNarrating && global.Narrador.isNarrating());
+        var hablando = hay && !p.terminado;
+        if (toggleBtn) {
+          toggleBtn.disabled = !hay || !encendida;
+          toggleBtn.classList.toggle('is-hablando', hablando);
+          toggleBtn.setAttribute('aria-label', hablando ? 'Detener la locución' : 'Reproducir la locución');
+          toggleBtn.title = hablando ? 'Detener' : 'Reproducir';
+        }
+
         /* El estado, en palabras. Antes, con la locución apagada o en
            una diapositiva que por diseño no narra (`--bg-video`), el
            panel mostraba un slider gris y NADA más: no había forma de
@@ -548,6 +563,8 @@
             estado.textContent = 'La locución está apagada';
           } else if (!hay) {
             estado.textContent = 'Esta diapositiva no tiene locución';
+          } else if (p.detenido) {
+            estado.textContent = 'Locución detenida';
           } else if (p.terminado) {
             estado.textContent = 'Locución terminada';
           } else {
@@ -609,6 +626,10 @@
         pintar(p);
       }, 250);
       replayBtn.addEventListener('click', function () { global.Narrador.repeat(); });
+      if (toggleBtn) toggleBtn.addEventListener('click', function () {
+        var p = global.Narrador.progreso();
+        if (p && !p.terminado) global.Narrador.detener(); else global.Narrador.reproducir();
+      });
     }
 
     /* ---- La gracia de hover SE FUE, y con ella `attachHoverGrace` ----

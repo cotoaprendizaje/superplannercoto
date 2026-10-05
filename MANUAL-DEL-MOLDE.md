@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.111**.
+Vigente para **kit-base v1.9.112**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -247,6 +247,14 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   tiene que parecer "empezar", no un error (§7.37).
 - Velocidad por defecto 1.05, voz latina/argentina antes que la de EE.UU.
   (§7.49, §6.54).
+- **Nunca suenan dos cosas a la vez** (regla del cliente). Lo garantiza
+  `narrador.js` para cualquier video: una locución que arranca pausa los
+  videos audibles, y un video que se vuelve audible corta la locución.
+  Un curso no tiene que coordinarlo a mano; `una-sola-voz` lo mide
+  (§7.61).
+- **El panel de Locución trae ▶/■** (`#d-narr-toggle`, en el header del
+  kit desde v1.9.112). Un curso anterior lo gana agregando ese marcado a
+  su index; sin él no pasa nada (§7.61).
 
 ---
 

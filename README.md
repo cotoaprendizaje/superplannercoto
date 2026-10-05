@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.111** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.112** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -96,7 +96,7 @@ kit-base/
 │   │                           no es liso (v1.9.105)
 │   ├── check-keyframes.mjs   — toda `animation` con su `@keyframes` (v1.9.108)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 57 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 58 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -169,7 +169,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 57, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 58, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -408,6 +408,19 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.112 — una sola voz a la vez, y el botón ▶/■ de la locución
+
+Ver CLAUDE.md §7.61. Relevo de "Prevención cardiovascular".
+
+- **`narrador.js`**: una locución que arranca pausa los videos que suenan,
+  y un video que se vuelve audible (también por sus controles nativos)
+  corta la locución. Nunca suenan dos a la vez.
+- **Botón ▶/■ en el panel de Locución** (`coto-player.js`, CSS y
+  `header-boilerplate.html`): Detener deja la barra donde iba; Reproducir
+  sigue desde ahí. Opcional: un curso viejo sin el marcado queda igual.
+- **`tests/una-sola-voz.mjs`** (58 tests): recorre el curso con un video
+  con audio real y mide cada 50ms que no suenen dos cosas.
 
 ### v1.9.111 — Fase 1, primera parte: el curso como datos
 

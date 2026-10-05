@@ -447,7 +447,17 @@
   function segActual() {
     if (!estadoActual || !estadoActual.acum) return 0;
     var i = Math.min(estadoActual.index, estadoActual.durs.length - 1);
-    if (estadoActual.terminado) return estadoActual.segTotal;
+    /* Cortada a MITAD de camino, la barra se queda donde se cortó: el
+       comienzo de la frase en curso, que es desde donde `reproducir()`
+       va a seguir. La primera versión de Detener la mandaba al final
+       (0:29 de 0:29) porque `terminado` no distinguía "llegó al final"
+       de "la pararon" — se vio en el render, que decía además
+       "Locución terminada" sobre una locución a la mitad. */
+    if (estadoActual.terminado) {
+      return estadoActual.index < estadoActual.trozos.length
+        ? (estadoActual.acum[i] || 0)
+        : estadoActual.segTotal;
+    }
     var base = estadoActual.acum[i] || 0;
     var corrido = estadoActual.t0 ? (Date.now() - estadoActual.t0) / 1000 : 0;
     return Math.min(estadoActual.segTotal, base + Math.min(corrido, estadoActual.durs[i] || 0));
@@ -639,11 +649,77 @@
     synth.speak(u);
   }
 
+  /* ---- UNA SOLA VOZ A LA VEZ (kit-base v1.9.112, relevo de "Prevención
+     cardiovascular") ----
+     Regla del cliente, textual: *"siempre hay que ver que haya 1 sola
+     locución en acción"* — y en ninguna parte del curso.
+
+     La coordinación entre la locución y los videos iba en UN SOLO
+     sentido. Todos los patrones de coto-media.js cortan la locución al
+     arrancar un video (`silenciarLocucion()`), pero ninguno se enteraba
+     de que arrancaba una locución. REPRODUCIDO en "Prevención
+     cardiovascular": el video circular de aterosclerosis sonando, el
+     alumno toca una de las cuatro etapas, se abre su pop-up, el pop-up
+     se narra… y el video sigue. Dos voces a la vez, medido con un video
+     con audio real y la locución espiada.
+
+     El arreglo va ACÁ y no en el video circular, porque acá es donde
+     pasan TODAS las locuciones: pop-ups, diapositivas, devoluciones de
+     un repaso, la prueba de voz del panel. Un parche por patrón de video
+     deja abierto el que falte; uno en `speak()` no deja ninguno.
+
+     Gana lo último que hizo el alumno: si arranca un video, se corta la
+     voz (eso ya estaba); si abre algo que se narra, se pausa el video. No
+     se reanuda solo al cerrar — vuelve a su botón de play, que el video
+     circular ya muestra al pausarse, y el alumno decide.
+
+     Va DESPUÉS del "¿hay algo para decir?" a propósito: una locución
+     vacía no pausa nada. Eso es lo que protege a la portada y a los
+     separadores de unidad, que son video de fondo con sonido y por
+     diseño no tienen texto que narrar.
+
+     Solo los videos AUDIBLES: uno silenciado o en volumen 0 no compite
+     con nadie, y pausarlo sería un efecto sin causa. Y una locución en
+     volumen 0 (silenciada desde el panel) tampoco es una voz. */
+  function callarVideos() {
+    if (volumenEfectivo() <= 0) return;
+    var vs = document.querySelectorAll('video');
+    for (var i = 0; i < vs.length; i++) {
+      var v = vs[i];
+      if (!v.paused && !v.muted && v.volume > 0) {
+        try { v.pause(); } catch (e) {}
+      }
+    }
+  }
+
+  /* ---- …y el otro sentido: un video que empieza a sonar calla la voz ----
+     Los patrones de coto-media.js ya llaman a `cancel()`, pero desde el
+     HANDLER DE SU BOTÓN, no desde el video. Cualquier otro camino que
+     haga sonar un video lo saltea. MEDIDO: con la locución de un pop-up
+     en curso, un `play()` que no pasa por el botón del kit deja las dos
+     voces sonando. El caso real es el video con carátula, que conserva
+     los controles NATIVOS: su play nativo no pasaba por ningún
+     `silenciarLocucion()`.
+     Escucha en CAPTURA porque los eventos de medios no burbujean: es la
+     única forma de oír a todos los `<video>` del documento, incluidos los
+     que se agreguen después, sin engancharse a cada uno.
+     `volumechange` también: un video que ya estaba corriendo en silencio
+     y se vuelve audible empieza a competir en ese momento. */
+  function videoAudible(v) {
+    return v && v.tagName === 'VIDEO' && !v.paused && !v.muted && v.volume > 0;
+  }
+  if (global.document && global.document.addEventListener) {
+    var alSonar = function (e) { if (videoAudible(e.target)) cancel(); };
+    global.document.addEventListener('play', alSonar, true);
+    global.document.addEventListener('volumechange', alSonar, true);
+  }
+
   function speak(text, kind) {
     var synth = global.speechSynthesis; if (!synth) return;
     cancel();
     estadoActual = null;
     if (!narrating || !text) { emitirProgreso(); return; }
+    callarVideos();
     var v = pickVoice();
     /* VELOCIDAD BASE 1.0x PARA TODA VOZ — decisión explícita del
        cliente en la vuelta de iPad (kit-base v1.9.82), que reemplaza
@@ -691,11 +767,38 @@
   function seek(i) {
     if (!estadoActual || !narrating) return;
     cancel(); // corta lo que esté sonando (sube speakGen)
+    /* La SEGUNDA puerta por la que la locución empieza a sonar, y la que
+       quedó abierta en la primera versión de "una sola voz": "Repetir",
+       arrastrar la barra del panel y el cambio de volumen pasan por acá,
+       no por `speak()`. Lo encontró `tests/una-sola-voz.mjs` barriendo
+       el curso: en las 8 diapositivas con video, pulsar "Repetir" con el
+       video sonando dejaba las dos voces. */
+    callarVideos();
     hablarDesde(i);
   }
   function repeat() {
     if (!estadoActual) return;
     seek(0);
+  }
+  /* ---- Detener / Reproducir, para el botón ▶/■ del panel (v1.9.112) ----
+     Pedido del cliente: *"estaría bueno que el menú de la locución tenga
+     un botón de play y stop"*.
+     `detener()` corta y se ACUERDA de dónde iba — la barra del panel se
+     queda en ese punto —, y `reproducir()` sigue desde ahí. Si la
+     locución había llegado al final, `reproducir()` empieza de nuevo:
+     es lo que se espera de un play sobre algo terminado.
+     Ninguno de los dos toca el interruptor general de la locución: la
+     próxima diapositiva se narra igual. Para apagarla del todo está el
+     botón "Locución". Y `reproducir()` entra por `seek()`, así que hereda
+     la regla de una sola voz: si hay un video sonando, se pausa. */
+  function detener() {
+    if (!estadoActual || estadoActual.terminado) return;
+    cancel();
+  }
+  function reproducir() {
+    if (!estadoActual || !narrating) return;
+    var i = estadoActual.index < estadoActual.trozos.length ? estadoActual.index : 0;
+    seek(i);
   }
   /* `volume` de un SpeechSynthesisUtterance NO se puede tocar en caliente
      sobre uno que ya está sonando — la única forma de aplicar un volumen
@@ -712,6 +815,11 @@
     return {
       index: estadoActual.index, total: estadoActual.trozos.length,
       terminado: !!estadoActual.terminado,
+      /* `detenido`: cortada ANTES del final (el alumno la paró, o la
+         cortó un video). Es lo que distingue "Reproducir = seguir desde
+         acá" de "Reproducir = empezar de nuevo". `terminado` solo no
+         alcanza: `cancel()` lo pone en true en los dos casos. */
+      detenido: !!estadoActual.terminado && estadoActual.index < estadoActual.trozos.length,
       seg: segActual(), segTotal: estadoActual.segTotal || 0
     };
   }
@@ -1212,6 +1320,8 @@
     seek: seek,
     seekSeg: seekSeg,
     repeat: repeat,
+    detener: detener,
+    reproducir: reproducir,
     progreso: progreso,
     refreshVolume: refreshVolume
   };

@@ -14815,3 +14815,81 @@ Los cursos se siguen armando como siempre (`new-course.mjs` y el index
 a mano) hasta que el formato cubra evaluación y cierre. Convertir un
 curso existente con `extraer-curso.mjs` es opcional y seguro; nadie
 está obligado a migrar.
+
+## 7.61 Una sola voz a la vez, y el botón ▶/■ de la locución (kit-base v1.9.112)
+
+Relevo de "Prevención cardiovascular" (zip `b8b1d11c`, rotulado por el
+chat del curso como "parche v1.9.106 → v1.9.110"; esos números son del
+chat del curso, no del kit). Reemplaza a los relevos 108 y 109: siete de
+sus archivos son idénticos al 109 (`25dbc411`), ya portado en v1.9.108,
+y no se tocaron.
+
+### 1 · Una sola voz (`narrador.js`)
+
+Regla del cliente: *"siempre hay que ver que haya 1 sola locución en
+acción"*, en todo el curso. La coordinación iba en un solo sentido: los
+patrones de `coto-media.js` cortan la locución al arrancar un video,
+pero una locución que arrancaba no pausaba el video. Tres puertas:
+abrir algo que se narra con un video sonando, el "Repetir" del panel
+(habla por `seek()`, no por `speak()`), y un video que arranca por sus
+controles NATIVOS (no pasa por ningún `silenciarLocucion()`).
+
+Portado por partes:
+- `callarVideos()`: pausa los videos AUDIBLES; se llama desde `speak()`
+  (después del "¿hay texto?", así una diapositiva sin locución, como un
+  video de fondo, no pausa nada) y desde `seek()`. Una locución en
+  volumen 0 no pausa nada.
+- Escucha `play` y `volumechange` en captura en todo el documento: un
+  video que se vuelve audible corta la locución.
+- `detener()` / `reproducir()` y `progreso().detenido`; `segActual()`
+  deja la barra en el comienzo de la frase cortada.
+
+**No se portó** lo que el `narrador.js` del relevo traía de una copia
+vieja: le faltaba `alTerminar` (v1.9.99, lo usa el minijuego) y el
+recorte del título repetido en pop-ups (v1.9.100). Copiarlo entero los
+borraba.
+
+Verificado que no pausa videos que no compiten: el pop-up del
+reproductor está excluido de `initPopupNarration`, y los videos de fondo
+arrancan en mudo.
+
+### 2 · El botón ▶/■ (`coto-player.js`, `coto-player-chrome.css`, `header-boilerplate.html`)
+
+Pedido: *"estaría bueno que el menú de la locución tenga un botón de
+play y stop"*. Un botón redondo que alterna, a la izquierda de la barra.
+Detener corta y deja la barra donde iba ("Locución detenida");
+Reproducir sigue desde esa frase, o empieza de nuevo si había terminado;
+con la locución apagada queda deshabilitado. Es opcional: un curso sin
+`#d-narr-toggle` en su index queda como estaba (`actualizar-kit` no toca
+el index, así que los cursos existentes lo ganan solo si se agrega el
+marcado).
+
+Probado en un curso recién generado (el arnés y el curso de prueba no
+tienen el marcado nuevo): los cuatro estados de arriba, y con clic real
+de mouse sobre el panel abierto.
+
+**No se portó** el `@media (max-width: 899px)` del CSS del relevo: es
+cardio atrasado, el kit lo cambió a propósito (§7.56).
+
+### 3 · `tests/una-sola-voz.mjs` (nuevo, 58 tests)
+
+Recorre el curso: arranca cada video que el alumno puede arrancar y
+dispara cada cosa que se narra (pop-ups, etapas, "Repetir", el ▶ si
+está), en los dos órdenes, con un muestreador cada 50ms. Vigila también
+que los videos de fondo NO queden pausados al entrar.
+
+Adaptado al portarlo:
+- el webm con audio se fabrica al vuelo en `$TMPDIR` (como
+  `reproductor-video`) en vez de viajar en el kit (327 KB a cada curso);
+  no se portaron `media/prueba-con-audio.webm` ni `media/generar.mjs`;
+- **no da verde por ausencia**: en un curso sin videos agrega un
+  `<video>` con controles nativos a la primera diapositiva que se narra
+  y mide ese par; y si no pudo probar ninguna combinación, falla;
+- usa `report()`/`requireUrl()` de `_shared.mjs`.
+
+Las dos direcciones:
+| curso | kit arreglado | sin `callarVideos` ni la escucha de `play` |
+|---|---|---|
+| arnés (2 combinaciones) | verde | 1 fallo ("Repetir" con el video sonando) |
+| cardio (26) | verde | 15 fallos |
+| arnés sin videos (inyectado) | verde | 2 fallos (los dos órdenes con el play nativo) |
