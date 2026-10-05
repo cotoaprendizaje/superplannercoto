@@ -122,8 +122,70 @@ export function armarNarracion(n, ind = '      ') {
 const CLASE_TIPO = {
   lamina: 'slide d-shot-slide d-shot-slide--bg-layered',
   'video-fondo': 'slide d-shot-slide d-shot-slide--bg-video',
-  practica: 'slide'
+  practica: 'slide',
+  cierre: 'slide slide-cierre d-shot-slide'
 };
+
+/* ---------- el cierre (v1.9.114) ----------
+   El patrón de los cinco cursos auditados: la lámina final (paso
+   "shot") y, al tocar Siguiente, el resumen (paso "summary") con la
+   medalla, sus rangos, los números del alumno, una nota, los botones y
+   un repaso del curso. Lo arma `coto-cierre.js`; acá solo el marcado.
+
+   Los RANGOS de medalla repetían a mano los umbrales de `medallas`
+   ("130 puntos o más", "de 115 a 129", "menos de 115"). Si no se pasan,
+   salen de `medallas`; un curso que los cuenta de otra forma ("los 5 de
+   5 logros", PLU) los trae escritos en `rangos`. */
+function capital(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+export function rangosPorDefecto(medallas) {
+  const orden = (medallas || []).slice().sort((a, b) => b.desde - a.desde);
+  return orden.map((m, k) => {
+    let detalle;
+    if (k === 0) detalle = `${m.desde} puntos o más`;
+    else if (k === orden.length - 1) detalle = `menos de ${orden[k - 1].desde}`;
+    else detalle = `de ${m.desde} a ${orden[k - 1].desde - 1}`;
+    return { id: m.id, icono: m.icono, nombre: capital(m.nombre), detalle };
+  });
+}
+
+export function armarCierre(d, ind, medallas) {
+  const rangos = d.rangos || rangosPorDefecto(medallas);
+  const et = d.rangosEtiqueta || 'i';
+  const r = ind + '      ';
+  let out = `${ind}  <h2 data-slide-title class="sr-only">${d.titulo}</h2>\n`;
+  if (d.bloqueo != null) out += `${ind}  <p class="locked">${d.bloqueo}</p>\n`;
+  out += `${ind}  <div class="d-cierre-shot" data-cierre-step="shot">\n` +
+    `${ind}    <div class="d-shot" data-shot>\n` +
+    `${ind}      <img class="d-shot-img" src="${esc(d.imagen)}" alt="" aria-hidden="true">\n` +
+    `${ind}    </div>\n` + armarNarracion(d.narracion, ind + '    ') +
+    `${ind}  </div>\n` +
+    `${ind}  <div class="slide-inner d-cierre-summary" data-cierre-step="summary" hidden>\n` +
+    `${ind}    <div class="d-cierre-cols">\n` +
+    `${ind}      <div class="d-cierre-results">\n`;
+  if (d.saludo) out += `${r}  <p class="who" hidden>¡Hola, <span id="d-cert-name"></span>! 👋</p>\n`;
+  out += `${r}  <div class="d-medalla" data-medalla>\n` +
+    `${r}    <div class="d-medalla-ic" data-medalla-ic aria-hidden="true">🥉</div>\n` +
+    `${r}    <div>\n` +
+    `${r}      <p class="d-medalla-tit">${d.rotuloMedalla ? '<span data-medalla-lbl>Medalla de</span>' : 'Medalla de'} <b data-medalla-nombre>bronce</b></p>\n` +
+    `${r}      <p class="d-medalla-sub" data-medalla-sub></p>\n` +
+    `${r}    </div>\n${r}  </div>\n` +
+    `${r}  <ol class="d-medalla-rangos" data-medalla-rangos aria-label="Cómo se obtiene cada medalla">\n` +
+    rangos.map((g) => `${r}    <li data-rango="${esc(g.id)}"><span aria-hidden="true">${g.icono}</span><b>${g.nombre}</b><${et}>${g.detalle}</${et}></li>\n`).join('') +
+    `${r}  </ol>\n` +
+    `${r}  <div class="d-cert-stats">\n` +
+    (d.numeros || []).map((n) => `${r}    <div class="s"><b id="${esc(n.id)}">–</b><span>${n.rotulo}</span></div>\n`).join('') +
+    `${r}  </div>\n`;
+  if (d.nota != null) out += `${r}  <p class="d-cert-note">${d.nota}</p>\n`;
+  out += `${r}  <div class="cta">\n` +
+    `${r}    <button class="btn btn-cat" type="button" data-popup-trigger="logros">Ver mis logros 🏆</button>\n` +
+    `${r}    <button class="btn btn-cat-ghost" type="button" id="d-summary-print" title="Abre el diálogo de impresión: elegí &quot;Guardar como PDF&quot; para descargarlo">${d.imprimir || 'Imprimir resumen 📄'}</button>\n` +
+    `${r}  </div>\n` +
+    `${ind}      </div>\n` +
+    `${ind}      <div class="d-cierre-recap">\n${ind}        ${d.repaso}\n${ind}      </div>\n` +
+    `${ind}    </div>\n${ind}  </div>\n`;
+  if (d.confeti) out += `${ind}  <div class="d-confetti" id="d-confetti" aria-hidden="true"></div>\n`;
+  return out;
+}
 
 function atributosSlide(d, i) {
   const r = d.requisitos || {};
@@ -140,7 +202,7 @@ function atributosSlide(d, i) {
   };
 }
 
-export function armarDiapositiva(d, i, ind = '    ') {
+export function armarDiapositiva(d, i, ind = '    ', medallas) {
   const abre = `${ind}<section${attrs(atributosSlide(d, i))}>\n`;
   const cierra = `${ind}</section>`;
   if (d.tipo === 'html') return abre + `${ind}  ${d.html}\n` + cierra;
@@ -148,6 +210,7 @@ export function armarDiapositiva(d, i, ind = '    ') {
      narra, y `aviso` es HTML libre que va entre la bajada y las
      preguntas (cardio pone ahí "esto no es la evaluación del curso").
      Las preguntas no van acá: son `practica.banco`, en los datos. */
+  if (d.tipo === 'cierre') return abre + armarCierre(d, ind, medallas) + cierra;
   if (d.tipo === 'practica') {
     return abre + `${ind}  <div class="slide-inner">\n` +
       (d.antetitulo != null ? `${ind}    <span class="slide-eyebrow">${d.antetitulo}</span>\n` : '') +
@@ -175,10 +238,10 @@ export function armarDiapositiva(d, i, ind = '    ') {
   return abre + h2 + shot + armarNarracion(d.narracion, ind + '  ') + cierra;
 }
 
-export function armarDiapositivas(lista, ind = '    ') {
+export function armarDiapositivas(lista, ind = '    ', medallas) {
   return lista.map((d, i) => {
     const rotulo = d.tipo === 'html' ? d.id : String(d.titulo).replace(/<[^>]+>/g, '');
-    return `${ind}<!-- ${i} · ${rotulo.replace(/--/g, '—')} -->\n` + armarDiapositiva(d, i, ind);
+    return `${ind}<!-- ${i} · ${rotulo.replace(/--/g, '—')} -->\n` + armarDiapositiva(d, i, ind, medallas);
   }).join('\n\n');
 }
 
@@ -266,7 +329,7 @@ export function armarIndex(curso, marco) {
   /* Funciones de reemplazo, no strings: un `$` en el contenido (un precio,
      por ejemplo) se leería como patrón de `replace`. */
   return marco
-    .replace(HUECOS.diapositivas, () => armarDiapositivas(curso.diapositivas).replace(/^ {4}/, ''))
+    .replace(HUECOS.diapositivas, () => armarDiapositivas(curso.diapositivas, '    ', curso.medallas).replace(/^ {4}/, ''))
     .replace(HUECOS.indice, () => armarIndice(curso.indice).replace(/^ +/, ''))
     .replace(HUECOS.glosario, () => armarGlosario(curso.glosario, titulos).replace(/^ +/, ''))
     .replace(HUECOS.fichas, () => (curso.fichas || []).map((f) => armarFicha(f)).join('\n').replace(/^ +/, ''))

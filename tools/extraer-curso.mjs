@@ -176,6 +176,8 @@ const r = await page.evaluate((html) => { try {
       const v = shot.children[0];
       const s = v.querySelector('source');
       d = { id: base.id, tipo: 'video-fondo', titulo: base.titulo, video: s && s.getAttribute('src'), poster: v.getAttribute('poster') };
+    } else if (cls === 'slide slide-cierre d-shot-slide') {
+      d = leerCierre(sec, base);
     } else if (cls === 'slide' && h.length === 1 && h[0].matches('div.slide-inner') && h[0].attributes.length === 1 &&
         h[0].lastElementChild && h[0].lastElementChild.matches('div[data-quiz]')) {
       /* La mini práctica: [antetítulo] título [bajada] [aviso] <div data-quiz>.
@@ -194,10 +196,10 @@ const r = await page.evaluate((html) => { try {
     }
     if (d) {
       for (const k of ['requisitos', 'avanceSolo', 'fin', 'atributos']) if (base[k] !== undefined) d[k] = base[k];
-      if (narr) d.narracion = leerNarracion(narr);
+      if (narr && (d.tipo === 'lamina' || d.tipo === 'video-fondo')) d.narracion = leerNarracion(narr);
       if (d.zonas && !d.zonas.length) delete d.zonas;
       let armado = null;
-      try { armado = desde(CD.armarDiapositiva(d, i, '')); } catch (e) { armado = null; }
+      try { armado = desde(CD.armarDiapositiva(d, i, '', datos.medallas)); } catch (e) { armado = null; }
       if (igual(sec, armado)) return d;
     }
     const crudo = { id: base.id, tipo: 'html', clase: cls };
@@ -205,6 +207,49 @@ const r = await page.evaluate((html) => { try {
     for (const k of ['requisitos', 'avanceSolo', 'fin', 'atributos']) if (base[k] !== undefined) crudo[k] = base[k];
     crudo.html = interno(sec);
     return crudo;
+  }
+
+  /* Los datos (si el index ya los trae) se leen ANTES que las
+     diapositivas: el cierre necesita las medallas para saber si sus
+     rangos son los que salen solos. */
+  const bloqueDatos = doc.getElementById('d-curso-datos');
+  const datos = bloqueDatos ? JSON.parse(bloqueDatos.textContent) : {};
+
+  /* ---- el cierre ---- */
+  function leerCierre(sec, base) {
+    const q = (sel) => sec.querySelector(sel);
+    const img = q('.d-cierre-shot .d-shot > img.d-shot-img');
+    const narr = q('.d-cierre-shot > div.sr-only');
+    const recap = q('.d-cierre-recap');
+    if (!img || !recap) return null;
+    const d = { id: base.id, tipo: 'cierre', titulo: base.titulo, imagen: img.getAttribute('src') };
+    const lock = q(':scope > p.locked');
+    if (lock) d.bloqueo = interno(lock);
+    if (narr) d.narracion = leerNarracion(narr);
+    if (q('.d-cierre-results > p.who')) d.saludo = true;
+    if (q('[data-medalla-lbl]')) d.rotuloMedalla = true;
+    const lis = Array.from(sec.querySelectorAll('.d-medalla-rangos > li'));
+    const rangos = lis.map((li) => {
+      const c = li.children;
+      return { id: li.getAttribute('data-rango'), icono: c[0] ? interno(c[0]) : '', nombre: c[1] ? interno(c[1]) : '',
+        detalle: c[2] ? interno(c[2]) : '', _et: c[2] ? c[2].tagName.toLowerCase() : 'i' };
+    });
+    const et = rangos.length ? rangos[0]._et : 'i';
+    rangos.forEach((g) => delete g._et);
+    if (et !== 'i') d.rangosEtiqueta = et;
+    const porDefecto = CD.rangosPorDefecto(datos.medallas);
+    if (JSON.stringify(porDefecto) !== JSON.stringify(rangos)) d.rangos = rangos;
+    d.numeros = Array.from(sec.querySelectorAll('.d-cert-stats > .s')).map((s) => {
+      const b = s.querySelector('b'), sp = s.querySelector('span');
+      return { id: b ? b.id : '', rotulo: sp ? interno(sp) : '' };
+    });
+    const nota = q('.d-cert-note');
+    if (nota) d.nota = interno(nota);
+    const imp = q('#d-summary-print');
+    if (imp && interno(imp) !== 'Imprimir resumen 📄') d.imprimir = interno(imp);
+    d.repaso = interno(recap);
+    if (q(':scope > .d-confetti')) d.confeti = true;
+    return d;
   }
 
   const main = doc.querySelector('main.d-stage');
@@ -342,10 +387,7 @@ const r = await page.evaluate((html) => { try {
   /* Los datos para curso.js (v1.9.113): si el index ya los trae, se leen
      y su lugar queda como hueco; si no, el hueco va antes del primer
      script, que es donde el armador los pone. */
-  const datos = {};
-  const bloqueDatos = doc.getElementById('d-curso-datos');
   if (bloqueDatos) {
-    Object.assign(datos, JSON.parse(bloqueDatos.textContent));
     bloqueDatos.parentNode.replaceChild(hueco(CD.HUECOS.datos), bloqueDatos);
   } else {
     const primerScript = doc.querySelector('body script[src]');

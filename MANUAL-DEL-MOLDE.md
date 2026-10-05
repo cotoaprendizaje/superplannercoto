@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.113**.
+Vigente para **kit-base v1.9.114**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -346,9 +346,11 @@ python3 tools/build-zip.py                                 # el zip para el LMS
   armador los pone en el index y `curso.js` los lee con
   `datosDelCurso('practica', {})`. No se escriben otra vez en `curso.js`
   (§7.62).
-- **Por ahora los cursos se siguen haciendo como siempre.** El formato
-  todavía no cubre el cierre; cuando lo cubra, pasa a ser la forma de
-  arrancar un curso nuevo.
+- **Los rangos de medalla del cierre no se escriben**: salen de
+  `medallas`. Solo un curso que los cuenta de otra forma (en logros, por
+  ejemplo) los trae en `rangos` (§7.63).
+- **Por ahora los cursos se siguen haciendo como siempre.** Falta que
+  `new-course.mjs` arranque un curso directamente como datos (§7.63).
 
 ---
 

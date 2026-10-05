@@ -14954,3 +14954,60 @@ Verificado contra el cardio de v1.9.112 (banco dentro de `curso.js`):
 El cierre (con el resumen imprimible y los rangos de medalla, que hoy se
 escriben a mano y repiten los umbrales de `medallas`), y después que
 `new-course.mjs` arranque los cursos directamente como datos.
+
+## 7.63 Fase 1, tercera parte: el cierre como datos (kit-base v1.9.114)
+
+### Un tipo que vale para cinco cursos, no para uno
+
+Antes de modelar el cierre se miró si era un patrón o una pieza de
+cardio. Los cinco cursos auditados (cardio, alimentaria, PLU, NOA,
+Seguridad de la información) tienen el MISMO esqueleto: la lámina final
+(`data-cierre-step="shot"`, con su locución) y el resumen
+(`data-cierre-step="summary"`) con medalla, rangos, números del alumno,
+nota, los dos botones y un repaso del curso. Cambia el contenido de cada
+parte, no la forma. Así que entra como tipo `cierre`:
+
+`titulo`, `imagen`, `narracion`, `bloqueo` (el "🔒 Hacé la mini
+práctica…"), `saludo` (el "¡Hola, …!"), `rotuloMedalla` (el "Medalla de"
+envuelto en `data-medalla-lbl`), `rangos` + `rangosEtiqueta`, `numeros`
+(`[{id, rotulo}]` de `.d-cert-stats`), `nota`, `imprimir` (el rótulo del
+botón, si no es "Imprimir resumen 📄"), `repaso` (HTML libre: varía mucho
+entre cursos, columnas, flujos de pasos) y `confeti`.
+
+### Los rangos de medalla salen de `medallas`
+
+"130 puntos o más · de 115 a 129 · menos de 115" repetía a mano los
+umbrales de `medallas`: cambiar uno obligaba a acordarse del otro. Si el
+cierre no trae `rangos`, se calculan (`rangosPorDefecto`) con ícono y
+nombre de cada medalla. El extractor solo los guarda si NO coinciden con
+el cálculo: PLU los cuenta en logros ("los 5 de 5 logros"), alimentaria
+y NOA con otros textos. Probado: subir el umbral de plata a 120 en
+`curso.json` cambia los dos rangos que dependen de él.
+
+### El extractor contra los cuatro cursos que no son cardio
+
+Corrido sobre los index de alimentaria, PLU, NOA y Seguridad de la
+información (copias de la auditoría de v1.9.107): **en los cuatro, el
+curso armado desde los datos da idéntico al original**. Lo que cambia es
+cuánto modela:
+
+| curso | piezas a datos | como HTML | cierre |
+|---|---|---|---|
+| Prevención cardiovascular | 22 | 3 (piezas propias) | `cierre` |
+| Seguridad alimentaria | 16 | 28 | `cierre` (rangos propios) |
+| Pedidos de PLU set | 13 | 6 | `cierre` (rangos propios) |
+| Uso de Sucursales 3 - NOA | 9 | 22 | `cierre` (rangos propios) |
+| Seguridad de la información | 2 | 22 | `html` |
+
+Seguridad de la información queda casi entera como HTML por UN detalle:
+sus imágenes llevan `loading="lazy"`. Es la próxima cosa a sumar, junto
+con lo que este relevamiento muestra que se repite (la ilustración
+colocada `img.d-ilustracion[data-place]`, variantes de zona). Esa tabla
+es la medida de avance de la Fase 1 de acá en adelante.
+
+### Cardio
+
+"cierre" pasó de `html` a `cierre`; quedan como HTML solo sus tres
+piezas propias. Verificado contra el cardio de v1.9.113: las 20
+diapositivas sin cambios en `visual-regress` (dos corridas), ida y vuelta
+exacta, y las dos suites en verde.

@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.113** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.114** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -408,6 +408,18 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.114 — Fase 1, tercera parte: el cierre como datos
+
+Ver CLAUDE.md §7.63.
+
+- **Tipo de diapositiva `cierre`**: el patrón de los cinco cursos (lámina
+  final + resumen con medalla, rangos, números, nota, botones y repaso).
+- **Los rangos de medalla salen de `medallas`** si el curso no los
+  escribe distinto: un umbral ya no se repite a mano.
+- **El extractor probado sobre los cinco cursos**: en todos el curso
+  armado da idéntico al original; la tabla de cuánto modela en cada uno
+  está en §7.63.
 
 ### v1.9.113 — Fase 1, segunda parte: la mini práctica como datos
 
