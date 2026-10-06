@@ -58,14 +58,18 @@ de §6.43 — nunca empaquetar los dos READMEs con nombres casi iguales).
 import os
 import sys
 import struct
+import time
 import zipfile
 
 # `.kit-anterior`: los respaldos que deja `actualizar-kit.mjs` (v1.9.102).
 # Son la red de seguridad de quien actualiza el curso; al LMS no van.
 # `curso-prueba`: el curso real contra el que se prueba cada versión del
 # kit (v1.9.106, CLAUDE.md §7.55). Vive en la rama del kit, no viaja en el zip.
+# `verify-hitboxes-out` y `visual-diff-out`: la salida de las herramientas
+# del kit (capturas). Medido en "Seguridad de la información" (v1.9.120):
+# 4,85 MB de los 17,2 del zip eran las 21 capturas de verify-hitboxes.
 EXCLUIR_DIRS = {'node_modules', '.git', '__pycache__', '.pytest_cache', '.kit-anterior',
-                'curso-prueba'}
+                'curso-prueba', 'verify-hitboxes-out', 'visual-diff-out'}
 EXCLUIR_ARCH = {'.DS_Store', 'Thumbs.db'}
 # `curso.json` y `marco.html` SÍ viajan (v1.9.117, relevo de "Prevención
 # cardiovascular"): en v1.9.111 se dejaban fuera, y un curso en datos que
@@ -189,7 +193,17 @@ def construir(raiz, salida, excluir_nombres=()):
     with zipfile.ZipFile(salida, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         for abs_p, nombre in items:
             with open(abs_p, 'rb') as fh:
-                z.writestr(nombre, fh.read())
+                # Permisos 644 explícitos (kit-base v1.9.120, §7.69).
+                # `writestr(nombre, …)` con un nombre suelto guarda 0o600
+                # —solo el dueño lee— en TODAS las entradas: medido en los
+                # zips de v1.9.100 a v1.9.119, 144 de 144 en 600. Moodle
+                # descomprime ignorándolos, pero un servidor que los respete
+                # no puede servir el curso. Lo destapó "Seguridad de la
+                # información" con dos PDF copiados en 600.
+                zi = zipfile.ZipInfo(nombre, date_time=time.localtime(os.path.getmtime(abs_p))[:6])
+                zi.compress_type = zipfile.ZIP_DEFLATED
+                zi.external_attr = 0o100644 << 16
+                z.writestr(zi, fh.read(), compresslevel=9)
 
     # Verificación real, no "se ve bien": reabrir y chequear entrada por
     # entrada, más un testzip() de integridad.

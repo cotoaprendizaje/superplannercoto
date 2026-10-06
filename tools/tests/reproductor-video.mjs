@@ -35,6 +35,18 @@ import path from 'path';
 const url = requireUrl();
 const exe = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
 const fallos = [];
+/* Si una acción se queda esperando (un botón que desapareció porque el
+   pop-up se cerró a mitad de la batería), el test tiene que FALLAR con
+   nombre, no reventar con un `TimeoutError` suelto (kit-base v1.9.120,
+   §7.69). Pasó en "Seguridad de la información": el auto-avance del video
+   de fondo le cerraba el pop-up y la salida era un stack de Playwright
+   sin decir qué medía. Se reporta lo juntado hasta ahí más el motivo. */
+process.on('uncaughtException', (e) => {
+  fallos.push('el test no pudo seguir: ' + String(e && e.message || e).split('\n')[0] +
+    '. Suele ser un control del reproductor que desapareció a mitad de la prueba (¿se cerró el pop-up?).');
+  report('reproductor-video', fallos);
+  process.exit(1);
+});
 const ARCHIVO = path.join(process.env.TMPDIR || '/tmp', 'coto-prueba-video.webm');
 
 const browser = await chromium.launch({
@@ -68,6 +80,7 @@ async function bateria(etiqueta, opcionesContexto) {
   const falla = m => fallos.push(`[${etiqueta}] ${m}`);
   const ctx = await browser.newContext(opcionesContexto);
   const page = await ctx.newPage();
+  page.setDefaultTimeout(10000);
   page.on('pageerror', e => falla('error JS: ' + e));
   await page.route('**/*.mp4', r => r.fulfill({ status: 200, contentType: 'video/webm', body: CUERPO }));
   await page.goto(url);

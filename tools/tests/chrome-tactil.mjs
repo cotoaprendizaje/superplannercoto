@@ -40,6 +40,11 @@ const CASOS = [
   { nombre: 'PC 1920×1080',       w: 1920, h: 1080, tactil: false },
   { nombre: 'Notebook 1366×768',  w: 1366, h:  768, tactil: false },
   { nombre: 'iPad 10"',           w: 1024, h:  768, tactil: true  },
+  /* El iPad de 10" (10.ª gen.) en VERTICAL: 820 de ancho. Hasta v1.9.120
+     no lo medía nadie, y es donde la barra más desbordaba con Recursos
+     (relevo de "Seguridad de la información", §7.69). */
+  { nombre: 'iPad 10" vertical',  w:  820, h: 1180, tactil: true  },
+  { nombre: 'Ventana 960×700',    w:  960, h:  700, tactil: false },
   { nombre: 'iPad Pro 11"',       w: 1194, h:  834, tactil: true  },
   { nombre: 'iPad Pro 12,9"',     w: 1366, h: 1024, tactil: true  },
   { nombre: 'iPhone horizontal',  w:  844, h:  390, tactil: true  },
@@ -61,6 +66,15 @@ for (const c of CASOS) {
   await page.waitForTimeout(400);
 
   const r = await page.evaluate((min) => {
+    /* La barra se mide en su caso MÁS cargado (v1.9.120, §7.69): con el
+       botón de Recursos visible —lo tiene todo curso con documentos— y
+       un nombre de alumno largo en el saludo (el mismo de `scroll-audit`).
+       El corte de 959px se había medido sin Recursos, y con él la barra
+       se pasaba 43px a 1024 y 107 a 960. */
+    const rb = document.getElementById('d-recursos-btn');
+    if (rb) rb.hidden = false;
+    const g = document.getElementById('d-greet');
+    if (g) { g.textContent = '👋 Hola, Alejandra Fernandez'; g.hidden = false; }
     const top = document.querySelector('.d-top').getBoundingClientRect();
     const bot = document.querySelector('.d-bottom').getBoundingClientRect();
     const btns = [...document.querySelectorAll('.d-top button, .d-bottom button')]

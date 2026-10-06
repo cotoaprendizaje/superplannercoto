@@ -190,10 +190,26 @@
      Marcado: `<ol data-repaso-pasos></ol>` en cualquier lado de la
      diapositiva del repaso. Los `<li>` los dibuja este módulo.
      ============================================================ */
+  /* TODAS las listas, no solo la primera (kit-base v1.9.120, §7.69).
+     Hasta v1.9.119 era `querySelector`: un curso con tres repasos tenía
+     que llamarla tres veces con `selector`, y si no, los otros dos
+     paneles quedaban vacíos sin aviso (lo relevó "Seguridad de la
+     información", que tiene tres). Cada lista se arma contra los ítems de
+     SU diapositiva. Devuelve lo mismo que antes —`refresh` y
+     `desconectar`— para todas juntas. */
   function initPasosRepaso(opts) {
     opts = opts || {};
-    var lista = document.querySelector(opts.selector || '[data-repaso-pasos]');
-    if (!lista) return null;
+    var listas = Array.prototype.slice.call(document.querySelectorAll(opts.selector || '[data-repaso-pasos]'));
+    var hechos = listas.map(function (l) { return pasosDe(l, opts); }).filter(Boolean);
+    if (!hechos.length) return null;
+    return {
+      refresh: function () { hechos.forEach(function (h) { h.refresh(); }); },
+      desconectar: function () { hechos.forEach(function (h) { h.desconectar(); }); },
+      paneles: hechos.length
+    };
+  }
+
+  function pasosDe(lista, opts) {
     var raiz = lista.closest('[data-slide]') || document;
     var items = Array.prototype.slice.call(raiz.querySelectorAll('[data-repaso-item]'));
     if (!items.length) return null;
@@ -240,10 +256,20 @@
      primero. La captura corre antes que cualquier burbujeo, sin
      depender del orden de arranque del curso.
      ============================================================ */
+  /* Igual que `initPasosRepaso`: cada tira de la página, no solo la
+     primera (v1.9.120). `todasContestadas()` responde por todas. */
   function initSalidaRepaso(opts) {
     opts = opts || {};
-    var raiz = document.querySelector(opts.selector || '[data-repaso]');
-    if (!raiz) return null;
+    var tiras = Array.prototype.slice.call(document.querySelectorAll(opts.selector || '[data-repaso]'));
+    var hechas = tiras.map(function (t) { return salidaDe(t, opts); }).filter(Boolean);
+    if (!hechas.length) return null;
+    return {
+      todasContestadas: function () { return hechas.every(function (h) { return h.todasContestadas(); }); },
+      tiras: hechas.length
+    };
+  }
+
+  function salidaDe(raiz, opts) {
     var items = Array.prototype.slice.call(raiz.querySelectorAll('[data-repaso-item]'));
     if (!items.length) return null;
 

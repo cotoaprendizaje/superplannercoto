@@ -44,7 +44,12 @@
      parseFloat(getComputedStyle(document.documentElement)
        .getPropertyValue('--d-margen-seguro'))            // → 12.22
    `revisar-curso` marca a los cursos que lo tienen copiado. */
-:root{ --d-margen-seguro: 12.22%; }
+/* Y el VERTICAL (v1.9.120): en un stage más ANCHO que 2:1 el lienzo
+   llena el ancho y recorta arriba y abajo, hasta 2,2:1 (más ancho que
+   eso vuelve al 2:1 con bandas, ver "ultrawide"). En 2,2 el recorte es
+   (1 − 2/2,2)/2 = 4,55% por lado. "Seguridad de la información" tenía
+   botones al 94–99% del alto que quedaban 11px afuera a 1366×768. */
+:root{ --d-margen-seguro: 12.22%; --d-margen-seguro-v: 4.55%; }
 
 /* ============================================================
    BASE DEL ESCENARIO Y DE LAS DIAPOSITIVAS

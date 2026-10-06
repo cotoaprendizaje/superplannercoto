@@ -65,15 +65,24 @@ for (const id of ids) {
      hitbox-click-check). */
   const SEL = '[data-hit], [data-shot-swap-step], [data-shot-swap-go], ' +
               '[data-popup-trigger], [data-layer-trigger], [data-repaso-ans]';
-  const n = await page.evaluate((s) => document.querySelectorAll(
-    `[data-slide="${s.id}"] ${s.sel}`).length, { id, sel: SEL });
+  /* Se busca DENTRO de la diapositiva con `slide.querySelectorAll(SEL)`,
+     nunca con el prefijo `[data-slide="x"] ${SEL}` (kit-base v1.9.120,
+     §7.69): en una lista con comas el prefijo acota solo la PRIMERA
+     alternativa, y las demás matcheaban en todo el documento. MEDIDO en
+     "Seguridad de la información": "en la portada" encontraba 43
+     elementos y la diapositiva tenía 1; desde ahí contestaba todos los
+     repasos del curso con la primera opción y los trababa como errados.
+     El test medía 145 de un máximo real de 200. */
+  const enDiapo = (s) => {
+    const sl = document.querySelector(`[data-slide="${s.id}"]`);
+    return sl ? Array.from(sl.querySelectorAll(s.sel)) : [];
+  };
+  const n = await page.evaluate(`(${enDiapo})(${JSON.stringify({ id, sel: SEL })}).length`);
 
   for (let i = 0; i < n; i++) {
     try {
-      await page.evaluate((s) => {
-        const el = document.querySelectorAll(`[data-slide="${s.id}"] ${s.sel}`)[s.i];
-        if (el && !el.disabled) el.click();
-      }, { id, sel: SEL, i });
+      await page.evaluate(`(() => { const el = (${enDiapo})(${JSON.stringify({ id, sel: SEL })})[${i}];
+        if (el && !el.disabled) el.click(); })()`);
       toques++;
       await page.waitForTimeout(40);
       // cerrar lo que se haya abierto, para no tapar el siguiente

@@ -978,10 +978,25 @@ html.d-ios.d-fullscreen .d-top { padding-left: 64px; }
   #d-greet { display: none; }
   .d-brand > span:last-child { max-width: 24vw; overflow: hidden;
     text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
-  .d-top { gap: .45rem; padding: 0 clamp(.6rem, 2vw, 1.1rem); }
-  .d-top-group { gap: .2rem; }
-  .d-iconbtn.d-iconbtn--labeled { padding: 0 .7rem 0 .55rem; }
-  .d-iconbtn.d-iconbtn--labeled .lbl { font-size: .74rem; }
+  /* Más compacto desde v1.9.120 (§7.69): con el botón de Recursos
+     visible —y un curso con documentos lo tiene— la barra se pasaba
+     43px a 1024, 87 a 980 y 107 a 960 (MEDIDO con el nombre largo de
+     `scroll-audit`; lo relevó "Seguridad de la información"). El corte
+     de 959 se había medido SIN Recursos. Se achica el relleno de los
+     botones con etiqueta y los espacios, sin sacar ninguna etiqueta:
+     el cliente las pidió en iPad (ver el bloque de 959, más abajo). */
+  .d-top { gap: .3rem; padding: 0 clamp(.6rem, 2vw, 1.1rem); }
+  .d-top-group { gap: .1rem; }
+  .d-iconbtn.d-iconbtn--labeled { padding: 0 .45rem 0 .35rem; }
+  .d-iconbtn.d-iconbtn--labeled .lbl { font-size: .7rem; }
+}
+/* 960–1023 (v1.9.120): con todo lo anterior seguían faltando 15px a 980
+   y 35 a 960. Ahí cede el nombre del curso, con elipsis: sigue leyéndose
+   el principio, y el área queda abajo. Medido: 0px de desborde de 800 a
+   1366, táctil y mouse, en el arnés, un curso recién generado y
+   "Seguridad alimentaria" (`chrome-tactil` lo mide con Recursos). */
+@media (max-width: 1023px) and (min-width: 960px) {
+  .d-brand > span:last-child { max-width: 17vw; }
 }
 
 /* El corte bajó de 1180px a 959px (reporte del cliente en iPad: *"los
@@ -1009,7 +1024,10 @@ html.d-ios.d-fullscreen .d-top { padding-left: 64px; }
   .d-brand small { display: none; }
   .d-brand > span:last-child { max-width: 22vw; overflow: hidden;
     text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
-  #d-greet { max-width: 16vw; }
+  /* 9vw desde v1.9.120 (antes 16): con Recursos la barra se pasaba 18px
+     a 820 —el iPad de 10" EN VERTICAL— y 35 a 800. El saludo sigue
+     mostrando el principio del nombre, con elipsis. */
+  #d-greet { max-width: 9vw; }
   .d-top-center .d-chip { padding: .38rem .6rem; font-size: .76rem; }
   .d-iconbtn.d-iconbtn--labeled .lbl { display: none; }
   .d-iconbtn.d-iconbtn--labeled { width: 38px; padding: 0; }

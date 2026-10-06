@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.119 · Área Aprendizaje (COTO)
+kit-base v1.9.120 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 61 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 63 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -53,6 +53,9 @@ propia tira de repaso con una respuesta errada de otra sesión.
 `practica-gate.mjs` (v1.9.119) arma su propia práctica para probar el
 módulo, y además recorre la del curso si tiene: sin contestar, "Siguiente"
 no puede sacar al alumno de la diapositiva de la práctica.
+`autoavance-panel.mjs` (v1.9.120) le pone `data-autoadvance` a la primera
+diapositiva con video de fondo si ninguna lo tiene, y `tira-suelta.mjs` arma
+su propia lámina con una tira colocada para medirla en iPad vertical.
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

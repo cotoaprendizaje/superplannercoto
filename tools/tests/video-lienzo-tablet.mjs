@@ -64,6 +64,14 @@ const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbo
    coto-shot-stage.css, para que los cursos lo lean en vez de copiarlo:
    acá se exige que el publicado sea este, así no pueden separarse. */
 const CROP_PEOR = Math.round((1 - 1366 / ((1024 - 120) * 2)) / 2 * 10000) / 100; // 12.22
+/* Y el VERTICAL (v1.9.120, §7.69): en un stage más ancho que 2:1 el
+   lienzo llena el ancho y recorta arriba y abajo, hasta 2,2:1 (de ahí
+   para arriba vuelve al 2:1 con bandas). En 2,2 el recorte es
+   (1 − 2/2,2)/2 = 4,55% por lado. Lo relevó "Seguridad de la
+   información": los botones "1" y "2" de unas tandas, al 94–99% del alto,
+   quedaban 11px afuera a 1366×768. Se redondea hacia ARRIBA: un margen
+   que se queda corto es el que deja un botón afuera. */
+const CROP_V = Math.ceil((1 - 2 / 2.2) / 2 * 10000) / 100; // 4.55
 const sonda = await browser.newPage({ viewport: { width: 1600, height: 900 } });
 await sonda.goto(url);
 await sonda.waitForTimeout(500);
@@ -73,10 +81,16 @@ const piezas = await sonda.evaluate(() => {
   return { video: v && v.dataset.slide, layered: l && l.dataset.slide };
 });
 const publicado = await sonda.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--d-margen-seguro').trim());
+const publicadoV = await sonda.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--d-margen-seguro-v').trim());
 if (!publicado) {
   fallos.push('el curso no tiene `--d-margen-seguro` (coto-shot-stage.css, v1.9.119): un curso que necesite el margen seguro de tablet lo copia a mano y queda desfasado el día que el kit lo cambie.');
 } else if (Math.abs(parseFloat(publicado) - CROP_PEOR) > 0.005) {
   fallos.push(`\`--d-margen-seguro\` vale ${publicado} y el recorte del peor stage soportado (iPad Pro 12,9") es ${CROP_PEOR}%: lo publicado no es lo que el lienzo recorta.`);
+}
+if (!publicadoV) {
+  fallos.push('el curso no tiene `--d-margen-seguro-v` (coto-shot-stage.css, v1.9.120): el margen de arriba y abajo que se recorta en pantallas más anchas que 2:1.');
+} else if (Math.abs(parseFloat(publicadoV) - CROP_V) > 0.005) {
+  fallos.push(`\`--d-margen-seguro-v\` vale ${publicadoV} y el recorte vertical en el stage más ancho que todavía llena (2,2:1) es ${CROP_V}%.`);
 }
 await sonda.close();
 if (!piezas.video) {
@@ -174,14 +188,26 @@ for (const [nombre, w, h, esperaBanda] of CASOS) {
         const w = parseFloat(h.getAttribute('data-w'));
         if (isNaN(l)) return;
         const der = l + (isNaN(w) ? 0 : w);
-        if (l < crop || der > 100 - crop) {
-          out.push(`${sl.dataset.slide} · "${(h.textContent || '').trim().slice(0, 38) || h.className}" ocupa ${l.toFixed(1)}–${der.toFixed(1)}%`);
+        const nombre = (h.textContent || '').trim().slice(0, 38) || h.className;
+        if (l < crop.h || der > 100 - crop.h) {
+          out.push(`${sl.dataset.slide} · "${nombre}" ocupa ${l.toFixed(1)}–${der.toFixed(1)}% de ancho (margen ±${crop.h}%)`);
+        }
+        const t = parseFloat(h.getAttribute('data-t'));
+        const alto = parseFloat(h.getAttribute('data-h'));
+        /* Vertical, solo lo TOCABLE (`[data-hit]`): un `[data-place]` es
+           un contenedor —la tira de repaso, por ejemplo, ocupa 69–95% y
+           su tarjeta crece desde arriba— y su borde no es contenido. */
+        if (!isNaN(t) && h.matches('[data-hit]')) {
+          const abajo = t + (isNaN(alto) ? 0 : alto);
+          if (t < crop.v || abajo > 100 - crop.v) {
+            out.push(`${sl.dataset.slide} · "${nombre}" ocupa ${t.toFixed(1)}–${abajo.toFixed(1)}% de alto (margen ±${crop.v}%)`);
+          }
         }
       });
     });
     return out;
-  }, CROP_PEOR);
-  invasores.forEach(i => fallos.push(`elemento interactivo dentro de la franja recortada (±${CROP_PEOR}%): ${i}`));
+  }, { h: CROP_PEOR, v: CROP_V });
+  invasores.forEach(i => fallos.push(`elemento interactivo dentro de la franja recortada: ${i}`));
   await page.close();
 }
 

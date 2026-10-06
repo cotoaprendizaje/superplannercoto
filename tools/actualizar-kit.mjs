@@ -148,6 +148,35 @@ try {
   decoraResultado = /d-quiz-result/.test(codigo) && !/\bonResult\s*:/.test(codigo);
 } catch (e) {}
 
+/* ---- Lo que el kit nuevo pide y el plan no avisaba (kit-base v1.9.120) ----
+   Relevo de "Seguridad de la información", 2026-10-06, que venía de
+   v1.9.71: tres cosas se descubrieron mirando o por un test que reventó,
+   no por este plan. (1) `initVideoPlayer` necesita el bloque
+   `#d-video-player`, que vive en `index-boilerplate.html` —no en el
+   header—: sin él fallaban `popup-video-medida` y `reproductor-video`.
+   (2) Las tiras V/F perdieron su ✓/✕: el kit exige `.d-repaso-btns--vf`
+   (y `--col` para las de opción múltiple). (3) Tests del curso con el
+   mismo nombre que uno del kit: `--forzar` los pisa con el genérico, y
+   `puntaje-maximo` perdió así los asserts propios del curso, en silencio. */
+const avisosMarcado = [];
+try {
+  const fuentes = ['index.html', 'marco.html', 'curso.json'].map((f) => path.join(CURSO, f)).filter((f) => fs.existsSync(f))
+    .map((f) => fs.readFileSync(f, 'utf8')).join('\n');
+  const codigo = fs.readFileSync(path.join(CURSO, 'js/curso.js'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const vaAVP = /\binitVideoPlayer\s*\(/.test(codigo) || llamadasFaltantes.some((x) => /initVideoPlayer/.test(x));
+  if (vaAVP && !/id=\\?["']d-video-player\\?["']/.test(fuentes)) {
+    avisosMarcado.push('js/curso.js llama (o tiene que llamar) a `initVideoPlayer()` y el index no tiene el pop-up `#d-video-player`: copiarlo de' +
+      '\n  `index-boilerplate.html` del kit (no está en el header). Sin él, el reproductor no tiene dónde abrirse.');
+  }
+  const sinModo = (fuentes.match(/class=\\?["']d-repaso-btns\\?["']/g) || []).length;
+  if (sinModo) {
+    avisosMarcado.push(`${sinModo} tira(s) de repaso con \`class="d-repaso-btns"\` a secas: el kit pide \`d-repaso-btns--vf\`` +
+      '\n  (Verdadero/Falso, con su ✓/✕) o `d-repaso-btns--col` (opción múltiple). Sin el modificador se pierden los íconos.');
+  }
+} catch (e) {}
+const testsPropios = plan.sinRegistro.filter((f) => /^tools\/tests\/[^_][^/]*\.mjs$/.test(f));
+
 /* ---- un curso armado desde datos con el index editado a mano (v1.9.111) ----
    Si el curso tiene `curso.json` + `marco.html`, su `index.html` es un
    archivo GENERADO (`armar-curso.mjs`). Un cambio hecho directo en el
@@ -202,6 +231,13 @@ if (indexDesviado) {
     '\n  Si alguien editó el index a mano, ese cambio se pierde la próxima vez que se arme: pasarlo a' +
     '\n  curso.json (o al marco) y volver a armar con `node tools/armar-curso.mjs <curso>`. Si lo que' +
     '\n  cambió son los datos y nadie armó todavía, alcanza con armar.');
+}
+
+avisosMarcado.forEach((a) => console.log('\n⚠️ ' + a));
+if (testsPropios.length) {
+  console.log(`\n⚠️ ${testsPropios.length} test(s) del curso se llaman igual que uno del kit: ${testsPropios.join(', ')}.` +
+    '\n  `--forzar` los reemplaza por el genérico. Si alguno tenía asserts PROPIOS del curso, copialo antes con otro' +
+    '\n  nombre (por ejemplo `tools/tests/puntaje-curso.mjs`): si no, se pierden sin aviso.');
 }
 
 const bloqueantes = plan.editados.length + plan.sinRegistro.length;
@@ -264,6 +300,29 @@ if (fs.existsSync(manifiestoPath)) {
   if (sumar.length || sacar.length) {
     fs.writeFileSync(manifiestoPath, xml);
     console.log(`  imsmanifest.xml: ${sumar.length} archivo(s) del kit declarado(s), ${sacar.length} quitado(s).`);
+  }
+}
+
+/* Y los archivos PROPIOS del curso que el manifiesto no declara
+   (v1.9.120): no se tocan —el manifiesto del curso es del curso—, pero se
+   avisan. "Seguridad de la información" no declaraba ninguno (62: sus
+   CSS, curso.js, imágenes, PDF y videos) desde que se generó; Moodle no lo
+   nota porque descomprime todo, y un LMS estricto lo serviría roto. */
+if (fs.existsSync(manifiestoPath)) {
+  const declarados = new Set(Array.from(fs.readFileSync(manifiestoPath, 'utf8').matchAll(/<file\s+href="([^"]+)"/g)).map((m) => decodeURIComponent(m[1])));
+  const servidos = [];
+  const recorrer = (rel) => {
+    for (const e of fs.readdirSync(path.join(CURSO, rel), { withFileTypes: true })) {
+      const r = rel ? rel + '/' + e.name : e.name;
+      if (e.isDirectory()) recorrer(r);
+      else if (SERVIDAS.test(r) && !/(^|\/)\.|Thumbs\.db$/.test(r)) servidos.push(r);
+    }
+  };
+  for (const d of ['css', 'js', 'img', 'fonts', 'video', 'doc', 'audio']) if (fs.existsSync(path.join(CURSO, d))) recorrer(d);
+  const faltan = servidos.filter((f) => !declarados.has(f));
+  if (faltan.length) {
+    console.log(`\n⚠️ imsmanifest.xml no declara ${faltan.length} archivo(s) propio(s) del curso (${faltan.slice(0, 4).join(', ')}` +
+      `${faltan.length > 4 ? ', …' : ''}). Moodle no lo nota; un LMS estricto sí. \`node tools/check-manifest.mjs <curso>\` los lista.`);
   }
 }
 

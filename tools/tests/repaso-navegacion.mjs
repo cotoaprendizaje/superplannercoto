@@ -38,7 +38,10 @@ const r = await page.evaluate(async () => {
       `<p class="d-repaso-q">Pregunta ${n} de prueba.</p>` +
       '<div class="d-repaso-btns d-repaso-btns--vf"><button type="button" data-repaso-ans="true">Verdadero</button>' +
       '<button type="button" data-repaso-ans="false">Falso</button></div>' +
-      `<p class="d-repaso-fb" data-repaso-fb hidden>Devolución ${n}.</p></div>`).join('');
+      /* La 2 trae devolución DOBLE (v1.9.77): ver más abajo. */
+      (k === 0 ? `<p class="d-repaso-fb" data-repaso-fb hidden>Devolución ${n}.</p></div>`
+        : '<p class="d-repaso-fb" data-repaso-fb data-fb-ok hidden>Bien: devolución dos.</p>' +
+          '<p class="d-repaso-fb" data-repaso-fb data-fb-no hidden>Mal: devolución dos.</p></div>')).join('');
   sl.appendChild(tira);
 
   // Espía de la locución.
@@ -69,6 +72,15 @@ const r = await page.evaluate(async () => {
   items[1].querySelector('[data-repaso-ans="true"]').click();
   await espera(350);
   res.respuestas = respuestas.slice();
+  /* Devolución doble (kit-base v1.9.120, §7.69): contestada bien, la de
+     error queda con `hidden`… y hasta v1.9.119 igual se VEÍA, porque
+     `.d-repaso-fb[hidden]{display:flex !important}` (para animar la
+     entrada) y `.is-answered .d-repaso-fb{opacity:1; max-height:12em}`
+     se sumaban. MEDIDO en "Seguridad de la información": la escondida
+     con `display:flex`, `opacity:1` y 27 px de alto. */
+  const mide = (el) => { const cs = getComputedStyle(el); return { ve: cs.display !== 'none' && cs.visibility !== 'hidden' && parseFloat(cs.opacity) > 0 && el.getBoundingClientRect().height > 0, hidden: el.hidden }; };
+  res.fbOk = mide(items[1].querySelector('[data-fb-ok]'));
+  res.fbNo = mide(items[1].querySelector('[data-fb-no]'));
 
   // Flecha hacia atrás: corta y narra SOLO la pregunta 1.
   dichos.length = 0; cortes = 0;
@@ -79,6 +91,26 @@ const r = await page.evaluate(async () => {
 
   Object.assign(N, orig);
   tira.remove();
+
+  /* Varios repasos en la página (v1.9.120, §7.69): `initPasosRepaso`
+     tomaba solo la PRIMERA lista de pasos, y un curso con tres repasos
+     quedaba con dos paneles vacíos. Dos diapositivas de prueba, con 2 y
+     3 preguntas: cada lista tiene que salir con los pasos de la suya. */
+  if (typeof window.initPasosRepaso === 'function') {
+    const hechas = [2, 3].map((n, k) => {
+      const sec = document.createElement('section');
+      sec.setAttribute('data-slide', 'zz-pasos-' + k);
+      sec.className = 'zz-pasos';
+      sec.hidden = true;
+      sec.innerHTML = '<ol data-repaso-pasos></ol>' +
+        Array.from({ length: n }, () => '<div class="d-repaso-item" data-repaso-item></div>').join('');
+      document.body.appendChild(sec);
+      return sec;
+    });
+    window.initPasosRepaso({ selector: '.zz-pasos [data-repaso-pasos]' });
+    res.pasos = hechas.map((sec) => sec.querySelectorAll('[data-repaso-pasos] li').length);
+    hechas.forEach((sec) => sec.remove());
+  }
   return res;
 });
 
@@ -95,6 +127,14 @@ else {
   if (r.dichosFlecha.length !== 1 || !/Pregunta uno/.test(r.dichosFlecha[0]) || /Pregunta dos|Devolución dos/.test(r.dichosFlecha[0])) {
     fallos.push(`al volver con la flecha se narró ${JSON.stringify(r.dichosFlecha)}: tiene que narrarse SOLO la pregunta 1.`);
   }
+}
+if (!r.no && r.pasos && (r.pasos[0] !== 2 || r.pasos[1] !== 3)) {
+  fallos.push(`con dos repasos en la página (2 y 3 preguntas), \`initPasosRepaso\` dibujó ${r.pasos[0]} y ${r.pasos[1]} pasos: ` +
+    'cada lista tiene que salir con los de su diapositiva (un curso con varios repasos quedaba con paneles vacíos).');
+}
+if (!r.no && r.fbNo) {
+  if (r.fbNo.ve) fallos.push(`contestada bien una pregunta con devolución doble, la de ERROR (con \`hidden\`: ${r.fbNo.hidden}) igual se ve: el alumno lee las dos devoluciones juntas.`);
+  if (!r.fbOk.ve) fallos.push('contestada bien una pregunta con devolución doble, la de ACIERTO no se ve.');
 }
 if (errors.length) fallos.push(...errors.map((e) => 'error de consola: ' + e));
 await browser.close();

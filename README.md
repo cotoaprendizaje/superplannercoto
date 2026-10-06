@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.119** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.120** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -96,7 +96,7 @@ kit-base/
 │   │                           no es liso (v1.9.105)
 │   ├── check-keyframes.mjs   — toda `animation` con su `@keyframes` (v1.9.108)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 61 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 63 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -169,7 +169,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 61, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 63, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -430,6 +430,24 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.120 — relevo de Seguridad de la información (el primero con la regla nueva)
+
+Ver CLAUDE.md §7.69.
+
+- **El video de fondo con auto-avance ya no cierra un panel abierto**: espera a
+  que se cierre. Test nuevo `autoavance-panel`.
+- **La tira de repaso sale sola a la franja libre en iPad vertical**
+  (`acomodarTirasSueltas`, de cardio). Test nuevo `tira-suelta` (63).
+- **Barra superior con Recursos**: entra de 800 a 1366 (antes se pasaba hasta
+  107px en iPad). `chrome-tactil` mide con Recursos y en iPad vertical.
+- La devolución doble del repaso ya no se ve doble; `initPasosRepaso` toma
+  todas las listas; `puntaje-maximo` busca dentro de cada diapositiva.
+- `--d-margen-seguro-v` (4,55%) publica el margen de arriba y abajo.
+- `build-zip`: permisos 644 (antes todo iba en 600) y sin las capturas.
+- `actualizar-kit` avisa del reproductor sin marcado, las tiras sin `--vf`, los
+  tests del curso que pisaría y los archivos fuera del manifiesto.
+- El ejemplo de tira de `index-boilerplate.html` traía el marcado viejo, sin ✓/✕.
 
 ### v1.9.119 — segundo relevo de cardio: la práctica traba, y todo va al relevo
 

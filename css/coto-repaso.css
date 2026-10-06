@@ -144,6 +144,14 @@
 .d-repaso.is-complete .d-repaso-count{ background: color-mix(in srgb, var(--success) 18%, var(--surface)); color: var(--success-ink); }
 .d-repaso-item.is-correct .d-repaso-fb{ background: color-mix(in srgb, var(--success) 12%, transparent); color: var(--success-ink); }
 .d-repaso-item.is-answered .d-repaso-fb{ max-height: 12em; opacity: 1; margin-top: .28rem; padding: .3rem .55rem; }
+/* Devolución DOBLE (kit-base v1.9.120, §7.69): contestada la pregunta,
+   la que no corresponde queda con `hidden`, y la regla de arriba más
+   `.d-repaso-fb[hidden]{display:flex !important}` la mostraban igual
+   (medido en "Seguridad de la información": 27 px de alto, opacity 1).
+   Mismo `!important` y más especificidad (0,4,0 contra 0,2,0): gana.
+   Antes de contestar no se toca: ahí el `display:flex` es lo que deja
+   animar la entrada. `repaso-navegacion` lo mide. */
+.d-repaso-item.is-answered .d-repaso-fb[hidden]{ display: none !important; }
 .d-repaso-item.is-answered .d-repaso-next{ display: inline-flex; animation: d-repaso-in .32s ease .12s both; }
 .d-repaso-btns button:hover:not(:disabled){ border-color: var(--cat); background: var(--cat-soft); transform: translateY(-2px); box-shadow: 0 10px 18px -8px rgba(20, 30, 60, .3); }
 .d-repaso-btns button:active:not(:disabled){ transform: translateY(0); }

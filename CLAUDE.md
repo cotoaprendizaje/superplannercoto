@@ -15395,3 +15395,115 @@ las decisiones B1–B3, que son del cliente.
 Cardio y alimentaria no necesitan cambios ahora: cardio sigue con su
 `faltaPractica` propio (equivalente) y sus `_syncNav` siguen andando. Se
 limpian la próxima vez que se toquen.
+
+## 7.69 Relevo de "Seguridad de la información", 2026-10-06: el primero con la regla nueva (kit-base v1.9.120)
+
+El curso venía de v1.9.71 sin registro, se puso al día con v1.9.119, se
+pasó a datos (19 piezas) y se entregó con su suite en 62/62. Es el primer
+relevo escrito con la regla de §7.68 —todo lo que se resuelve va al
+relevo, decide el kit— y se nota: quince hallazgos, cada uno con lo
+probado separado de lo leído, la salida de `revisar-curso` y el inventario
+completo de lo que cambió en el curso. Verificados contra el kit:
+
+### A1 · El auto-avance de un video de fondo cerraba el panel abierto
+
+Confirmado: `initBgVideos` llamaba `motor._advance(1)` al `ended` sin
+mirar nada, y el motor cierra todo pop-up al navegar. Ahora el avance
+queda pendiente mientras haya un pop-up abierto y se hace al cerrar el
+último; si el alumno navegó por su cuenta, se descarta. Test nuevo
+**`autoavance-panel.mjs`**: si ninguna diapositiva con video de fondo es
+`[data-autoadvance]`, se lo pone antes del arranque. Rojo con el
+`coto-media.js` de v1.9.119 (portada → introducción con el Índice
+cerrado); verde ahora, y sin pop-up el auto-avance sigue igual.
+
+### A2 · `puntaje-maximo` buscaba en todo el documento
+
+Confirmado: el prefijo `[data-slide="x"] ` en una lista con comas acota
+solo la primera alternativa. En "Seguridad alimentaria" el test viejo
+tocaba **947** elementos y el nuevo 42; en SI medía 145 de un máximo real
+de 200. Ahora busca con `slide.querySelectorAll(SEL)`.
+
+### A3 · La devolución doble del repaso se veía doble
+
+Confirmado: `.d-repaso-fb[hidden]{display:flex !important}` más
+`.is-answered .d-repaso-fb{opacity:1}` mostraban la escondida. Regla
+nueva con más especificidad. `repaso-navegacion` mide ahora una pregunta
+con devolución doble (rojo antes, verde después).
+
+### A4 · La barra superior no entraba en iPad con Recursos
+
+Confirmado y medido de nuevo, táctil y mouse, con el nombre largo: 43px
+afuera a 1024, 87 a 980, 107 a 960 y 18 a 820 (iPad 10" vertical). El
+corte de 959 se había medido sin Recursos. Arreglo sin sacar etiquetas
+(las pidió el cliente): relleno y espacios más chicos en 960–1194, el
+nombre del curso con elipsis a 17vw en 960–1023, y el saludo a 9vw en
+800–959. Medido: 0px de 800 a 1366 en tres cursos. `chrome-tactil` mide
+ahora con Recursos y nombre largo, suma el iPad 10" vertical (820×1180) y
+una ventana de 960 con mouse (rojo con el CSS de v1.9.119).
+
+### A6 · Lo que `actualizar-kit` no avisaba
+
+Avisa ahora (probado sobre la copia v1.9.71 de SI, sin falsos positivos
+en los cursos al día): el pop-up `#d-video-player` que falta, las tiras
+`d-repaso-btns` sin `--vf`/`--col`, y los tests del curso que `--forzar`
+pisaría con el genérico. **Y de paso apareció un bug del kit**: el
+ejemplo de tira de `index-boilerplate.html` seguía con `d-repaso-btns` a
+secas, así que todo curso nuevo nacía sin ✓/✕. Corregido.
+
+### A7 · `initPasosRepaso` (y `initSalidaRepaso`) tomaban solo la primera
+
+Ahora toman todas, cada una contra su diapositiva, con la misma API.
+`repaso-navegacion` arma dos listas (2 y 3 preguntas): con v1.9.119
+salían 2 y 0 pasos.
+
+### A10 · Archivos propios del curso fuera del manifiesto
+
+`actualizar-kit` sigue sin tocar lo del curso, pero ahora lo avisa
+(sobre la copia v1.9.71: 61 archivos sin declarar).
+
+### A11 y A15 · El zip
+
+`build-zip` excluye `verify-hitboxes-out/` y `visual-diff-out/`. Y A15
+destapó algo más grande que lo relevado: **todos** los zips de
+`build-zip` guardaban las entradas con permisos 0o600 (medido: 144 de 144
+en el de v1.9.119), porque `writestr` con un nombre suelto los pone así.
+Moodle los ignora al descomprimir; un servidor que los respete no podría
+servir el curso. Ahora van en 644.
+
+### A12 · Margen seguro vertical
+
+Publicado como `--d-margen-seguro-v: 4.55%`: en un stage más ancho que
+2:1 el lienzo llena y recorta arriba y abajo hasta 2,2:1, donde el
+recorte es (1 − 2/2,2)/2. `video-lienzo-tablet` lo calcula, exige que
+coincida y marca los `[data-hit]` que caen ahí (solo lo tocable: un
+`[data-place]` es un contenedor y su borde no es contenido).
+
+### A13 · Agrandar la caja de un control dibujado
+
+Nota en el manual (§5): agrandarla hacia ADENTRO cuando el dibujo está
+cerca del borde, no centrada.
+
+### Cardio A2 · La tira suelta
+
+`acomodarTirasSueltas()` (coto-ui.js) sube del `curso.js` de cardio: la
+llama `initRepasoRapido` sola (`suelto: false` la apaga) y se recalcula
+en `slidechange` y `resize`. Test nuevo **`tira-suelta.mjs`** (63): en
+iPad vertical, con v1.9.119, 211px de scroll dentro de la banda; ahora
+sale a la franja libre. En escritorio se queda sobre la lámina.
+
+### Lo que no se toma (todavía)
+
+- **A5, la tira en teléfono acostado** sobre una lámina que es solo
+  decoración: el parche del curso funciona, pero es un caso de un curso.
+  Si aparece en un segundo, se generaliza.
+- **A8** (`aria-label` del grupo de ayuda) y **A9** (catálogo de íconos):
+  anotados; sin cambio.
+- **A14** (los rótulos de diapositiva que cambian al armar desde datos):
+  conocido desde §7.67; el contenido no cambia.
+- `reproductor-video` ya no revienta con un `TimeoutError`: falla con
+  nombre y con lo juntado hasta ahí.
+
+Sigue para v1.9.121 lo que queda de §7.68: A3 (`data-place` quitado), A4
+(repaso de una pregunta con gate), A6 (práctica en el marco de Moodle),
+A7 (`introPopup`), A12 (comentarios que nombran funciones inexistentes) y
+las decisiones B1–B3 de cardio.

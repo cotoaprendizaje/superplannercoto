@@ -953,8 +953,70 @@
      Y dos conductas sin opción: al cambiar de pregunta con las flechas se
      corta la voz y se narra SOLO la pregunta nueva, y al entrar arranca
      en la primera pregunta sin contestar. */
+  /* ============================================================
+     acomodarTirasSueltas() — la tira de repaso SALE del lienzo cuando
+     no entra en su banda y abajo hay franja libre (kit-base v1.9.120,
+     §7.69)
+     ------------------------------------------------------------
+     Pareja JS de `.d-repaso-marco--suelto` (coto-repaso.css, v1.9.107).
+     El CSS llegó al kit y la lógica que decide cuándo usarlo se quedó en
+     "Prevención cardiovascular" (`acomodarTiras`, relevo del 2026-10-06):
+     un curso nuevo tenía la regla y no el comportamiento, y en iPad
+     vertical la tarjeta scrolleaba y tapaba el dibujo.
+     Para cada `.d-repaso-marco` de una diapositiva con lámina: mide la
+     franja libre bajo el arte contra lo que la tarjeta NECESITA
+     (`scrollHeight`, no `clientHeight`) más 24px de aire. Si entra, la
+     saca del `.d-shot` (que tiene `overflow:hidden`) y le pone
+     `--tira-arriba`; si deja de entrar, la devuelve y la recoloca.
+     Corre sola desde `initRepasoRapido` (se apaga con `suelto: false`)
+     y en cada `slidechange` y `resize`. En teléfono apaisado no hay
+     franja libre: ahí sigue el modo compacto de `coto-repaso.css`. */
+  function acomodarTirasSueltas() {
+    document.querySelectorAll('[data-slide] .d-repaso-marco').forEach(function (marco) {
+      var slide = marco.closest('[data-slide]');
+      var tira = marco.querySelector('.d-repaso');
+      var shot = slide && slide.querySelector('[data-shot]');
+      var img = shot && shot.querySelector('.d-shot-img');
+      if (!tira || !shot || !img) return;
+      var ir = img.getBoundingClientRect();
+      var sr = slide.getBoundingClientRect();
+      if (!ir.height || !sr.height) return;          // diapositiva oculta: se mide al llegar
+      var afuera = sr.bottom - ir.bottom >= tira.scrollHeight + 24;
+      var yaAfuera = marco.classList.contains('d-repaso-marco--suelto');
+      if (afuera) {
+        if (!yaAfuera) {
+          /* Se le saca `data-place` para que `_initShots()` no lo cuente;
+             lo que siga escribiendo `place()` lo pisa el `!important` de
+             la clase (ver coto-repaso.css). */
+          marco.removeAttribute('data-place');
+          marco.removeAttribute('style');
+          marco.classList.add('d-repaso-marco--suelto');
+          if (marco.parentElement === shot) slide.appendChild(marco);
+        }
+        marco.style.setProperty('--tira-arriba', Math.round(ir.bottom - sr.top) + 'px');
+      } else if (yaAfuera) {
+        marco.classList.remove('d-repaso-marco--suelto');
+        marco.removeAttribute('style');
+        if (marco.parentElement !== shot) shot.appendChild(marco);
+        marco.setAttribute('data-place', '');
+        if (global.motor && global.motor._initShots) global.motor._initShots();
+      }
+    });
+  }
+  var tirasEnganchadas = false;
+  function engancharTirasSueltas() {
+    if (tirasEnganchadas) return;
+    tirasEnganchadas = true;
+    var pendiente = 0;
+    var luego = function () { clearTimeout(pendiente); pendiente = setTimeout(acomodarTirasSueltas, 120); };
+    document.addEventListener('slidechange', luego);
+    global.addEventListener('resize', luego);
+    luego();
+  }
+
   function initRepasoRapido(opts) {
     opts = opts || {};
+    if (opts.suelto !== false && document.querySelector('[data-slide] .d-repaso-marco')) engancharTirasSueltas();
     var seen = opts.seen || function () { return false; };
     var mark = opts.markSeen || function () {};
     var seenMal = opts.seenMal || function () { return null; };
@@ -1193,6 +1255,7 @@
   };
   // Alias sueltos, para que el curso.js las llame igual que antes.
   global.initRepasoRapido = initRepasoRapido;
+  global.acomodarTirasSueltas = acomodarTirasSueltas;
 
   /* ============================================================
      initPrediccion() — una pregunta suelta ANTES de algo (kit-base v1.9.99)

@@ -848,6 +848,34 @@
   }
 
   /* ---- 1. Video de fondo, diapositiva completa ---- */
+  /* Auto-avance de `[data-autoadvance]` que espera a los paneles
+     (kit-base v1.9.120, §7.69). Hasta v1.9.119 el fin del video llamaba
+     a `motor._advance(1)` sin mirar nada, y como el motor cierra todo
+     pop-up al navegar, el alumno que estaba leyendo el Glosario o el
+     Índice se quedaba sin el panel a mitad de lectura. MEDIDO en
+     "Seguridad de la información" con un video de 6 s: Glosario abierto,
+     a los 6 s saltaba a "introduccion" con el panel cerrado.
+     Ahora, si hay un pop-up abierto, el avance queda PENDIENTE y se hace
+     al cerrar el último (uno puede abrir otro). Si mientras tanto el
+     alumno navegó por su cuenta, se descarta. `autoavance-panel.mjs`. */
+  var autoPendiente = null;
+  function autoavanzar(slide) {
+    var m = global.motor;
+    if (!m) return;
+    if (m.openPopup) { autoPendiente = slide; return; }
+    if (m.current() === slide) m._advance(1);
+  }
+  document.addEventListener('popupclose', function () {
+    if (!autoPendiente) return;
+    setTimeout(function () {
+      var m = global.motor, s = autoPendiente;
+      if (!s || !m || m.openPopup) return;
+      autoPendiente = null;
+      if (m.current() === s) m._advance(1);
+    }, 0);
+  });
+  document.addEventListener('slidechange', function () { autoPendiente = null; });
+
   function initBgVideos(opts) {
     opts = opts || {};
     var videos = document.querySelectorAll('.d-shot-slide--bg-video video.d-shot-video');
@@ -1191,9 +1219,7 @@
          que mirar/hacer ahí. */
       var slide = v.closest('[data-slide]');
       if (slide && slide.hasAttribute('data-autoadvance')) {
-        v.addEventListener('ended', function () {
-          if (global.motor) global.motor._advance(1);
-        });
+        v.addEventListener('ended', function () { autoavanzar(slide); });
       }
       var tap = tapOf(v);
       /* Si el video YA está corriendo mudo (reintento de arriba), el

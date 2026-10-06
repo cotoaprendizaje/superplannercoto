@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.119**.
+Vigente para **kit-base v1.9.120**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -139,7 +139,9 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 | "¿qué creés que pasa?" antes de mostrar | `initPrediccion` |
 | frenar el avance hasta que toquen algo | `initPopupGate`, `initVideoGate`, y el gate que devuelve `initMiniQuiz` |
 | avisar al motor que un gate cambió | `motor.refrescarGate()` o el evento `gatechange` (nunca `motor._syncNav()`) |
-| el margen seguro de tablet (12,22%) | `--d-margen-seguro` (leerlo con `getComputedStyle`, no copiar el número) |
+| el margen seguro de tablet (12,22% a los costados, 4,55% arriba y abajo) | `--d-margen-seguro` y `--d-margen-seguro-v` (leerlos con `getComputedStyle`, no copiar el número) |
+| que la tira de repaso salga a la franja libre en vertical | ya lo hace `initRepasoRapido` (`acomodarTirasSueltas`) |
+| pasos al costado de VARIOS repasos | `initPasosRepaso` toma todas las listas de la página |
 | avisar qué le falta tocar | `initGateHints` |
 | glosario con búsqueda y candado | `initGlossarySearch`, `initGlossaryUnlock` |
 | índice lateral con tilde y gate | `initIndexJumps` |
@@ -224,6 +226,11 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   (el nombre más largo, no el saludo vacío) (§7.43).
 - **El escalonado de entrada de los overlays viene apagado** (decisión
   del cliente); se prende con `<html data-overlay-stagger>` (§7.43).
+
+- **Agrandar la caja tocable de un control dibujado: hacia ADENTRO**, no
+  centrada, si el dibujo está cerca del borde. Centrada empuja la caja al
+  margen que se recorta en tablet (`--d-margen-seguro`, `-v`), y
+  `video-lienzo-tablet` la marca aunque el dibujo esté bien (§7.69).
 
 ---
 
