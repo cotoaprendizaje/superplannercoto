@@ -451,6 +451,7 @@
          lugar equivocado. */
       function anclarProvisional() {
         hits.forEach(function (h) {
+          if (soltado(h)) return;
           if (h.style.left) return;                      // ya tiene medidas reales
           if (h.getAttribute('data-l') === null) return; // lo posiciona el curso, no el motor
           h.style.left = '0px';
@@ -458,6 +459,16 @@
           h.style.visibility = 'hidden';
           h.setAttribute('data-place-provisional', '');
         });
+      }
+      /* Un elemento que ya no está colocado —se le sacó `data-place` (y
+         no es `data-hit`), o salió del `.d-shot`— no se vuelve a escribir
+         (kit-base v1.9.121, §7.70). `hits` se captura acá una vez, y este
+         `place()` lo siguen llamando el ResizeObserver y el `load`, así
+         que sacarle el atributo NO lo liberaba: la tira `--suelto` de
+         cardio necesitaba `!important` en todo para ganarle a lo que el
+         motor seguía escribiendo en línea. */
+      function soltado(h) {
+        return (!h.hasAttribute('data-place') && !h.hasAttribute('data-hit')) || !shot.contains(h);
       }
       function place(natW, natH) {
         /* ⚠️ Antes esto era `if (!natW || !natH) return;` — y se iba SIN
@@ -497,6 +508,7 @@
         var ox = media.offsetLeft + (boxW - dispW) * (px / 100);
         var oy = media.offsetTop + (boxH - dispH) * (py / 100);
         hits.forEach(function (h) {
+          if (soltado(h)) return;
           h.style.left = (ox + parseFloat(h.getAttribute('data-l')) / 100 * dispW) + 'px';
           h.style.top = (oy + parseFloat(h.getAttribute('data-t')) / 100 * dispH) + 'px';
           h.style.width = (parseFloat(h.getAttribute('data-w')) / 100 * dispW) + 'px';

@@ -373,3 +373,42 @@
   max-height: 100%;
   overflow: auto;
 }
+
+/* ---- `--pop`: en teléfono la tira se abre en una capa (kit-base v1.9.121) ----
+   Decisión del cliente (§7.70): sin scroll, nunca. Donde la tira no entra
+   ni en su banda ni en una franja libre —teléfono apaisado: ~170px de
+   escenario para ~213 de tarjeta—, `acomodarTirasSueltas()` (coto-ui.js)
+   esconde la tira y deja un botón en su marco; al tocarlo, la tira se
+   abre entera en `.d-repaso-capa`, fuera del lienzo. La capa vive en el
+   `<body>` porque el `.d-stage` tiene `container-type: size`, que vuelve
+   contenedor a todo `position: fixed` de adentro. */
+.d-repaso-marco--pop > .d-repaso{ display: none; }
+.d-repaso-marco--pop{ align-items: center; justify-content: center; }
+.d-repaso-abrir{
+  display: inline-flex; align-items: center; gap: .4rem; max-width: 100%;
+  padding: .45rem .9rem; border-radius: 999px; border: 2px solid var(--cat-strong);
+  background: #fff; color: var(--cat-strong); font-family: var(--font-body);
+  font-weight: 800; font-size: .78rem; cursor: pointer;
+  box-shadow: 0 6px 14px -6px rgba(20, 30, 60, .35);
+  min-height: 44px;
+}
+.d-repaso-abrir.is-completa{ border-color: var(--success); color: var(--success-ink); }
+.d-repaso-capa{
+  position: fixed; inset: 0; z-index: 1200;
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px; background: rgba(20, 30, 60, .55);
+}
+.d-repaso-capa-caja{
+  display: flex; flex-direction: column; align-items: stretch; gap: .4rem;
+  width: min(100%, 640px); max-height: 100%;
+}
+.d-repaso-capa .d-repaso{
+  position: static !important; left: auto !important; top: auto !important;
+  width: auto !important; height: auto !important; max-height: none; overflow: visible;
+}
+.d-repaso-capa-listo{
+  align-self: flex-end; min-height: 40px; padding: .35rem 1.1rem; border-radius: 999px;
+  border: none; background: #fff; color: var(--cat-strong);
+  font-family: var(--font-body); font-weight: 800; cursor: pointer;
+}
+

@@ -971,16 +971,89 @@
      Corre sola desde `initRepasoRapido` (se apaga con `suelto: false`)
      y en cada `slidechange` y `resize`. En teléfono apaisado no hay
      franja libre: ahí sigue el modo compacto de `coto-repaso.css`. */
+  /* ---- Modo pop-up en teléfono (kit-base v1.9.121, §7.70) ----
+     Decisión del cliente (B1 del relevo de cardio): "en estos cursos no
+     hay scroll, nunca" vale también para la tira. En teléfono apaisado
+     el escenario mide ~170px de alto y la tira necesita ~213: no hay
+     geometría que la haga entrar, y el modo compacto de coto-repaso.css
+     la dejaba con scroll. Ahí la tira se vuelve un botón en su lugar, y
+     al tocarlo se abre ENTERA en una capa sobre el curso. Se cierra con
+     "Listo", Escape, tocando afuera o al cambiar de diapositiva, y vuelve
+     a su marco. Pasó en dos cursos (cardio y "Seguridad de la
+     información"), por eso es del kit. Solo en teléfono (lado corto ≤
+     480px): en escritorio la tira que no entra es un problema de
+     contenido, no de pantalla. */
+  function esTelefono() { return Math.min(global.innerWidth, global.innerHeight) <= 480; }
+  var capaAbierta = null;
+  function cerrarCapa() {
+    var c = capaAbierta;
+    if (!c) return;
+    capaAbierta = null;
+    c.marco.insertBefore(c.tira, c.marco.firstChild ? c.marco.firstChild.nextSibling : null);
+    c.capa.remove();
+    var cab = c.marco.querySelector('.d-repaso-abrir');
+    if (cab) {
+      var listo = c.tira.classList.contains('is-complete');
+      cab.classList.toggle('is-completa', listo);
+      cab.querySelector('span').textContent = listo ? 'Repaso completo · volver a ver' : 'Repaso rápido · tocá para responder';
+      try { cab.focus({ preventScroll: true }); } catch (e) {}
+    }
+  }
+  function abrirCapa(marco) {
+    cerrarCapa();
+    var tira = marco.querySelector('.d-repaso');
+    if (!tira) return;
+    var capa = document.createElement('div');
+    capa.className = 'd-repaso-capa';
+    capa.setAttribute('role', 'dialog');
+    capa.setAttribute('aria-modal', 'true');
+    capa.setAttribute('aria-label', 'Repaso rápido');
+    var caja = document.createElement('div');
+    caja.className = 'd-repaso-capa-caja';
+    var listo = document.createElement('button');
+    listo.type = 'button';
+    listo.className = 'd-repaso-capa-listo';
+    listo.textContent = 'Listo';
+    caja.appendChild(tira);
+    caja.appendChild(listo);
+    capa.appendChild(caja);
+    document.body.appendChild(capa);
+    capaAbierta = { capa: capa, tira: tira, marco: marco };
+    listo.addEventListener('click', cerrarCapa);
+    capa.addEventListener('click', function (e) { if (e.target === capa) cerrarCapa(); });
+    var primero = tira.querySelector('[data-repaso-item]:not([hidden]) [data-repaso-ans]:not(:disabled)') || listo;
+    try { primero.focus({ preventScroll: true }); } catch (e) {}
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && capaAbierta) cerrarCapa(); });
+  document.addEventListener('slidechange', cerrarCapa);
+  function ponerPop(marco, si) {
+    var cab = marco.querySelector('.d-repaso-abrir');
+    if (si && !cab) {
+      cab = document.createElement('button');
+      cab.type = 'button';
+      cab.className = 'd-repaso-abrir';
+      cab.innerHTML = '<b aria-hidden="true">🔍</b><span>Repaso rápido · tocá para responder</span>';
+      cab.addEventListener('click', function () { abrirCapa(marco); });
+      marco.insertBefore(cab, marco.firstChild);
+    }
+    if (!si && cab) { if (capaAbierta && capaAbierta.marco === marco) cerrarCapa(); cab.remove(); }
+    marco.classList.toggle('d-repaso-marco--pop', !!si);
+  }
+
   function acomodarTirasSueltas() {
     document.querySelectorAll('[data-slide] .d-repaso-marco').forEach(function (marco) {
       var slide = marco.closest('[data-slide]');
-      var tira = marco.querySelector('.d-repaso');
+      var tira = marco.querySelector('.d-repaso') || (capaAbierta && capaAbierta.marco === marco ? capaAbierta.tira : null);
       var shot = slide && slide.querySelector('[data-shot]');
       var img = shot && shot.querySelector('.d-shot-img');
       if (!tira || !shot || !img) return;
       var ir = img.getBoundingClientRect();
       var sr = slide.getBoundingClientRect();
       if (!ir.height || !sr.height) return;          // diapositiva oculta: se mide al llegar
+      if (marco.classList.contains('d-repaso-marco--pop')) {
+        if (esTelefono()) return;                     // sigue de botón; la tira está escondida o en la capa
+        ponerPop(marco, false);
+      }
       var afuera = sr.bottom - ir.bottom >= tira.scrollHeight + 24;
       var yaAfuera = marco.classList.contains('d-repaso-marco--suelto');
       if (afuera) {
@@ -1001,6 +1074,8 @@
         marco.setAttribute('data-place', '');
         if (global.motor && global.motor._initShots) global.motor._initShots();
       }
+      /* Ni en su banda ni afuera: en teléfono, botón + capa. */
+      if (!afuera && esTelefono() && tira.scrollHeight > marco.clientHeight + 2) ponerPop(marco, true);
     });
   }
   var tirasEnganchadas = false;
@@ -1194,6 +1269,7 @@
             }
             if (!acerto && id) markMal(id, b.getAttribute('data-repaso-ans'));
             onAnswer(id, acerto, b.getAttribute('data-repaso-ans'));
+            document.dispatchEvent(new Event('gatechange'));   // por si la diapositiva lo exige (abajo)
           });
         });
         var next = item.querySelector('[data-repaso-next]');
@@ -1205,6 +1281,24 @@
       var primera = items.findIndex(function (it) { return !it.classList.contains('is-answered'); });
       mostrar(primera < 0 ? 0 : primera, true);
     });
+
+    /* ---- Gate opcional: `data-require-repaso` (kit-base v1.9.121, §7.70) ----
+       El repaso es refuerzo sin gate, salvo que la DIAPOSITIVA lo pida con
+       `data-require-repaso`: ahí "Siguiente" espera a que se contesten sus
+       preguntas. Pide PARTICIPAR, no acertar —una respuesta mala no puede
+       trabar el curso para siempre— y una errada de otra sesión cuenta como
+       contestada. Lo pidió cardio (A4): su cliente quería una pregunta por
+       factor, y "Siguiente" recién al responder; lo tenía escrito a mano
+       (`initRepasoFactor` + `faltaRepaso`). Mismo contrato que los demás
+       gates: va a `canAdvance` y a `initGateHints`. */
+    return {
+      faltan: function (slideEl) {
+        if (!slideEl || !slideEl.hasAttribute || !slideEl.hasAttribute('data-require-repaso')) return [];
+        return Array.prototype.slice.call(slideEl.querySelectorAll('[data-repaso-item]'))
+          .filter(function (it) { return !it.classList.contains('is-answered'); })
+          .map(function (it, k) { return it.getAttribute('data-repaso-id') || ('pregunta-' + (k + 1)); });
+      }
+    };
   }
 
   /* ---- datosDelCurso(clave, porDefecto) — kit-base v1.9.113 (Fase 1) ----

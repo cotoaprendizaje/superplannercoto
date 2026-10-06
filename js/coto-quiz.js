@@ -46,7 +46,8 @@
        track: function (id, question, correct, response) {  // xAPI/analytics, opcional
          if (window.XAPI) XAPI.answered(id, question, correct, response);
        },
-       stagger: function (el) { if (window.staggerReveal) staggerReveal(null, el); } // opcional
+       stagger: function (el) { if (window.staggerReveal) staggerReveal(null, el); }, // opcional
+       introPopup: 'practica-intro'   // opcional (v1.9.121): el aviso "no es la evaluación"
      });
 
    DEVUELVE un gate (kit-base v1.9.119, §7.68) con el mismo contrato
@@ -264,7 +265,11 @@
       if (slideEl && !slideEl.hidden) narrate(body);
     }
 
-    function resetQuiz() { QUIZ = sampleQuiz(); cur = 0; answers = new Array(QUIZ.length).fill(-1); streak = 0; registrado = false; updateStreakChip(); renderQ(); }
+    function resetQuiz() {
+      QUIZ = sampleQuiz(); cur = 0; answers = new Array(QUIZ.length).fill(-1); streak = 0; registrado = false;
+      updateStreakChip(); renderQ();
+      respondiendo(true, true);
+    }
 
     function aciertos() {
       return answers.filter(function (a, i) { return a === QUIZ[i].ok; }).length;
@@ -310,6 +315,7 @@
       if (firstTime) onFirstFinish(correct, QUIZ.length);
       renderDots();
       onFinish();
+      respondiendo(false);
       /* La diapositiva de la práctica deja de trabar en este momento:
          se avisa al motor para que habilite "Siguiente" ya (§7.68). */
       document.dispatchEvent(new Event('gatechange'));
@@ -344,6 +350,40 @@
       onResult(body.querySelector('.d-quiz-result'), aciertos(), QUIZ.length);
     }
 
+    /* ---- Estado "respondiendo" y aviso previo (kit-base v1.9.121, §7.70) ----
+       Lo pidió el relevo de cardio (A6 y A7), que lo tenía escrito en su
+       `curso.js` porque el módulo no lo daba:
+       · `.is-quiz-running` en la diapositiva mientras se están contestando
+         preguntas. Con eso coto-quiz.css saca la intro de la PANTALLA en
+         pantallas de hasta 760px de alto —el marco de Moodle mide ~690— y
+         la pregunta entra.
+       · eventos `quizstart` (cada vez que arranca un intento; `detail.
+         reintento`) y `quizretry` (al pulsar "Practicar de nuevo"). Cardio
+         escuchaba clics en `[data-retry]` porque no había otra forma.
+       · `introPopup: 'id'`: el pop-up de "esto no es la evaluación" se
+         abre al entrar MIENTRAS la práctica no esté completa. Va como
+         `data-intro-popup` en la diapositiva, que el motor ya sabe abrir
+         sin pisar la locución (con un `setTimeout` propio, cardio pisaba
+         la narración y `locucion-control` lo marcó). Completa, se saca. */
+    function respondiendo(si, reintento) {
+      if (slideDelQuiz) slideDelQuiz.classList.toggle('is-quiz-running', !!si);
+      if (slideDelQuiz && opts.introPopup) {
+        if (completa()) slideDelQuiz.removeAttribute('data-intro-popup');
+        else slideDelQuiz.setAttribute('data-intro-popup', opts.introPopup);
+      }
+      if (si) {
+        document.dispatchEvent(new CustomEvent('quizstart', { detail: { reintento: !!reintento } }));
+        if (reintento) document.dispatchEvent(new CustomEvent('quizretry'));
+      }
+    }
+
+    /* El botón "Empezar" del aviso previo lo cierra. */
+    if (opts.introPopup) {
+      document.querySelectorAll('[data-popup="' + opts.introPopup + '"] [data-pracintro-go]').forEach(function (b) {
+        b.addEventListener('click', function () { if (global.motor) global.motor.closePopup(); });
+      });
+    }
+
     var st = getState();
     if (st && st.done) {
       body.innerHTML = '<div class="d-quiz-result"><strong>Ya hiciste la práctica · mejor: ' + st.best + '/' + QUIZ.length + '</strong>' +
@@ -353,7 +393,8 @@
       body.querySelector('[data-retry]').addEventListener('click', resetQuiz);
       var goBtn2 = body.querySelector('[data-go-next]');
       if (goBtn2) goBtn2.addEventListener('click', seguir);
-    } else renderQ();
+    } else { renderQ(); respondiendo(true); }
+    if (st && st.done) respondiendo(false);
 
     function completa() { var e = getState(); return registrado || !!(e && e.done); }
     return {

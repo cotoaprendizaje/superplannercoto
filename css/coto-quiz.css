@@ -123,6 +123,63 @@
 .d-quiz-review .rv-go{margin-top:.6rem}
 .d-quiz-allgood{font-weight:700;color:var(--success-ink)}
 
+/* ---- "Esto no es la evaluación" (kit-base v1.9.121, §7.70) ----
+   La regla del molde es que la evaluación final va aparte, en Moodle: todo
+   curso con mini práctica tiene que dejarlo claro. Viene de "Prevención
+   cardiovascular" (pedido del cliente) y es lo que pidió su relevo (A7).
+   Dos piezas, marcado de ejemplo en index-boilerplate.html:
+     · `.d-aviso-practica` — el aviso en la diapositiva, arriba de
+       `[data-quiz]`. Color de INFORMACIÓN, no de advertencia: es una
+       aclaración, no un peligro. Mientras se responde se va de la pantalla
+       en alto chico (ver el bloque del marco de Moodle).
+     · `.d-pracintro` — el pop-up que `initMiniQuiz({ introPopup })` abre al
+       entrar mientras la práctica no esté hecha. `[data-pracintro-go]` lo
+       cierra (lo engancha el módulo). */
+.d-aviso-practica{display:grid;grid-template-columns:auto 1fr;gap:.8rem;align-items:start;
+  margin:0 0 1.1rem;padding:.85rem 1rem;border-radius:var(--r-sm);
+  background:var(--cat-soft);border-left:4px solid var(--cat-strong);text-align:left}
+.d-aviso-ic{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;
+  background:var(--cat-strong);color:#fff}
+.d-aviso-ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.d-aviso-practica p{margin:0;font-size:.9rem;line-height:1.45;color:var(--brand-navy)}
+.d-aviso-practica p + p{margin-top:.4rem;color:var(--text-soft)}
+.d-pracintro{text-align:center}
+.d-pracintro-ic{display:grid;place-items:center;width:56px;height:56px;margin:0 auto .7rem;
+  border-radius:50%;background:var(--cat-soft);color:var(--cat-ink)}
+.d-pracintro-ic svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.d-pracintro-lead{margin:0 0 .7rem;font-size:1.05rem;color:var(--brand-navy)}
+.d-pracintro ul{margin:0 0 .9rem;padding:0;list-style:none;display:flex;flex-direction:column;
+  gap:.45rem;text-align:left}
+.d-pracintro li{position:relative;padding-left:1.4rem;font-size:.92rem;line-height:1.4;color:var(--text-soft)}
+.d-pracintro li::before{content:"";position:absolute;left:.35rem;top:.55em;width:7px;height:7px;
+  border-radius:50%;background:var(--cat)}
+.d-pracintro-eval{margin:0 0 1.1rem;padding:.7rem .9rem;border-radius:var(--r-sm);
+  background:var(--cat-soft);color:var(--brand-navy);font-size:.88rem;line-height:1.45;text-align:left}
+
+/* ---- El marco de Moodle: 690px de alto (kit-base v1.9.121, §7.70) ----
+   Con "Mostrar paquete: ventana actual" el escenario queda en ~570px, y
+   la regla de pantalla baja de abajo (≤560) no llega. MEDIDO a 1655×690:
+   la pantalla de resultado se recortaba 11px en el arnés y 13 en
+   "Prevención cardiovascular", con la pregunta entrando justo (cardio lo
+   relevó con el aviso de "no es la evaluación" encima). Mismo criterio que
+   abajo: se recorta AIRE, nunca letra, y mientras se responde
+   (`.is-quiz-running`, lo pone `initMiniQuiz`) la intro se va de la
+   pantalla —no de la voz: `display`, no `hidden`—. `mini-practica` lo mide
+   en 1655×690. */
+@media (max-height: 760px){
+  .d-quiz-result{ padding: 1rem 1.2rem; }
+  .d-quiz-review{ margin-top: .6rem; }
+  .d-quiz-review ul{ gap: .45rem; }
+  .d-quiz-review li{ padding: .55rem .8rem; }
+  .d-quiz-actions{ margin-top: .7rem; }
+  .d-slide-quiz.is-quiz-running > h2,
+  .d-slide-quiz.is-quiz-running > p,
+  .d-slide-quiz.is-quiz-running .slide-eyebrow,
+  .d-slide-quiz.is-quiz-running .slide-lead,
+  .d-slide-quiz.is-quiz-running .d-aviso-practica{ display: none; }
+}
+
 @media (max-height: 560px){
   /* ---- Y QUE ENTRE, que es de lo que se trata (kit-base v1.9.98) ----
      ⚠️ El `sticky` de arriba (v1.9.71) se escribió asumiendo que la

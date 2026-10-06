@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.120**.
+Vigente para **kit-base v1.9.121**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -136,6 +136,8 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 | chrome, barras, índice, navegación, narración por diapositiva | `initPlayer` (la narración se engancha sola si le pasás `speakSlide`) |
 | puntos, logros, medalla | `initLogros`, `initCierreCelebration` |
 | repaso / mini-quiz | `initRepasoRapido`, `initMiniQuiz` |
+| que el repaso trabe hasta contestarlo | `data-require-repaso` en la diapositiva + el gate que devuelve `initRepasoRapido` |
+| el aviso "esto no es la evaluación" | `initMiniQuiz({ introPopup })` + `.d-aviso-practica` (ejemplo en `index-boilerplate.html`) |
 | "¿qué creés que pasa?" antes de mostrar | `initPrediccion` |
 | frenar el avance hasta que toquen algo | `initPopupGate`, `initVideoGate`, y el gate que devuelve `initMiniQuiz` |
 | avisar al motor que un gate cambió | `motor.refrescarGate()` o el evento `gatechange` (nunca `motor._syncNav()`) |
@@ -287,6 +289,16 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 
 ## 8 · Mobile, tablet y accesibilidad
 
+- **Sin scroll, nunca: tampoco la tira de repaso.** Decisión del cliente
+  (§7.70). En teléfono, donde la tira no entra ni en su banda ni en una
+  franja libre, el kit la convierte en un botón que la abre entera en una
+  capa (`acomodarTirasSueltas`, solo con `.d-repaso-marco`).
+- **"Siguiente" con un gate pendiente NO se pone gris**: se atenúa, tiembla
+  y un aviso dice qué falta (`initGateHints`). Decisión del cliente
+  (§7.70): con `disabled` un lector de pantalla no anuncia por qué el
+  botón no reacciona. Si algún día se cambia, cambian todos los gates
+  juntos.
+
 - **Todo lo ≤600px se prueba en viewport táctil REAL**
   (`isMobile:true`, `hasTouch:true`, `openCourseMobile()`), en la misma
   vuelta en que se construye (§7.3 #11 y #14).
@@ -353,6 +365,7 @@ node tools/check-css-duplicates.mjs .                     # reglas que se pisan 
 node tools/check-raw-cat-colors.mjs                        # hex de categoría a mano
 node tools/check-globals.mjs .                             # globales sin publicar (mira js/)
 node kit-base/tools/revisar-curso.mjs .                     # → sección "Relevo al kit" (obligatoria)
+node tools/check-comentarios-funciones.mjs .              # comentarios que nombran funciones que ya no están
 node tools/check-keyframes.mjs css                         # animaciones sin @keyframes
 python3 tools/build-zip.py                                 # el zip para el LMS
 ```

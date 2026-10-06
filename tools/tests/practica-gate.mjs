@@ -53,6 +53,7 @@ const fallos = [];
 
     const diapo = document.createElement('section');
     diapo.id = 'zz-diapo-quiz';
+    diapo.setAttribute('data-slide', 'zz-diapo-quiz');
     const host = document.createElement('div');
     host.setAttribute('data-quiz', '');
     diapo.appendChild(host);
@@ -60,9 +61,13 @@ const fallos = [];
     const otra = document.createElement('section');
     let avisos = 0;
     document.addEventListener('gatechange', () => { avisos++; });
+    const ev = { start: 0, retry: 0 };
+    document.addEventListener('quizstart', () => { ev.start++; });
+    document.addEventListener('quizretry', () => { ev.retry++; });
     const banco = [0, 1, 2].map((i) => ({ q: 'Pregunta ' + i, opts: ['Buena ' + i, 'Mala ' + i, 'Otra ' + i], ok: 0, why: 'Porque ' + i }));
-    const gate = window.initMiniQuiz({ bank: banco, size: 3 });
+    const gate = window.initMiniQuiz({ bank: banco, size: 3, introPopup: 'zz-intro' });
     if (!gate || typeof gate.faltan !== 'function') { diapo.remove(); return { sinPractica, noGate: true }; }
+    const alArrancar = { corre: diapo.classList.contains('is-quiz-running'), intro: diapo.getAttribute('data-intro-popup'), start: ev.start };
     const antes = gate.faltan(diapo).slice();
     const enOtra = gate.faltan(otra).slice();
     for (let i = 0; i < 3; i++) {
@@ -76,8 +81,15 @@ const fallos = [];
       if (i < 2) { host.querySelector('[data-next]').click(); await espera(60); }
     }
     const despues = gate.faltan(diapo).slice();
+    const alTerminar = { corre: diapo.classList.contains('is-quiz-running'), intro: diapo.getAttribute('data-intro-popup') };
+    host.querySelector('[data-next]').click();          // "Ver resultado"
+    await espera(60);
+    const btnRetry = host.querySelector('[data-retry]');
+    if (btnRetry) btnRetry.click();
+    await espera(60);
+    const alReintentar = { corre: diapo.classList.contains('is-quiz-running'), start: ev.start, retry: ev.retry };
     diapo.remove();
-    return { sinPractica, antes, enOtra, despues, avisos };
+    return { sinPractica, antes, enOtra, despues, avisos, alArrancar, alTerminar, alReintentar };
   });
   if (r.no) fallos.push(r.no);
   else {
@@ -87,6 +99,14 @@ const fallos = [];
       if (r.antes.length !== 1) fallos.push(`en la diapositiva de la práctica sin hacer, \`faltan()\` dio [${r.antes.join(', ')}]: tiene que pedir la práctica.`);
       if (r.enOtra.length) fallos.push(`en una diapositiva SIN práctica, \`faltan()\` dio [${r.enOtra.join(', ')}]: trabaría todo el curso.`);
       if (r.despues.length) fallos.push(`contestadas las tres (mal, a propósito), \`faltan()\` sigue dando [${r.despues.join(', ')}]: se exige completarla, no acertar.`);
+      /* v1.9.121 (§7.70): estado "respondiendo", eventos y aviso previo. */
+      const a = r.alArrancar, t = r.alTerminar, q = r.alReintentar;
+      if (!a.corre) fallos.push('al arrancar la práctica la diapositiva no tiene `.is-quiz-running`: en el marco de Moodle la intro no se va y la pregunta queda bajo el pliegue.');
+      if (a.start < 1) fallos.push('al arrancar la práctica no se emitió `quizstart`.');
+      if (a.intro !== 'zz-intro') fallos.push(`con \`introPopup: 'zz-intro'\` y la práctica sin hacer, la diapositiva tiene \`data-intro-popup="${a.intro}"\`: el aviso de "no es la evaluación" no se abre.`);
+      if (t.corre) fallos.push('completada la práctica, la diapositiva sigue con `.is-quiz-running`.');
+      if (t.intro) fallos.push('completada la práctica, el aviso previo se sigue abriendo al entrar (`data-intro-popup` no salió).');
+      if (!q.corre || q.retry < 1 || q.start < 2) fallos.push(`"Practicar de nuevo" no avisó: \`.is-quiz-running\` ${q.corre ? 'sí' : 'no'}, \`quizretry\` ${q.retry}, \`quizstart\` ${q.start} (tiene que ser 2).`);
       if (r.avisos < 1) fallos.push('al completar la práctica no se emitió `gatechange`: "Siguiente" queda deshabilitado hasta que otra cosa refresque la nav.');
     }
   }

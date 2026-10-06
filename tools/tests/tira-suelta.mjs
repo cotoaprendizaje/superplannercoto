@@ -23,7 +23,11 @@ const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbo
 
 const CASOS = [
   { nombre: 'iPad vertical 820×1180', ctx: { viewport: { width: 820, height: 1180 }, hasTouch: true, isMobile: true }, suelta: true },
-  { nombre: 'escritorio 1600×900', ctx: { viewport: { width: 1600, height: 900 } }, suelta: false }
+  { nombre: 'escritorio 1600×900', ctx: { viewport: { width: 1600, height: 900 } }, suelta: false },
+  /* Teléfono apaisado (v1.9.121, §7.70): ni banda ni franja libre. Por
+     decisión del cliente, sin scroll: la tira pasa a ser un botón y se
+     abre entera en una capa. */
+  { nombre: 'iPhone apaisado 844×390', ctx: { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, pop: true }
 ];
 
 for (const c of CASOS) {
@@ -64,6 +68,10 @@ for (const c of CASOS) {
        un lugar que no es el de ninguna lámina del molde. */
     [...sl.children].forEach((ch) => { ch.style.display = 'none'; });
     sl.appendChild(shot);
+    /* El motor registra la lámina ANTES de que la tira se suelte, como en
+       un curso real (registra al arrancar): así queda capturada en su
+       `place()` y se puede ver si la sigue escribiendo después. */
+    if (window.motor && window.motor._initShots) window.motor._initShots();
     window.initRepasoRapido({});
     return sl.getAttribute('data-slide');
   });
@@ -79,23 +87,69 @@ for (const c of CASOS) {
     const i = [...document.querySelectorAll('[data-slide]')].findIndex((s) => s.getAttribute('data-slide') === sid);
     window.motor.go(i, true);
   }, id);
-  await page.waitForTimeout(700);
-  await page.evaluate(() => window.motor._initShots && window.motor._initShots());
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(900);
 
+  /* Un cambio de tamaño con la tira ya suelta: el motor NO tiene que
+     volver a escribirle left/top/width/height en línea (v1.9.121, §7.70).
+     Hasta v1.9.120 lo hacía, y por eso `--suelto` necesitaba !important. */
+  await page.setViewportSize({ width: c.ctx.viewport.width - 10, height: c.ctx.viewport.height });
+  await page.waitForTimeout(400);
+  /* …y al irse y volver a la diapositiva, que es cuando el motor vuelve
+     a medir TODO lo que capturó (`slidechange` → `remedir`). */
+  await page.evaluate((sid) => {
+    const sl = [...document.querySelectorAll('[data-slide]')];
+    const i = sl.findIndex((s) => s.getAttribute('data-slide') === sid);
+    window.motor.go(i > 0 ? i - 1 : i + 1, true);
+  }, id);
+  await page.waitForTimeout(400);
+  await page.evaluate((sid) => {
+    const i = [...document.querySelectorAll('[data-slide]')].findIndex((s) => s.getAttribute('data-slide') === sid);
+    window.motor.go(i, true);
+  }, id);
+  await page.waitForTimeout(600);
   const r = await page.evaluate(() => {
     const m = document.getElementById('zz-marco');
     const t = m.querySelector('.d-repaso');
     const q = t.getBoundingClientRect();
-    return { suelta: m.classList.contains('d-repaso-marco--suelto'),
+    return { suelta: m.classList.contains('d-repaso-marco--suelto'), enLinea: m.style.left || m.style.width,
       scroll: t.scrollHeight - t.clientHeight, abajo: Math.round(q.bottom - innerHeight) };
   });
-  if (c.suelta) {
+  if (c.pop) {
+    const p = await page.evaluate(async () => {
+      const m = document.getElementById('zz-marco');
+      const b = m.querySelector('.d-repaso-abrir');
+      if (!b || !m.classList.contains('d-repaso-marco--pop')) {
+        const t = m.querySelector('.d-repaso');
+        return { sinPop: true, scroll: t ? t.scrollHeight - t.clientHeight : null };
+      }
+      b.click();
+      await new Promise((r) => setTimeout(r, 300));
+      const capa = document.querySelector('.d-repaso-capa');
+      const t = capa && capa.querySelector('.d-repaso');
+      const q = t && t.getBoundingClientRect();
+      const res = { capa: !!t, scroll: t ? t.scrollHeight - t.clientHeight : null,
+        dentro: q ? q.top >= -1 && q.bottom <= innerHeight + 1 : false };
+      capa.querySelector('.d-repaso-capa-listo').click();
+      await new Promise((r) => setTimeout(r, 200));
+      res.volvio = !!m.querySelector('.d-repaso') && !document.querySelector('.d-repaso-capa');
+      return res;
+    });
+    if (p.sinPop) fallos.push(`${c.nombre}: la tira no entra y quedó sin botón para abrirla (${p.scroll}px de scroll dentro del marco): el cliente decidió que no haya scroll nunca.`);
+    else {
+      if (!p.capa) fallos.push(`${c.nombre}: el botón "Repaso rápido" no abrió la tira en la capa.`);
+      else {
+        if (p.scroll > 3) fallos.push(`${c.nombre}: abierta en la capa, la tira tiene ${p.scroll}px de scroll.`);
+        if (!p.dentro) fallos.push(`${c.nombre}: abierta en la capa, la tira se sale de la pantalla.`);
+      }
+      if (!p.volvio) fallos.push(`${c.nombre}: al tocar "Listo" la tira no volvió a su marco (o la capa quedó abierta).`);
+    }
+  } else if (c.suelta) {
     if (!r.suelta) fallos.push(`${c.nombre}: la tira se quedó dentro de la banda de la lámina (sin \`--suelto\`), con ${r.scroll}px de scroll: tapa el dibujo y las opciones quedan cortadas.`);
     else {
       /* 3px de tolerancia: el borde y el redondeo del alto en px dejan
          1–2px de `scrollHeight` sobrante sin nada cortado. */
       if (r.scroll > 3) fallos.push(`${c.nombre}: la tira salió a la franja libre pero sigue con ${r.scroll}px de scroll.`);
+      if (r.enLinea) fallos.push(`${c.nombre}: con la tira suelta, el motor le volvió a escribir posición en línea (${r.enLinea}) al cambiar el tamaño: sacarle \`data-place\` no la libera.`);
       if (r.abajo > 0) fallos.push(`${c.nombre}: la tira suelta se pasa ${r.abajo}px por debajo de la pantalla.`);
     }
   } else if (r.suelta) {

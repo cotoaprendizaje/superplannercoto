@@ -212,6 +212,47 @@
      ============================================================== -->
 
 <!-- ==============================================================
+     Mini práctica: "esto no es la evaluación" (kit-base v1.9.121)
+     ------------------------------------------------------------
+     Todo curso con práctica tiene que dejar claro que la evaluación
+     final va aparte, en Moodle. Dos piezas (CSS en coto-quiz.css):
+
+     1 · El aviso en la diapositiva, arriba de `<div data-quiz>`
+         (en curso.json va en `aviso` de la diapositiva `practica`):
+
+<div class="d-aviso-practica" role="note" data-narrate-skip>
+  <span class="d-aviso-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></span>
+  <div>
+    <p><b>Esto no es la evaluación del curso.</b> Es una práctica para vos: no se guarda ninguna nota y podés repetirla las veces que quieras.</p>
+    <p>La <b>evaluación final</b> es un <b>cuestionario aparte</b>, en la plataforma, cuando termines todo el contenido.</p>
+  </div>
+</div>
+
+     2 · El pop-up que se abre al entrar MIENTRAS la práctica no esté
+         hecha: `initMiniQuiz({ …, introPopup: 'practica-intro' })`.
+
+<div class="modal" data-popup="practica-intro" role="dialog" aria-modal="true" aria-label="Antes de empezar la mini práctica">
+  <div class="modal-back" data-popup-close></div>
+  <div class="modal-card">
+    <div class="modal-hd modal-hd--dark">
+      <button class="modal-x" data-popup-close aria-label="Cerrar">✕</button>
+      <h3>Antes de empezar:</h3>
+    </div>
+    <div class="modal-bd d-pracintro">
+      <div class="d-pracintro-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></div>
+      <p class="d-pracintro-lead"><b>Esto no es la evaluación del curso.</b></p>
+      <ul>
+        <li>Son <b>3 preguntas</b> para repasar, cada una con su explicación.</li>
+        <li><b>No se guarda ninguna nota</b> y podés repetirla las veces que quieras.</li>
+      </ul>
+      <p class="d-pracintro-eval">La <b>evaluación final</b> es un <b>cuestionario aparte</b>, en la plataforma.</p>
+      <button class="btn btn-cat" type="button" data-pracintro-go>Empezar la mini práctica</button>
+    </div>
+  </div>
+</div>
+     ============================================================== -->
+
+<!-- ==============================================================
      data-narrate-skip  ·  lo que NO se narra pero SÍ se lee
      --------------------------------------------------------------
      kit-base v1.9.88. Un nodo marcado así queda fuera de `textOf()`

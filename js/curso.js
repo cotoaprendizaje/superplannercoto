@@ -200,7 +200,11 @@
        2 preguntas V/F por unidad, una por vez, sin nota ni gate — es
        refuerzo, no evaluación. El marcado va en index.html (contrato
        en el encabezado de coto-repaso.css); acá solo el estado. */
-    // initRepasoRapido({
+    /* Devuelve un gate (v1.9.121): si una diapositiva tiene
+       `data-require-repaso`, "Siguiente" espera a que se contesten sus
+       preguntas (bien o mal). Sumarlo a `canAdvance` si se usa:
+         motor.canAdvance = function (s) { return !repasoGate.faltan(s).length && … }; */
+    // var repasoGate = initRepasoRapido({
     //   seen: function (id) { return !!estado.repaso[id]; },
     //   markSeen: function (id) { estado.repaso[id] = true; persistir(); },
     //   onCorrect: function () { Logros.award(5, 'Repaso'); }
@@ -376,6 +380,8 @@
     // var practicaGate = initMiniQuiz({ bank: PRACTICA.banco, size: PRACTICA.porIntento, onFirstFinish: function (score) { … } });
     //   ↑ guardar lo que devuelve: es el gate de la práctica (ver "Gates de contenido" arriba).
     //   "Repasar en …" ya va a una diapositiva o a un pop-up sin pasarle `goToRelated`.
+    //   Con `introPopup: 'practica-intro'` abre el aviso "esto no es la evaluación" al entrar,
+    //   mientras no esté hecha (marcado en index-boilerplate.html; v1.9.121).
 
     // Cierre (coto-cierre.js):
     // initCierreCelebration({ … });

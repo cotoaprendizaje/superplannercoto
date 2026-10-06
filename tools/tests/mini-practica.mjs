@@ -41,6 +41,10 @@ const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbo
 const VPS = [
   { w: 844, h: 390, label: 'teléfono acostado' },
   { w: 1280, h: 720, label: 'notebook' },
+  /* El marco de Moodle con "Mostrar paquete: ventana actual" (v1.9.121,
+     §7.70): ~690px de alto y un escenario de ~570. Lo relevó cardio: la
+     pregunta quedaba bajo el pliegue y a 1600×900 no se ve. */
+  { w: 1655, h: 690, label: 'marco de Moodle' },
   { w: 1600, h: 900, label: 'PC' }
 ];
 

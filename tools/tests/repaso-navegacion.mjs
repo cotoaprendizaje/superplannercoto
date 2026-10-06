@@ -54,7 +54,9 @@ const r = await page.evaluate(async () => {
   N.cancel = () => { cortes++; };
 
   const respuestas = [];
-  window.initRepasoRapido({
+  const pedia = sl.hasAttribute('data-require-repaso');
+  sl.setAttribute('data-require-repaso', '');
+  const gate = window.initRepasoRapido({
     seen: () => false,
     seenMal: (id) => (id === 'zz-uno' ? 'false' : null),
     onAnswer: (id, acerto, eligio) => respuestas.push([id, acerto, eligio])
@@ -68,10 +70,16 @@ const r = await page.evaluate(async () => {
     dichosAlCargar: dichos.length
   };
 
+  /* Gate `data-require-repaso` (v1.9.121, §7.70): la 1 está contestada
+     (mal, de otra sesión) y cuenta; falta la 2. */
+  res.gateAntes = gate && gate.faltan ? gate.faltan(sl).filter((x) => /^zz-/.test(x)) : null;
   // Contestar la 2 (bien) → onAnswer.
   items[1].querySelector('[data-repaso-ans="true"]').click();
   await espera(350);
   res.respuestas = respuestas.slice();
+  res.gateDespues = gate && gate.faltan ? gate.faltan(sl).filter((x) => /^zz-/.test(x)) : null;
+  res.gateSinAtributo = gate && gate.faltan ? gate.faltan(document.createElement('section')).length : null;
+  if (!pedia) sl.removeAttribute('data-require-repaso');
   /* Devolución doble (kit-base v1.9.120, §7.69): contestada bien, la de
      error queda con `hidden`… y hasta v1.9.119 igual se VEÍA, porque
      `.d-repaso-fb[hidden]{display:flex !important}` (para animar la
@@ -126,6 +134,14 @@ else {
   if (!r.cortes) fallos.push('al cambiar de pregunta con la flecha no se cortó la voz: la devolución anterior sigue sonando.');
   if (r.dichosFlecha.length !== 1 || !/Pregunta uno/.test(r.dichosFlecha[0]) || /Pregunta dos|Devolución dos/.test(r.dichosFlecha[0])) {
     fallos.push(`al volver con la flecha se narró ${JSON.stringify(r.dichosFlecha)}: tiene que narrarse SOLO la pregunta 1.`);
+  }
+}
+if (!r.no) {
+  if (r.gateAntes === null) fallos.push('`initRepasoRapido` no devuelve un gate (`faltan`): una diapositiva con `data-require-repaso` no tiene cómo pedir que se conteste.');
+  else {
+    if (r.gateAntes.join() !== 'zz-dos') fallos.push(`con \`data-require-repaso\`, la 1 contestada (mal, de otra sesión) y la 2 sin contestar, el gate pide [${r.gateAntes.join(', ')}]: tiene que pedir solo la 2 (participar, no acertar).`);
+    if (r.gateDespues.length) fallos.push(`contestadas las dos, el gate sigue pidiendo [${r.gateDespues.join(', ')}].`);
+    if (r.gateSinAtributo) fallos.push('el gate del repaso traba una diapositiva SIN `data-require-repaso`: el repaso es refuerzo y no puede frenar por defecto.');
   }
 }
 if (!r.no && r.pasos && (r.pasos[0] !== 2 || r.pasos[1] !== 3)) {

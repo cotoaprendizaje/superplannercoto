@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.120** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.121** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -430,6 +430,21 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.121 — el resto del relevo de cardio y dos decisiones del cliente
+
+Ver CLAUDE.md §7.70.
+
+- **Sin scroll, nunca**: en teléfono, la tira de repaso que no entra se abre
+  entera en una capa desde un botón en su lugar.
+- **"Siguiente" no se pone gris** con un gate pendiente: queda escrito por qué.
+- La práctica entra en el marco de Moodle (1655×690); `initMiniQuiz` pone
+  `.is-quiz-running`, emite `quizstart`/`quizretry` y abre el aviso
+  "esto no es la evaluación" con `introPopup`.
+- `data-require-repaso`: el repaso puede trabar hasta que se conteste.
+- El motor deja de reposicionar lo que ya no tiene `data-place`.
+- `check-comentarios-funciones`: comentarios que nombran funciones que ya no
+  están.
 
 ### v1.9.120 — relevo de Seguridad de la información (el primero con la regla nueva)
 

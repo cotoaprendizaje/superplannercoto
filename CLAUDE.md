@@ -15507,3 +15507,70 @@ Sigue para v1.9.121 lo que queda de §7.68: A3 (`data-place` quitado), A4
 (repaso de una pregunta con gate), A6 (práctica en el marco de Moodle),
 A7 (`introPopup`), A12 (comentarios que nombran funciones inexistentes) y
 las decisiones B1–B3 de cardio.
+
+## 7.70 Lo que quedaba del relevo de cardio, y dos decisiones del cliente (kit-base v1.9.121)
+
+### Decisiones (B1 y B2 de §7.68, tomadas por el cliente el 2026-10-06)
+
+- **B1 · Sin scroll, nunca, tampoco la tira de repaso.** En teléfono
+  apaisado el escenario mide ~170px y la tira ~213: no hay geometría. En
+  vez de aceptar el scroll como excepción, la tira se vuelve un botón en
+  su marco y se abre ENTERA en una capa (`.d-repaso-capa`, en el `<body>`
+  porque `container-type: size` del `.d-stage` contiene todo `fixed`). Se
+  cierra con "Listo", Escape, tocando afuera o al cambiar de diapositiva.
+  Solo en teléfono (lado corto ≤ 480) y solo con `.d-repaso-marco`. Ya eran
+  dos cursos (cardio B1 y SI A5). `tira-suelta` suma iPhone apaisado: con
+  v1.9.120, 27px de scroll dentro del marco; ahora abre y vuelve.
+- **B2 · El "Siguiente" con gate pendiente no se pone gris.** Se atenúa,
+  tiembla y avisa (`initGateHints`): con `disabled` un lector de pantalla
+  no dice por qué no reacciona. Queda escrito en el manual (§8).
+
+### A3 · `place()` respeta un `data-place` quitado
+
+El motor captura sus `hits` una vez y los sigue escribiendo desde el
+ResizeObserver, el `load` y `remedir`. Ahora saltea el que ya no tiene
+`data-place`/`data-hit` o salió del `.d-shot`. `tira-suelta` lo mide
+(registra la lámina antes de soltar la tira, cambia el tamaño, se va y
+vuelve): con v1.9.120, `left: 437.4px` reescrito en línea; ahora nada.
+Los `!important` de `--suelto` quedan, ya sin ser imprescindibles.
+
+### A6 · La práctica en el marco de Moodle (1655×690)
+
+`mini-practica` suma ese tamaño: la pantalla de resultado se recortaba
+11px en el arnés y 13 en cardio. Tramo nuevo en coto-quiz.css (≤ 760px de
+alto) que recorta solo aire, y mientras se responde
+(`.is-quiz-running`, lo pone ahora `initMiniQuiz`) saca la intro de la
+pantalla, no de la voz. Eventos nuevos `quizstart` (`detail.reintento`) y
+`quizretry`: cardio escuchaba clics en `[data-retry]` porque no había
+otra forma.
+
+### A7 · "Esto no es la evaluación"
+
+`initMiniQuiz({ introPopup: 'id' })` pone `data-intro-popup` mientras la
+práctica no esté hecha (el motor ya lo abre sin pisar la locución) y lo
+saca al completarla; `[data-pracintro-go]` lo cierra. CSS de
+`.d-aviso-practica` y `.d-pracintro` en coto-quiz.css, y marcado de ejemplo
+en index-boilerplate.html. `practica-gate` mide clase, eventos y aviso
+(rojo con v1.9.120 en los cuatro).
+
+### A4 · Repaso que traba: `data-require-repaso`
+
+`initRepasoRapido` devuelve un gate: en una diapositiva con
+`data-require-repaso`, "Siguiente" espera a que se contesten sus
+preguntas. Participar, no acertar; una errada de otra sesión cuenta.
+Emite `gatechange` al contestar. Sin el atributo no traba nada.
+`repaso-navegacion` lo mide (rojo con v1.9.120).
+
+### A12 · `check-comentarios-funciones` (aviso, no test)
+
+Lista los comentarios del CSS propio y de `curso.js` que nombran una
+`función()` que no existe ni en el curso ni en el kit. Sobre cardio
+entregado marca `initSlideGates()`, `countUpStat()` y
+`mostrarResumenCierre()`; sobre los cursos al día, nada. Sale con 0: no
+cuenta los `//` (código comentado de la plantilla), los comodines
+(`init*Videos()`) ni las notas históricas ("acá había…", "se fue…"), que
+nombran a propósito lo que ya no está —medido: con esas excepciones bajó
+de 4 falsos positivos en un curso recién generado a 0—.
+
+Con esto el relevo de cardio queda cerrado, salvo B3 (`.d-ent-pop`), que
+espera a un segundo curso.
