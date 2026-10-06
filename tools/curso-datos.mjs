@@ -265,10 +265,16 @@ export function armarDiapositiva(d, i, ind = '    ', medallas) {
   return abre + h2 + shot + armarNarracion(d.narracion, ind + '  ') + cierra;
 }
 
+/* El rótulo que va antes de cada diapositiva. Lo usan el armador y el
+   extractor (que guarda como nota un rótulo a mano que diga otra cosa). */
+export function rotuloDe(d, i) {
+  const r = d.tipo === 'html' ? d.id : String(d.titulo).replace(/<[^>]+>/g, '');
+  return `${i} · ${r.replace(/--/g, '—')}`;
+}
+
 export function armarDiapositivas(lista, ind = '    ', medallas) {
   return lista.map((d, i) => {
-    const rotulo = d.tipo === 'html' ? d.id : String(d.titulo).replace(/<[^>]+>/g, '');
-    return `${ind}<!-- ${i} · ${rotulo.replace(/--/g, '—')} -->\n` + armarDiapositiva(d, i, ind, medallas);
+    return `${ind}<!-- ${rotuloDe(d, i)} -->\n` + armarDiapositiva(d, i, ind, medallas);
   }).join('\n\n');
 }
 

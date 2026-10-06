@@ -943,10 +943,23 @@
          onCorrect: function (id) { Logros.award(5, 'Repaso'); }
        });
      ============================================================ */
+  /* Opciones nuevas en kit-base v1.9.118 (relevo de "Seguridad
+     alimentaria", 2026-10-06; las cuatro vienen de pedidos del cliente):
+       seenMal(id)          → la respuesta ERRADA que eligió antes, o falsy.
+                              Se restaura cuál eligió y se muestra la buena.
+       markMal(id, eligio)  → guardar una respuesta errada ('true'/'false'
+                              o el valor del botón).
+       onAnswer(id, acerto, eligio) → cada respuesta (ej. XAPI.answered).
+     Y dos conductas sin opción: al cambiar de pregunta con las flechas se
+     corta la voz y se narra SOLO la pregunta nueva, y al entrar arranca
+     en la primera pregunta sin contestar. */
   function initRepasoRapido(opts) {
     opts = opts || {};
     var seen = opts.seen || function () { return false; };
     var mark = opts.markSeen || function () {};
+    var seenMal = opts.seenMal || function () { return null; };
+    var markMal = opts.markMal || function () {};
+    var onAnswer = opts.onAnswer || function () {};
 
     document.querySelectorAll('[data-repaso]').forEach(function (panel) {
       var items = Array.prototype.slice.call(panel.querySelectorAll('[data-repaso-item]'));
@@ -964,7 +977,8 @@
          empuja hacia adelante. Volver a la 1 después de la 2 no resetea
          ninguna respuesta. */
       var actual = 0;
-      function mostrar(i) {
+      /* `inicial`: el `mostrar()` del arranque no corta ni narra nada. */
+      function mostrar(i, inicial) {
         i = Math.max(0, Math.min(items.length - 1, i));
         actual = i;
         items.forEach(function (it, n) {
@@ -982,11 +996,38 @@
         if (count) count.textContent = (i + 1) + ' de ' + items.length;
         if (prevBtn) prevBtn.disabled = i === 0;
         if (nextBtn) nextBtn.disabled = i === items.length - 1;
+
+        /* ---- La voz sigue a la pregunta (v1.9.118) ----
+           Pedidos del cliente en "Seguridad alimentaria": *"si respondo
+           una pregunta y avanzo con la flecha a la siguiente, la locución
+           de la retroalimentación de la pregunta anterior sigue
+           reproduciéndose"* y *"al pasar de la pregunta 1 a la 2 la
+           locución vuelve a leer todo el contenido de la diapositiva; debe
+           leer solo la pregunta"*. Cambiar de pregunta no es cambiar de
+           diapositiva, así que el corte del `slidechange` no se entera.
+           Se corta siempre, y si la locución está activa se narra SOLO la
+           pregunta visible (`textOf(item)`: las otras están `hidden`),
+           220 ms después y solo si el alumno sigue en la misma diapositiva.
+           `speakSlide()` fue la primera versión en ese curso y el cliente
+           la rechazó: repetía el texto de la lámina. */
+        if (inicial || !global.Narrador) return;
+        var narrando = global.Narrador.isNarrating ? global.Narrador.isNarrating() : false;
+        if (global.Narrador.cancel) global.Narrador.cancel();
+        if (!narrando) return;
+        var sl = global.motor && global.motor.current && global.motor.current();
+        var item = items[i];
+        setTimeout(function () {
+          if (!global.Narrador.isNarrating() || (global.motor && global.motor.current && global.motor.current() !== sl)) return;
+          var txt = global.Narrador.textOf(item);
+          if (txt) global.Narrador.speak(txt, 'repaso');
+        }, 220);
       }
       if (prevBtn) prevBtn.addEventListener('click', function () { mostrar(actual - 1); });
       if (nextBtn) nextBtn.addEventListener('click', function () { mostrar(actual + 1); });
 
-      function resolver(item, acerto) {
+      /* `restaurando`: lo contestado en otra sesión se pinta igual, pero
+         no se narra (antes se narraba la devolución al cargar la página). */
+      function resolver(item, acerto, restaurando) {
         item.classList.add('is-answered', acerto ? 'is-correct' : 'is-wrong');
         /* Devolución DISTINTA según acierto o error (kit-base v1.9.77,
            §7.23 C7). Antes salía el mismo texto en los dos casos, así
@@ -1047,7 +1088,7 @@
            260ms: deja terminar la animación de la devolución antes de
            empezar a hablarla. Canal propio, para no pisar la narración
            de la diapositiva. */
-        var leer = item.querySelector('[data-repaso-fb]:not([hidden])');
+        var leer = restaurando ? null : item.querySelector('[data-repaso-fb]:not([hidden])');
         if (leer && global.Narrador && global.Narrador.speak) {
           if (!global.Narrador.isNarrating || global.Narrador.isNarrating()) {
             setTimeout(function () { global.Narrador.speak(leer.textContent.trim(), 'repaso'); }, 260);
@@ -1061,10 +1102,24 @@
       items.forEach(function (item, idx) {
         var ok = item.getAttribute('data-repaso-ok') === 'true';
         var id = item.getAttribute('data-repaso-id');
-        /* Restaurar lo ya contestado bien en una sesión anterior: se
-           deja resuelto y no se vuelve a premiar. */
-        if (id && seen(id)) resolver(item, true);
-        item.querySelectorAll('[data-repaso-ans]').forEach(function (b) {
+        /* Restaurar lo contestado en una sesión anterior: bien (`seen`) o
+           MAL (`seenMal`, v1.9.118), marcando cuál eligió. No se vuelve
+           a premiar ni a narrar. */
+        var btnsItem = Array.prototype.slice.call(item.querySelectorAll('[data-repaso-ans]'));
+        var malAntes = id ? seenMal(id) : null;
+        if (id && seen(id)) {
+          btnsItem.forEach(function (b) { if ((b.getAttribute('data-repaso-ans') === 'true') === ok) b.setAttribute('data-chosen', ''); });
+          resolver(item, true, true);
+        } else if (malAntes) {
+          /* `seenMal` devuelve el valor del botón que eligió ('true'/'false').
+             Si devuelve otra cosa (un `true` suelto de un curso que solo
+             guardaba "la erró"), se marca el botón que no es el correcto. */
+          var porValor = btnsItem.filter(function (b) { return b.getAttribute('data-repaso-ans') === String(malAntes); });
+          (porValor.length ? porValor : btnsItem.filter(function (b) { return (b.getAttribute('data-repaso-ans') === 'true') !== ok; }))
+            .slice(0, 1).forEach(function (b) { b.setAttribute('data-chosen', ''); });
+          resolver(item, false, true);
+        }
+        btnsItem.forEach(function (b) {
           b.addEventListener('click', function () {
             if (item.classList.contains('is-answered')) return;
             var eligio = b.getAttribute('data-repaso-ans') === 'true';
@@ -1075,13 +1130,18 @@
               mark(id);
               if (opts.onCorrect) opts.onCorrect(id);
             }
+            if (!acerto && id) markMal(id, b.getAttribute('data-repaso-ans'));
+            onAnswer(id, acerto, b.getAttribute('data-repaso-ans'));
           });
         });
         var next = item.querySelector('[data-repaso-next]');
         if (next) next.addEventListener('click', function () { mostrar(idx + 1); });
       });
 
-      mostrar(0);
+      /* Al entrar, la PRIMERA SIN CONTESTAR (v1.9.118): quien vuelve con
+         la 1 resuelta no tiene que pasar por ella para llegar a la 2. */
+      var primera = items.findIndex(function (it) { return !it.classList.contains('is-answered'); });
+      mostrar(primera < 0 ? 0 : primera, true);
     });
   }
 

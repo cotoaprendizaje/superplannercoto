@@ -60,7 +60,13 @@ const AFIRMACIONES = [
      patrón lo miraba. Y el manual declara para qué versión vale. */
   ['PROMPT-CURSO-NUEVO.md', /npm test\s+# los (\d+)/, 'tests'],
   ['MANUAL-DEL-MOLDE.md', /Vigente para \*\*kit-base v([\d.]+)\*\*/, 'version'],
-  ['PROMPT-RETOMAR-CURSO.md', /el del kit-base\s+\(v([\d.]+)\)/, 'version']
+  ['PROMPT-RETOMAR-CURSO.md', /el del kit-base\s+\(v([\d.]+)\)/, 'version'],
+  /* v1.9.118 (relevo de "Seguridad alimentaria"): el `package-lock.json`
+     se quedó en 1.9.94 durante 23 versiones. `npm install` en un curso lo
+     sincroniza con el `package.json` y `kit-intacto` lo acusaba de
+     editado a mano en TODO curso. Las dos apariciones de la versión. */
+  ['package-lock.json', /^\{\s*"name": "[^"]+",\s*"version": "([\d.]+)"/, 'version'],
+  ['package-lock.json', /"": \{\s*"name": "[^"]+",\s*"version": "([\d.]+)"/, 'version']
 ];
 
 const fallos = [];

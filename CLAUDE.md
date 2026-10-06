@@ -15210,3 +15210,94 @@ de este chat para que el curso de prueba siga ejercitando el formato:
 las 36 notas recuperadas del index de v1.9.110 (mismos ids) y la
 práctica, logros y medallas pasados de su `curso.js` a `curso.json`
 (como en v1.9.113; el curso real todavía los tiene en su `curso.js`).
+
+## 7.67 Relevo de "Seguridad alimentaria", 2026-10-06 (kit-base v1.9.118)
+
+El chat del curso lo puso al día desde v1.9.117 (no tenía
+`kit-version.json`), lo pasó a datos y mandó nueve puntos con evidencia,
+separando lo probado de lo supuesto. Verificados contra el kit:
+
+### R1 · `package-lock.json` en 1.9.94 → `kit-intacto` rojo en todo curso
+
+Confirmado: el lock decía 1.9.94 en sus dos lugares desde hacía 23
+versiones; `npm install` en un curso lo sincroniza con el `package.json`
+y `kit-intacto` lo acusaba como editado. Arreglado, y **`check-conteos`
+vigila ahora las dos versiones del lock** (rojo con "1.9.94", verde con
+la versión real). Cada versión del kit sube también el lock.
+
+### R2 · `repaso-tira` contaba los botones de la TIRA, no los de cada pregunta
+
+Confirmado y probado en las dos direcciones. Una tira con dos preguntas
+V/F tiene 4 botones y el test la tomaba por opción múltiple. Ahora se
+mira POR PREGUNTA y TODAS las preguntas (el relevo advertía que con el
+arreglo de una línea solo se miraba la primera). Alimentaria: rojo con
+el test viejo, verde con el nuevo; una pregunta de opción múltiple
+inyectada que marca la correcta con `true` bajo `--vf`: rojo.
+
+**Corrección a la auditoría de NOA (§7.56):** "las tiras de opción
+múltiple usan el ✓/✕ y señalan la correcta antes de contestar" salió de
+este mismo bug: las tiras de NOA son V/F de dos botones. Era un falso
+positivo. Lo que sí falla en NOA, y sigue marcado, es que al contestar
+mal la tira no señala cuál era la correcta (su repaso es anterior).
+
+### R8 · `build-zip` perdía los tests propios del curso
+
+Confirmado: v1.9.117 excluía `tools/` entera, y ahí viven también los
+tests que escribe cada curso, que `actualizar-kit` no repone. Ahora de
+`tools/` sale solo lo que lista el `kit-version.json` del curso; lo
+propio viaja, y `build-zip` lo lista ("van N archivo(s) propios").
+Alimentaria: 12 tests y su exportador propio, adentro. Sin registro
+(curso viejo), se excluye todo como antes. El zip del kit no cambia.
+
+### R3 · El repaso del kit no tenía lo que el cliente pidió en alimentaria
+
+Portado a `initRepasoRapido` (coto-ui.js), por partes y con opciones:
+- cambiar de pregunta con las flechas CORTA la voz y narra SOLO la
+  pregunta nueva (`textOf(item)`, 220 ms, misma diapositiva);
+- `seenMal(id)` / `markMal(id, eligio)`: las respuestas erradas se
+  guardan y se restauran marcando cuál eligió y cuál era la buena;
+- `onAnswer(id, acerto, eligio)`: cada respuesta (xAPI, por ejemplo);
+- al entrar, la primera pregunta SIN contestar;
+- y restaurar ya no narra la devolución al cargar la página.
+Test nuevo **`repaso-navegacion.mjs` (60 tests)**: arma su tira, simula
+una respuesta errada de otra sesión y espía la locución. Seis fallos con
+el kit anterior, verde con el nuevo.
+
+### R4 · Los rótulos de sección escritos a mano
+
+Si el rótulo que precede a una diapositiva no coincide con el que
+escribiría el armador (`rotuloDe`, ahora compartido por los dos), el
+extractor lo guarda como nota. Medido sobre el index original de
+alimentaria: los 7 rótulos distintos quedan como notas; ida y vuelta
+estable.
+
+### R5 · El comentario de Recursos invitaba a un choque
+
+`index-boilerplate.html`: si el curso tiene índice propio, migrarlo
+entero a `initIndexJumps` antes de sumar Recursos; no llamarla solo para
+ese botón.
+
+### R6 · Repaso en `rem` sobre la lámina — MEDIDO: es a propósito
+
+A 1600x900 la tira mide 16px de base y a 820x1180, 9px; los botones
+quedan en 12px y sus márgenes en 13,6px. No es un descuido: los textos
+de la tira tienen un piso en píxeles por legibilidad
+(`clamp(.78rem, …)`, documentado en `coto-repaso.css`), y pasarlos a
+`em` los llevaría a 7px en un iPad vertical. Los desbordes los vigilan
+`bloque-no-tapa-arte` (seis tamaños) y `repaso-tira`. No se cambia.
+
+### R7 · Rojo en la devolución de `initPrediccion`
+
+Pregunta de diseño, consultada al cliente por el chat del curso. Sin
+cambio hasta que conteste.
+
+### R9 · Los 23 tests del curso
+
+Recibidos. Los 11 que el curso borró los cubre el kit. De los 12 propios,
+los candidatos a subir (hechos genéricos) para la próxima versión: el
+glosario narra solo su intro; tocar un término desbloqueado navega y
+cierra; ninguna diapositiva dice el título dos veces seguidas;
+reintentar el minijuego no vuelve a premiar. La herramienta
+`retomar-entre-versiones.mjs` del relevo (retomar entre la versión
+vieja y la nueva de un curso, que hoy se hace a mano) también queda
+para la próxima: hay que sacarle los ids de alimentaria.

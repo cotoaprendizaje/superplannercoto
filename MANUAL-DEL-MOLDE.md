@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.117**.
+Vigente para **kit-base v1.9.118**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -252,6 +252,11 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   `speak()` vuelve enseguida, no al final (§7.49).
 - **En iOS el audio no arranca solo, nunca.** El primer gesto del alumno
   tiene que parecer "empezar", no un error (§7.37).
+- **La tira de repaso del kit** (`initRepasoRapido`) restaura también las
+  respuestas erradas (`seenMal`/`markMal`), avisa cada respuesta
+  (`onAnswer`), arranca en la primera sin contestar y, al cambiar de
+  pregunta con las flechas, corta la voz y narra solo la pregunta nueva.
+  Un curso no necesita su propio repaso para eso (§7.67).
 - Velocidad por defecto 1.05, voz latina/argentina antes que la de EE.UU.
   (§7.49, §6.54).
 - **Nunca suenan dos cosas a la vez** (regla del cliente). Lo garantiza

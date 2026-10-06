@@ -82,6 +82,12 @@ ARCHIVOS_DE_TRABAJO = {'PROMPT-CURSO-NUEVO.md', 'PROMPT-RETOMAR-CURSO.md', 'MANU
                        'simulador-boilerplate.html', 'package.json', 'package-lock.json', 'spec-motor-slides.md',
                        'minijuego-boilerplate.html'}
 CARPETAS_DE_TRABAJO = {'tools'}
+# ⚠️ De `tools/` sale solo lo que es DEL KIT (lo que lista `kit-version.json`)
+# (v1.9.118, relevo de "Seguridad alimentaria"): `tools/tests/` también
+# guarda los tests que escribe cada curso —los que cuidan decisiones del
+# cliente que un test genérico no conoce— y `actualizar-kit` no los repone.
+# Excluir la carpeta entera los perdía para siempre, sin aviso, en el zip
+# que después vuelve como "el zip del curso".
 
 
 def juntar(raiz, excluir_nombres=()):
@@ -94,6 +100,15 @@ def juntar(raiz, excluir_nombres=()):
     # Un curso generado tiene el `index.html` ya armado, no la plantilla.
     es_kit = (os.path.isfile(os.path.join(raiz, 'tools', 'new-course.mjs'))
               and os.path.isfile(os.path.join(raiz, 'index-boilerplate.html')))
+    del_kit = set()
+    registro = os.path.join(raiz, 'kit-version.json')
+    if os.path.isfile(registro):
+        try:
+            import json
+            with open(registro, encoding='utf-8') as fh:
+                del_kit = set((json.load(fh).get('archivos') or {}).keys())
+        except Exception:
+            del_kit = set()
     for dirpath, dirnames, filenames in os.walk(raiz):
         dirnames[:] = sorted(d for d in dirnames if d not in EXCLUIR_DIRS)
         for f in sorted(filenames):
@@ -136,7 +151,10 @@ def juntar(raiz, excluir_nombres=()):
             if not es_kit and len(partes) == 1 and partes[0] in ARCHIVOS_DE_TRABAJO:
                 continue
             if not es_kit and len(partes) > 1 and partes[0] in CARPETAS_DE_TRABAJO:
-                continue
+                # Sin registro no hay forma de distinguir: se excluye todo,
+                # como antes. Con registro, solo lo del kit.
+                if not del_kit or rel.replace(os.sep, '/') in del_kit:
+                    continue
             items.append((abs_p, rel.replace(os.sep, '/')))
     return items
 
@@ -242,6 +260,14 @@ def main():
     n, size = construir(raiz, salida, excluir)
     print('%s  —  %d entradas, %.2f MB, flag UTF-8 verificado en las %d'
           % (salida, n, size / 1024 / 1024, n))
+    import zipfile as _zf
+    with _zf.ZipFile(salida) as z:
+        propios = [x for x in z.namelist() if x.startswith('tools/')]
+    es_kit = os.path.isfile(os.path.join(raiz, 'tools', 'new-course.mjs')) and os.path.isfile(os.path.join(raiz, 'index-boilerplate.html'))
+    if propios and not es_kit:
+        print('  van %d archivo(s) propios del curso en tools/ (tests que escribió el curso):' % len(propios))
+        for x in propios[:20]:
+            print('    · ' + x)
 
 
 if __name__ == '__main__':

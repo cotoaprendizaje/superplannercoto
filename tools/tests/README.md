@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.117 · Área Aprendizaje (COTO)
+kit-base v1.9.118 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 59 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 60 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -17,7 +17,7 @@ le hable — nació de un bug real en el que ningún curso escuchaba
 `courseend`, así que el alumno terminaba todo y en el LMS quedaba
 "incomplete" para siempre, sin que ningún test lo notara.
 
-⚠️ **Dieciséis tests se arman su propio marcado** en vez de mirar el del
+⚠️ **Dieciocho tests se arman su propio marcado** en vez de mirar el del
 curso: `objetivos-progreso.mjs` y `recursos-panel.mjs` (kit v1.9.86),
 `minijuego.mjs` y `corte-directo.mjs` (v1.9.87), y
 `locucion-segundos.mjs` (v1.9.92: le escribe texto propio a la
@@ -47,6 +47,9 @@ vuelo (`$TMPDIR/coto-prueba-video-audio.webm`) y, si el curso no tiene
 ningún video, le agrega uno con controles nativos a una diapositiva que
 se narra: la regla de una sola voz vive en `narrador.js` y vale para
 cualquier video, así que siempre hay algo que medir.
+`retomar.mjs` (v1.9.117) arma un LMS SCORM 1.2 en memoria con un alumno
+guardado a mitad de camino, y `repaso-navegacion.mjs` (v1.9.118) su
+propia tira de repaso con una respuesta errada de otra sesión.
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

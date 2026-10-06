@@ -116,11 +116,22 @@ for (const id of ids) {
     // se destapa a mano: lo que se mide es la CAJA, no la condición.
     let n = tira;
     while (n && n !== sl) { n.hidden = false; n = n.parentElement; }
-    const item = tira.querySelector('[data-repaso-item]');
-    const btns = [...tira.querySelectorAll('[data-repaso-ans]')];
-    const regala = btns.filter(b => {
+    /* POR PREGUNTA, no por tira (kit-base v1.9.118, relevo de "Seguridad
+       alimentaria"). Contaba los botones de TODA la tira: una tira con dos
+       preguntas V/F tiene 4 botones y el test la tomaba por opción
+       múltiple, acusando el ✓/✕ que en V/F es lo correcto. Y se miran
+       TODAS las preguntas, no solo la primera: una V/F seguida de una de
+       opción múltiple tiene que mirarse entera. */
+    const items = [...tira.querySelectorAll('[data-repaso-item]')];
+    const item = items[0];
+    const btns = [...item.querySelectorAll('[data-repaso-ans]')];
+    const esTilde = (b) => {
       const c = getComputedStyle(b, '::before').content;
       return c && c !== 'none' && c !== 'normal' && c.replace(/"/g, '') === '✓';
+    };
+    const multiplesQueRegalan = items.filter((it) => {
+      const bs = [...it.querySelectorAll('[data-repaso-ans]')];
+      return bs.length > 2 && bs.some(esTilde);
     }).length;
     // Contestar MAL: el estado más alto.
     const ok = item.getAttribute('data-repaso-ok');
@@ -134,8 +145,7 @@ for (const id of ids) {
       res({
         colocada: !!tira.closest('[data-l]'),
         pos: getComputedStyle(tira.closest('[data-l]') || tira).position,
-        opciones: btns.length,
-        regala: regala,
+        multiplesQueRegalan: multiplesQueRegalan,
         scrollea: tira.scrollHeight > tira.clientHeight + 1,
         fueraDeLamina: sb ? Math.round(Math.max(tb.bottom - sb.bottom, sb.top - tb.top,
                                                 tb.right - sb.right, sb.left - tb.left)) : null,
@@ -159,7 +169,7 @@ for (const id of ids) {
   if (r.fueraDelMarco !== null && r.fueraDelMarco > 1) {
     fallos.push(q + 'la tira se sale de su banda ' + r.fueraDelMarco + 'px');
   }
-  if (r.opciones > 2 && r.regala) {
+  if (r.multiplesQueRegalan) {
     fallos.push(q + 'pregunta de opción múltiple con el ✓ de .d-repaso-btns--vf:'
       + ' señala la correcta antes de contestar');
   }

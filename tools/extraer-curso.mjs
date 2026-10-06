@@ -316,10 +316,17 @@ const r = await page.evaluate((html) => { try {
      "<!-- 3 · Separador Unidad 1 -->": el armador los vuelve a escribir
      solo, con el título. */
   const ROTULO = /^\s*\d+\s*·[^\n]*$/;
-  function notasDe(el) {
+  /* `rotuloArmado`: el rótulo que el armador escribiría solo. Un rótulo
+     a mano que dice OTRA cosa ("14 · Buenas prácticas — carrusel de 4
+     páginas completas" contra "14 · buenas") se guarda como nota: era
+     información de mantenimiento (v1.9.118, relevo de "Seguridad
+     alimentaria": 7 rótulos reescritos, 2 con contenido perdido). */
+  function notasDe(el, rotuloArmado) {
     const previas = [];
     for (let p = el.previousSibling; p && (p.nodeType === 8 || (p.nodeType === 3 && !p.nodeValue.trim())); p = p.previousSibling) {
-      if (p.nodeType === 8 && !ROTULO.test(p.nodeValue)) previas.unshift(p.nodeValue);
+      if (p.nodeType !== 8) continue;
+      const esRotulo = ROTULO.test(p.nodeValue);
+      if (!esRotulo || (rotuloArmado != null && p.nodeValue.trim() !== rotuloArmado)) previas.unshift(p.nodeValue);
     }
     const internas = [];
     const it = document.createNodeIterator(el, NodeFilter.SHOW_COMMENT);
@@ -332,7 +339,7 @@ const r = await page.evaluate((html) => { try {
   const secciones = Array.from(main.querySelectorAll(':scope > section.slide'));
   const diapositivas = secciones.map((sec, i) => {
     const d = leerDiapositiva(sec, i);
-    const notas = notasDe(sec);
+    const notas = notasDe(sec, CD.rotuloDe(d, i));
     if (notas) d.notas = notas;
     return d;
   });

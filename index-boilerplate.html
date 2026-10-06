@@ -432,6 +432,12 @@
      (`selector: '.d-recurso-ir'`), ya llamado en `js/curso.js`. Sin
      eso, Recursos sería un atajo para saltear las diapositivas —y los
      gates— del medio.
+     ⚠️ Si un curso tiene su PROPIO índice (funciones suyas que marcan
+     vistas y objetivos), migrarlo entero a `initIndexJumps` ANTES de
+     sumar Recursos: no llamarla solo para este botón. Su `refresh()`
+     pinta SIEMPRE el índice y los pips, sea cual sea el `selector`, y
+     las dos implementaciones se pisan el rótulo de objetivos (kit-base
+     v1.9.118, relevo de "Seguridad alimentaria").
      ============================================================== -->
 <div class="modal modal--drawer-right" data-popup="recursos" role="dialog" aria-modal="true" aria-label="Recursos del curso">
   <div class="modal-back" data-popup-close></div>
