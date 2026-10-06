@@ -31,6 +31,21 @@
    markup exacto que hay que agregar dentro de `<main class="d-stage">`.
    ============================================================ */
 
+/* Margen seguro de tablet, PUBLICADO (kit-base v1.9.119, §7.68).
+   Es lo que el peor stage soportado recorta a cada costado del lienzo
+   2:1: iPad Pro 12,9" (1366×1024, menos ~120px de header y pie) deja un
+   stage de 1366×904; el lienzo llena el alto y mide 1808 de ancho, y
+   recorta (1 − 1366/1808) / 2 = 12,22% por lado. Nada clickeable puede
+   caer ahí (`video-lienzo-tablet`).
+   Hasta v1.9.118 el número vivía solo dentro de ese test, y "Prevención
+   cardiovascular" lo copió a mano (`MARGEN_SEGURO = 12.22`) para medir
+   su tira y su chip: el día que el kit lo cambiara, el curso quedaba
+   desfasado sin aviso. Desde JS se lee así:
+     parseFloat(getComputedStyle(document.documentElement)
+       .getPropertyValue('--d-margen-seguro'))            // → 12.22
+   `revisar-curso` marca a los cursos que lo tienen copiado. */
+:root{ --d-margen-seguro: 12.22%; }
+
 /* ============================================================
    BASE DEL ESCENARIO Y DE LAS DIAPOSITIVAS
    ------------------------------------------------------------

@@ -41,12 +41,21 @@
        },
        onFinish: function () { unlockCierre(); },   // cada vez que se completa (1ª vez o repetición)
        narrate: function (bodyEl) { Narrador.speak(textOf(bodyEl), 'slide'); },
-       goToRelated: function (id) { window.motor.gotoId(id); },
+       // goToRelated: opcional desde v1.9.119 — el de serie ya sabe ir a
+       //   una diapositiva O a un pop-up (ver `irARelacionado`)
        track: function (id, question, correct, response) {  // xAPI/analytics, opcional
          if (window.XAPI) XAPI.answered(id, question, correct, response);
        },
        stagger: function (el) { if (window.staggerReveal) staggerReveal(null, el); } // opcional
      });
+
+   DEVUELVE un gate (kit-base v1.9.119, §7.68) con el mismo contrato
+   que `initPopupGate`/`initVideoGate`: `faltan(slideEl)` da `['practica']`
+   mientras la diapositiva que tiene `[data-quiz]` no esté completada, y
+   `[]` en cualquier otra. Se exige COMPLETARLA, no acertar. Guardarlo y
+   sumarlo a `canAdvance` y a `initGateHints` (la plantilla ya lo trae):
+     var practicaGate = initMiniQuiz({ … });
+     motor.canAdvance = function (s) { return !practicaGate.faltan(s).length && … };
    ============================================================ */
 (function (global) {
   'use strict';
@@ -59,9 +68,40 @@
 
   function noop() {}
 
+  /* El "Repasar en …" de una respuesta incorrecta, por defecto
+     (kit-base v1.9.119, §7.68). Hasta v1.9.118 el de serie era
+     `motor.gotoId(id)`, y si el `related` era un POP-UP no encontraba
+     nada: el botón no hacía nada, sin error. MEDIDO en "Prevención
+     cardiovascular" (`related: 'control-factores'`, la ficha del 50%).
+     Se va a la diapositiva que abre ese pop-up y se lo abre cuando
+     terminó la transición: así la pregunta puede apuntar a donde
+     REALMENTE está la respuesta. `tools/tests/practica-gate.mjs` falla
+     si algún `related` no es ni diapositiva ni pop-up. */
+  var ESPERA_TRANSICION = 420;
+  function irARelacionado(id) {
+    var m = global.motor;
+    if (!id || !m) return;
+    if (document.querySelector('[data-slide="' + id + '"]')) { m.gotoId(id); return; }
+    if (!document.querySelector('[data-popup="' + id + '"]')) return;
+    var disparador = document.querySelector(
+      '[data-gate-popup="' + id + '"], [data-require-popups~="' + id + '"], [data-popup-trigger="' + id + '"]');
+    var slide = disparador && disparador.closest('[data-slide]');
+    if (slide) {
+      m.gotoId(slide.getAttribute('data-slide'));
+      setTimeout(function () { m.showPopup(id); }, ESPERA_TRANSICION);
+    } else {
+      m.showPopup(id);
+    }
+  }
+
+  /* Gate que no traba nada: lo que devuelve `initMiniQuiz` cuando no
+     hay práctica que hacer (sin `[data-quiz]` o con el banco vacío), así
+     el `canAdvance` de la plantilla no se cae por un `undefined`. */
+  var SIN_GATE = { faltan: function () { return []; }, completa: function () { return true; } };
+
   function initMiniQuiz(opts) {
     opts = opts || {};
-    var host = document.querySelector('[data-quiz]'); if (!host) return;
+    var host = document.querySelector('[data-quiz]'); if (!host) return SIN_GATE;
     /* ---- La diapositiva se marca, para el CSS de pantalla baja ----
        kit-base v1.9.98. La pareja está en coto-quiz.css, bajo
        `@media (max-height:560px)`: ahí la intro de la diapositiva se
@@ -77,7 +117,7 @@
        del `boot()` del curso — el caso real que lo dispara es un curso
        que cablea `initMiniQuiz()` antes de tener escritas las preguntas
        (o que las carga de un JSON que todavía no existe). */
-    if (!bank.length) return;
+    if (!bank.length) return SIN_GATE;
     var size = Math.min(opts.size || 3, bank.length);
     var getState = opts.getState || function () { return null; };
     var setState = opts.setState || noop;
@@ -97,7 +137,7 @@
        a los cursos que tocan `.d-quiz-result` sin `onResult`. */
     var onResult = opts.onResult || noop;
     var narrate = opts.narrate || noop;
-    var goToRelated = opts.goToRelated || noop;
+    var goToRelated = opts.goToRelated || irARelacionado;
     var track = opts.track || noop;
     var stagger = opts.stagger || noop;
     var HAPPY = opts.happyMessages || ['¡Correcto!', '¡Bien ahí!', '¡Eso es!'];
@@ -270,6 +310,9 @@
       if (firstTime) onFirstFinish(correct, QUIZ.length);
       renderDots();
       onFinish();
+      /* La diapositiva de la práctica deja de trabar en este momento:
+         se avisa al motor para que habilite "Siguiente" ya (§7.68). */
+      document.dispatchEvent(new Event('gatechange'));
     }
 
     function finish() {
@@ -311,7 +354,17 @@
       var goBtn2 = body.querySelector('[data-go-next]');
       if (goBtn2) goBtn2.addEventListener('click', seguir);
     } else renderQ();
+
+    function completa() { var e = getState(); return registrado || !!(e && e.done); }
+    return {
+      faltan: function (slideEl) {
+        if (!slideEl || !slideEl.contains || !slideEl.contains(host)) return [];
+        return completa() ? [] : ['practica'];
+      },
+      completa: completa
+    };
   }
 
   global.initMiniQuiz = initMiniQuiz;
+  global.irARelacionado = irARelacionado;
 })(window);

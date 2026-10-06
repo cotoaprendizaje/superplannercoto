@@ -21,7 +21,7 @@
      6. CSS propio del curso en diapositivas.css (nunca en los .css
         del kit) + assets.css si hace falta
      7. imsmanifest.xml con la lista real de archivos
-     8. Antes de entregar: correr tools/tests/*.mjs (los 60, exit 0 en
+     8. Antes de entregar: correr tools/tests/*.mjs (los 61, exit 0 en
         todos) y tools/verify-hitboxes.mjs para inspección visual
    ============================================================ */
 (function () {
@@ -170,18 +170,30 @@
            (placeholder de 0 bytes), así el curso nunca queda trabado.
        `initGateHints` es lo que hace que el gate no sea mudo: al
        intentar avanzar, "Siguiente" tiembla, pulsa lo que falta tocar
-       y un toast dice cuántos quedan. */
+       y un toast dice cuántos quedan.
+         · la mini práctica (`[data-quiz]`, kit-base v1.9.119): su
+           diapositiva traba hasta completarla. SI EL CURSO TIENE
+           PRÁCTICA ESTE GATE NO ES OPCIONAL — sin él, "Siguiente" pasa
+           de largo y el alumno llega a un cierre con candado y sin
+           salida (lo reportó el cliente en "Prevención cardiovascular").
+           `practica-gate.mjs` lo prueba. `initMiniQuiz` devuelve el gate;
+           se la llama acá abajo, en "mini-quiz", y el `canAdvance` lo
+           lee recién al navegar, cuando ya existe. */
     // var popupGate = initPopupGate({ onChange: persistir });
     // var videoGate = initVideoGate({});
+    // var practicaGate;   // = initMiniQuiz({ … }), más abajo
     // motor.canAdvance = function (slideEl) {
     //   return popupGate.faltan(slideEl).length === 0 &&
-    //          videoGate.faltan(slideEl).length === 0;
+    //          videoGate.faltan(slideEl).length === 0 &&
+    //          (!practicaGate || practicaGate.faltan(slideEl).length === 0);
     // };
     // initGateHints({ gates: [
     //   { gate: popupGate, sel: function (id) { return '[data-popup-trigger="' + id + '"]'; },
     //     uno: 'tarjeta', varias: 'tarjetas' },
     //   { gate: videoGate, sel: function (src) { return '[data-video="' + src + '"]'; },
-    //     uno: 'video', varias: 'videos' }
+    //     uno: 'video', varias: 'videos' },
+    //   { gate: { faltan: function (s) { return practicaGate ? practicaGate.faltan(s) : []; } },
+    //     sel: function () { return '[data-quiz]'; }, uno: 'práctica', varias: 'prácticas' }
     // ] });
 
     /* Repaso rápido (coto-repaso.css + coto-ui.js, kit-base v1.9.64):
@@ -361,7 +373,9 @@
     // Solo si el curso tiene mini-quiz/minijuego (coto-quiz.js):
     // El banco va en curso.json → practica (banco, porIntento, mensajes):
     // var PRACTICA = datosDelCurso('practica', {});
-    // initMiniQuiz({ bank: PRACTICA.banco, size: PRACTICA.porIntento, onFirstFinish: function (score) { … } });
+    // var practicaGate = initMiniQuiz({ bank: PRACTICA.banco, size: PRACTICA.porIntento, onFirstFinish: function (score) { … } });
+    //   ↑ guardar lo que devuelve: es el gate de la práctica (ver "Gates de contenido" arriba).
+    //   "Repasar en …" ya va a una diapositiva o a un pop-up sin pasarle `goToRelated`.
 
     // Cierre (coto-cierre.js):
     // initCierreCelebration({ … });

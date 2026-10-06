@@ -149,7 +149,7 @@
       var c = document.querySelector('.slide-cierre'); if (!c) return;
       c.classList.add('unlocked');
       c.setAttribute('data-nav-cta', opts.ctaLabel || 'Finalizar curso');
-      if (global.motor) global.motor._syncNav();
+      if (global.motor) global.motor.refrescarGate();
       onUnlock();
       celebrateIfOnCierre();
     }
@@ -211,7 +211,7 @@
       var c = document.querySelector('.slide-cierre');
       if (c && ctaOriginal !== null) c.setAttribute('data-nav-cta', ctaOriginal);
       paso = 0;
-      if (global.motor) global.motor._syncNav();
+      if (global.motor) global.motor.refrescarGate();
     }
     var ctaOriginal = null;
 
@@ -231,7 +231,7 @@
       var c = document.querySelector('.slide-cierre');
       if (c && ctaOriginal === null) ctaOriginal = c.getAttribute('data-nav-cta');
       if (c) c.setAttribute('data-nav-cta', opts.salirLabel || 'Salir del curso');
-      if (global.motor) global.motor._syncNav();
+      if (global.motor) global.motor.refrescarGate();
     }
 
     return { unlockCierre: unlockCierre, celebrateIfOnCierre: celebrateIfOnCierre,

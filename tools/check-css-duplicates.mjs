@@ -33,6 +33,7 @@
    `@keyframes` distintos es normal, no un bug).
 
    Uso: node check-css-duplicates.mjs <archivo1.css> [archivo2.css ...]
+        node check-css-duplicates.mjs <carpeta-del-curso>   (mira su css/)
    Exit code 1 si encuentra algo, 0 si no. */
 
 import fs from 'node:fs';
@@ -229,9 +230,18 @@ function analizarArchivo(path) {
   return hallazgos;
 }
 
-const archivos = process.argv.slice(2);
+/* Una CARPETA también vale (kit-base v1.9.119, §7.68): la del curso
+   (se busca su `css/`) o la misma `css/`. Hasta v1.9.118 pasarle `.` se
+   caía con `EISDIR`, mientras `check-manifest` y `check-keyframes` sí
+   aceptaban la carpeta del curso — contrato desparejo, y fácil de
+   correr mal creyendo que dio bien. Medido en "Prevención cardiovascular". */
+const archivos = process.argv.slice(2).flatMap((a) => {
+  if (!fs.existsSync(a) || !fs.statSync(a).isDirectory()) return [a];
+  const dir = fs.existsSync(a + '/css') && fs.statSync(a + '/css').isDirectory() ? a + '/css' : a;
+  return fs.readdirSync(dir).filter((f) => f.endsWith('.css')).sort().map((f) => dir.replace(/\/$/, '') + '/' + f);
+});
 if (!archivos.length) {
-  console.error('Uso: node check-css-duplicates.mjs <archivo1.css> [archivo2.css ...]');
+  console.error('Uso: node check-css-duplicates.mjs <carpeta-del-curso | carpeta css | archivo1.css …>');
   process.exit(1);
 }
 

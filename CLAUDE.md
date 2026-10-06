@@ -15301,3 +15301,97 @@ reintentar el minijuego no vuelve a premiar. La herramienta
 `retomar-entre-versiones.mjs` del relevo (retomar entre la versión
 vieja y la nueva de un curso, que hoy se hace a mano) también queda
 para la próxima: hay que sacarle los ids de alimentaria.
+
+## 7.68 Segundo relevo de "Prevención cardiovascular", 2026-10-06: lo que el curso resolvió solo, y la regla para que no vuelva a pasar (kit-base v1.9.119)
+
+Después de entregar, el chat de cardio mandó un archivo con doce cosas
+que había resuelto DENTRO del curso "porque creí que eran propias de
+él". Entre ellas estaba el cierre trabado sin salida que el cliente
+había reportado con foto. El chat no las ocultó: nadie le había pedido
+separar lo propio de lo general, así que decidió solo. Lo verificado y
+lo aplicado en esta versión:
+
+### A1 · La práctica no trababa el avance → cierre con candado sin salida
+
+Confirmado: la plantilla no gateaba la diapositiva de `[data-quiz]` y
+`coto-quiz.js` no ofrecía `faltan()`. Se apretaba "Siguiente" sin
+contestar y se llegaba al cierre con "🔒 Hacé la mini práctica…", el pie
+en "Fin" y ninguna salida. **`initMiniQuiz` devuelve ahora un gate**
+(`faltan(slideEl)` da `['practica']` en la diapositiva de la práctica
+sin completar; se exige completarla, no acertar). Sin `[data-quiz]` o
+con el banco vacío devuelve un gate que no traba, para que el
+`canAdvance` no se caiga. Al registrar emite `gatechange`. La plantilla
+lo suma a `canAdvance` y a `initGateHints`, y dice que con práctica no es
+opcional. **Test nuevo `practica-gate.mjs` (61)**: el módulo con una
+práctica propia (contesta mal a propósito), el recorrido del curso y los
+`related` del banco. Dos direcciones: con el `coto-quiz.js` de v1.9.118,
+3 fallos; el arnés con práctica sin gate, 1 fallo ("Siguiente" llevó de
+"repaso" a "cierre"); con el gate cableado (`enriquecer.py`), verde.
+
+### A5 · "Repasar en …" no hacía nada si el `related` era un pop-up
+
+Confirmado: el ejemplo era `motor.gotoId(id)`. **`irARelacionado(id)`
+es ahora el `goToRelated` por defecto** (y es global): si el id es una
+diapositiva, va; si es un pop-up, va a la diapositiva que lo dispara
+(`data-gate-popup`, `data-require-popups`, `data-popup-trigger`) y lo abre
+a los 420 ms. `practica-gate` falla si un `related` no es ni diapositiva
+ni pop-up, y si hay un pop-up con disparador prueba que llegue y lo abra.
+
+### A8 · `_syncNav()` privado, usado desde 8 lugares
+
+Seis eran del kit mismo (cierre, media, minijuego, player). **Nuevo
+`motor.refrescarGate()`** y el evento **`gatechange`** en `document`:
+cualquier módulo o curso avisa así que un gate cambió. Los módulos del
+kit ya no llaman a `_syncNav()`.
+
+### A9 · El margen seguro de tablet (12,22%) vivía solo en un test
+
+**Publicado como `--d-margen-seguro` en `coto-shot-stage.css`.** El
+número sale de la geometría (iPad Pro 12,9": stage 1366×904, lienzo de
+1808, (1 − 1366/1808)/2), y `video-lienzo-tablet` ahora lo calcula y
+exige que el publicado coincida, también en cursos sin video de fondo
+(probado: 12.5% → rojo; sin la variable → rojo).
+
+### A10 · El marco de Moodle es más ANCHO que el curso
+
+Apartado nuevo en el README ("Requisitos de publicación"): ~2,9:1 contra
+el techo de 2,38:1; alto mínimo `ancho / 2,38 + 120`; se cambia en
+`scorm | frameheight` (sitio, 500 de fábrica) o con "ventana nueva". No
+se sube el techo del CSS.
+
+### A11 · `check-css-duplicates` y `check-globals` con la carpeta del curso
+
+Reproducido: el primero se caía con `EISDIR`; el segundo daba 18 falsos
+positivos. Los dos aceptan ahora la carpeta del curso y buscan solos
+`css/` y `js/`.
+
+### La regla nueva: todo lo que se resuelve en el curso va al relevo
+
+El problema no era este chat: era que el proceso dejaba la decisión
+"¿es del kit?" en el curso, que ve un solo curso. Desde v1.9.119:
+
+- **Regla en los dos prompts y en el manual (§9):** todo lo que se
+  resuelva en el curso va al relevo; decide el kit.
+- **Sección "Relevo al kit" obligatoria** en el `README-CURSO.md` antes
+  de entregar, aunque quede vacía.
+- **`tools/revisar-curso.mjs <curso>`** la arma: lista lo propio del
+  curso que puede ser del kit (uso de `motor._algo` con lo que hay en su
+  lugar, números copiados de los tests o de variables publicadas,
+  funciones que escuchan al motor, miden la pantalla o tocan el marcado
+  del molde, `!important` sobre clases del kit, las clases del kit más
+  reescritas). No falla nunca: es una lista para el relevo, no un test.
+  Sobre cardio entregado marca los cuatro `_syncNav`, el 12.22,
+  `initGates`, `acomodarTiras` y `syncQuizRunning`, que son justamente
+  A2, A6 y A8–A9 del relevo; sobre un curso recién generado, nada.
+
+### Lo que queda para v1.9.120
+
+A2 (`acomodarTiras` / `--suelto`), A3 (`data-place` quitado), A4 (repaso
+de una pregunta con gate), A6 (`.is-quiz-running` y la práctica en el
+marco de Moodle), A7 (`introPopup`), A12 (comentarios que nombran
+funciones que ya no existen), los candidatos de tests de R9 de §7.67 y
+las decisiones B1–B3, que son del cliente.
+
+Cardio y alimentaria no necesitan cambios ahora: cardio sigue con su
+`faltaPractica` propio (equivalente) y sus `_syncNav` siguen andando. Se
+limpian la próxima vez que se toquen.

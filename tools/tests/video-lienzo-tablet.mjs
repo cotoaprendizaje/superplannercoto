@@ -56,6 +56,14 @@ const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbo
    suite (mismo criterio que `simulador.mjs`, §7.27).
    De paso, la lámina `--bg-layered` de control se busca en el
    documento en vez de nombrarse a mano. */
+
+/* El número sale de la geometría, no de una constante suelta: iPad Pro
+   12,9" (1366×1024) menos el chrome fijo deja un stage de 1366×904, y el
+   lienzo 2:1 que llena ese alto recorta (1 − 1366/1808)/2 por lado.
+   Desde v1.9.119 (§7.68) el kit lo PUBLICA como `--d-margen-seguro` en
+   coto-shot-stage.css, para que los cursos lo lean en vez de copiarlo:
+   acá se exige que el publicado sea este, así no pueden separarse. */
+const CROP_PEOR = Math.round((1 - 1366 / ((1024 - 120) * 2)) / 2 * 10000) / 100; // 12.22
 const sonda = await browser.newPage({ viewport: { width: 1600, height: 900 } });
 await sonda.goto(url);
 await sonda.waitForTimeout(500);
@@ -64,11 +72,17 @@ const piezas = await sonda.evaluate(() => {
   const l = document.querySelector('section.slide.d-shot-slide--bg-layered[data-slide]');
   return { video: v && v.dataset.slide, layered: l && l.dataset.slide };
 });
+const publicado = await sonda.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--d-margen-seguro').trim());
+if (!publicado) {
+  fallos.push('el curso no tiene `--d-margen-seguro` (coto-shot-stage.css, v1.9.119): un curso que necesite el margen seguro de tablet lo copia a mano y queda desfasado el día que el kit lo cambie.');
+} else if (Math.abs(parseFloat(publicado) - CROP_PEOR) > 0.005) {
+  fallos.push(`\`--d-margen-seguro\` vale ${publicado} y el recorte del peor stage soportado (iPad Pro 12,9") es ${CROP_PEOR}%: lo publicado no es lo que el lienzo recorta.`);
+}
 await sonda.close();
 if (!piezas.video) {
   console.log('  · el curso no tiene ninguna diapositiva `--bg-video`: nada que revisar.');
   await browser.close();
-  report('video-lienzo-tablet', []);
+  report('video-lienzo-tablet', fallos);
   process.exit(process.exitCode || 0);
 }
 
@@ -146,7 +160,6 @@ for (const [nombre, w, h, esperaBanda] of CASOS) {
    fondo como si fueran contenido. "Hay tinta cerca del borde" no es
    "hay contenido cerca del borde". Los [data-l]/[data-w] declarados sí
    son contenido que importa, y son exactos. */
-const CROP_PEOR = 12.22; // iPad Pro 12,9", el stage más angosto soportado
 {
   const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
   await page.goto(url);

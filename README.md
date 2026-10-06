@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.118** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.119** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -96,7 +96,7 @@ kit-base/
 │   │                           no es liso (v1.9.105)
 │   ├── check-keyframes.mjs   — toda `animation` con su `@keyframes` (v1.9.108)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 60 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 61 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -169,7 +169,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 60, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 61, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -339,6 +339,28 @@ es otro problema y sí está resuelto adentro: ese mide el `.d-stage` y
 responde a la rotación. Si el iframe no rota, el stage tampoco cambia de
 proporción, y el cartel hace lo correcto — el que está mal es el marco.
 
+### El marco de Moodle es más ANCHO que el curso: bandas a los costados
+
+Reporte real (kit-base v1.9.119, "Prevención cardiovascular"): con
+"Mostrar paquete: **ventana actual**", el curso aparece con bandas
+anchas a los costados (unos 258px por lado en una pantalla de 1655px).
+
+⚠️ **Tampoco es el SCO.** El marco que arma Moodle queda en unos
+**2,9:1**, y el curso llena hasta **2,38:1**; por encima de eso vuelve al
+lienzo 2:1 y centra. Medido:
+
+- Header y pie del curso suman 120px, así que el alto mínimo del marco
+  para que no haya bandas es **`ancho / 2,38 + 120`**: a 1655px de
+  ancho, unos **830px**.
+- Se cambia en **Administración del sitio → Extensiones → Módulos de
+  actividad → Paquete SCORM → `scorm | frameheight`**, que viene en
+  **500** de fábrica. Es un ajuste del SITIO, no de la actividad: por
+  eso no aparece en la pantalla de la actividad. La otra salida es la
+  misma de arriba: "Mostrar paquete" en **ventana nueva**.
+- **No** subir el techo de 2,38 en el CSS del curso: a 2,9 habría que
+  recortar un 31% del alto, y el margen de seguridad del arte es del
+  16%. Se comería contenido real.
+
 ## Qué queda igual a propósito
 
 `js/narrador.js` sigue trayendo una tabla base de correcciones
@@ -408,6 +430,21 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.119 — segundo relevo de cardio: la práctica traba, y todo va al relevo
+
+Ver CLAUDE.md §7.68.
+
+- **La mini práctica traba su diapositiva hasta completarla**: `initMiniQuiz`
+  devuelve un gate y la plantilla lo cablea. Antes se llegaba a un cierre con
+  candado y sin salida. Test nuevo `practica-gate` (61).
+- **"Repasar en …" va también a un pop-up** (`irARelacionado`, por defecto).
+- **`motor.refrescarGate()` y el evento `gatechange`** en lugar de `_syncNav()`.
+- **`--d-margen-seguro`** publica el 12,22% de tablet.
+- README: el marco de Moodle más ancho que el curso (`scorm | frameheight`).
+- `check-css-duplicates` y `check-globals` aceptan la carpeta del curso.
+- **Regla nueva: todo lo que se resuelve en un curso va al relevo; decide el
+  kit.** Sección "Relevo al kit" obligatoria, armada con `tools/revisar-curso.mjs`.
 
 ### v1.9.118 — relevo de alimentaria: el repaso, el lock y los tests propios
 

@@ -900,6 +900,18 @@
     }
   };
 
+  /* ---- refrescarGate() — avisarle al motor que cambió una traba ----
+     kit-base v1.9.119 (relevo de "Prevención cardiovascular"). El motor
+     reevalúa `canAdvance` después de cada CLIC, pero una traba puede
+     cambiar sin clic: termina un video, se contesta la última pregunta,
+     se responde una tira. Hasta acá los cursos —y los módulos del propio
+     kit— llamaban a `motor._syncNav()`, que es privado: cardio lo hacía
+     en 4 lugares, y olvidarse uno deja "Siguiente" apagado justo cuando
+     la traba se acaba de cumplir. Esta es la forma pública; también se
+     puede emitir `document.dispatchEvent(new Event('gatechange'))` desde
+     un módulo que no tenga el motor a mano. */
+  Motor.prototype.refrescarGate = function () { this._syncNav(); };
+
   Motor.prototype._syncNav = function () {
     var i = this.index, last = this.slides.length - 1;
     var cur = this.slides[i];
@@ -1197,6 +1209,9 @@
   };
   Motor.prototype.current = function () { return this.slides[this.index]; };
 
+  document.addEventListener('gatechange', function () {
+    if (global.motor && global.motor.refrescarGate) global.motor.refrescarGate();
+  });
   global.Motor = Motor;
   /* Compartido, no copiado: cualquier módulo del kit que mueva el foco
      tiene que hacerse la MISMA pregunta (lo usa coto-quiz.js). Con dos

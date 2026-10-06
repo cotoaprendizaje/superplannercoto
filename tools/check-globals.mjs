@@ -41,9 +41,15 @@ const AQUI = path.dirname(fileURLToPath(import.meta.url));
    "Prevención cardiovascular": 29 símbolos consumidos con el default y
    los mismos 29 apuntándolo al curso, pero eso es suerte del caso, no
    una garantía — el chequeo no lo estaba dando.
-   Uso: `node tools/check-globals.mjs [carpeta-js]` */
-const JS_DIR = process.argv[2]
-  ? path.resolve(process.argv[2])
+   Uso: `node tools/check-globals.mjs [carpeta-del-curso | carpeta-js]` */
+/* Y acepta también la carpeta DEL CURSO (kit-base v1.9.119, §7.68):
+   si adentro hay un `js/`, mira ese. Hasta v1.9.118, `check-globals .`
+   desde un curso leía los `.js` sueltos de la raíz —ninguno— y daba 18
+   falsos positivos ("`initMiniQuiz` aparece en README.md pero ningún
+   módulo lo publica"), mirando la carpeta equivocada sin avisar. */
+const ARG = process.argv[2] ? path.resolve(process.argv[2]) : null;
+const JS_DIR = ARG
+  ? (fs.existsSync(path.join(ARG, 'js')) && fs.statSync(path.join(ARG, 'js')).isDirectory() ? path.join(ARG, 'js') : ARG)
   : path.join(AQUI, '..', 'js');
 
 /* Provistos por el navegador o por el propio curso — no los publica

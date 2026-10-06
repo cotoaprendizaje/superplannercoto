@@ -461,7 +461,7 @@
          O sea que el festejo del minijuego nunca habría salido, sin un
          solo error en consola: la forma exacta de §7.17. */
       if (pendienteFin.gano && typeof opts.celebrar === 'function') opts.celebrar();
-      if (global.motor) global.motor._syncNav();
+      if (global.motor) global.motor.refrescarGate();
       pendienteFin = null;
     });
 

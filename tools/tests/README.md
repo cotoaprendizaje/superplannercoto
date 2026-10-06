@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.118 · Área Aprendizaje (COTO)
+kit-base v1.9.119 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 60 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 61 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -50,6 +50,9 @@ cualquier video, así que siempre hay algo que medir.
 `retomar.mjs` (v1.9.117) arma un LMS SCORM 1.2 en memoria con un alumno
 guardado a mitad de camino, y `repaso-navegacion.mjs` (v1.9.118) su
 propia tira de repaso con una respuesta errada de otra sesión.
+`practica-gate.mjs` (v1.9.119) arma su propia práctica para probar el
+módulo, y además recorre la del curso si tiene: sin contestar, "Siguiente"
+no puede sacar al alumno de la diapositiva de la práctica.
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

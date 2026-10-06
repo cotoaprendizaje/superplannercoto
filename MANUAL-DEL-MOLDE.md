@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.118**.
+Vigente para **kit-base v1.9.119**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -137,7 +137,9 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 | puntos, logros, medalla | `initLogros`, `initCierreCelebration` |
 | repaso / mini-quiz | `initRepasoRapido`, `initMiniQuiz` |
 | "¿qué creés que pasa?" antes de mostrar | `initPrediccion` |
-| frenar el avance hasta que toquen algo | `initPopupGate`, `initVideoGate` |
+| frenar el avance hasta que toquen algo | `initPopupGate`, `initVideoGate`, y el gate que devuelve `initMiniQuiz` |
+| avisar al motor que un gate cambió | `motor.refrescarGate()` o el evento `gatechange` (nunca `motor._syncNav()`) |
+| el margen seguro de tablet (12,22%) | `--d-margen-seguro` (leerlo con `getComputedStyle`, no copiar el número) |
 | avisar qué le falta tocar | `initGateHints` |
 | glosario con búsqueda y candado | `initGlossarySearch`, `initGlossaryUnlock` |
 | índice lateral con tilde y gate | `initIndexJumps` |
@@ -163,6 +165,12 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   de resultado.** `onFinish` corre al contestar la última pregunta (el
   alumno puede no pulsar "Ver resultado"); lo que decora la pantalla de
   resultado va en `onResult`, que recibe la caja ya dibujada (§7.56).
+- **Si hay mini práctica, su gate NO es opcional.** `initMiniQuiz`
+  devuelve `{ faltan(slideEl) }`: va a `motor.canAdvance` y a
+  `initGateHints` (la plantilla lo trae). Sin él, "Siguiente" pasa de
+  largo y el alumno llega a un cierre con candado y sin salida
+  (`practica-gate`, §7.68). "Repasar en …" ya va a una diapositiva o a
+  un pop-up sin pasarle `goToRelated`.
 - **No escribir un listener de `slidechange` para narrar**: ya lo hace
   `initPlayer`, y quedarían dos (§7.17).
 - **Los umbrales de la medalla se calculan**, no se eligen: bronce = el
@@ -292,9 +300,21 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 
 ## 9 · Relevar al kit (desde el chat de un curso)
 
-Cuando algo es del kit —un bug, un hueco, algo que tuviste que escribir
-a mano y serviría a cualquier curso— se anota en el `README-CURSO.md`
-del curso con:
+**Todo lo que se resuelva en el curso va al relevo, y decide el kit.**
+No solo lo que parezca del kit: también lo que se arregló "porque era de
+este curso". El chat del curso no decide qué es propio; lo decide el chat
+del kit, que ve todos los cursos. (Cardio resolvió adentro doce cosas que
+creyó suyas, entre ellas el cierre trabado que el cliente reportó con
+foto, y el kit se enteró en un segundo relevo, §7.68.)
+
+**La sección "Relevo al kit" del `README-CURSO.md` es obligatoria antes
+de entregar**, aunque quede vacía. Se arma corriendo
+`node kit-base/tools/revisar-curso.mjs <carpeta-del-curso>`: lista API
+privada del kit, números copiados, mecanismos propios y CSS que pelea con
+el kit. Cada punto que marque va al relevo, con una línea diciendo qué
+es. Si no marca nada, la sección lo dice.
+
+Cada hallazgo se anota en el `README-CURSO.md` del curso con:
 
 - **síntoma**, **causa medida en el código real**, y **cómo lo
   verificaste**;
@@ -322,13 +342,21 @@ arreglos de otros cursos (pasó cuatro veces, §7.43–§7.50).
 COURSE_URL="http://localhost:8080/index.html" npm test   # la suite entera
 npm run verify-hitboxes                                    # mirar las capturas
 npm run check-assets                                       # peso de imágenes
-node tools/check-css-duplicates.mjs css/*.css             # reglas que se pisan
+node tools/check-css-duplicates.mjs .                     # reglas que se pisan (mira css/)
 node tools/check-raw-cat-colors.mjs                        # hex de categoría a mano
-node tools/check-globals.mjs js                            # globales publicados dos veces
+node tools/check-globals.mjs .                             # globales sin publicar (mira js/)
+node kit-base/tools/revisar-curso.mjs .                     # → sección "Relevo al kit" (obligatoria)
 node tools/check-keyframes.mjs css                         # animaciones sin @keyframes
 python3 tools/build-zip.py                                 # el zip para el LMS
 ```
 
+- **Sin la sección "Relevo al kit" en el `README-CURSO.md`, no se
+  entrega** (§9, §7.68).
+- **Bandas anchas a los costados en Moodle no son del curso**: es el
+  marco ("ventana actual", ~2,9:1). Se arregla en el sitio
+  (`scorm | frameheight`, alto ≈ `ancho / 2,38 + 120`) o con "ventana
+  nueva"; nunca subiendo el techo del CSS. Ver README del kit,
+  "Requisitos de publicación" (§7.68).
 - **Un "0 fallos" vale si además dice cuántos tests corrió.** La suite
   sale de la carpeta; un test que no corre no avisa (§7.3 #17).
 - **`kit-intacto` en rojo = alguien editó un archivo del kit dentro del

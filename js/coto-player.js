@@ -1216,7 +1216,7 @@
       track.addEventListener('pointercancel', function () {
         dragging = false;
         track.classList.remove('is-seeking');
-        global.motor._syncNav();
+        global.motor.refrescarGate();
       });
       if (thumb) {
         thumb.addEventListener('keydown', function (e) {

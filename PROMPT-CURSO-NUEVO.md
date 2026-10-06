@@ -17,7 +17,7 @@ entre `<>` y adjuntar el zip de `kit-base/` + el PDF del diseñador.
 ## ✂️ Copiar desde acá
 
 Vas a armar un curso SCORM del molde "Área Aprendizaje (COTO)" usando el
-kit adjunto (`kit-base/`, v1.9.118). Antes de escribir una línea, leé del
+kit adjunto (`kit-base/`, v1.9.119). Antes de escribir una línea, leé del
 kit:
 
 - **`MANUAL-DEL-MOLDE.md`, entero.** Son las reglas vigentes, cortas y
@@ -64,7 +64,7 @@ node tools/new-course.mjs ../<carpeta-del-curso> \
 Eso genera el `index.html` COMPLETO —chrome, barra inferior, índice
 lateral, modales, orden de scripts— más el `imsmanifest.xml`, el CSS
 propio vacío y las diapositivas rotuladas. Recién salido del generador
-tiene que dar **60/60 en verde**; si no, es un bug del kit y se relaya
+tiene que dar **61/61 en verde**; si no, es un bug del kit y se relaya
 antes de seguir.
 
 Con `--tipo simulador` suma `js/escenario.js` (el archivo de DATOS, que
@@ -188,7 +188,7 @@ desconecta, `contrato-cableado` lo dice con nombre y consecuencia.
 ### Paso 4 — antes de entregar
 
 ```bash
-COURSE_URL="http://localhost:8080/index.html" npm test   # los 60, exit 0 en todos
+COURSE_URL="http://localhost:8080/index.html" npm test   # los 61, exit 0 en todos
 npm run verify-hitboxes                                   # inspección visual
 npm run check-assets                                      # peso/formato de imágenes
 ```
@@ -204,11 +204,34 @@ punto 19).
 
 ### Durante todo el curso: el relay
 
-Cada vez que encuentres algo que es del KIT y no de este curso —un bug,
-un hueco, un patrón que tuviste que escribir a mano y que serviría a
-cualquier curso— **anotalo en el `README-CURSO.md` de este curso** con:
-síntoma, diagnóstico contra el código real, y cómo lo verificaste. Al
-final se relaya todo junto al chat del kit.
+**Regla: todo lo que resuelvas en el curso va al relevo, y decide el
+kit.** No solo los bugs del kit: también lo que arreglaste "porque era
+de este curso". Vos no decidís qué es propio y qué es general: lo decide
+el chat del kit, que ve todos los cursos. Pasó: "Prevención
+cardiovascular" resolvió adentro doce cosas que creyó suyas, entre ellas
+el cierre trabado sin salida que el cliente había reportado con foto, y
+el kit se enteró recién en un segundo relevo. Mientras tanto, los otros
+cursos seguían con el bug.
+
+Cada vez que resuelvas algo, **anotalo en el `README-CURSO.md` de este
+curso** con: síntoma, diagnóstico contra el código real, y cómo lo
+verificaste. Al final se relaya todo junto al chat del kit.
+
+**Antes de entregar, la sección "Relevo al kit" del `README-CURSO.md` es
+obligatoria**, aunque quede vacía:
+
+```bash
+node kit-base/tools/revisar-curso.mjs <carpeta-del-curso>
+```
+
+`revisar-curso` lista lo que el curso hizo por su cuenta y puede ser del
+kit: uso de funciones privadas del kit (`motor._algo`), números copiados
+de los tests, mecanismos propios (funciones que escuchan al motor, miden
+la pantalla o tocan el marcado del molde) y CSS que pelea con el kit.
+**Cada punto que marque va al relevo**, con una línea tuya diciendo qué
+es; si te parece propio del curso, decilo ahí, pero mandalo igual. Si no
+marca nada, la sección dice eso: "se corrió `revisar-curso` y no marcó
+nada". Un curso sin esa sección no está listo para entregar.
 
 Lo que hace útil a un relay: que distinga lo que YA probaste de lo que
 solo suponés, y que diga cómo lo mediste. Un relay que dice "esto es

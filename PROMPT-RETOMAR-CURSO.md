@@ -16,7 +16,7 @@ falta viaja en los dos zips.
 
 Vamos a retomar el curso **`<NOMBRE DEL CURSO>`**, del molde "Área
 Aprendizaje (COTO)". Te adjunto el zip del curso y el del kit-base
-(v1.9.118). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
+(v1.9.119). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
 
 ### Paso 1 — antes de tocar nada, poner el curso al día con el kit
 
@@ -64,13 +64,34 @@ arregla acá. Lo del kit se anota para relevar (paso 5).
 - **Probar que un alumno a mitad de camino retoma donde estaba:** abrir el
   curso viejo, avanzar hasta la mitad, y abrir el nuevo con ese mismo
   progreso guardado.
+- **La sección "Relevo al kit" del `README-CURSO.md`, obligatoria** (paso 5):
+  `node kit-base/tools/revisar-curso.mjs <carpeta-del-curso>`, y cada punto
+  que marque va ahí. Sin esa sección el curso no está listo para entregar.
 
-### Paso 5 — lo que sea del kit se releva, no se arregla acá
+### Paso 5 — todo lo que resuelvas va al relevo; decide el kit
 
-Si encontrás algo que es del KIT (un bug, un hueco, algo que tuviste que
-escribir a mano y le serviría a cualquier curso), podés parchear la
-copia local para no frenar la entrega, pero el arreglo de verdad va al
-chat del kit, así:
+**Regla: todo lo que resuelvas en el curso va al relevo, y decide el
+kit.** No solo lo que te parezca del kit: también lo que arreglaste
+"porque era de este curso". Vos no decidís qué es propio y qué es
+general; lo decide el chat del kit, que ve todos los cursos. Pasó:
+"Prevención cardiovascular" resolvió adentro doce cosas que creyó suyas
+—entre ellas el cierre trabado sin salida que el cliente había reportado
+con foto— y el kit se enteró recién en un segundo relevo.
+
+Podés parchear la copia local para no frenar la entrega, pero el arreglo
+va al chat del kit, en la sección **"Relevo al kit"** del
+`README-CURSO.md`, que es obligatoria aunque quede vacía:
+
+```bash
+node kit-base/tools/revisar-curso.mjs <carpeta-del-curso>
+```
+
+`revisar-curso` lista lo que el curso hizo por su cuenta y puede ser del
+kit (funciones privadas del kit, números copiados de los tests,
+mecanismos propios, CSS que pelea con el kit). **Cada punto que marque va
+al relevo**, con una línea tuya; si te parece propio del curso, decilo,
+pero mandalo igual. Si no marca nada, la sección dice "se corrió
+`revisar-curso` y no marcó nada". Y en el relevo:
 
 - **Rotulalo por curso y fecha** ("relevo `<curso>`, `<fecha>`). **Nunca con
   un número de versión del kit**: las versiones las pone solo el chat del

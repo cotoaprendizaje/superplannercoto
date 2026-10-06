@@ -783,7 +783,7 @@
     var visto = vistoAPI(opts);
     var rotos = {};
     var onChange = opts.onChange || function () {
-      if (global.motor && global.motor._syncNav) global.motor._syncNav();
+      if (global.motor && global.motor.refrescarGate) global.motor.refrescarGate();
     };
 
     var srcs = {};
