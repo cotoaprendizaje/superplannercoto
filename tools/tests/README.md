@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.123 · Área Aprendizaje (COTO)
+kit-base v1.9.124 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 63 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 64 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -56,6 +56,11 @@ no puede sacar al alumno de la diapositiva de la práctica.
 `autoavance-panel.mjs` (v1.9.120) le pone `data-autoadvance` a la primera
 diapositiva con video de fondo si ninguna lo tiene, y `tira-suelta.mjs` arma
 su propia lámina con una tira colocada para medirla en iPad vertical.
+`repaso-errada.mjs` (v1.9.124) y `puntaje-maximo.mjs` (desde v1.9.124)
+arman el mismo LMS en memoria, pero guardado en `sessionStorage` para que
+sobreviva una recarga: es lo que ve un alumno que sale y vuelve.
+`repaso-errada` contesta todo el repaso bien con un alumno y todo mal con
+otro, y exige los mismos logros; un curso sin repaso no tiene nada que medir.
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.123**.
+Vigente para **kit-base v1.9.124**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -187,7 +187,16 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   todavía es placeholder (§7.3 #19, §7.14).
 - **Un `award()` en una actividad que se puede repetir necesita guard
   persistido**, si no es puntaje infinito (§6.53). Y el puntaje premia
-  precisión, no insistencia (§7.14).
+  precisión, no insistencia (§7.14). `puntaje-maximo` ahora recorre el
+  curso tres veces (una normal, otra igual y otra tras recargar) y exige
+  el mismo total (§7.73).
+- **Un logro nunca depende de ACERTAR algo que se contesta una sola
+  vez.** Los logros miden recorrido (hacer, contestar); la medalla mide
+  desempeño (acertar suma puntos). Un logro de unidad pide las preguntas
+  del repaso CONTESTADAS (`estado.repaso[id] || estado.repasoMal[id]`).
+  La plantilla ya guarda las erradas (`seenMal`/`markMal`), así vuelven
+  marcadas al retomar. `repaso-errada` lo mide: contesta todo mal y exige
+  los mismos logros (§7.73).
 
 ---
 
@@ -313,6 +322,11 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 - **Antes de pedirle algo al alumno, preguntarse si puede hacerlo** en
   ese dispositivo (el cartel de girar, solo donde se puede girar)
   (§7.41).
+- **El cartel "Girá tu dispositivo" siempre tiene salida**: el botón
+  `[data-rotate-seguir]` ("Ver igual, en vertical"), para quien tiene el
+  bloqueo de rotación puesto. Un curso con el marcado anterior a v1.9.119
+  no lo trae: copiar el bloque `.d-rotate-notice` de
+  `index-boilerplate.html`. `rotate-notice` lo exige (§7.73).
 - **Una espera que parece un cuelgue es un bug**: si no se puede acortar,
   se muestra (§7.43).
 - **El índice lateral nunca deja saltar a una diapositiva no vista**

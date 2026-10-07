@@ -37,8 +37,10 @@ const failures = [];
   /* Un minijuego SIN `data-mj-start` no es "no hay minijuego" (kit-base
      v1.9.122, §7.71): NOA tenía el suyo, con su botón de empezar sin el
      atributo, y este test lo salteaba —verde sin medir nada— mientras a
-     844×390 dos filas de opciones quedaban fuera de la pantalla. */
-  const sinMarca = !hay && await page.evaluate(() => !!document.querySelector('.d-mj-opt, [data-mj-opt], .d-mj-escena, [data-minijuego]'));
+     844×390 dos filas de opciones quedaban fuera de la pantalla. Las
+     señales `.d-mj-play`, `.d-mj-panel` y `[data-mj-grid]` se sumaron en
+     v1.9.124 (§7.73): el minijuego de NOA no tenía `.d-mj-opt`. */
+  const sinMarca = !hay && await page.evaluate(() => !!document.querySelector('.d-mj-opt, [data-mj-opt], .d-mj-escena, [data-minijuego], .d-mj-play, .d-mj-panel, [data-mj-grid]'));
   await browser.close();
   if (sinMarca) {
     report('minijuego-landscape', ['el curso tiene un minijuego (`.d-mj-*`) pero su botón de empezar no tiene `data-mj-start`: ' +

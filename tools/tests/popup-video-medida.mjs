@@ -71,7 +71,19 @@ for (const [nombre, w, h] of VIEWPORTS) {
       window.initVideoPlayer({});
     }
     if (!hit) return false;
-    const sl = hit.closest('[data-slide]');
+    /* El disparador puede vivir DENTRO de un pop-up (kit-base v1.9.124, §7.73; relevo de
+       NOA, 2026-10-07: el ▶ de cada ficha de reporte
+       abre el reproductor). Ahí no hay `[data-slide]` arriba: se va a la
+       diapositiva que abre ese pop-up y se marca el disparador para el
+       paso siguiente. Antes salía "no hay #d-video-player", que era
+       falso: el reproductor estaba, lo que no había era una diapo. */
+    hit.setAttribute('data-pvm-hit', '');
+    let sl = hit.closest('[data-slide]');
+    const pop = !sl && hit.closest('[data-popup]');
+    if (pop) {
+      const t = document.querySelector('[data-slide] [data-popup-trigger="' + pop.getAttribute('data-popup') + '"]');
+      sl = t && t.closest('[data-slide]');
+    }
     if (!sl || !window.motor) return false;
     window.motor.go([...document.querySelectorAll('[data-slide]')].indexOf(sl));
     return true;
@@ -80,7 +92,7 @@ for (const [nombre, w, h] of VIEWPORTS) {
   await page.waitForTimeout(500);
   await page.evaluate(() => {
     const act = document.querySelector('.d-slide.is-active, [data-slide].is-active') || document;
-    const hit = act.querySelector('[data-video-play], [data-video-popup]');
+    const hit = act.querySelector('[data-video-play], [data-video-popup]') || document.querySelector('[data-pvm-hit]');
     /* Se toca el PLAY, como el alumno (kit-base v1.9.105). Un recuadro
        `[data-inline-video][data-video-popup]` no abre nada con un clic
        en el contenedor: el disparador es su botón. MEDIDO en "Seguridad

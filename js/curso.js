@@ -21,7 +21,7 @@
      6. CSS propio del curso en diapositivas.css (nunca en los .css
         del kit) + assets.css si hace falta
      7. imsmanifest.xml con la lista real de archivos
-     8. Antes de entregar: correr tools/tests/*.mjs (los 63, exit 0 en
+     8. Antes de entregar: correr tools/tests/*.mjs (los 64, exit 0 en
         todos) y tools/verify-hitboxes.mjs para inspección visual
    ============================================================ */
 (function () {
@@ -45,7 +45,11 @@
      fichas se abrieron — solo si el curso tiene ese contenido.
      Los PUNTOS y los LOGROS ya NO van acá: los maneja `initLogros()`
      (coto-logros.js), más abajo. */
-  var estado = { vistas: {} };
+  /* `repaso` y `repasoMal` (kit-base v1.9.124, §7.73): las respuestas
+     del repaso rápido, ACERTADAS y ERRADAS. Las dos se guardan —ver el
+     bloque de `initRepasoRapido` más abajo—. Si el curso no tiene
+     repaso quedan vacías y no ocupan lugar en suspend_data. */
+  var estado = { vistas: {}, repaso: {}, repasoMal: {} };
 
   /* ---------- Catálogo de logros (CONTENIDO del curso) ----------
      La única parte de los logros que es propia de cada curso: cuáles
@@ -73,15 +77,18 @@
      únicos puntos de contacto (no escribir `p`/`b` a mano acá). */
   function persistir() {
     if (!window.SCORM || !Logros) return;
-    SCORM.saveState(Object.assign({
-      vs: Object.keys(estado.vistas)
-    }, Logros.serialize()));
+    var guardar = { vs: Object.keys(estado.vistas) };
+    if (Object.keys(estado.repaso).length) guardar.rp = Object.keys(estado.repaso);
+    if (Object.keys(estado.repasoMal).length) guardar.rm = estado.repasoMal;   // { id: lo que eligió }
+    SCORM.saveState(Object.assign(guardar, Logros.serialize()));
   }
   function restaurar() {
     if (!window.SCORM) return;
     var s = SCORM.loadState();
     if (!s) return;
     (s.vs || []).forEach(function (id) { estado.vistas[id] = true; });
+    (s.rp || []).forEach(function (id) { estado.repaso[id] = true; });
+    if (s.rm && typeof s.rm === 'object') Object.keys(s.rm).forEach(function (id) { estado.repasoMal[id] = s.rm[id]; });
     if (Logros) Logros.restore(s);
   }
 
@@ -204,9 +211,20 @@
        `data-require-repaso`, "Siguiente" espera a que se contesten sus
        preguntas (bien o mal). Sumarlo a `canAdvance` si se usa:
          motor.canAdvance = function (s) { return !repasoGate.faltan(s).length && … }; */
+    /* Las ERRADAS también se guardan (`seenMal`/`markMal`, kit-base
+       v1.9.124, §7.73; relevo de "Seguridad de la información",
+       2026-10-07). Cada pregunta se contesta UNA vez, y `markSeen` corre
+       solo al acertar: sin `markMal`, una errada no queda en ningún lado,
+       al retomar la pregunta vuelve en blanco, y un logro que pida "el
+       repaso de la unidad" queda imposible en esa sesión. Pasó: el
+       cliente terminó un curso con 1/4 logros. Regla para los logros: que
+       pidan las preguntas CONTESTADAS (`repaso[id] || repasoMal[id]`),
+       nunca ACERTADAS; acertar suma puntos, no decide un logro. */
     // var repasoGate = initRepasoRapido({
     //   seen: function (id) { return !!estado.repaso[id]; },
     //   markSeen: function (id) { estado.repaso[id] = true; persistir(); },
+    //   seenMal: function (id) { return estado.repasoMal[id] || null; },
+    //   markMal: function (id, eligio) { estado.repasoMal[id] = eligio; persistir(); },
     //   onCorrect: function () { Logros.award(5, 'Repaso'); }
     // });
 

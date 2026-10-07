@@ -32,6 +32,16 @@
    un valor intermedio que "casi" parece bien. Por eso se lee
    `data-valor`, que el kit escribe con el número verdadero antes de
    animar.
+   Y NO PAGA DOS VECES (kit-base v1.9.124, §7.73; relevo de "Seguridad
+   de la información", 2026-10-07). Este test tocaba cada cosa UNA vez y
+   comparaba contra el máximo, así que un pago repetido no aparecía nunca.
+   MEDIDO en ese curso: cerrar y reabrir un número ya revelado volvía a
+   pagar —140 → 180 con solo pasar de nuevo por una diapositiva— y se
+   llegaba al oro sin contestar un repaso. Ahora, después de medir, el
+   recorrido se repite entero (segunda pasada) y otra vez tras RECARGAR la
+   página con un LMS en memoria que sobrevive la recarga (lo que ve un
+   alumno que sale y vuelve). Las dos tienen que dejar el total igual.
+   El gancho `__PUNTAJE_RECORRIDO__` corre solo en la primera.
 */
 import { openCourse, report, requireUrl, irASlide } from './_shared.mjs';
 
@@ -39,6 +49,26 @@ const url = requireUrl();
 const { browser, page, errors } = await openCourse(url);
 const fails = [];
 
+/* LMS SCORM 1.2 en memoria que SOBREVIVE la recarga (guarda en
+   `sessionStorage`, que es de la pestaña): sin él, recargar borra todo
+   y la tercera pasada empezaría de cero, sin medir nada. Se instala y se
+   recarga ANTES de la primera pasada, así el curso guarda desde el
+   principio como en un LMS de verdad. */
+await page.addInitScript(() => {
+  const K = '__pm_lms';
+  let store = {};
+  try { store = JSON.parse(sessionStorage.getItem(K) || '{}'); } catch { /* vacío */ }
+  const guardar = () => { try { sessionStorage.setItem(K, JSON.stringify(store)); } catch { /* noop */ } };
+  window.API = {
+    LMSInitialize: () => 'true', LMSFinish: () => 'true', LMSCommit: () => { guardar(); return 'true'; },
+    LMSGetValue: (k) => (k === 'cmi.core.student_name' ? 'Prueba, Alumno' : (store[k] || '')),
+    LMSSetValue: (k, v) => { store[k] = String(v); guardar(); return 'true'; },
+    LMSGetLastError: () => '0', LMSGetErrorString: () => '', LMSGetDiagnostic: () => ''
+  };
+});
+await page.reload();
+await page.waitForTimeout(500);
+await page.keyboard.press('Escape').catch(() => {});
 const declarado = await page.evaluate(() => {
   const a = document.body.getAttribute('data-puntaje-max');
   return a ? parseInt(a, 10) : (typeof window.__PUNTAJE_MAX__ === 'number' ? window.__PUNTAJE_MAX__ : null);
@@ -54,44 +84,49 @@ const puntos = () => page.evaluate(() => {
 const ids = await page.evaluate(() =>
   Array.from(document.querySelectorAll('[data-slide]')).map((s) => s.getAttribute('data-slide')));
 
-let toques = 0;
-for (const id of ids) {
-  if (!(await irASlide(page, id))) continue;
+async function recorrer() {
+  let toques = 0;
+  for (const id of ids) {
+    if (!(await irASlide(page, id))) continue;
 
-  /* Todo lo que en este molde puede pagar. Se toca con `.click()` del
-     DOM y no con el mouse real a propósito: un elemento tapado por otro
-     igual tiene que poder pagar si el curso lo cablea, y acá lo que se
-     mide es el PUNTAJE, no la clickeabilidad (eso lo cubre
-     hitbox-click-check). */
-  const SEL = '[data-hit], [data-shot-swap-step], [data-shot-swap-go], ' +
-              '[data-popup-trigger], [data-layer-trigger], [data-repaso-ans]';
-  /* Se busca DENTRO de la diapositiva con `slide.querySelectorAll(SEL)`,
-     nunca con el prefijo `[data-slide="x"] ${SEL}` (kit-base v1.9.120,
-     §7.69): en una lista con comas el prefijo acota solo la PRIMERA
-     alternativa, y las demás matcheaban en todo el documento. MEDIDO en
-     "Seguridad de la información": "en la portada" encontraba 43
-     elementos y la diapositiva tenía 1; desde ahí contestaba todos los
-     repasos del curso con la primera opción y los trababa como errados.
-     El test medía 145 de un máximo real de 200. */
-  const enDiapo = (s) => {
-    const sl = document.querySelector(`[data-slide="${s.id}"]`);
-    return sl ? Array.from(sl.querySelectorAll(s.sel)) : [];
-  };
-  const n = await page.evaluate(`(${enDiapo})(${JSON.stringify({ id, sel: SEL })}).length`);
+    /* Todo lo que en este molde puede pagar. Se toca con `.click()` del
+       DOM y no con el mouse real a propósito: un elemento tapado por otro
+       igual tiene que poder pagar si el curso lo cablea, y acá lo que se
+       mide es el PUNTAJE, no la clickeabilidad (eso lo cubre
+       hitbox-click-check). */
+    const SEL = '[data-hit], [data-shot-swap-step], [data-shot-swap-go], ' +
+                '[data-popup-trigger], [data-layer-trigger], [data-repaso-ans]';
+    /* Se busca DENTRO de la diapositiva con `slide.querySelectorAll(SEL)`,
+       nunca con el prefijo `[data-slide="x"] ${SEL}` (kit-base v1.9.120,
+       §7.69): en una lista con comas el prefijo acota solo la PRIMERA
+       alternativa, y las demás matcheaban en todo el documento. MEDIDO en
+       "Seguridad de la información": "en la portada" encontraba 43
+       elementos y la diapositiva tenía 1; desde ahí contestaba todos los
+       repasos del curso con la primera opción y los trababa como errados.
+       El test medía 145 de un máximo real de 200. */
+    const enDiapo = (s) => {
+      const sl = document.querySelector(`[data-slide="${s.id}"]`);
+      return sl ? Array.from(sl.querySelectorAll(s.sel)) : [];
+    };
+    const n = await page.evaluate(`(${enDiapo})(${JSON.stringify({ id, sel: SEL })}).length`);
 
-  for (let i = 0; i < n; i++) {
-    try {
-      await page.evaluate(`(() => { const el = (${enDiapo})(${JSON.stringify({ id, sel: SEL })})[${i}];
-        if (el && !el.disabled) el.click(); })()`);
-      toques++;
-      await page.waitForTimeout(40);
-      // cerrar lo que se haya abierto, para no tapar el siguiente
-      await page.evaluate(() => {
-        document.querySelectorAll('[data-popup-close]').forEach((b) => b.click());
-      });
-    } catch { /* un elemento que desaparece a mitad del recorrido no es un fallo */ }
+    for (let i = 0; i < n; i++) {
+      try {
+        await page.evaluate(`(() => { const el = (${enDiapo})(${JSON.stringify({ id, sel: SEL })})[${i}];
+          if (el && !el.disabled) el.click(); })()`);
+        toques++;
+        await page.waitForTimeout(40);
+        // cerrar lo que se haya abierto, para no tapar el siguiente
+        await page.evaluate(() => {
+          document.querySelectorAll('[data-popup-close]').forEach((b) => b.click());
+        });
+      } catch { /* un elemento que desaparece a mitad del recorrido no es un fallo */ }
+    }
   }
+  return toques;
 }
+
+const toques = await recorrer();
 
 /* ---- El gancho para lo que un recorrido genérico no puede tocar
    (kit-base v1.9.97) ----
@@ -130,6 +165,31 @@ if (hayGancho) {
 
 await page.waitForTimeout(600);       // que termine cualquier countTo pendiente
 const medido = await puntos();
+
+/* Segunda pasada y pasada tras recargar: el total no se mueve. */
+const repasar = async (cuando, antes) => {
+  await recorrer();
+  await page.waitForTimeout(600);
+  const otra = await puntos();
+  console.log(`  · ${cuando} ${otra}`);
+  if (otra !== antes) {
+    fails.push(`${cuando} el puntaje pasó de ${antes} a ${otra}: algo PAGA DE NUEVO al volver a tocarlo. ` +
+      'Cada pago tiene que chequear si ya se pagó (y ese "ya" tiene que viajar en suspend_data). ' +
+      'Con unas vueltas así se llega al oro sin hacer lo que pide.');
+  }
+  return otra;
+};
+const segunda = await repasar('tocando todo de nuevo,', medido);
+await page.reload();
+await page.waitForTimeout(800);
+await page.keyboard.press('Escape').catch(() => {});
+const alVolver = await puntos();
+if (alVolver !== segunda) {
+  fails.push(`al recargar con el progreso guardado el puntaje volvió en ${alVolver} y era ${segunda}: ` +
+    'los puntos no viajan bien en suspend_data.');
+} else {
+  await repasar('al recargar y tocar todo otra vez,', alVolver);
+}
 
 const suspend = await page.evaluate(() => {
   try {

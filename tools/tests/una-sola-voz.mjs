@@ -168,6 +168,20 @@ const inventario = () => page.evaluate(() => {
     videos.push({ tipo: 'circular', sel: marcar(b, 'v' + (n++)) });
   });
   sl.querySelectorAll('[data-video-play]').forEach(b => videos.push({ tipo: 'reproductor', sel: marcar(b, 'v' + (n++)) }));
+  /* …y los que viven DENTRO de un pop-up que se abre desde esta
+     diapositiva (kit-base v1.9.124, §7.73; relevo de NOA, 2026-10-07: el ▶
+     de cada ficha abre el reproductor). Sin esto, un curso con todos
+     sus videos en fichas daba "ningún video arrancó: el test no midió
+     nada", y como SÍ había `[data-video-play]` tampoco se inyectaba el
+     de respaldo. El clic por código no necesita el pop-up abierto. */
+  sl.querySelectorAll('[data-popup-trigger]').forEach(t => {
+    const pop = document.querySelector('[data-popup="' + t.getAttribute('data-popup-trigger') + '"]');
+    if (!pop) return;
+    pop.querySelectorAll('[data-video-play]').forEach(b => {
+      if (b.hasAttribute('data-usv')) return;
+      videos.push({ tipo: 'reproductor (desde un pop-up)', sel: marcar(b, 'v' + (n++)) });
+    });
+  });
   const voces = [];
   sl.querySelectorAll('[data-popup-trigger], [data-etapa], [data-hit][data-popup]').forEach(b => {
     if (b.closest('[hidden]')) return;

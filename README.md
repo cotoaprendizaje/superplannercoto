@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.123** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.124** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -96,7 +96,7 @@ kit-base/
 │   │                           no es liso (v1.9.105)
 │   ├── check-keyframes.mjs   — toda `animation` con su `@keyframes` (v1.9.108)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 63 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 64 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -169,7 +169,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 63, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 64, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -430,6 +430,21 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.124 — lo que quedaba de los relevos del 2026-10-07
+
+Ver CLAUDE.md §7.73.
+
+- **Las respuestas erradas del repaso se guardan** en la plantilla de
+  `curso.js` (`seenMal`/`markMal`): vuelven marcadas al retomar. El bloque
+  viejo, descomentado, tiraba error.
+- **Test nuevo `repaso-errada`:** contestando todo mal se ganan los mismos
+  logros, y las erradas vuelven al retomar.
+- **`puntaje-maximo` recorre tres veces** (normal, repetida y tras recargar)
+  y exige el mismo total: atrapa lo que paga dos veces.
+- **`rotate-notice` exige la salida** "Ver igual, en vertical".
+- `popup-video-medida` y `una-sola-voz` miden los videos que se abren desde
+  una ficha; `minijuego-landscape` reconoce más marcados de minijuego.
 
 ### v1.9.123 — segundos relevos de NOA y de Seguridad de la información
 

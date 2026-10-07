@@ -1,4 +1,4 @@
-/* rotate-notice.mjs — kit-base v1.9.93
+/* rotate-notice.mjs — kit-base v1.9.93 (salida exigida desde v1.9.124)
    Confirma el aviso "Girá tu dispositivo" (.d-rotate-notice,
    coto-shot-stage.css): visible SOLO cuando el .d-stage queda más
    alto que ancho Y el dispositivo PUEDE girar, invisible en cualquier
@@ -80,5 +80,39 @@ for (const c of casos) {
   console.log(c.nombre, '-> visible:', v, '(esperado:', c.esperado, ')');
   if (v !== c.esperado) failures.push(c.nombre + ': se esperaba visible=' + c.esperado + ', dio ' + v);
 }
+/* El cartel tiene que tener SALIDA (kit-base v1.9.124, §7.73; relevos
+   de NOA y de "Seguridad de la información", 2026-10-07). Con el bloqueo
+   de rotación puesto —habitual en tablets— girar no hace nada, y un
+   cartel sin `[data-rotate-seguir]` deja el curso tapado para siempre.
+   MEDIDO en los dos cursos: marcado del cartel de v1.9.71, sin el botón,
+   y este test en verde, porque solo miraba CUÁNDO aparecía. Se exige el
+   botón, visible, y que al tocarlo el curso quede a la vista. */
+{
+  const page = await browser.newPage({ viewport: { width: 768, height: 1024 }, isMobile: true, hasTouch: true });
+  await page.goto(url);
+  await page.waitForTimeout(400);
+  const r = await page.evaluate(() => {
+    const aviso = document.querySelector('.d-rotate-notice');
+    const b = aviso && aviso.querySelector('[data-rotate-seguir]');
+    if (!b) return { boton: false };
+    const vis = b.getBoundingClientRect().width > 0 && getComputedStyle(b).visibility !== 'hidden';
+    return { boton: true, vis };
+  });
+  if (!r.boton) {
+    failures.push('tablet portrait: el cartel "Girá tu dispositivo" no tiene salida (`[data-rotate-seguir]`). ' +
+      'Con el bloqueo de rotación puesto el curso queda tapado. Copiar el bloque `.d-rotate-notice` de index-boilerplate.html.');
+  } else if (!r.vis) {
+    failures.push('tablet portrait: el botón `[data-rotate-seguir]` está en el cartel pero no se ve.');
+  } else {
+    await page.click('.d-rotate-notice [data-rotate-seguir]');
+    await page.waitForTimeout(200);
+    const tapa = await page.evaluate(() => getComputedStyle(document.querySelector('.d-rotate-notice')).display !== 'none'
+      || !!document.querySelector('.d-stage.is-vertical'));
+    console.log('salida "Ver igual, en vertical" -> curso a la vista:', !tapa);
+    if (tapa) failures.push('tablet portrait: tocar `[data-rotate-seguir]` no saca el cartel.');
+  }
+  await page.close();
+}
+
 report('rotate-notice', failures);
 await browser.close();

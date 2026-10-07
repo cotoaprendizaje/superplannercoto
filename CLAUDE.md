@@ -15729,3 +15729,78 @@ lo mide (rojo con v1.9.122).
   segundo curso pelea con la especificidad, se hacen las variables.
 - **NOA, pendientes sin reproducir** (locución de pop-up que sigue tras
   cerrar, videos que se congelan): falta navegador y equipo.
+
+## 7.73 Lo que quedaba de los relevos del 2026-10-07: tests que medían de menos, y erradas que no se guardaban (kit-base v1.9.124)
+
+Llegaron como "tema aparte" desde los chats de cursos: el resto del parche
+de NOA (`kit-propuesta-2026-10-07_3.diff`) y los puntos A22–A25 del relevo
+de "Seguridad de la información". Del parche, todo lo de código ya estaba en
+v1.9.123; quedaban tres tests. Cada uno se verificó rojo con v1.9.123 y verde
+con esta, contra un curso armado para el caso.
+
+### Tres tests que daban verde sin medir (NOA)
+
+- **`popup-video-medida`**: el ▶ puede vivir DENTRO de un pop-up (las fichas
+  de reporte de NOA). Sin `[data-slide]` arriba, el test decía "no hay
+  `#d-video-player`", que era falso. Ahora va a la diapositiva que abre ese
+  pop-up (`[data-popup-trigger]`) y toca el disparador marcado. Rojo con
+  v1.9.123 (6 viewports "no hay `#d-video-player`"), verde ahora.
+- **`una-sola-voz`**: suma los `[data-video-play]` de los pop-ups que se
+  abren desde la diapositiva. Un curso con todos sus videos en fichas daba
+  "ningún video arrancó". Mismo curso de prueba: 2 combinaciones medidas con
+  v1.9.123, 6 ahora (las del video de la ficha).
+- **`minijuego-landscape`**: v1.9.122 ya fallaba con un minijuego sin
+  `data-mj-start`, pero solo lo reconocía por `.d-mj-opt`/`.d-mj-escena`.
+  Suma `.d-mj-play`, `.d-mj-panel` y `[data-mj-grid]` (lo que trae el de
+  NOA). Con un `.d-mj-play` suelto: verde con v1.9.123, rojo ahora.
+
+### El cartel "Girá tu dispositivo" sin salida (SI A24, NOA E)
+
+Dos cursos con el marcado de v1.9.71: cartel sin `[data-rotate-seguir]` y,
+con el bloqueo de rotación puesto, el curso tapado para siempre.
+`rotate-notice` solo miraba CUÁNDO aparecía. Ahora, en tablet vertical,
+exige el botón, visible, y que tocarlo saque el cartel. Sin el botón: verde
+con v1.9.123, rojo ahora; el curso de referencia, verde.
+
+### Pagar dos veces (SI A25)
+
+En SI, reabrir un número ya revelado volvía a pagar (140 → 180 con solo
+pasar de nuevo; al retomar, +70). `puntaje-maximo` tocaba cada cosa UNA vez,
+así que no podía verlo. Ahora instala un LMS en memoria que sobrevive la
+recarga y recorre el curso tres veces: la normal, otra igual y otra tras
+recargar. Las tres tienen que dar el mismo total, y al recargar el puntaje
+tiene que volver igual. Curso de prueba con dos botones mal cableados (uno
+paga siempre, otro guarda "ya pagué" solo en memoria): verde con v1.9.123,
+rojo ahora con los dos casos por separado. Alimentaria: 145 / 145 / 145.
+El gancho `__PUNTAJE_RECORRIDO__` corre solo en la primera pasada.
+
+### Logros imposibles con una errada (SI A22)
+
+El cliente terminó SI con 1/4 logros: los de unidad pedían las preguntas del
+repaso ACERTADAS (`markSeen` corre solo al acertar) y cada una se contesta
+una vez. Tres cambios:
+
+- **Plantilla de `js/curso.js`:** `estado` trae `repaso` y `repasoMal`;
+  `persistir()`/`restaurar()` los guardan (`rp`, `rm`, solo si hay algo) y el
+  bloque de `initRepasoRapido` trae `seenMal`/`markMal`. **Hallazgo:** el
+  bloque viejo, descomentado tal cual, tiraba `TypeError` porque
+  `estado.repaso` no existía. Curso nuevo con el repaso activo: con la
+  plantilla de v1.9.123, error de consola y las erradas en blanco al
+  retomar; con esta, verde.
+- **Test nuevo `repaso-errada`:** dos alumnos con LMS en memoria, uno
+  contesta todo bien y otro todo mal. Exige los mismos logros en los dos y
+  que, al recargar, las erradas vuelvan contestadas. Alimentaria, verde (2 y
+  2 logros, 6/6). Copia con las erradas sin guardar y un logro que pide
+  acertar: los dos fallos.
+- **Manual §4:** un logro nunca depende de ACERTAR algo que se contesta una
+  sola vez. Los logros miden recorrido, la medalla mide desempeño.
+
+### Para la v1.9.125 (el rediseño)
+
+- **SI A23, "siempre 5 logros":** el cliente dice que pidió exactamente 5
+  y el kit dice "máximo 5". Va con el rediseño, que trae el catálogo de 5
+  por defecto (+20 cada uno) y la grilla pensada para 5. Ahí
+  `gamificacion` pasa a exigir exactamente 5.
+- **SI A20.1/A20.2:** son del layout de dos columnas que armó SI, el mismo
+  de la diapositiva de repaso del rediseño. Las variables de tamaño y el
+  corte compacto van con ese marcado.
