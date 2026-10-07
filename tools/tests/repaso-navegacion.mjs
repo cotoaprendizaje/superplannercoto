@@ -119,6 +119,30 @@ const r = await page.evaluate(async () => {
     res.pasos = hechas.map((sec) => sec.querySelectorAll('[data-repaso-pasos] li').length);
     hechas.forEach((sec) => sec.remove());
   }
+
+  /* Candado (v1.9.122, §7.71): bloqueada, ninguna pregunta visible ni
+     narrable; al destrabarse (un `gatechange`), SOLO la actual. NOA
+     destapaba las dos a mano y la voz podía leer la 2 antes de tiempo. */
+  {
+    const t2 = document.createElement('div');
+    t2.className = 'd-repaso'; t2.setAttribute('data-repaso', ''); t2.id = 'zz-candado';
+    t2.innerHTML = ['a', 'b'].map((n, k) =>
+      `<div class="d-repaso-item" data-repaso-item data-repaso-n="${k + 1}" data-repaso-id="zz-cand-${n}" data-repaso-ok="true">` +
+      `<p class="d-repaso-q">Pregunta ${n}.</p><div class="d-repaso-btns d-repaso-btns--vf">` +
+      '<button type="button" data-repaso-ans="true">Verdadero</button><button type="button" data-repaso-ans="false">Falso</button></div>' +
+      '<p class="d-repaso-fb" data-repaso-fb hidden>Bien.</p></div>').join('');
+    sl.appendChild(t2);
+    let trabado = true;
+    window.initRepasoRapido({ seen: () => false, bloqueada: (panel) => panel.id === 'zz-candado' && trabado });
+    const visibles = () => [...t2.querySelectorAll('[data-repaso-item]')].filter((it) => !it.hidden).length;
+    res.candado = { trabada: visibles(), clase: t2.classList.contains('is-bloqueada') };
+    trabado = false;
+    document.dispatchEvent(new Event('gatechange'));
+    await espera(50);
+    res.candado.destrabada = visibles();
+    res.candado.claseDespues = t2.classList.contains('is-bloqueada');
+    t2.remove();
+  }
   return res;
 });
 
@@ -143,6 +167,11 @@ if (!r.no) {
     if (r.gateDespues.length) fallos.push(`contestadas las dos, el gate sigue pidiendo [${r.gateDespues.join(', ')}].`);
     if (r.gateSinAtributo) fallos.push('el gate del repaso traba una diapositiva SIN `data-require-repaso`: el repaso es refuerzo y no puede frenar por defecto.');
   }
+}
+if (!r.no && r.candado) {
+  const c = r.candado;
+  if (c.trabada !== 0 || !c.clase) fallos.push(`con \`bloqueada\` en true, la tira muestra ${c.trabada} pregunta(s)${c.clase ? '' : ' y no tiene `.is-bloqueada`'}: un curso que la traba hasta ver los videos no puede hacerlo sin tocar los \`hidden\` del kit.`);
+  if (c.destrabada !== 1 || c.claseDespues) fallos.push(`al destrabarse (\`gatechange\`), la tira muestra ${c.destrabada} pregunta(s): tiene que mostrar SOLO la actual (si no, la voz lee la siguiente antes de tiempo).`);
 }
 if (!r.no && r.pasos && (r.pasos[0] !== 2 || r.pasos[1] !== 3)) {
   fallos.push(`con dos repasos en la página (2 y 3 preguntas), \`initPasosRepaso\` dibujó ${r.pasos[0]} y ${r.pasos[1]} pasos: ` +

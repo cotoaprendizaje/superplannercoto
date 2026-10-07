@@ -26,6 +26,16 @@ const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbo
 
 const ctx = await browser.newContext({ viewport: { width: 1024, height: 768 }, hasTouch: true, isMobile: true });
 const page = await ctx.newPage();
+/* El botón de la portada viene con un ÍCONO PROPIO y sin `<span>`
+   (kit-base v1.9.122, §7.71): es el marcado de "Uso de Sucursales 3 -
+   NOA", donde el kit lo dejaba sin texto. Se le pone antes de que arranque
+   el curso; el vacío del boilerplate lo cubren los demás tests de video. */
+await page.addInitScript(() => {
+  document.addEventListener('DOMContentLoaded', () => {
+    const t = document.querySelector('.d-shot-video-tap');
+    if (t) t.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
+  }, true);
+});
 await page.goto(url);
 await page.waitForTimeout(900);
 await page.keyboard.press('Escape').catch(() => {});

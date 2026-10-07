@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.121**.
+Vigente para **kit-base v1.9.122**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -136,6 +136,7 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 | chrome, barras, índice, navegación, narración por diapositiva | `initPlayer` (la narración se engancha sola si le pasás `speakSlide`) |
 | puntos, logros, medalla | `initLogros`, `initCierreCelebration` |
 | repaso / mini-quiz | `initRepasoRapido`, `initMiniQuiz` |
+| que el repaso no se pueda contestar hasta ver algo antes | `initRepasoRapido({ bloqueada: function (panel) { … } })` (+ `data-candado` con el texto) |
 | que el repaso trabe hasta contestarlo | `data-require-repaso` en la diapositiva + el gate que devuelve `initRepasoRapido` |
 | el aviso "esto no es la evaluación" | `initMiniQuiz({ introPopup })` + `.d-aviso-practica` (ejemplo en `index-boilerplate.html`) |
 | "¿qué creés que pasa?" antes de mostrar | `initPrediccion` |
@@ -327,7 +328,10 @@ creyó suyas, entre ellas el cierre trabado que el cliente reportó con
 foto, y el kit se enteró en un segundo relevo, §7.68.)
 
 **La sección "Relevo al kit" del `README-CURSO.md` es obligatoria antes
-de entregar**, aunque quede vacía. Se arma corriendo
+de entregar**, y desde v1.9.122 la exige la herramienta: `build-zip.py` no
+arma el zip del curso si falta o dice "pendiente", y con ella arma DOS
+zips —el del curso y `RELEVO-AL-KIT_<curso>_<fecha>.zip`—. **La entrega
+son los dos** (§7.71). Se arma corriendo
 `node kit-base/tools/revisar-curso.mjs <carpeta-del-curso>`: lista API
 privada del kit, números copiados, mecanismos propios y CSS que pelea con
 el kit. Cada punto que marque va al relevo, con una línea diciendo qué
@@ -366,8 +370,9 @@ node tools/check-raw-cat-colors.mjs                        # hex de categoría a
 node tools/check-globals.mjs .                             # globales sin publicar (mira js/)
 node kit-base/tools/revisar-curso.mjs .                     # → sección "Relevo al kit" (obligatoria)
 node tools/check-comentarios-funciones.mjs .              # comentarios que nombran funciones que ya no están
+node tools/check-manifest.mjs . --arreglar                # rehace la lista de <file> desde el disco
 node tools/check-keyframes.mjs css                         # animaciones sin @keyframes
-python3 tools/build-zip.py                                 # el zip para el LMS
+python3 tools/build-zip.py <curso> <salida.zip>            # DOS zips: el del LMS y el del relevo
 ```
 
 - **Sin la sección "Relevo al kit" en el `README-CURSO.md`, no se

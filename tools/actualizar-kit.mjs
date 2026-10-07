@@ -174,6 +174,15 @@ try {
     avisosMarcado.push(`${sinModo} tira(s) de repaso con \`class="d-repaso-btns"\` a secas: el kit pide \`d-repaso-btns--vf\`` +
       '\n  (Verdadero/Falso, con su ✓/✕) o `d-repaso-btns--col` (opción múltiple). Sin el modificador se pierden los íconos.');
   }
+  /* El aviso "Girá tu dispositivo" viejo, sin salida (v1.9.122, §7.71):
+     el marcado de antes no tenía el botón `data-rotate-seguir`, y en un
+     iPad vertical con el giro bloqueado el curso quedaba TAPADO. Es
+     marcado, así que actualizar no lo arregla. Lo relevó NOA. */
+  if (/d-rotate-notice/.test(fuentes) && !/data-rotate-seguir/.test(fuentes)) {
+    avisosMarcado.push('el aviso "Girá tu dispositivo" (`.d-rotate-notice`) no tiene el botón `data-rotate-seguir`' +
+      '\n  ("Ver igual, en vertical"): con el giro bloqueado, el iPad vertical queda tapado sin salida. Copiar el' +
+      '\n  bloque de `index-boilerplate.html`.');
+  }
 } catch (e) {}
 const testsPropios = plan.sinRegistro.filter((f) => /^tools\/tests\/[^_][^/]*\.mjs$/.test(f));
 
@@ -322,8 +331,20 @@ if (fs.existsSync(manifiestoPath)) {
   const faltan = servidos.filter((f) => !declarados.has(f));
   if (faltan.length) {
     console.log(`\n⚠️ imsmanifest.xml no declara ${faltan.length} archivo(s) propio(s) del curso (${faltan.slice(0, 4).join(', ')}` +
-      `${faltan.length > 4 ? ', …' : ''}). Moodle no lo nota; un LMS estricto sí. \`node tools/check-manifest.mjs <curso>\` los lista.`);
+      `${faltan.length > 4 ? ', …' : ''}). Moodle no lo nota; un LMS estricto sí. \`node tools/check-manifest.mjs <curso> --arreglar\` rehace la lista desde el disco.`);
   }
+}
+
+/* La sección del relevo, en un curso que viene de antes (v1.9.122, §7.71):
+   desde esta versión `build-zip.py` no arma el zip del curso sin ella. Se
+   agrega vacía —"pendiente"— y se avisa: completarla es del chat del curso. */
+const readmeCurso = path.join(CURSO, 'README-CURSO.md');
+if (fs.existsSync(readmeCurso) && !/^#{1,6}\s+.*relevo al kit/im.test(fs.readFileSync(readmeCurso, 'utf8'))) {
+  fs.appendFileSync(readmeCurso, '\n\n## Relevo al kit\n\n(pendiente — antes de entregar: correr `node tools/revisar-curso.mjs .` ' +
+    'y anotar acá TODO lo que se resolvió o se encontró en el curso, también lo que parezca propio; decide el kit. ' +
+    '`build-zip.py` no arma el zip del curso mientras esta sección diga "pendiente".)\n');
+  console.log('\n⚠️ README-CURSO.md no tenía la sección "Relevo al kit": se agregó vacía. Desde v1.9.122' +
+    '\n  `build-zip.py` no arma el zip del curso hasta que esté escrita, y con ella arma el zip del relevo.');
 }
 
 console.log(`\n✓ Curso llevado a v${versionNueva}: ${reemplazar.length} reemplazado(s), ${plan.agregar.length} agregado(s), ${plan.quitar.length} sacado(s).`);

@@ -34,7 +34,17 @@ const failures = [];
 {
   const { browser, page } = await openCourseMobile(url);
   const hay = await page.evaluate(() => !!document.querySelector('[data-mj-start]'));
+  /* Un minijuego SIN `data-mj-start` no es "no hay minijuego" (kit-base
+     v1.9.122, §7.71): NOA tenía el suyo, con su botón de empezar sin el
+     atributo, y este test lo salteaba —verde sin medir nada— mientras a
+     844×390 dos filas de opciones quedaban fuera de la pantalla. */
+  const sinMarca = !hay && await page.evaluate(() => !!document.querySelector('.d-mj-opt, [data-mj-opt], .d-mj-escena, [data-minijuego]'));
   await browser.close();
+  if (sinMarca) {
+    report('minijuego-landscape', ['el curso tiene un minijuego (`.d-mj-*`) pero su botón de empezar no tiene `data-mj-start`: ' +
+      'este test no lo puede abrir y no mediría nada. Agregarle `data-mj-start` al botón que lo arranca.']);
+    process.exit(process.exitCode || 1);
+  }
   if (!hay) {
     console.log('  · el curso no tiene minijuego: nada que revisar.');
     report('minijuego-landscape', []);

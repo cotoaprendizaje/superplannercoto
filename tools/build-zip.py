@@ -56,6 +56,7 @@ README.md que conviva con un README-CURSO.md en la misma carpeta (regla
 de §6.43 — nunca empaquetar los dos READMEs con nombres casi iguales).
 """
 import os
+import re
 import sys
 import struct
 import time
@@ -265,12 +266,125 @@ def revisar_raiz_scorm(nombres, raiz):
         % (hondo, os.path.join(raiz, carpeta), '<salida.zip>', raiz))
 
 
+# ---------------------------------------------------------------------
+# El RELEVO AL KIT viaja en su propio zip (kit-base v1.9.122, §7.71)
+# ---------------------------------------------------------------------
+# Hasta v1.9.121 el relevo era una sección del README-CURSO.md, que va
+# ADENTRO del zip del curso: quien recibía la entrega veía un zip y nada
+# más, y nada impedía entregar sin escribirlo. Los chats de curso
+# empezaron a devolver solo el zip del curso. Ahora:
+#   · sin la sección "Relevo al kit" (o con "pendiente"), NO se arma el
+#     zip del curso: es una condición de la herramienta, no una regla
+#     escrita que hay que acordarse de cumplir;
+#   · con la sección, se arman DOS zips, uno al lado del otro.
+RELEVO_RE = re.compile(r'^(#{1,6})\s+.*relevo al kit.*$', re.I | re.M)
+
+
+def seccion_relevo(raiz):
+    """Devuelve el texto de la sección "Relevo al kit" del README-CURSO.md,
+    o None si no está o sigue pendiente."""
+    ruta = os.path.join(raiz, 'README-CURSO.md')
+    if not os.path.isfile(ruta):
+        return None
+    with open(ruta, encoding='utf-8') as fh:
+        txt = fh.read()
+    m = RELEVO_RE.search(txt)
+    if not m:
+        return None
+    nivel = len(m.group(1))
+    resto = txt[m.end():]
+    fin = re.search(r'^#{1,%d}\s' % nivel, resto, re.M)
+    cuerpo = (resto[:fin.start()] if fin else resto).strip()
+    limpio = re.sub(r'\s+', ' ', cuerpo)
+    if len(limpio) < 30 or limpio.lower().startswith('(pendiente'):
+        return None
+    return txt[m.start():m.end() + (fin.start() if fin else len(resto))].strip()
+
+
+def correr(raiz, herramienta):
+    """Salida de una herramienta del kit que viaja en el curso, o una nota."""
+    ruta = os.path.join(raiz, 'tools', herramienta)
+    if not os.path.isfile(ruta):
+        return '(%s no está en el curso: se actualizó con un kit anterior a esta herramienta)\n' % herramienta
+    import subprocess
+    try:
+        r = subprocess.run(['node', ruta, raiz], capture_output=True, text=True, timeout=120)
+        return (r.stdout or '') + (r.stderr or '')
+    except Exception as e:
+        return '(no se pudo correr %s: %s)\n' % (herramienta, e)
+
+
+def armar_relevo(raiz, salida, texto):
+    import datetime
+    import json
+    raiz = os.path.abspath(raiz)
+    nombre = os.path.basename(raiz.rstrip(os.sep))
+    hoy = datetime.date.today().isoformat()
+    destino = os.path.join(os.path.dirname(os.path.abspath(salida)), 'RELEVO-AL-KIT_%s_%s.zip' % (nombre, hoy))
+    version = '?'
+    del_kit = set()
+    try:
+        with open(os.path.join(raiz, 'kit-version.json'), encoding='utf-8') as fh:
+            reg = json.load(fh)
+        version = reg.get('version') or reg.get('kit') or '?'
+        del_kit = set((reg.get('archivos') or {}).keys())
+    except Exception:
+        pass
+    encabezado = ('# Relevo al kit — "%s", %s\n\n'
+                  '- Kit del que partió: v%s (`kit-version.json`, adentro).\n'
+                  '- Zip del curso que acompaña: `%s`.\n'
+                  '- Adentro: este relevo, la salida de `revisar-curso` y de `check-comentarios-funciones`,\n'
+                  '  y los archivos PROPIOS del curso (para portar por partes, nunca para copiar encima).\n\n'
+                  % (nombre, hoy, version, os.path.basename(salida)))
+    propios = []
+    for base in ('js', 'css', 'tools'):
+        d = os.path.join(raiz, base)
+        for dirpath, dirnames, filenames in os.walk(d):
+            dirnames[:] = [x for x in dirnames if x not in EXCLUIR_DIRS]
+            for f in filenames:
+                rel = os.path.relpath(os.path.join(dirpath, f), raiz).replace(os.sep, '/')
+                if rel not in del_kit and f not in EXCLUIR_ARCH:
+                    propios.append(rel)
+    for f in ('curso.json', 'marco.html', 'README-CURSO.md', 'kit-version.json', 'imsmanifest.xml'):
+        if os.path.isfile(os.path.join(raiz, f)):
+            propios.append(f)
+    with zipfile.ZipFile(destino, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+        def poner(nombre_zip, datos):
+            zi = zipfile.ZipInfo(nombre_zip, date_time=time.localtime()[:6])
+            zi.compress_type = zipfile.ZIP_DEFLATED
+            zi.external_attr = 0o100644 << 16
+            z.writestr(zi, datos)
+        poner('RELEVO-AL-KIT.md', encabezado + texto + '\n')
+        poner('salida-revisar-curso.txt', correr(raiz, 'revisar-curso.mjs'))
+        poner('salida-check-comentarios-funciones.txt', correr(raiz, 'check-comentarios-funciones.mjs'))
+        for rel in sorted(set(propios)):
+            with open(os.path.join(raiz, rel), 'rb') as fh:
+                poner('archivos-del-curso/' + rel, fh.read())
+    return destino
+
+
 def main():
     if len(sys.argv) < 3:
         print(__doc__)
         raise SystemExit(1)
     raiz, salida = sys.argv[1], sys.argv[2]
     excluir = set(sys.argv[3:])
+    es_curso = (os.path.isfile(os.path.join(raiz, 'imsmanifest.xml'))
+                and not (os.path.isfile(os.path.join(raiz, 'tools', 'new-course.mjs'))
+                         and os.path.isfile(os.path.join(raiz, 'index-boilerplate.html'))))
+    relevo = None
+    if es_curso:
+        relevo = seccion_relevo(raiz)
+        if relevo is None:
+            raise SystemExit(
+                '✗ No se armó el zip: falta el RELEVO AL KIT.\n'
+                '  El README-CURSO.md tiene que tener una sección "## Relevo al kit" con TODO lo que se\n'
+                '  resolvió o se encontró en el curso, también lo que parezca propio (decide el kit).\n'
+                '  Para armarla:  node tools/revisar-curso.mjs %s\n'
+                '  y anotar cada punto que marque, con síntoma, causa medida y cómo se verificó.\n'
+                '  Si de verdad no hay nada, escribirlo: "Se corrió revisar-curso y no marcó nada;\n'
+                '  no se resolvió nada por fuera del contenido." Con la sección escrita, este mismo\n'
+                '  comando arma DOS zips: el del curso y el del relevo. (kit-base v1.9.122, §7.71)' % raiz)
     n, size = construir(raiz, salida, excluir)
     print('%s  —  %d entradas, %.2f MB, flag UTF-8 verificado en las %d'
           % (salida, n, size / 1024 / 1024, n))
@@ -282,6 +396,10 @@ def main():
         print('  van %d archivo(s) propios del curso en tools/ (tests que escribió el curso):' % len(propios))
         for x in propios[:20]:
             print('    · ' + x)
+    if relevo is not None:
+        destino = armar_relevo(raiz, salida, relevo)
+        print('%s  —  el relevo al kit' % destino)
+        print('\n  ENTREGAR LOS DOS ZIPS: el del curso (para el LMS) y el del relevo (para el chat del kit).')
 
 
 if __name__ == '__main__':

@@ -1059,6 +1059,12 @@
       tap.setAttribute('data-modo', modo);
       if (!tap.querySelector('svg, span')) {
         tap.innerHTML = ICONO_SONIDO + '<span></span>';
+      } else if (!tap.querySelector('span')) {
+        /* Con un ícono propio y sin `<span>` (kit-base v1.9.122, §7.71):
+           antes se dejaba como estaba y el botón quedaba SIN TEXTO —la
+           portada sin "Tocá para comenzar"—. Lo relevó NOA: sus 4 botones
+           traían un svg ▶. Se conserva su ícono y se suma el rótulo. */
+        tap.appendChild(document.createElement('span'));
       }
       var span = tap.querySelector('span');
       var r = ROTULOS[modo] || ROTULOS.sonido;
@@ -1928,12 +1934,64 @@
          <video playsinline preload="none">
            <source src="video/191.mp4" type="video/mp4"></video> </div>
    -------------------------------------------------------------------- */
+  /* ---- El archivo se engancha al ABRIR la ficha y se suelta al CERRARLA
+     (kit-base v1.9.122, §7.71) ----
+     Hasta v1.9.121 cada `<video>` de ficha tenía su `src` puesto desde el
+     arranque: NOA, con 10 fichas, quedaba con 11 videos reteniendo
+     archivo a la vez (`reproductor-video` pone el tope en 2), que es la
+     presión de memoria que en iPad termina en "se tildó y quedó en negro".
+     El curso lo resolvió a mano con `<source data-src>`; acá queda para
+     todos. Se mueve `src` → `data-src` al iniciar, se repone en
+     `popupopen` de SU ficha y se saca en `popupclose`, con `load()` para
+     que el navegador suelte el archivo de verdad (mismo criterio que
+     `_fuenteBg` de los videos de fondo). `soltarAlCerrar: false` lo apaga.
+     ⚠️ La trampa que encontró NOA: un `<video>` sin fuente tiene
+     `networkState === 3` y `videoUsable()` lo da por ROTO — un gate que
+     mirara este video lo eximiría sin haberlo visto. Para exigir que se
+     mire, `initVideoGate`, que usa su propia sonda y no este elemento. */
+  function fuentesDe(v) {
+    var out = [];
+    if (v.hasAttribute('src') || v.hasAttribute('data-src')) out.push(v);
+    Array.prototype.forEach.call(v.querySelectorAll('source'), function (s) { out.push(s); });
+    return out;
+  }
+  function soltarFuente(v) {
+    var hubo = false;
+    fuentesDe(v).forEach(function (el) {
+      var u = el.getAttribute('src');
+      if (u) { el.setAttribute('data-src', u); el.removeAttribute('src'); hubo = true; }
+    });
+    if (hubo) { try { v.load(); } catch (e) {} }
+  }
+  function engancharFuente(v) {
+    var hubo = false;
+    fuentesDe(v).forEach(function (el) {
+      var u = el.getAttribute('data-src');
+      if (u && !el.getAttribute('src')) { el.setAttribute('src', u); hubo = true; }
+    });
+    if (hubo) { try { v.load(); } catch (e) {} }
+  }
+
   function initPopupVideos(opts) {
     opts = opts || {};
     var sel = opts.selector || '[data-popup] video';
     var videos = Array.prototype.slice.call(document.querySelectorAll(sel));
     if (!videos.length) return;
     var visto = vistoAPI(opts);
+    var soltar = opts.soltarAlCerrar !== false;
+    if (soltar) {
+      videos.forEach(function (v) {
+        var pop = v.closest('[data-popup]');
+        if (pop && !pop.classList.contains('open')) soltarFuente(v);
+      });
+      document.addEventListener('popupopen', function (e) {
+        var id = e.detail && e.detail.id;
+        videos.forEach(function (v) {
+          var pop = v.closest('[data-popup]');
+          if (pop && pop.getAttribute('data-popup') === id) engancharFuente(v);
+        });
+      });
+    }
 
     videos.forEach(function (v) {
       var pop = v.closest('[data-popup]');
@@ -2018,6 +2076,7 @@
            confusión que este fix vino a evitar. */
         var envoltorio = v.parentElement;
         if (envoltorio) envoltorio.classList.add('d-vp-virgen');
+        if (soltar) soltarFuente(v);
       });
     });
   }

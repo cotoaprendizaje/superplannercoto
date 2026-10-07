@@ -17,7 +17,7 @@ entre `<>` y adjuntar el zip de `kit-base/` + el PDF del diseñador.
 ## ✂️ Copiar desde acá
 
 Vas a armar un curso SCORM del molde "Área Aprendizaje (COTO)" usando el
-kit adjunto (`kit-base/`, v1.9.121). Antes de escribir una línea, leé del
+kit adjunto (`kit-base/`, v1.9.122). Antes de escribir una línea, leé del
 kit:
 
 - **`MANUAL-DEL-MOLDE.md`, entero.** Son las reglas vigentes, cortas y
@@ -201,6 +201,14 @@ derivan del máximo realmente alcanzable, descontando lo que todavía sea
 placeholder, y ese máximo se verifica con un recorrido instrumentado —
 la tabla de puntos es una intención, el contador es el hecho (§7.3
 punto 19).
+
+**La entrega son DOS zips, siempre** (kit-base v1.9.122):
+`python3 tools/build-zip.py <carpeta-del-curso> <salida.zip>` arma el del curso
+y, al lado, `RELEVO-AL-KIT_<curso>_<fecha>.zip` con el relevo, la salida de
+`revisar-curso` y los archivos propios del curso. **Si la sección "Relevo al
+kit" del `README-CURSO.md` falta o dice "pendiente", no arma ninguno de los
+dos.** El mensaje final de este chat nombra los dos zips; si entregás uno
+solo, la entrega está incompleta.
 
 ### Durante todo el curso: el relay
 

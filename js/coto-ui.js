@@ -1089,8 +1089,10 @@
     luego();
   }
 
+  var candadosEnganchados = false;
   function initRepasoRapido(opts) {
     opts = opts || {};
+    var candados = [];
     if (opts.suelto !== false && document.querySelector('[data-slide] .d-repaso-marco')) engancharTirasSueltas();
     var seen = opts.seen || function () { return false; };
     var mark = opts.markSeen || function () {};
@@ -1128,7 +1130,7 @@
              seguidas, revelando la segunda antes de que el alumno
              llegara. Con `hidden` real, ocultar de la vista y ocultar
              de la voz son la MISMA garantía. */
-          it.hidden = n !== i;
+          it.hidden = n !== i || panel.classList.contains('is-bloqueada');
         });
         if (count) count.textContent = (i + 1) + ' de ' + items.length;
         if (prevBtn) prevBtn.disabled = i === 0;
@@ -1280,7 +1282,35 @@
          la 1 resuelta no tiene que pasar por ella para llegar a la 2. */
       var primera = items.findIndex(function (it) { return !it.classList.contains('is-answered'); });
       mostrar(primera < 0 ? 0 : primera, true);
+
+      /* ---- Candado opcional: `bloqueada(panel)` (kit-base v1.9.122, §7.71) ----
+         Dos cursos lo escribieron a mano: NOA (el repaso se abre recién
+         con los videos de la unidad vistos) y cardio (la tira aparece con
+         el video visto). Y el de NOA tenía el bug que esto evita: al
+         desbloquear destapaba TODAS las preguntas, deshaciendo el `hidden`
+         por pregunta del kit, y la voz podía leer la 2 antes de tiempo.
+         Acá, bloqueada: ninguna pregunta visible ni narrable, flechas
+         ocultas, y el texto de `data-candado` (o uno por defecto) en su
+         lugar. Desbloqueada: SOLO la actual. Se reevalúa en cada
+         `gatechange` y `slidechange` —lo que suele destrabarlo es ver un
+         video o una ficha— y con `refrescarCandado()`. */
+      if (typeof opts.bloqueada === 'function') {
+        if (!panel.hasAttribute('data-candado')) panel.setAttribute('data-candado', '🔒 Se habilita al terminar lo de esta parte.');
+        var candado = function () {
+          var b = !!opts.bloqueada(panel);
+          panel.classList.toggle('is-bloqueada', b);
+          items.forEach(function (it, n) { it.hidden = b || n !== actual; });
+        };
+        candados.push(candado);
+        candado();
+      }
     });
+    if (candados.length && !candadosEnganchados) {
+      candadosEnganchados = true;
+      var todos = function () { candados.forEach(function (c) { c(); }); };
+      document.addEventListener('gatechange', todos);
+      document.addEventListener('slidechange', todos);
+    }
 
     /* ---- Gate opcional: `data-require-repaso` (kit-base v1.9.121, §7.70) ----
        El repaso es refuerzo sin gate, salvo que la DIAPOSITIVA lo pida con
@@ -1292,6 +1322,7 @@
        (`initRepasoFactor` + `faltaRepaso`). Mismo contrato que los demás
        gates: va a `canAdvance` y a `initGateHints`. */
     return {
+      refrescarCandado: function () { candados.forEach(function (c) { c(); }); },
       faltan: function (slideEl) {
         if (!slideEl || !slideEl.hasAttribute || !slideEl.hasAttribute('data-require-repaso')) return [];
         return Array.prototype.slice.call(slideEl.querySelectorAll('[data-repaso-item]'))

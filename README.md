@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.121** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.122** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -430,6 +430,19 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.122 — el relevo viaja en su propio zip, y el relevo de NOA
+
+Ver CLAUDE.md §7.71.
+
+- **`build-zip.py` no arma el zip de un curso sin el relevo**, y con él arma
+  DOS: el del curso y `RELEVO-AL-KIT_<curso>_<fecha>.zip`. `new-course` y
+  `actualizar-kit` dejan la sección lista para completar.
+- Los videos de las fichas sueltan el archivo al cerrarse (`initPopupVideos`).
+- `initRepasoRapido({ bloqueada })`: candado del repaso sin tocar los `hidden`.
+- `check-manifest --arreglar`; `rotularTap` rotula aunque haya ícono propio.
+- Tests: "iPad" ya no es "frases pegadas", `reproductor-video` acotado al
+  pop-up, `minijuego-landscape` no saltea un minijuego sin `data-mj-start`.
 
 ### v1.9.121 — el resto del relevo de cardio y dos decisiones del cliente
 

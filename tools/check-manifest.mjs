@@ -25,10 +25,17 @@
    Se corre desde la carpeta del curso:
        node ../kit-base/tools/check-manifest.mjs
 */
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
-const raiz = process.argv[2] || '.';
+/* `--arreglar` (kit-base v1.9.122, §7.71): rehace la lista de <file> del
+   manifiesto desde el disco —las mismas carpetas que mira el chequeo— y
+   vuelve a medir. Lo relevó "Uso de Sucursales 3 - NOA": su manifiesto
+   declaraba videos con nombres viejos que ya no existían y no declaraba
+   máscaras, pósters ni artes del minijuego (58 desajustes); el curso la
+   rehízo a mano. `actualizar-kit` solo suma los archivos DEL KIT. */
+const ARREGLAR = process.argv.includes('--arreglar');
+const raiz = process.argv.slice(2).find((a) => !a.startsWith('--')) || '.';
 const manifiesto = join(raiz, 'imsmanifest.xml');
 const fallos = [];
 
@@ -77,6 +84,22 @@ if (existsSync(join(raiz, 'index.html'))) enDisco.push('index.html');
    mantiene honesto. Un manifiesto que declara solo el índice ya no es
    "una decisión pendiente": es un manifiesto viejo, y se reporta como
    falla, porque ahora hay una convención con la cual compararlo. */
+if (ARREGLAR) {
+  const lista = [...new Set(['index.html', ...enDisco.filter((f) => f !== 'index.html')])]
+    .filter((f) => existsSync(join(raiz, f.split('/').join(sep))));
+  const sangria = (xml.match(/\n([ \t]*)<file\s/) || [, '      '])[1];
+  let nuevo = xml.replace(/[ \t]*<file\s+href="[^"]*"\s*\/>[ \t]*\r?\n?/g, '');
+  const cierre = nuevo.indexOf('</resource>');
+  if (cierre < 0) { console.log('✗ check-manifest --arreglar — el manifiesto no tiene <resource>: no se tocó.'); process.exit(1); }
+  const antes = nuevo.slice(0, cierre).replace(/[ \t]*$/, '');
+  const indent = (nuevo.slice(0, cierre).match(/\n([ \t]*)$/) || [, '    '])[1];
+  nuevo = antes + lista.map((f) => `${sangria}<file href="${f}"/>\n`).join('') + indent + nuevo.slice(cierre);
+  writeFileSync(manifiesto, nuevo);
+  console.log(`  imsmanifest.xml: lista de <file> rehecha desde el disco (${lista.length} archivo(s), antes ${declarados.size}).`);
+  declarados.clear();
+  lista.forEach((f) => declarados.add(f));
+}
+
 const soloIndex = declarados.size <= 1 && declarados.has('index.html');
 if (soloIndex) {
   fallos.push('el manifiesto declara SOLO `index.html` y en el paquete hay ' + enDisco.length +

@@ -16,7 +16,7 @@ falta viaja en los dos zips.
 
 Vamos a retomar el curso **`<NOMBRE DEL CURSO>`**, del molde "Área
 Aprendizaje (COTO)". Te adjunto el zip del curso y el del kit-base
-(v1.9.121). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
+(v1.9.122). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
 
 ### Paso 1 — antes de tocar nada, poner el curso al día con el kit
 
@@ -61,6 +61,14 @@ arregla acá. Lo del kit se anota para relevar (paso 5).
 - `python3 tools/build-zip.py <carpeta-del-curso> <salida.zip>` — pasale
   la carpeta DEL CURSO, no la que la contiene: si el manifiesto queda en
   una subcarpeta, la herramienta lo rechaza.
+- **La entrega son DOS zips, siempre** (kit-base v1.9.122):
+  `python3 tools/build-zip.py <carpeta-del-curso> <salida.zip>` arma el del curso
+  y, al lado, `RELEVO-AL-KIT_<curso>_<fecha>.zip` con el relevo, la salida de
+  `revisar-curso` y los archivos propios del curso. **Si la sección "Relevo al
+  kit" del `README-CURSO.md` falta o dice "pendiente", no arma ninguno de los
+  dos.** El mensaje final de este chat nombra los dos zips; si entregás uno
+  solo, la entrega está incompleta.
+
 - **Probar que un alumno a mitad de camino retoma donde estaba:** abrir el
   curso viejo, avanzar hasta la mitad, y abrir el nuevo con ese mismo
   progreso guardado.

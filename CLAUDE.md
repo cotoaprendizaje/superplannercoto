@@ -15574,3 +15574,78 @@ de 4 falsos positivos en un curso recién generado a 0—.
 
 Con esto el relevo de cardio queda cerrado, salvo B3 (`.d-ent-pop`), que
 espera a un segundo curso.
+
+## 7.71 El relevo se vuelve una condición del zip, y el relevo de "Uso de Sucursales 3 - NOA", 2026-10-06 (kit-base v1.9.122)
+
+### El problema que trajo el usuario
+
+Los chats de curso devolvían solo el zip del curso. El relevo era, desde
+§7.68, una sección obligatoria del `README-CURSO.md`… que viaja ADENTRO
+de ese zip: quien recibía la entrega no la veía, y nada impedía entregar
+sin escribirla. Una regla escrita que hay que acordarse de cumplir.
+
+### Ahora es una condición de la herramienta
+
+- **`build-zip.py` no arma el zip de un curso sin el relevo.** Si el
+  `README-CURSO.md` no tiene "## Relevo al kit", o dice "pendiente", o
+  tiene menos de 30 caracteres, sale con error y explica cómo armarlo.
+  El zip del kit no cambia.
+- **Con el relevo, arma DOS zips**: el del curso y, al lado,
+  `RELEVO-AL-KIT_<curso>_<fecha>.zip` con el relevo (con encabezado:
+  curso, fecha, versión del kit, zip que acompaña), la salida de
+  `revisar-curso` y de `check-comentarios-funciones`, y los archivos
+  PROPIOS del curso (`js/`, `css/`, `tools/` que no lista
+  `kit-version.json`, más `curso.json`, `marco.html`, `README-CURSO.md`,
+  `kit-version.json` e `imsmanifest.xml`). Termina diciendo "ENTREGAR LOS
+  DOS ZIPS".
+- **`new-course` crea la sección "pendiente"** y **`actualizar-kit` se la
+  agrega** a un curso que viene de antes, con aviso.
+- Los dos prompts y el manual (§9, §10) dicen que la entrega son dos zips
+  y que el mensaje final los nombra.
+Probado sobre un curso recién generado: con "pendiente", exit 1 y ningún
+zip; con la sección escrita, los dos zips (12 entradas en el del relevo,
+la sección cortada en el siguiente título); sobre el kit, igual que antes.
+
+### Relevo de NOA (partió de v1.9.56 sin registro → v1.9.120)
+
+El relevo llegó con lo probado separado de lo supuesto. Verificado:
+
+- **A · `narracion-completa` y "iPad".** Confirmado: una minúscula y una
+  mayúscula juntas contaban como dos frases pegadas. Ahora hacen falta dos
+  minúsculas antes ("cursoLa" sí, "iPad", "iPhone", "eCommerce" no).
+- **B · `reproductor-video` con varias barras.** Confirmado: los
+  `.d-vp-*` de la batería no estaban acotados al reproductor del pop-up
+  (NOA: 11 barras → strict mode violation), y M3 cliqueaba con la barra
+  auto-oculta. Acotados a `[data-popup="video-player"]` y `despertar()`
+  antes de cada clic de M3/M4.
+- **C · Los videos de ficha retenían el archivo, por el kit.**
+  `initPopupVideos` dejaba el `src` puesto en todos. Ahora lo mueve a
+  `data-src` al iniciar, lo repone al abrir SU ficha y lo saca al cerrarla
+  (`soltarAlCerrar: false` lo apaga). La trampa de NOA queda escrita: un
+  video sin fuente da `networkState 3` y `videoUsable()` lo toma por roto;
+  para exigir verlo, `initVideoGate`, que usa su sonda. Bloque nuevo en
+  `reproductor-video` (tres fichas de prueba): con v1.9.121, 3 retenían
+  con todo cerrado; ahora 0, 1 al abrir, 0 al cerrar.
+- **D · `rotularTap` con ícono propio.** Confirmado: con svg y sin span
+  quedaba sin texto. Ahora suma el `<span>`. `video-tap-chip` pone un
+  ícono propio al botón de la portada antes del arranque (rojo con
+  v1.9.121 en alimentaria: sin texto y chip "").
+- **E · El aviso de girar sin salida.** `actualizar-kit` avisa si hay
+  `.d-rotate-notice` sin `data-rotate-seguir` (sí en la copia vieja de SI,
+  no en los cursos al día).
+- **F · `minijuego-landscape` salteaba un minijuego sin `data-mj-start`.**
+  Ahora falla diciendo qué agregar (verificado con una copia del arnés:
+  el test viejo daba "no tiene minijuego", verde).
+- **G · Candado del repaso.** `initRepasoRapido({ bloqueada })`: lo
+  escribieron a mano NOA y cardio. Bloqueada, ninguna pregunta visible ni
+  narrable y el texto de `data-candado`; al destrabarse (`gatechange`,
+  `slidechange` o `refrescarCandado()`), solo la actual.
+  `repaso-navegacion` lo mide (rojo con v1.9.121).
+- **L · `check-manifest --arreglar`.** Rehace la lista de `<file>` desde
+  el disco (copia vieja de SI: de 1 declarado a 92, y verde). El aviso de
+  `actualizar-kit` lo sugiere.
+- **H (tira plegable en teléfono acostado):** el kit lo resuelve desde
+  v1.9.121 con el modo `--pop`; NOA puede pasarse la próxima vez.
+- **J (reparación propia de la primera locución):** anotado; un aviso en
+  `actualizar-kit` necesita un patrón confiable que todavía no hay.
+- **I, K:** contenido o sin cambio.

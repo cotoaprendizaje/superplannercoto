@@ -252,7 +252,7 @@ async function bateria(etiqueta, opcionesContexto) {
      un fallo que no se explica solo cuesta media hora de lectura. */
   const despertar = async () => {
     await page.evaluate(() => {
-      const c = document.querySelector('.d-vp-bar').parentElement;
+      const c = document.querySelector('[data-popup="video-player"] .d-vp-bar').parentElement;
       c.dispatchEvent(new PointerEvent('pointermove', { bubbles: true }));
     });
     await page.waitForTimeout(120);
@@ -264,58 +264,65 @@ async function bateria(etiqueta, opcionesContexto) {
 
   // M2. existen nuestros controles
   const piezas = await page.evaluate(() => ({
-    bar: !!document.querySelector('.d-vp-bar'),
-    play: !!document.querySelector('.d-vp-btn--play'),
-    seek: !!document.querySelector('.d-vp-seek'),
-    vol: !!document.querySelector('.d-vp-vol'),
-    atras: !!document.querySelector('.d-vp-atras')
+    bar: !!document.querySelector('[data-popup="video-player"] .d-vp-bar'),
+    play: !!document.querySelector('[data-popup="video-player"] .d-vp-btn--play'),
+    seek: !!document.querySelector('[data-popup="video-player"] .d-vp-seek'),
+    vol: !!document.querySelector('[data-popup="video-player"] .d-vp-vol'),
+    atras: !!document.querySelector('[data-popup="video-player"] .d-vp-atras')
   }));
   Object.keys(piezas).forEach(k => { if (!piezas[k]) falla(`falta el control "${k}" en la barra propia`); });
 
+  /* Todo `.d-vp-*` de esta batería va acotado al reproductor del pop-up
+     (kit-base v1.9.122, §7.71): un curso con `initPopupVideos` monta una
+     barra por video de ficha —NOA: 10 fichas + el reproductor = 11— y el
+     locator sin acotar cortaba con "strict mode violation". Y antes de
+     cada clic se "despierta" la barra: si se auto-ocultó (opacity 0,
+     pointer-events none) el clic no llega, que es lo que cortaba M3 por
+     timeout en NOA. Los dos los relevó ese curso. */
   // M3. el botón de play/pausa hace las dos cosas, y el rótulo acompaña
-  const btn = page.locator('.d-vp-btn--play');
-  await btn.click();
+  const btn = page.locator('[data-popup="video-player"] .d-vp-btn--play');
+  await despertar(); await btn.click();
   await page.waitForTimeout(500);
   const m3a = await est();
-  const rot1 = await page.locator('.d-vp-btn--play').getAttribute('aria-label');
+  const rot1 = await page.locator('[data-popup="video-player"] .d-vp-btn--play').getAttribute('aria-label');
   if (!m3a.paused) falla('el botón de pausa de la barra propia no pausó');
   if (rot1 !== 'Reproducir') falla(`con el video pausado el botón tendría que decir "Reproducir" (dice "${rot1}")`);
-  await btn.click();
+  await despertar(); await btn.click();
   await page.waitForTimeout(800);
   const m3b = await est();
-  const rot2 = await page.locator('.d-vp-btn--play').getAttribute('aria-label');
+  const rot2 = await page.locator('[data-popup="video-player"] .d-vp-btn--play').getAttribute('aria-label');
   if (m3b.paused) falla('el botón de reproducir de la barra propia no retomó');
   if (rot2 !== 'Pausar') falla(`reproduciendo, el botón tendría que decir "Pausar" (dice "${rot2}")`);
 
   // M4. PAUSADO, la barra se queda visible (la falla que reportó el cliente)
-  await btn.click();
+  await despertar(); await btn.click();
   await page.waitForTimeout(3600); // más que el auto-ocultado de 3 s
   const visible = await page.evaluate(() => {
-    const b = document.querySelector('.d-vp-bar');
+    const b = document.querySelector('[data-popup="video-player"] .d-vp-bar');
     return getComputedStyle(b).opacity !== '0' && b.getBoundingClientRect().height > 0;
   });
   if (!visible) falla('con el video PAUSADO los controles se escondieron solos: es exactamente la falla reportada');
 
   // M5. el reloj muestra tiempo real, no 0:00
   const reloj = await page.evaluate(() => ({
-    ahora: document.querySelector('.d-vp-ahora').textContent,
-    total: document.querySelector('.d-vp-total').textContent
+    ahora: document.querySelector('[data-popup="video-player"] .d-vp-ahora').textContent,
+    total: document.querySelector('[data-popup="video-player"] .d-vp-total').textContent
   }));
   if (!/^\d+:\d\d$/.test(reloj.ahora) || reloj.ahora === '0:00') falla(`el reloj no muestra el avance real (dice "${reloj.ahora}")`);
   if (!/\d+:\d\d/.test(reloj.total) || /0:00/.test(reloj.total)) falla(`el reloj no muestra la duración (dice "${reloj.total}")`);
 
   // M6. retroceder 10 s
   const antes10 = (await est()).t;
-  await despertar(); await page.locator('.d-vp-atras').click();
+  await despertar(); await page.locator('[data-popup="video-player"] .d-vp-atras').click();
   await page.waitForTimeout(600);
   const tras10 = (await est()).t;
   if (!(tras10 < antes10) && antes10 > 0.5) falla(`el botón de -10 s no retrocedió (${antes10}s → ${tras10}s)`);
 
   // M7. mudo y volumen
-  await despertar(); await page.locator('.d-vp-mute').click();
+  await despertar(); await page.locator('[data-popup="video-player"] .d-vp-mute').click();
   await page.waitForTimeout(300);
   if (!await page.evaluate(() => document.getElementById('d-video-player').muted)) falla('el botón de silenciar no silencia');
-  await despertar(); await page.locator('.d-vp-mute').click();
+  await despertar(); await page.locator('[data-popup="video-player"] .d-vp-mute').click();
   await page.waitForTimeout(300);
   if (await page.evaluate(() => document.getElementById('d-video-player').muted)) falla('el botón de silenciar no devuelve el sonido');
 
@@ -339,7 +346,7 @@ async function bateria(etiqueta, opcionesContexto) {
       get() { return d.get.call(this); },
       set(x) { pedidos.push(x); d.set.call(this, x); }
     });
-    const r = document.querySelector('.d-vp-seek');
+    const r = document.querySelector('[data-popup="video-player"] .d-vp-seek');
     r.value = '600'; // 60 % del recorrido
     r.dispatchEvent(new Event('input', { bubbles: true }));
     r.dispatchEvent(new Event('change', { bubbles: true }));
@@ -359,13 +366,13 @@ async function bateria(etiqueta, opcionesContexto) {
 
   // M9. teclado: los controles son alcanzables y accionables con Tab/Enter
   const focoOk = await page.evaluate(() => {
-    const b = document.querySelector('.d-vp-btn--play');
+    const b = document.querySelector('[data-popup="video-player"] .d-vp-btn--play');
     b.focus();
     return document.activeElement === b;
   });
   if (!focoOk) falla('el botón de play no recibe foco de teclado');
   const rangeRoles = await page.evaluate(() => {
-    const s = document.querySelector('.d-vp-seek');
+    const s = document.querySelector('[data-popup="video-player"] .d-vp-seek');
     return { tag: s.tagName, tipo: s.type, etiqueta: s.getAttribute('aria-label') || '' };
   });
   if (rangeRoles.tag !== 'INPUT' || rangeRoles.tipo !== 'range')
@@ -381,17 +388,17 @@ async function bateria(etiqueta, opcionesContexto) {
      simula que ya hay una pantalla completa activa: sin eso, en
      Chromium la API funciona y el bug no se ve nunca. */
   await despertar();
-  await page.locator('.d-vp-fs').click();
+  await page.locator('[data-popup="video-player"] .d-vp-fs').click();
   await page.waitForTimeout(600);
   const amp1 = await page.evaluate(() => ({
     css: document.querySelector('.modal-card--video').classList.contains('d-vp-ampliado'),
     fsReal: !!document.fullscreenElement,
-    rotulo: document.querySelector('.d-vp-fs').getAttribute('aria-label')
+    rotulo: document.querySelector('[data-popup="video-player"] .d-vp-fs').getAttribute('aria-label')
   }));
   if (!amp1.css && !amp1.fsReal) falla('el botón de ampliar no hizo nada (ni pantalla completa real ni ampliación por CSS)');
   if (amp1.rotulo !== 'Salir de pantalla completa') falla(`ampliado, el botón tendría que decir "Salir de pantalla completa" (dice "${amp1.rotulo}")`);
   await despertar();
-  await page.locator('.d-vp-fs').click();
+  await page.locator('[data-popup="video-player"] .d-vp-fs').click();
   await page.waitForTimeout(600);
   if (await page.evaluate(() => document.querySelector('.modal-card--video').classList.contains('d-vp-ampliado') || !!document.fullscreenElement))
     falla('el botón de ampliar no vuelve atrás');
@@ -401,7 +408,7 @@ async function bateria(etiqueta, opcionesContexto) {
     Object.defineProperty(document, 'fullscreenElement', { get: () => document.documentElement, configurable: true });
   });
   await despertar();
-  await page.locator('.d-vp-fs').click();
+  await page.locator('[data-popup="video-player"] .d-vp-fs').click();
   await page.waitForTimeout(600);
   if (!await page.evaluate(() => document.querySelector('.modal-card--video').classList.contains('d-vp-ampliado')))
     falla('CON EL CURSO YA EN PANTALLA COMPLETA el botón de ampliar no hizo nada: es el caso exacto reportado en iPad');
@@ -412,7 +419,7 @@ async function bateria(etiqueta, opcionesContexto) {
   if (tapa.ancho < tapa.vw - 2 || tapa.alto < tapa.vh - 2)
     falla(`ampliado, la tarjeta tendría que ocupar la ventana (mide ${tapa.ancho}x${tapa.alto} en ${tapa.vw}x${tapa.vh})`);
   await despertar();
-  await page.locator('.d-vp-fs').click();
+  await page.locator('[data-popup="video-player"] .d-vp-fs').click();
   await page.waitForTimeout(400);
   await page.evaluate(() => { delete document.fullscreenElement; });
 
@@ -424,7 +431,7 @@ async function bateria(etiqueta, opcionesContexto) {
      la red miente en las dos direcciones. */
   await page.evaluate(() => {
     window.__vioAviso = '';
-    const a = document.querySelector('.d-vp-aviso');
+    const a = document.querySelector('[data-popup="video-player"] .d-vp-aviso');
     new MutationObserver(() => {
       if (a && !a.hidden && !window.__vioAviso) window.__vioAviso = a.textContent.trim();
     }).observe(a, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true });
@@ -434,7 +441,7 @@ async function bateria(etiqueta, opcionesContexto) {
   const avisoTxt = await page.evaluate(() => window.__vioAviso);
   if (!/Recuperando/i.test(avisoTxt)) falla(`durante el rescate tendría que verse "Recuperando el video…" y se vio "${avisoTxt}"`);
   await page.waitForTimeout(2000);
-  if (await page.evaluate(() => { const a = document.querySelector('.d-vp-aviso'); return a && !a.hidden; }))
+  if (await page.evaluate(() => { const a = document.querySelector('[data-popup="video-player"] .d-vp-aviso'); return a && !a.hidden; }))
     falla('el aviso de "Recuperando…" quedó colgado después del rescate');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(400);
@@ -645,6 +652,48 @@ if (prende.length)
     if (Math.abs(enZona - encima) > 1) {
       fallos.push(`\`.d-shot-hit-play--marca\` crece distinto según dónde esté el mouse: ${enZona.toFixed(0)}px en la zona y ${encima.toFixed(0)}px encima del play. Se está sumando el \`transform\` del hover genérico al \`scale\` propio.`);
     }
+  }
+  await page.close();
+}
+
+/* ---- Q. videos de FICHA: el archivo se engancha al abrir y se suelta al
+   cerrar (kit-base v1.9.122, §7.71) ----
+   `initPopupVideos` dejaba el `src` puesto en todos: NOA, con 10 fichas,
+   tenía 11 videos reteniendo archivo a la vez. Se arman tres fichas de
+   prueba y se mide cuántos tienen fuente con las tres cerradas, con una
+   abierta y al cerrarla. */
+{
+  const page = await browser.newPage({ viewport: { width: 1600, height: 900 } });
+  await page.goto(url);
+  await page.waitForTimeout(700);
+  const r = await page.evaluate(async () => {
+    if (typeof window.initPopupVideos !== 'function' || !window.motor) return { no: true };
+    const espera = (ms) => new Promise((res) => setTimeout(res, ms));
+    for (let k = 0; k < 3; k++) {
+      const m = document.createElement('div');
+      m.className = 'modal zz-pv'; m.setAttribute('data-popup', 'zz-pv-' + k);
+      m.innerHTML = '<div class="modal-card"><div class="modal-bd"><video playsinline preload="none">' +
+        '<source src="video/zz-ficha-' + k + '.mp4" type="video/mp4"></video></div></div>';
+      document.body.appendChild(m);
+    }
+    window.initPopupVideos({ selector: '.zz-pv video' });
+    const conFuente = () => [...document.querySelectorAll('.zz-pv video')]
+      .filter((v) => v.getAttribute('src') || [...v.querySelectorAll('source')].some((x) => x.getAttribute('src'))).length;
+    const cerradas = conFuente();
+    window.motor.showPopup('zz-pv-1');
+    await espera(200);
+    const abierta = conFuente();
+    const laAbierta = !!document.querySelector('[data-popup="zz-pv-1"] source[src]');
+    window.motor.closePopup();
+    await espera(200);
+    const alCerrar = conFuente();
+    document.querySelectorAll('.zz-pv').forEach((m) => m.remove());
+    return { cerradas, abierta, laAbierta, alCerrar };
+  });
+  if (!r.no) {
+    if (r.cerradas > 0) fallos.push(`[fichas] con las tres fichas de video CERRADAS, ${r.cerradas} retienen archivo: en un curso con muchas fichas (NOA: 10) es la presión de memoria que en iPad deja la pantalla en negro.`);
+    if (r.abierta !== 1 || !r.laAbierta) fallos.push(`[fichas] al abrir una ficha, ${r.abierta} video(s) con archivo (tiene que ser 1, el de la ficha abierta${r.laAbierta ? '' : ', y ese no lo tiene'}).`);
+    if (r.alCerrar > 0) fallos.push(`[fichas] al cerrar la ficha su video siguió reteniendo el archivo.`);
   }
   await page.close();
 }

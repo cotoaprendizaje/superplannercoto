@@ -412,3 +412,15 @@
   font-family: var(--font-body); font-weight: 800; cursor: pointer;
 }
 
+/* ---- Candado: `initRepasoRapido({ bloqueada })` (kit-base v1.9.122) ----
+   Bloqueada, la tira no muestra ninguna pregunta (las esconde el JS con
+   `hidden`, que también las saca de la voz) y en su lugar dice el texto de
+   `data-candado`. Las flechas y el contador no tienen nada que navegar. */
+.d-repaso.is-bloqueada .d-repaso-nav{ visibility: hidden; }
+.d-repaso.is-bloqueada::after{
+  content: attr(data-candado); display: block; margin-top: .3rem;
+  padding: .45rem .7rem; border-radius: var(--r-sm, 10px);
+  background: var(--surface-2); color: var(--text-soft);
+  font-family: var(--font-body); font-weight: 700; font-size: .8rem;
+}
+

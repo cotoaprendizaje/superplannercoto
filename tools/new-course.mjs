@@ -251,7 +251,14 @@ fs.writeFileSync(path.join(destinoAbs, 'README-CURSO.md'),
   `# ${args.titulo}\n\nBitácora propia de este curso (decisiones, bugs reales, pendientes) — ` +
   `no se mezcla con \`kit-base/CLAUDE.md\` (CLAUDE.md §0.1).\n\n` +
   `Generado con \`tools/new-course.mjs\` a partir de kit-base ` +
-  `v${JSON.parse(fs.readFileSync(path.join(KIT_ROOT, 'package.json'), 'utf8')).version}.\n`);
+  `v${JSON.parse(fs.readFileSync(path.join(KIT_ROOT, 'package.json'), 'utf8')).version}.\n\n` +
+  /* La sección del relevo nace con el curso (kit-base v1.9.122, §7.71):
+     `build-zip.py` no arma el zip del curso si sigue así de vacía, y con
+     lo que tenga arma el zip del relevo. */
+  `## Relevo al kit\n\n` +
+  `(pendiente — antes de entregar: correr \`node tools/revisar-curso.mjs .\` y anotar acá TODO lo que ` +
+  `se resolvió o se encontró en el curso, también lo que parezca propio; decide el kit. ` +
+  `\`build-zip.py\` no arma el zip del curso mientras esta sección diga "pendiente".)\n`);
 
 // ---- 5. index.html, a partir de index-boilerplate.html (kit v1.9.60) ----
 /* Hasta v1.9.59 este script NO generaba el index.html y mandaba a

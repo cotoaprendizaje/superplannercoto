@@ -117,8 +117,14 @@ for (const id of ids) {
     const m = r.texto.match(/.{0,25}[.!?]\s*[.!?].{0,25}/);
     fails.push(`"${id}": puntuación doble en el texto narrado — "…${m[0]}…"`);
   }
-  if (/[a-záéíóúñ][A-ZÁÉÍÓÚÑ]/.test(r.texto)) {
-    const m = r.texto.match(/.{0,20}[a-záéíóúñ][A-ZÁÉÍÓÚÑ].{0,20}/);
+  /* Dos minúsculas ANTES de la mayúscula, no una (kit-base v1.9.122,
+     §7.71): con una sola, "iPad", "iPhone" o "eCommerce" contaban como
+     dos frases pegadas. Lo relevó "Uso de Sucursales 3 - NOA" ("…desde el
+     iPad para acceder…"). Un pegado real termina una palabra entera:
+     "cursoLa", "puntosAhora". */
+  const PEGADAS = /(?:^|[^A-Za-zÁÉÍÓÚÑáéíóúñ])[A-Za-zÁÉÍÓÚÑáéíóúñ]*[a-záéíóúñ]{2}[A-ZÁÉÍÓÚÑ]/;
+  if (PEGADAS.test(r.texto)) {
+    const m = r.texto.match(/.{0,20}[a-záéíóúñ]{2}[A-ZÁÉÍÓÚÑ].{0,20}/);
     fails.push(`"${id}": dos frases pegadas sin separador — "…${m[0]}…"`);
   }
 }
