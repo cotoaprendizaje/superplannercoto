@@ -72,6 +72,7 @@ import zipfile
 EXCLUIR_DIRS = {'node_modules', '.git', '__pycache__', '.pytest_cache', '.kit-anterior',
                 'curso-prueba', 'verify-hitboxes-out', 'visual-diff-out'}
 EXCLUIR_ARCH = {'.DS_Store', 'Thumbs.db'}
+SALTEADOS = []   # scripts de trabajo de la raíz de un curso que no viajan (v1.9.123)
 # `curso.json` y `marco.html` SÍ viajan (v1.9.117, relevo de "Prevención
 # cardiovascular"): en v1.9.111 se dejaban fuera, y un curso en datos que
 # volvía por su zip del LMS —que es "el zip del curso" que pide
@@ -123,6 +124,15 @@ def juntar(raiz, excluir_nombres=()):
             rel = os.path.relpath(abs_p, raiz)
             partes = rel.replace(os.sep, '/').split('/')
             if partes[0] in excluir_nombres or rel.replace(os.sep, '/') in excluir_nombres:
+                continue
+            # Scripts de TRABAJO sueltos en la raíz del curso (kit-base
+            # v1.9.123, §7.72): NOA tenía `e2e.mjs` y `overlay.mjs` de
+            # vueltas anteriores y viajaban dentro del paquete SCORM;
+            # `check-manifest` no los ve porque solo mira css/, js/, img/…
+            # Lo del curso que sí es código va en js/ o en tools/.
+            if (not es_kit and len(partes) == 1
+                    and os.path.splitext(partes[0])[1] in ('.mjs', '.cjs', '.py', '.sh')):
+                SALTEADOS.append(partes[0])
                 continue
             # §6.43: si hay README-CURSO.md en la raíz, el README.md de
             # la raíz (heredado del scaffold del kit) NUNCA se empaqueta.
@@ -396,6 +406,8 @@ def main():
         print('  van %d archivo(s) propios del curso en tools/ (tests que escribió el curso):' % len(propios))
         for x in propios[:20]:
             print('    · ' + x)
+    if SALTEADOS:
+        print('  no van %d script(s) de trabajo de la raíz del curso: %s' % (len(SALTEADOS), ', '.join(sorted(SALTEADOS))))
     if relevo is not None:
         destino = armar_relevo(raiz, salida, relevo)
         print('%s  —  el relevo al kit' % destino)

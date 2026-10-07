@@ -496,7 +496,16 @@
           /* Sin `data-obj-check` el pip no se puede evaluar: se deja
              apagado en vez de darlo por cubierto. Un objetivo que se
              tilda solo es peor que uno que nunca se tilda. */
-          var hecho = !!(check && visited(check));
+          /* `objetivoCumplido(id)` (kit-base v1.9.123, §7.72): un objetivo
+             que NO se cumple visitando —NOA: "abrir las 10 fichas",
+             "aprobar el minijuego"— lo decide el curso. Sin esto el
+             `refresh()` del kit lo pisaba con "visitado", y el curso tenía
+             que pintar DESPUÉS de cada refresh para no quedar en "0 de 3".
+             Devuelve true/false para decidir, o `undefined` para dejarle
+             el criterio de siempre (visitar `data-obj-check`). */
+          var propio = typeof opts.objetivoCumplido === 'function'
+            ? opts.objetivoCumplido(pip.getAttribute('data-obj-pip'), check, pip) : undefined;
+          var hecho = propio !== undefined ? !!propio : !!(check && visited(check));
           if (hecho) cubiertos++;
           pip.classList.toggle('is-done', hecho);
         });

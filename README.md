@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.122** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.123** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -430,6 +430,21 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.123 — segundos relevos de NOA y de Seguridad de la información
+
+Ver CLAUDE.md §7.72.
+
+- **El video de fondo vuelve a andar al cerrar un panel** que lo había callado
+  (lo reportaron dos cursos el mismo día).
+- **`revisar-curso` desde la copia del curso** ya no esconde la mitad del
+  informe (y es la que usa `build-zip` para el zip del relevo).
+- `initPopupVideos()` sin selector ya no apaga la barra del reproductor del kit.
+- El cierre corta la voz al pasar al resumen y al volver.
+- Minijuego ganado: volver muestra el resultado; `yaGanado()` para otra sesión.
+- `initIndexJumps({ objetivoCumplido })`; `.d-zona--circulo`; `.d-shot-hit--tinte`.
+- `build-zip` no empaqueta scripts sueltos de la raíz; `armar-curso` avisa
+  zonas en la franja que se recorta.
 
 ### v1.9.122 — el relevo viaja en su propio zip, y el relevo de NOA
 

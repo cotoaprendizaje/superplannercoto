@@ -1256,6 +1256,45 @@
 
     document.addEventListener('slidechange', function (e) { sync(e.detail.id); });
 
+    /* ---- Volver a arrancar tras un panel (kit-base v1.9.123, §7.72) ----
+       Lo reportaron DOS clientes el mismo día: "abrí el glosario en la
+       portada, empezó su locución, lo cerré y el video quedó en pausa"
+       (NOA, punto N) y "con la portada sonando abro Recursos, lo cierro y
+       el video queda detenido" ("Seguridad de la información", A16).
+       "Una sola voz" (`callarVideos()`, narrador.js) pausa todo video
+       AUDIBLE cuando arranca una locución y, a propósito, no lo reanuda:
+       un video que arrancó el alumno vuelve a su botón de play. Pero el
+       video de FONDO no tiene botón de play y queda clavado.
+       Si al abrir un pop-up el video de fondo de la diapositiva estaba
+       corriendo y al cerrar el ÚLTIMO quedó pausado, vuelve. Se lee el
+       estado en CAPTURA sobre `window`, antes de que la locución del
+       pop-up lo pause (los dos escuchan `popupopen`). Los 300 ms dejan
+       pasar el `cancel()` del cierre y el auto-avance pendiente. Un video
+       que el alumno no estaba viendo (pausado al abrir) no se toca.
+       Portado del parche de NOA; `autoavance-panel` lo mide. */
+    var reanudar = null;
+    global.addEventListener('popupopen', function () {
+      if (reanudar) return;   // pop-up sobre pop-up: vale el primero
+      var m = global.motor, s = m && m.current();
+      var v = null;
+      Array.prototype.forEach.call(videos, function (x) { if (s && s.contains(x)) v = x; });
+      reanudar = (v && !v.paused && !v.ended) ? v : null;
+    }, true);
+    document.addEventListener('slidechange', function () { reanudar = null; });
+    document.addEventListener('popupclose', function () {
+      var v = reanudar;
+      if (!v) return;
+      setTimeout(function () {
+        var m = global.motor;
+        if (!m || m.openPopup) return;   // queda otro abierto: se espera al último
+        reanudar = null;
+        var s = m.current();
+        if (!s || !s.contains(v) || !v.paused || v.ended || cursoTapado()) return;
+        var pr = v.play();
+        if (pr && pr.catch) pr.catch(function () {});
+      }, 300);
+    });
+
     /* ---- Mientras el curso esté TAPADO, no arranca ----
        ⚠️ BUG REAL: con el aviso "Girá tu dispositivo" puesto, el video
        de la portada se reproducía DETRÁS del cartel. Y como esa diapo
@@ -1974,8 +2013,16 @@
 
   function initPopupVideos(opts) {
     opts = opts || {};
-    var sel = opts.selector || '[data-popup] video';
-    var videos = Array.prototype.slice.call(document.querySelectorAll(sel));
+    /* Sin `#d-video-player` (kit-base v1.9.123, §7.72; relevo de NOA,
+       punto M): el reproductor del kit vive en un `[data-popup]`, así que
+       el default lo tomaba como un video de ficha más y, al cerrarlo, le
+       ponía `d-vp-virgen` al contenedor: barra invisible y sin clics para
+       siempre. MEDIDO por NOA con `reproductor-video`. Desde v1.9.122
+       encima le soltaba el archivo al cerrar. El reproductor es de
+       `initVideoPlayer`, nunca de este. */
+    var sel = opts.selector || '[data-popup] video:not(#d-video-player)';
+    var videos = Array.prototype.slice.call(document.querySelectorAll(sel))
+      .filter(function (v) { return v.id !== 'd-video-player'; });
     if (!videos.length) return;
     var visto = vistoAPI(opts);
     var soltar = opts.soltarAlCerrar !== false;

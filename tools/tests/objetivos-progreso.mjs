@@ -89,6 +89,30 @@ if (!(await page.evaluate(() => typeof window.initIndexJumps === 'function'))) {
   if (!r.pedidos.some((id) => id.indexOf('__vista__') === 0)) {
     fails.push('nunca se consultó visited() con el data-obj-check del pip');
   }
+  /* `objetivoCumplido` (v1.9.123, §7.72): el objetivo B se cumple por algo
+     que no es visitar (NOA: "abrir las 10 fichas"); el curso lo decide y
+     el kit no lo pisa con "visitado". `undefined` deja el criterio de
+     siempre para los demás. */
+  const q = await page.evaluate(() => {
+    const box = document.createElement('div');
+    box.className = 'd-obj-progress';
+    box.innerHTML = '<span class="d-obj-pip" data-obj-pip="A" data-obj-check="__vista__a">A</span>' +
+      '<span class="d-obj-pip" data-obj-pip="B" data-obj-check="__no__b">B</span>' +
+      '<span class="d-obj-pip" data-obj-pip="C" data-obj-check="__vista__c">C</span><span data-obj-lbl></span>';
+    document.body.appendChild(box);
+    window.initIndexJumps({
+      selector: '.__no_existe__',
+      visited: (id) => id.indexOf('__vista__') === 0,
+      objetivoCumplido: (id) => (id === 'B' ? true : id === 'C' ? false : undefined)
+    });
+    const out = [...box.querySelectorAll('[data-obj-pip]')].map((p) => p.classList.contains('is-done'));
+    box.remove();
+    return out;
+  });
+  if (JSON.stringify(q) !== '[true,true,false]') {
+    fails.push('con `objetivoCumplido`, el curso no decide sus objetivos: esperaba A visitado (sí), B cumplido por el curso (sí) ' +
+      'y C negado por el curso aunque esté visitado (no); dio ' + JSON.stringify(q) + '.');
+  }
   if (s1.lbl !== '1 de 1 objetivo cubierto') {
     fails.push('con un solo objetivo el rótulo va en singular ("1 de 1 objetivo cubierto"), dio: ' + JSON.stringify(s1.lbl));
   }

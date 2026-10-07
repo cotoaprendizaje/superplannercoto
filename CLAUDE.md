@@ -15649,3 +15649,83 @@ El relevo llegó con lo probado separado de lo supuesto. Verificado:
 - **J (reparación propia de la primera locución):** anotado; un aviso en
   `actualizar-kit` necesita un patrón confiable que todavía no hay.
 - **I, K:** contenido o sin cambio.
+
+## 7.72 Segundos relevos de NOA y de "Seguridad de la información", 2026-10-07 (kit-base v1.9.123)
+
+Llegaron juntos: NOA con un parche (`kit-propuesta-2026-10-07.diff`,
+contra v1.9.120) y SI con su relevo en zip (A16–A21, contra v1.9.119).
+Del parche de NOA, A, B, D, F y L ya estaban en v1.9.122 (escritos acá,
+no copiados: los portamos de su relevo anterior); se portaron por partes
+M, N y P. Verificado:
+
+### Los dos cursos, el mismo bug: el video de fondo queda pausado (NOA N, SI A16)
+
+"Una sola voz" pausa el video audible cuando un panel narra y no lo
+reanuda, a propósito, porque un video arrancado por el alumno vuelve a su
+botón de play. El de fondo no tiene botón. `initBgVideos` anota en
+`popupopen` (captura, antes de que la voz lo pause) el video de fondo que
+estaba andando, y al cerrar el ÚLTIMO pop-up, si sigue en la misma
+diapositiva y pausado, `play()` a los 300 ms (deja pasar el `cancel()` y
+el auto-avance pendiente de §7.69). Portado del parche de NOA.
+`autoavance-panel` suma la parte 3 con el webm con audio de `una-sola-voz`
+servido en lugar de los .mp4: con v1.9.122, "portada" quedó pausada tras
+cerrar el panel; ahora vuelve.
+
+### `revisar-curso` corrido desde la copia del curso escondía la mitad (SI A21)
+
+Confirmado: desde la copia, `KIT` es el curso y "los CSS del kit" eran
+todos los de la carpeta; el informe salía sin "!important" ni "Clases que
+el curso reescribe" (alimentaria: 5 secciones desde el kit, 3 desde la
+copia). Grave porque `build-zip` corre justamente la copia para el zip del
+relevo. Ahora, si hay `kit-version.json` junto al script, los archivos del
+kit salen del registro: 5 y 5.
+
+### `initPopupVideos()` sin selector tomaba el reproductor del kit (NOA M)
+
+Al cerrar el pop-up del reproductor le ponía `d-vp-virgen` al contenedor:
+barra invisible y sin clics para siempre. El default excluye
+`#d-video-player`. `reproductor-video` lo mide llamándolo sin selector
+(rojo con v1.9.122: barra apagada).
+
+### Cierre: pasar al resumen corta la voz (SI A17)
+
+`mostrarResumen()` y `volverAlShot()` llaman a `Narrador.cancel()`: es un
+cambio de paso dentro de la diapositiva, sin `slidechange`.
+`locucion-control` mide si la frase de antes sigue sonando tras el cambio.
+Con v1.9.122 en alimentaria solo da rojo el camino de vuelta: ahí el paso
+al resumen ya cortaba por cómo cierra ese curso. En SI no cortaba en
+ninguno de los dos (medido por su chat con un `speechSynthesis` falso; acá
+no se reprodujo, no tenemos ese curso armado).
+
+### Minijuego ganado (NOA P)
+
+Ganado, salir ya no lo devuelve a la bienvenida, y `yaGanado()` pinta el
+final al entrar en otra sesión. NOA no lo había podido correr con el
+minijuego del kit; `minijuego.mjs` lo mide ahora con el del kit (rojo con
+v1.9.122 en los dos casos).
+
+### Objetivos que no se cumplen visitando (NOA Q)
+
+`initIndexJumps({ objetivoCumplido(id, check, pip) })`: true/false decide
+el curso, `undefined` deja el criterio de siempre. `objetivos-progreso`
+lo mide (rojo con v1.9.122).
+
+### Más chicos
+
+- **NOA R:** `build-zip` deja afuera los `.mjs/.cjs/.py/.sh` sueltos en la
+  raíz de un curso (scripts de trabajo) y lo avisa.
+- **SI A18:** `.d-zona--circulo`. **SI A19:** `.d-shot-hit--tinte`, entre el
+  realce por defecto y `--sin-aro` (NOA pedía lo mismo con sus burbujas).
+- **SI A20.3:** `armar-curso` avisa al armar las zonas en la franja que se
+  recorta (12,22% a los costados; 4,55% arriba y abajo para lo tocable).
+  Cardio: ningún aviso; con una zona movida al 3%, el aviso.
+
+### No se toma (todavía)
+
+- **NOA O** (pulso `.d-nudge` con forma): es CSS de cada forma.
+- **SI A20.1** (variables para que la regla compacta del repaso no pierda
+  por especificidad) y **A20.2** (corte de 260 a 360 px): el modo `--pop`
+  de v1.9.121 cubre el teléfono acostado para `.d-repaso-marco`; si un
+  segundo curso pelea con la especificidad, se hacen las variables.
+- **NOA, pendientes sin reproducir** (locución de pop-up que sigue tras
+  cerrar, videos que se congelan): falta navegador y equipo.

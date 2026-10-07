@@ -204,6 +204,7 @@
        en vez de escribir uno fijo acá es lo que evita que este módulo
        le imponga una palabra al curso. */
     function volverAlShot() {
+      if (global.Narrador && global.Narrador.cancel) global.Narrador.cancel();   // ídem, al volver
       var shot = document.querySelector('[data-cierre-step="shot"]');
       var summary = document.querySelector('[data-cierre-step="summary"]');
       if (summary) summary.hidden = true;
@@ -216,6 +217,11 @@
     var ctaOriginal = null;
 
     function mostrarResumen() {
+      /* La voz de la felicitación se corta acá (kit-base v1.9.123, §7.72):
+         es un cambio de PASO dentro de la misma diapositiva, sin
+         `slidechange`, que es lo que corta la locución en el resto del
+         curso. Lo reportó el cliente en "Seguridad de la información". */
+      if (global.Narrador && global.Narrador.cancel) global.Narrador.cancel();
       var shot = document.querySelector('[data-cierre-step="shot"]');
       var summary = document.querySelector('[data-cierre-step="summary"]');
       if (shot) shot.hidden = true;

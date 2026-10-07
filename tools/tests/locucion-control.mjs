@@ -139,5 +139,50 @@ if (tras.dijo.length && tras.esperado && !tras.dijo.some((t) => t.slice(0, 20) =
     `no es la que está en pantalla (dijo "${tras.dijo[0]}", se esperaba "${tras.esperado}").`);
 }
 
+/* ---- El cierre: pasar al resumen corta la voz (kit-base v1.9.123, §7.72) ----
+   Reporte del cliente en "Seguridad de la información" (A17): en la
+   diapositiva final, "Siguiente" muestra el resumen y la locución de la
+   felicitación seguía sonando. El cambio de paso es DENTRO de la misma
+   diapositiva —no hay `slidechange`, que es lo que corta la voz— y
+   `mostrarResumen()` no la cortaba. Se mide lo que importa: si después del
+   cambio de paso el motor de voz sigue diciendo la frase de ANTES (una
+   larga, de muchos fragmentos de 300ms). Y al volver con "Anterior", igual. */
+{
+  const hay = await page.evaluate(() => !!document.querySelector('[data-slide="cierre"] [data-cierre-step="summary"]'));
+  const r = !hay ? null : await page.evaluate(async () => {
+    const espera = (ms) => new Promise((res) => setTimeout(res, ms));
+    const sl = [...document.querySelectorAll('[data-slide]')];
+    window.motor.go(sl.findIndex((s) => s.getAttribute('data-slide') === 'cierre'), true);
+    await espera(600);
+    const ss = window.speechSynthesis;
+    const dichos = [];
+    const orig = ss.speak.bind(ss);
+    ss.speak = (u) => { dichos.push(String(u.text || '')); return orig(u); };
+    const LARGA = Array.from({ length: 12 }, (_, k) => `Frase de la felicitación número ${k + 1}.`).join(' ');
+    const sigueDiciendo = async () => { const n = dichos.length; await espera(900); return dichos.slice(n).some((t) => /felicitación número/.test(t)); };
+    window.Narrador.speak(LARGA, 'slide');
+    await espera(350);
+    document.dispatchEvent(new CustomEvent('navcta', { detail: { id: 'cierre' } }));
+    await espera(50);
+    const visible = !document.querySelector('[data-cierre-step="summary"]').hidden;
+    const alResumen = await sigueDiciendo();
+    window.Narrador.speak(LARGA, 'slide');
+    await espera(350);
+    const prev = document.querySelector('[data-nav="prev"]');
+    if (prev) prev.click();
+    await espera(50);
+    const alVolver = await sigueDiciendo();
+    ss.speak = orig;
+    return { visible, alResumen, alVolver };
+  });
+  if (r && r.visible && r.alResumen) {
+    fails.push('en el cierre, pasar al resumen no cortó la voz: la locución de la felicitación siguió sonando ' +
+      'sobre una pantalla que ya no está (es un cambio de paso, no de diapositiva).');
+  }
+  if (r && r.visible && r.alVolver) {
+    fails.push('en el cierre, volver del resumen con "Anterior" no cortó la voz que estaba sonando.');
+  }
+}
+
 report('locucion-control', fails);
 await browser.close();

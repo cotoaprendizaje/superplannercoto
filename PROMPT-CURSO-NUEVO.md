@@ -17,7 +17,7 @@ entre `<>` y adjuntar el zip de `kit-base/` + el PDF del diseñador.
 ## ✂️ Copiar desde acá
 
 Vas a armar un curso SCORM del molde "Área Aprendizaje (COTO)" usando el
-kit adjunto (`kit-base/`, v1.9.122). Antes de escribir una línea, leé del
+kit adjunto (`kit-base/`, v1.9.123). Antes de escribir una línea, leé del
 kit:
 
 - **`MANUAL-DEL-MOLDE.md`, entero.** Son las reglas vigentes, cortas y

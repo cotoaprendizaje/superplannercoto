@@ -668,6 +668,20 @@
    apagar el aro Y poner otra cosa, ese es `--tab`, acá abajo. */
 .d-shot-hit--sin-aro:hover { outline: none; box-shadow: none; transform: none; }
 
+/* ---- `--tinte`: sin aro ni sombra, un aclarado ADENTRO (kit-base v1.9.123) ----
+   El punto intermedio entre el realce por defecto y `--sin-aro`, para una
+   forma que el diseñador YA dibujó completa (un círculo numerado, una
+   burbuja): el aro y la sombra al 22% de negro se leen como un "borde
+   gris" que no es del dibujo —reporte del cliente en "Seguridad de la
+   información" (A19): *"sacales ese resaltado gris porque le queda mal"*;
+   NOA pidió lo mismo con sus burbujas—, pero `--sin-aro` deja la zona sin
+   ninguna señal de hover. Esto aclara el interior y nada más. El foco de
+   teclado conserva su contorno (`:focus-visible`, arriba). */
+.d-shot-hit--tinte:hover {
+  outline: none; box-shadow: none; transform: none;
+  background: color-mix(in srgb, #fff 22%, transparent);
+}
+
 /* ⚠️ Y LA TRAMPA QUE SE COBRÓ UN CURSO ENTERO (kit-base v1.9.94).
    Hasta v1.9.71 el realce del hover ERA `background: color-mix(--cat
    12%)`. Desde v1.9.72 es el aro + la sombra + el levante de acá

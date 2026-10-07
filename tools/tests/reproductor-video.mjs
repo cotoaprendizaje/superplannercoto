@@ -676,7 +676,9 @@ if (prende.length)
         '<source src="video/zz-ficha-' + k + '.mp4" type="video/mp4"></video></div></div>';
       document.body.appendChild(m);
     }
-    window.initPopupVideos({ selector: '.zz-pv video' });
+    /* Sin `selector` (v1.9.123, §7.72): así lo llama un curso, y el
+       default NO puede tomar el reproductor del kit (`#d-video-player`). */
+    window.initPopupVideos({});
     const conFuente = () => [...document.querySelectorAll('.zz-pv video')]
       .filter((v) => v.getAttribute('src') || [...v.querySelectorAll('source')].some((x) => x.getAttribute('src'))).length;
     const cerradas = conFuente();
@@ -688,12 +690,28 @@ if (prende.length)
     await espera(200);
     const alCerrar = conFuente();
     document.querySelectorAll('.zz-pv').forEach((m) => m.remove());
-    return { cerradas, abierta, laAbierta, alCerrar };
+    /* El reproductor del kit, después de abrir y cerrar su pop-up: la barra
+       no puede quedar apagada (`d-vp-virgen` en su contenedor). Que suelte
+       su archivo al cerrar es suyo y a propósito (`initVideoPlayer`). */
+    let reproductor = null;
+    const vp = document.getElementById('d-video-player');
+    if (vp && vp.closest('[data-popup]')) {
+      window.motor.showPopup(vp.closest('[data-popup]').getAttribute('data-popup'));
+      await espera(200);
+      window.motor.closePopup();
+      await espera(200);
+      reproductor = { virgen: !!(vp.parentElement && vp.parentElement.classList.contains('d-vp-virgen')) };
+    }
+    return { cerradas, abierta, laAbierta, alCerrar, reproductor };
   });
   if (!r.no) {
     if (r.cerradas > 0) fallos.push(`[fichas] con las tres fichas de video CERRADAS, ${r.cerradas} retienen archivo: en un curso con muchas fichas (NOA: 10) es la presión de memoria que en iPad deja la pantalla en negro.`);
     if (r.abierta !== 1 || !r.laAbierta) fallos.push(`[fichas] al abrir una ficha, ${r.abierta} video(s) con archivo (tiene que ser 1, el de la ficha abierta${r.laAbierta ? '' : ', y ese no lo tiene'}).`);
     if (r.alCerrar > 0) fallos.push(`[fichas] al cerrar la ficha su video siguió reteniendo el archivo.`);
+    if (r.reproductor && r.reproductor.virgen) {
+      fallos.push('[fichas] `initPopupVideos()` sin selector tomó también el reproductor del kit (#d-video-player): ' +
+        'al cerrarlo su barra quedó apagada (`d-vp-virgen`) para siempre, sin clics.');
+    }
   }
   await page.close();
 }

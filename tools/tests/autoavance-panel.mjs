@@ -17,6 +17,8 @@
      · que al cerrarlo avance sola a la siguiente;
      · y, sin pop-up, que avance enseguida (el auto-avance sigue andando). */
 import { chromium } from 'playwright-core';
+import fs from 'node:fs';
+import path from 'node:path';
 import { irASlide, report, requireUrl } from './_shared.mjs';
 
 const url = requireUrl();
@@ -105,6 +107,81 @@ const donde = () => ({ slide: window.motor.current().getAttribute('data-slide'),
     if (r.errors.length) fallos.push(...r.errors.map((e) => 'error de consola: ' + e));
     await r.browser.close();
   }
+}
+
+/* ---- 3 · el video de fondo VUELVE a andar al cerrar el panel ----
+   (kit-base v1.9.123, §7.72; NOA punto N y "Seguridad de la información"
+   A16, el mismo día). "Una sola voz" pausa el video audible cuando el
+   panel empieza a narrar, y un video de fondo no tiene botón de play: se
+   quedaba clavado. Hace falta un video que suene de verdad: el webm con
+   audio que fabrica `una-sola-voz` (se fabrica acá si no está), servido en
+   lugar de los .mp4. */
+{
+  const exe = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+  const browser = await chromium.launch({ executablePath: exe, args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
+  const VIDEO_PRUEBA = path.join(process.env.TMPDIR || '/tmp', 'coto-prueba-video-audio.webm');
+  if (!fs.existsSync(VIDEO_PRUEBA)) {
+    const p0 = await browser.newPage();
+    await p0.setContent('<canvas width="160" height="160"></canvas>');
+    const b64 = await p0.evaluate(async () => {
+      const cv = document.querySelector('canvas'), cx = cv.getContext('2d');
+      const ac = new AudioContext();
+      const osc = ac.createOscillator(); osc.frequency.value = 440;
+      const dst = ac.createMediaStreamDestination(); osc.connect(dst); osc.start();
+      const stream = new MediaStream([...cv.captureStream(25).getVideoTracks(), ...dst.stream.getAudioTracks()]);
+      const rec = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      const partes = []; rec.ondataavailable = (e) => partes.push(e.data);
+      let t = 0; const iv = setInterval(() => { cx.fillStyle = 'hsl(' + (t * 9 % 360) + ',60%,45%)'; cx.fillRect(0, 0, 160, 160); t++; }, 40);
+      rec.start(); await new Promise((r) => setTimeout(r, 8000)); rec.stop();
+      await new Promise((r) => { rec.onstop = r; }); clearInterval(iv);
+      const buf = new Uint8Array(await new Blob(partes, { type: 'video/webm' }).arrayBuffer());
+      let s = ''; for (let i = 0; i < buf.length; i += 0x8000) s += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+      return btoa(s);
+    });
+    fs.writeFileSync(VIDEO_PRUEBA, Buffer.from(b64, 'base64'));
+    await p0.close();
+  }
+  const VIDEO = fs.readFileSync(VIDEO_PRUEBA);
+  const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+  await ctx.route('**/*.mp4', (r) => r.fulfill({ status: 200, contentType: 'video/webm', body: VIDEO }));
+  const page = await ctx.newPage();
+  await page.goto(url);
+  await page.waitForTimeout(800);
+  await page.keyboard.press('Escape').catch(() => {});
+  const info = await page.evaluate(() => {
+    const v = document.querySelector('.d-shot-slide--bg-video video.d-shot-video');
+    const pop = document.querySelector('[data-popup]:not([data-popup="video-player"])');
+    return { id: v && v.closest('[data-slide]').getAttribute('data-slide'), popup: pop && pop.getAttribute('data-popup') };
+  });
+  if (info.id && info.popup) {
+    await irASlide(page, info.id);
+    await page.waitForTimeout(600);
+    const r = await page.evaluate(async (popId) => {
+      const espera = (ms) => new Promise((res) => setTimeout(res, ms));
+      const v = window.motor.current().querySelector('video.d-shot-video');
+      v.removeAttribute('data-autoadvance'); v.loop = true;
+      v.muted = false; v.volume = 1;
+      try { await v.play(); } catch (e) { return { no: 'el video de prueba no arrancó: ' + e.message }; }
+      await espera(400);
+      if (v.paused) return { no: 'el video de prueba no quedó andando' };
+      window.motor.showPopup(popId);
+      await espera(150);
+      /* La locución del panel: es lo que pausa el video ("una sola voz"). */
+      if (window.Narrador && window.Narrador.speak) window.Narrador.speak('Texto del panel de prueba.', 'popup');
+      await espera(300);
+      const pausadoConPanel = v.paused;
+      window.motor.closePopup();
+      await espera(900);
+      return { pausadoConPanel, andaDespues: !v.paused };
+    }, info.popup);
+    if (r.no) console.log('  · ' + r.no + ': no se pudo medir la reanudación.');
+    else if (!r.pausadoConPanel) console.log('  · la locución del panel no pausó el video (¿voz apagada?): no hay reanudación que medir.');
+    else if (!r.andaDespues) {
+      fallos.push(`en "${info.id}", el video de fondo que estaba andando quedó PAUSADO después de cerrar "${info.popup}": ` +
+        'la locución del panel lo calló ("una sola voz") y nadie lo volvió a arrancar. Un video de fondo no tiene botón de play.');
+    }
+  }
+  await browser.close();
 }
 
 report('autoavance-panel', fallos);

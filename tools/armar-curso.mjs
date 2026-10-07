@@ -44,3 +44,39 @@ try {
 }
 fs.writeFileSync(salida, html);
 console.log(`✓ ${salida} armado: ${curso.diapositivas.length} diapositivas.`);
+
+/* ---- Aviso: zonas en la franja que se recorta (kit-base v1.9.123, §7.72) ----
+   Lo pidió "Seguridad de la información" (A20.3): al rediseñar sus repasos,
+   `video-lienzo-tablet` y `scroll-audit` atraparon cajas fuera del margen
+   seguro… recién al correr la suite, ~20 minutos después de armar. Acá se
+   avisa al armar, con los mismos números que publica el kit
+   (`--d-margen-seguro` 12,22% a los costados, `--d-margen-seguro-v` 4,55%
+   arriba y abajo, este solo para lo tocable). Es un aviso: no frena el
+   armado; el que decide es el test. */
+{
+  const H = 12.22, V = 4.55;
+  const avisos = [];
+  let diapo = '';
+  for (const m of html.matchAll(/<[a-z][^>]*>/gi)) {
+    const tag = m[0];
+    const d = tag.match(/data-slide="([^"]+)"/);
+    if (d && /<section\b/i.test(tag)) { diapo = d[1]; continue; }
+    const hit = /\sdata-hit[\s=>]/.test(tag), place = /\sdata-place[\s=>]/.test(tag);
+    if (!hit && !place) continue;
+    const num = (a) => { const x = tag.match(new RegExp('\\s' + a + '="([\\d.]+)"')); return x ? parseFloat(x[1]) : NaN; };
+    const l = num('data-l'), w = num('data-w'), t = num('data-t'), h = num('data-h');
+    const nombre = (tag.match(/aria-label="([^"]{1,40})/) || tag.match(/class="([^"]{1,40})/) || [, tag.slice(0, 40)])[1];
+    if (!isNaN(l) && (l < H || l + (isNaN(w) ? 0 : w) > 100 - H)) {
+      avisos.push(`${diapo} · "${nombre}" ocupa ${l}–${+(l + (w || 0)).toFixed(2)}% de ancho (margen ±${H}%)`);
+    }
+    if (hit && !isNaN(t) && (t < V || t + (isNaN(h) ? 0 : h) > 100 - V)) {
+      avisos.push(`${diapo} · "${nombre}" ocupa ${t}–${+(t + (h || 0)).toFixed(2)}% de alto (margen ±${V}%)`);
+    }
+  }
+  if (avisos.length) {
+    console.log(`⚠️ ${avisos.length} zona(s) en la franja que se recorta en tablet o en pantallas anchas ` +
+      '(lo va a marcar `video-lienzo-tablet`):');
+    avisos.slice(0, 20).forEach((a) => console.log('  - ' + a));
+    if (avisos.length > 20) console.log(`  … y ${avisos.length - 20} más`);
+  }
+}

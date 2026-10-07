@@ -115,8 +115,31 @@ if (!(await page.evaluate(() => typeof window.initMinijuego === 'function'))) {
     out.finGanada = log.fin.length > 1 ? { gano: log.fin[1].gano, hallados: log.fin[1].hallados } : null;
     out.memoriaTrasGanar = Object.keys(memoria.errados || {});
 
+    /* --- 8 · ganado, volver NO lleva a la bienvenida (v1.9.123, §7.72) ---
+       NOA: "terminé aprobado, pasé a consejos, apreté Anterior y me llevó
+       a empezar a jugar". Se cuenta a qué capa manda el módulo al salir. */
+    const pedidos = [];
+    sec.querySelectorAll('[data-target]').forEach((b) => b.addEventListener('click', () => pedidos.push(b.getAttribute('data-target'))));
+    document.dispatchEvent(new CustomEvent('slidechange', { detail: { id: 'otra-diapo' } }));
+    out.alSalirGanado = pedidos.slice();
     out.log = log;
     sec.remove();
+
+    /* --- y retomando OTRO día: `yaGanado()` pinta el final al entrar --- */
+    const sec2 = sec.cloneNode(true);
+    sec2.setAttribute('data-slide', '__mj3__');
+    sec2.querySelector('[data-mj-grid]').innerHTML = '';
+    sec2.querySelector('[data-mj-fin-found]').textContent = '';
+    document.body.appendChild(sec2);
+    window.initMinijuego({
+      slide: '__mj3__', opciones: [{ id: 'a', txt: 'A', ok: true }, { id: 'b', txt: 'B', ok: true }, { id: 'x', txt: 'X', ok: false }],
+      fb: {}, vidas: 2, pistaMs: 0, yaGanado: () => ({ hallados: 2 })
+    });
+    const pedidos2 = [];
+    sec2.querySelectorAll('[data-target]').forEach((b) => b.addEventListener('click', () => pedidos2.push(b.getAttribute('data-target'))));
+    document.dispatchEvent(new CustomEvent('slidechange', { detail: { id: '__mj3__' } }));
+    out.retomando = { pedidos: pedidos2.slice(), marcador: (sec2.querySelector('[data-mj-fin-found]') || {}).textContent };
+    sec2.remove();
     return out;
   });
 
@@ -139,6 +162,14 @@ if (!(await page.evaluate(() => typeof window.initMinijuego === 'function'))) {
   }
   if (r.memoriaTrasGanar.length) {
     fails.push('al ganar no queda nada que reforzar: `memoria.errados` debería vaciarse, quedó ' + JSON.stringify(r.memoriaTrasGanar));
+  }
+  if (r.alSalirGanado && r.alSalirGanado.includes('mj-intro')) {
+    fails.push('con el minijuego GANADO, salir de la diapositiva lo devolvió a la bienvenida: al volver con "Anterior" ' +
+      'el alumno no ve su resultado sino "empezar a jugar" (reporte del cliente en NOA).');
+  }
+  if (r.retomando && (!r.retomando.pedidos.includes('mj-fin') || r.retomando.marcador !== '2/2')) {
+    fails.push(`con \`yaGanado()\` (ganó en otra sesión), entrar a la diapositiva tiene que mostrar el panel final con el marcador ` +
+      `(pidió ${JSON.stringify(r.retomando.pedidos)}, marcador ${JSON.stringify(r.retomando.marcador)}).`);
   }
   /* ⚠️ La aserción importante: 'a' se encontró en las DOS partidas, y
      la segunda vez `primera` tiene que ser false. Sin eso, un curso

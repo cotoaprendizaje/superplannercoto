@@ -90,6 +90,9 @@
        opts.onError   fn(opcion)
        opts.onFin     fn({ gano, hallados, total, errores, orden })
        opts.textoFin  fn({ gano, hallados, total }) -> texto a narrar
+       opts.yaGanado  fn() -> { hallados } | null — si el alumno ya ganó en
+                      otra sesión (lo guardó el curso en `onFin`), al entrar
+                      se ve el panel final y no la bienvenida (v1.9.123).
        opts.celebrar  fn() — el festejo al ganar (confeti, sonido…).
                       Lo pone el curso: el confeti del kit vive dentro
                       de `initCierreCelebration` y es del cierre.
@@ -286,6 +289,7 @@
 
     function terminar(gano) {
       mj.activo = false;
+      mj.ganado = mj.ganado || !!gano;   // ver el `slidechange` del final
       limpiarPista();
       var hallados = Object.keys(mj.hallados).length;
 
@@ -469,8 +473,31 @@
        sale a mitad de partida y vuelve encontraría la capa "jugar" o
        "fin" tal cual la dejó, sin ningún botón visible para arrancar
        de nuevo. Al SALIR se resetea a la portada del juego. */
+    /* …salvo que ya GANÓ (kit-base v1.9.123, §7.72; relevo de NOA, P).
+       Pedido del cliente: *"terminé el minijuego, pasé a últimos consejos y
+       apreté Anterior para volver a ver mi puntaje, pero me llevó a la
+       pantalla de empezar a jugar"*. Ganado, el panel final se deja como
+       está (ya trae el resultado y "Continuar"). Para retomar OTRO día, el
+       curso guarda el resultado en `onFin` y lo devuelve en `yaGanado()`.
+       Portado del parche de NOA, que lo había resuelto en su minijuego
+       propio; acá lo mide `minijuego.mjs` con el del kit. */
     document.addEventListener('slidechange', function (e) {
-      if (e.detail.id !== slideId) { mj.activo = false; limpiarPista(); irA('mj-intro'); }
+      if (e.detail.id !== slideId) {
+        mj.activo = false; limpiarPista();
+        if (!mj.ganado) irA('mj-intro');
+      } else if (!mj.ganado && typeof opts.yaGanado === 'function') {
+        var r = opts.yaGanado();
+        if (!r) return;
+        mj.ganado = true;
+        if (finImg && opts.artes && opts.artes.exito) finImg.setAttribute('src', opts.artes.exito);
+        if (finFound && typeof r.hallados === 'number') finFound.textContent = r.hallados + '/' + TOTAL;
+        slide.querySelectorAll('[data-mj-retry]').forEach(function (b) {
+          b.textContent = 'Continuar';
+          b.setAttribute('data-mj-accion', 'continuar');
+          b.setAttribute('aria-label', 'Continuar con el curso');
+        });
+        irA('mj-fin');
+      }
     });
 
     return { empezar: empezar, estado: mj };

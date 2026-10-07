@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.122**.
+Vigente para **kit-base v1.9.123**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -136,6 +136,9 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 | chrome, barras, índice, navegación, narración por diapositiva | `initPlayer` (la narración se engancha sola si le pasás `speakSlide`) |
 | puntos, logros, medalla | `initLogros`, `initCierreCelebration` |
 | repaso / mini-quiz | `initRepasoRapido`, `initMiniQuiz` |
+| objetivos que no se cumplen visitando (abrir fichas, aprobar algo) | `initIndexJumps({ objetivoCumplido: function (id) { … } })` |
+| que volver al minijuego ganado muestre el resultado | ya lo hace `initMinijuego`; para otra sesión, `yaGanado()` |
+| zona redonda / realce suave sobre una forma ya dibujada | `.d-zona--circulo` / `.d-shot-hit--tinte` (`--sin-aro` apaga todo) |
 | que el repaso no se pueda contestar hasta ver algo antes | `initRepasoRapido({ bloqueada: function (panel) { … } })` (+ `data-candado` con el texto) |
 | que el repaso trabe hasta contestarlo | `data-require-repaso` en la diapositiva + el gate que devuelve `initRepasoRapido` |
 | el aviso "esto no es la evaluación" | `initMiniQuiz({ introPopup })` + `.d-aviso-practica` (ejemplo en `index-boilerplate.html`) |

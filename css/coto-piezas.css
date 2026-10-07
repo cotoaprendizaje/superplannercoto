@@ -85,6 +85,11 @@
    `.d-zona` es el `[data-hit]`; `.d-detalle` el `[data-place]` que
    aparece. Ambos los posiciona el motor. */
 .d-zona { cursor: pointer; }
+/* Zona redonda (kit-base v1.9.123): cuando lo que se toca es un disco del
+   arte, la caja medida es un cuadrado y su realce tiene que ser un
+   círculo, no un rectángulo con el disco descentrado adentro. Lo agregó
+   "Seguridad de la información" (A18) midiendo los discos sobre el PNG. */
+.d-zona--circulo { border-radius: 50%; }
 .d-detalle {
   background: var(--surface); color: var(--text);
   border-radius: var(--r-lg); box-shadow: var(--shadow-pop);

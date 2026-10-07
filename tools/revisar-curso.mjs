@@ -30,7 +30,21 @@ const delKit = new Set();
 try {
   Object.keys(JSON.parse(fs.readFileSync(path.join(carpeta, 'kit-version.json'), 'utf8')).archivos || {}).forEach((f) => delKit.add(f));
 } catch (e) { /* sin registro: se mira igual, con los nombres del kit */ }
-const kitCss = fs.readdirSync(path.join(KIT, 'css')).filter((f) => f.endsWith('.css'));
+/* ¿Corre desde el kit o desde la COPIA que `actualizar-kit` deja en el
+   curso? (kit-base v1.9.123, §7.72). Desde la copia, `KIT` ES el curso, y
+   "los CSS del kit" eran TODOS los de la carpeta —el propio del curso
+   incluido—: el informe salía sin "!important sobre el kit" ni "Clases del
+   kit que el curso reescribe", sin avisar. MEDIDO en "Seguridad de la
+   información": 4 `!important` desde kit-base/, ninguno desde la copia. Y
+   `build-zip.py` corre justamente la copia para el zip del relevo. Si hay
+   `kit-version.json` en la carpeta del script, lo del kit sale de ahí. */
+const regKit = (() => {
+  try { return Object.keys(JSON.parse(fs.readFileSync(path.join(KIT, 'kit-version.json'), 'utf8')).archivos || {}); }
+  catch (e) { return null; }
+})();
+const kitCss = regKit
+  ? regKit.filter((f) => /^css\/[^/]+\.css$/.test(f)).map((f) => f.slice(4))
+  : fs.readdirSync(path.join(KIT, 'css')).filter((f) => f.endsWith('.css'));
 const esDelKit = (rel) => delKit.has(rel) || (rel.startsWith('css/') && kitCss.includes(path.basename(rel)));
 
 const leer = (f) => { try { return fs.readFileSync(f, 'utf8'); } catch (e) { return ''; } };
@@ -38,7 +52,9 @@ const sinComentarios = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[
 const linea = (texto, i) => texto.slice(0, i).split('\n').length;
 
 /* ---- lo que publica el kit ---- */
-const kitJs = fs.readdirSync(path.join(KIT, 'js')).filter((f) => f.endsWith('.js') && f !== 'curso.js');
+const kitJs = (regKit
+  ? regKit.filter((f) => /^js\/[^/]+\.js$/.test(f)).map((f) => f.slice(3))
+  : fs.readdirSync(path.join(KIT, 'js')).filter((f) => f.endsWith('.js'))).filter((f) => f !== 'curso.js');
 const globalesKit = new Set();
 for (const f of kitJs) {
   for (const m of leer(path.join(KIT, 'js', f)).matchAll(/global\.([A-Za-z_$][\w$]*)\s*=/g)) globalesKit.add(m[1]);
