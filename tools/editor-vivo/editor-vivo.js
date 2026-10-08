@@ -22,10 +22,42 @@
        marco, una barra con dispositivo, medida y diapositiva: "Comentar"
        ancla ahí, así el comentario llega diciendo DÓNDE se vio. Adentro
        del marco el curso corre solo, sin esta capa (`?ev-marco=1`).
+     · "Recorrido libre" (pedido del cliente, para cambios rápidos): saca
+       las trabas de avance —gates, pop-ups obligatorios, el índice
+       bloqueado, el cierre con candado— y suma "Ir a" para saltar a
+       cualquier diapositiva. Queda recordado en este navegador; se
+       apaga recargando sin él. Solo en la vista: el curso real no lo
+       tiene.
    Fuera de claude.ai (o sin permiso de comentar) la pastilla lo dice y
    el curso funciona igual. NUNCA va en el zip del curso. */
 (function () {
   'use strict';
+  /* ---- Recorrido libre: el curso sin trabas de avance ----
+     Todo pasa por lo que el kit ya expone: `motor.canAdvance` (la traba de
+     cada diapositiva), `_gatedShown` (los pop-ups que se abren al querer
+     avanzar), el `disabled` que `initIndexJumps` pone en el índice y la
+     clase `unlocked` del cierre. */
+  function liberar() {
+    var m = window.motor;
+    if (!m || !m.slides) { setTimeout(liberar, 200); return; }
+    if (m.__evLibre) return;
+    m.__evLibre = true;
+    try { Object.defineProperty(m, 'canAdvance', { configurable: true, get: function () { return function () { return true; }; }, set: function () {} }); } catch (e) { m.canAdvance = function () { return true; }; }
+    m.slides.forEach(function (sl) { var g = sl.getAttribute('data-gate-popup'); if (g && m._gatedShown) m._gatedShown[g] = true; });
+    var soltar = function () {
+      document.querySelectorAll('.d-sidenav-item[disabled]').forEach(function (b) { b.disabled = false; });
+      var c = document.querySelector('.slide-cierre');
+      if (c && !c.classList.contains('unlocked')) { c.classList.add('unlocked'); if (!c.getAttribute('data-nav-cta')) c.setAttribute('data-nav-cta', 'Finalizar curso'); }
+    };
+    soltar();
+    new MutationObserver(soltar).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['disabled', 'class'] });
+    if (m.refrescarGate) m.refrescarGate();
+    document.documentElement.classList.add('ev-libre');
+  }
+  var libre = /[?&]ev-libre=1(&|$)/.test(location.search);
+  try { if (localStorage.getItem('ev-libre') === '1') libre = true; } catch (e) { /* sin almacenamiento */ }
+  if (libre) liberar();
+
   /* Adentro del marco de "Ver como": el curso solo. */
   if (/[?&]ev-marco=1(&|$)/.test(location.search)) { document.documentElement.classList.add('ev-en-marco'); return; }
   var EQUIPOS = [
@@ -52,6 +84,8 @@
         '<span>Comentar esta diapositiva<small>El comentario queda pegado a la pantalla actual</small></span></button>' +
       '<button type="button" class="ev-btn" id="ev-senalar" aria-pressed="false"><span class="ev-ic" aria-hidden="true">◎</span>' +
         '<span>Señalar un elemento<small>Tocá un texto, una imagen o un botón (Esc cancela)</small></span></button>' +
+      '<label class="ev-libre"><input type="checkbox" id="ev-libre"' + (libre ? ' checked' : '') + '> <span>Recorrido libre<small>Sin trabas de avance, para revisar rápido</small></span></label>' +
+      '<label class="ev-ir">Ir a <select id="ev-ir"></select></label>' +
       '<div class="ev-ver" role="group" aria-label="Ver como">' + EQUIPOS.map(function (q) {
         return '<button type="button" class="ev-eq" data-eq="' + q.id + '" aria-pressed="' + (q.id === 'pantalla') + '"' +
           (q.w ? ' title="' + q.w + '×' + q.h + '"' : '') + '>' + q.nom + '</button>';
@@ -68,6 +102,33 @@
   var bDiapo = root.querySelector('#ev-diapo');
   var bSenalar = root.querySelector('#ev-senalar');
   var comentarios = null;
+  var chkLibre = root.querySelector('#ev-libre'), selIr = root.querySelector('#ev-ir');
+  chkLibre.addEventListener('change', function () {
+    try { localStorage.setItem('ev-libre', chkLibre.checked ? '1' : '0'); } catch (e) { /* noop */ }
+    if (chkLibre.checked) { liberar(); if (escena) verComo(equipo.id); }
+    else location.reload();   // volver a las trabas = arrancar de nuevo
+  });
+  function motorVisto() {
+    try { if (escena && marco.contentWindow.motor) return marco.contentWindow.motor; } catch (e) { /* otro origen */ }
+    return window.motor;
+  }
+  function llenarIr() {
+    var m = window.motor;
+    if (!m || !m.slides) { setTimeout(llenarIr, 300); return; }
+    selIr.innerHTML = m.slides.map(function (sl, i) {
+      var t = (sl.querySelector('[data-slide-title]') || {}).textContent || sl.getAttribute('data-slide');
+      return '<option value="' + i + '">' + (i + 1) + ' · ' + String(t).trim().replace(/</g, '&lt;') + '</option>';
+    }).join('');
+  }
+  llenarIr();
+  selIr.addEventListener('change', function () {
+    var m = motorVisto(), i = +selIr.value;
+    if (!m) return;
+    if (!chkLibre.checked) { chkLibre.checked = true; chkLibre.dispatchEvent(new Event('change')); }
+    if (m.openPopup && m.closePopup) m.closePopup();
+    m.go(i, true);
+  });
+  document.addEventListener('slidechange', function () { var m = window.motor; if (m && m.current && !escena) selIr.value = String(m.slides.indexOf(m.current())); });
 
   /* ---- "Ver como": el curso en un marco del tamaño del dispositivo ---- */
   var escena = null, marco = null, rotulo = null, equipo = null;
@@ -117,6 +178,7 @@
     try { var mm = marco.contentWindow && marco.contentWindow.motor; if (mm && mm.current()) actual = mm.current(); } catch (e) { /* noop */ }
     escena.setAttribute('data-ir', actual ? actual.getAttribute('data-slide') : '');
     var u = new URL(location.href); u.searchParams.set('ev-marco', '1'); u.searchParams.set('ev-eq', q.id);
+    if (chkLibre.checked) u.searchParams.set('ev-libre', '1'); else u.searchParams.delete('ev-libre');
     marco.src = u.toString();
     bSenalar.disabled = true;   // adentro del marco no se puede señalar: se comenta la vista
     encajar(); rotular();

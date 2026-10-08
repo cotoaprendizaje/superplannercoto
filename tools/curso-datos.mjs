@@ -162,6 +162,10 @@ export function armarCierre(d, ind, medallas) {
   out += `${ind}  <div class="d-cierre-shot" data-cierre-step="shot">\n` +
     `${ind}    <div class="d-shot" data-shot>\n` +
     `${ind}      <img${attrs({ class: 'd-shot-img', src: d.imagen, alt: '', 'aria-hidden': 'true', ...(d.atributosImagen || {}) })}>\n` +
+    /* `capas` (v1.9.127): HTML encima de la lámina, posicionado con
+       `data-place` como cualquier capa del kit. Salió del cierre de cardio:
+       un texto dibujado en la imagen no se leía, y pasó a texto real. */
+    (d.capas ? `${ind}      ${d.capas}\n` : '') +
     `${ind}    </div>\n` + armarNarracion(d.narracion, ind + '    ') +
     `${ind}  </div>\n` +
     `${ind}  <div class="slide-inner d-cierre-summary" data-cierre-step="summary" hidden>\n` +
@@ -328,7 +332,11 @@ export function armarFicha(f, ind = '  ') {
   if (f.tipo === 'html') return armarNotas(f.notas, ind) + ind + f.html;
   /* Variantes medidas en los cursos (v1.9.115): encabezado claro
      (`claro`), clases extra en la ventana (`claseModal`, PLU:
-     `modal--ficha`) o en la tarjeta (`claseTarjeta`, `d-wide`). */
+     `modal--ficha`) o en la tarjeta (`claseTarjeta`, `d-wide`).
+     Las dos piezas del canvas del rediseño (v1.9.127), opcionales: `icono`
+     (un id del banco de íconos) dibuja el círculo arriba del texto, y
+     `entendido` (true, o el texto del botón) suma el pie con "Escuchá o
+     leé" y el botón que cierra. Sin ellas la ficha sale como siempre. */
   return `${ind}<div class="${esc(clases('modal', f.claseModal))}" data-popup="${esc(f.id)}" role="dialog" aria-modal="true" aria-label="${esc(f.etiqueta)}">\n` +
     armarNotas(f.notas, ind + '  ') +
     `${ind}  <div class="modal-back" data-popup-close></div>\n` +
@@ -337,9 +345,13 @@ export function armarFicha(f, ind = '  ') {
     `${ind}      <button class="modal-x" data-popup-close aria-label="Cerrar">✕</button>\n` +
     `${ind}      <h3 style="margin:0;color:inherit">${f.titulo}</h3>\n` +
     `${ind}    </div>\n` +
+    (f.icono ? `${ind}    <span class="modal-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><use href="#${esc(f.icono)}"/></svg></span>\n` : '') +
     `${ind}    <div class="${esc(clases('modal-bd', f.clase))}">\n` +
     `${ind}      ${f.cuerpo}\n` +
-    `${ind}    </div>\n${ind}  </div>\n${ind}</div>`;
+    `${ind}    </div>\n` +
+    (f.entendido ? `${ind}    <div class="modal-pie"><span class="modal-pie-oir" aria-hidden="true">Escuchá o leé</span>` +
+      `<button class="btn btn-cat" type="button" data-popup-close>${f.entendido === true ? 'Entendido' : f.entendido}</button></div>\n` : '') +
+    `${ind}  </div>\n${ind}</div>`;
 }
 
 /* ---------- los datos para curso.js ---------- */

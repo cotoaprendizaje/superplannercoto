@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.126 · Área Aprendizaje (COTO)
+kit-base v1.9.127 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 68 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 69 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -77,6 +77,10 @@ Y la vista del simulador del editor (v1.9.126), con
 `tools/check-vista-editor.mjs`, también en `test:kit`. En v1.9.126
 `logros-kit` mide "Explorador" (que reemplazó a "Segunda mirada"): 3
 paneles opcionales abiertos con un clic, y que abiertos por código NO cuenten.
+En v1.9.127, `aviso-listo.mjs` (el aviso "¡Listo! Ya podés seguir" al
+completar los pop-ups de una diapositiva, después del "+N", y la velocidad
+con coma) y `tools/check-fichas.mjs` en `test:kit` (el círculo del ícono y
+el pie "Entendido" de las fichas, con ida y vuelta por `extraer-curso`).
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

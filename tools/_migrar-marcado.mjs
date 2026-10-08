@@ -91,8 +91,11 @@ export function migrarMarcado(html, KIT) {
 
   /* 1 · Títulos de los paneles del kit, terminados en ":" (canvas). */
   const titulos = [
-    [/(<span class="d-vol-title">)Volumen(<\/span>)/, '$1Volumen:$2', 'Volumen'],
-    [/(<span class="d-narr-title">)Avance(<\/span>)/, '$1Avance:$2', 'Avance'],
+    /* v1.9.127: el menú se llama como su botón (pedido de diseño en el
+       simulador: "el botón Sonido cuando se abre dice Volumen, hay que
+       unificar"; lo mismo Locución, que decía "Avance"). */
+    [/(<span class="d-vol-title">)Volumen:?(<\/span>)/, '$1Sonido:$2', 'Volumen → Sonido:'],
+    [/(<span class="d-narr-title">)Avance:?(<\/span>)/, '$1Locución:$2', 'Avance → Locución:'],
     [/(<span class="d-fab-pop-title">)Configuración(<\/span>)/, '$1Ajustes:$2', 'Configuración → Ajustes:'],
     [/(<span class="d-fab-pop-title">)Ayuda(<\/span>)/, '$1Ayuda:$2', 'Ayuda'],
     [/(<p class="d-fab-acc-hd">)Preguntas frecuentes(<\/p>)/, '$1Preguntas frecuentes:$2', 'Preguntas frecuentes'],
@@ -145,11 +148,26 @@ export function migrarMarcado(html, KIT) {
     cambios.push('aviso de la mini práctica → tarjetas' + (n ? ` (${n} preguntas)` : ''));
   }
 
-  /* 4 · Texto de "Mis logros", si es el que traía el kit. */
+  /* 4 · Texto de "Mis logros", si es el que traía el kit: el v3, sus
+     variantes ("Vas sumando ✦ puntos a medida que avanzás (…) y ganás un
+     🏆 logro al completar…": describen un modelo de logros que ya no
+     existe) y el de v1.9.125, que decía "ninguno se gana con lo mínimo"
+     y con la regla 2 de recorrido + 3 de plus (v1.9.127) dejó de ser
+     cierto. */
   const lg = h.match(/<p class="d-badges-intro"[^>]*>[\s\S]*?<\/p>/);
-  if (lg && T.logrosIntro && texto(lg[0]) === LOGROS_V3) {
+  const introVieja = lg && (texto(lg[0]) === LOGROS_V3 || /^Vas sumando ✦ puntos a medida que avanzás/.test(texto(lg[0])) ||
+    /ninguno se gana con lo mínimo\.$/.test(texto(lg[0])));
+  if (lg && T.logrosIntro && introVieja && texto(lg[0]) !== texto(T.logrosIntro)) {
     h = h.replace(lg[0], T.logrosIntro);
     cambios.push('texto de "Mis logros" (bronce/plata con lo obligatorio, oro con los logros)');
+  }
+
+  /* 4d · La pastilla de logros del instructivo (v1.9.127): "cada uno suma
+     +20" dejó de ser cierto con la regla 2 de recorrido + 3 de plus. */
+  const PILL_VIEJA = 'Hay 5 logros escondidos.</b> Cada uno suma +20 y te acerca a la medalla de oro.';
+  if (h.includes(PILL_VIEJA)) {
+    h = h.replace(PILL_VIEJA, 'Hay 5 logros para ganar.</b> Los 3 de plus suman +20 y te acercan a la medalla de oro.');
+    cambios.push('pastilla de logros del instructivo (3 de plus suman +20)');
   }
 
   /* 4b · El botón "Índice" suelto (cursos anteriores a v1.9.85): sin la
@@ -228,6 +246,16 @@ export function migrarDatosCurso(texto, KIT) {
       : d.logros.map((x) => (x === 'segunda' ? 'explorador' : x));
     reescribir = true;
     cambios.push('logro del kit "segunda" → "explorador"');
+  }
+  /* v1.9.127, regla del cliente "2 de recorrido + 3 de plus": un curso que
+     tiene EXACTAMENTE la lista que escribía `new-course` (cinco del kit,
+     todos de plus) pasa a la lista nueva. Una lista tocada por el curso no
+     se toca: ahí decide el chat del curso (`gamificacion` lo marca). */
+  const VIEJA = ['punteria', 'racha', 'curioso', 'explorador', 'impecable'];
+  if (Array.isArray(d.logros) && d.logros.length === VIEJA.length && d.logros.every((x, i) => x === VIEJA[i])) {
+    d.logros = ['mitad', 'completo', 'impecable', 'racha', 'explorador'];
+    reescribir = true;
+    cambios.push('logros: 2 de recorrido + 3 de plus (lista por defecto del kit)');
   }
   if (reescribir) {
     const sangria = (t.match(/\n( +)"/) || [, '  '])[1].length;

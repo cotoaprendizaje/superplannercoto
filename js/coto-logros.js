@@ -88,20 +88,31 @@
     curioso: 'M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20M9 8h7M9 12h5',
     explorador: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM15.5 8.5l-2 5-5 2 2-5z',
     impecable: 'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z',
+    mitad: 'M5 21V4M5 4h12l-2.5 4L17 12H5',
+    completo: 'M22 10 12 5 2 10l10 5 10-5zM6 12v5c3 2 9 2 12 0v-5',
     candado: 'M5 11h14v10H5z M8 11V8a4 4 0 0 1 8 0v3',
     estrella: 'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z'
   };
   var BONO = 20;
   /* Ninguno se gana con lo mínimo: lo obligatorio del curso no alcanza
      para ninguno de los cinco. Esa es la regla que los hace un plus. */
+  /* REGLA DEL CLIENTE (v1.9.127, en el simulador: "la mitad deben ser
+     genéricos pero la otra mitad deben premiar el plus"): de los 5 logros
+     de un curso, 2 son de RECORRIDO (salen con el recorrido normal) y 3
+     son PLUS (nunca salen con lo mínimo y suman +20). Los de recorrido
+     pueden ser del curso (objetos: "Unidad 1 completa") o los dos del kit,
+     `mitad` y `completo`, que se detectan solos. Un logro propio es de
+     recorrido salvo que traiga `plus: true`. `gamificacion` lo exige. */
   var GENERICOS = {
     punteria:  { nom: 'Puntería', mide: 'acierto', txt: 'Contestaste bien todos los repasos al primer intento.' },
     racha:     { nom: 'En racha', mide: 'acierto', txt: 'Encadenaste 3 respuestas correctas seguidas.' },
     curioso:   { nom: 'Curioso', mide: 'recorrido', txt: 'Consultaste 3 términos del glosario por tu cuenta.' },
     explorador: { nom: 'Explorador', mide: 'recorrido', txt: 'Abriste por tu cuenta 3 paneles o fichas opcionales.' },
-    impecable: { nom: 'Impecable', mide: 'acierto', txt: 'Terminaste la práctica o el minijuego sin un error, al primer intento.' }
+    impecable: { nom: 'Impecable', mide: 'acierto', txt: 'Terminaste la práctica o el minijuego sin un error, al primer intento.' },
+    mitad:     { nom: 'A mitad de camino', mide: 'recorrido', plus: false, pts: 0, txt: 'Llegaste a la mitad del curso.' },
+    completo:  { nom: 'Curso completo', mide: 'recorrido', plus: false, pts: 0, txt: 'Llegaste al final del curso.' }
   };
-  var IDS_GENERICOS = ['punteria', 'racha', 'curioso', 'explorador', 'impecable'];
+  var IDS_GENERICOS = ['punteria', 'racha', 'curioso', 'explorador', 'impecable', 'mitad', 'completo'];
   var COLOR_MEDALLA = { bronce: '#d38b4f', plata: '#c9d3de', oro: '#ffd25e' };
   var TINTA_MEDALLA = { bronce: '#ffffff', plata: '#00466E', oro: '#7a5300' };
 
@@ -123,6 +134,7 @@
       if (typeof x === 'string' && !base) return;
       var b = Object.assign({ id: id }, base ? { pts: BONO, icono: IC[id], pista: base.txt, generico: true } : {}, base || {}, typeof x === 'string' ? {} : x);
       if (!b.mide) b.mide = 'recorrido';
+      b.plus = base ? base.plus !== false : !!b.plus;
       out.push(b);
     });
     return out;
@@ -165,8 +177,16 @@
       return BADGES.reduce(function (s, b) { return s + (obtenidos[b.id] ? (b.pts || 0) : 0); }, 0);
     }
     function bonoTotal() { return BADGES.reduce(function (s, b) { return s + (b.pts || 0); }, 0); }
+    /* Si el curso no le pasa `medallas`, se buscan en sus DATOS
+       (`curso.json` → medallas) antes de calcularlas (v1.9.127): cardio
+       las tenía en curso.json pero llamaba a initLogros sin ellas, y el
+       panel "Mis logros:" salía sin el bloque de la medalla, los puntos y
+       la barra Bronce · Plata · Oro (lo vio el cliente en el simulador). */
+    function deLosDatos() {
+      try { var d = global.datosDelCurso && global.datosDelCurso('medallas', null); return d && d.length ? d : null; } catch (e) { return null; }
+    }
     function medallas() {
-      var m = opts.medallas && opts.medallas.length ? opts.medallas : medallasPorDefecto(maximoDeclarado());
+      var m = opts.medallas && opts.medallas.length ? opts.medallas : (deLosDatos() || medallasPorDefecto(maximoDeclarado()));
       return m ? m.slice().sort(function (a, b) { return a.desde - b.desde; }) : null;
     }
 
@@ -267,6 +287,7 @@
         var el = document.createElement('div');
         el.className = 'd-badge' + (on ? ' earned' : '');
         el.setAttribute('data-logro', b.id);
+        el.setAttribute('data-tipo', b.plus ? 'plus' : 'recorrido');   // lo cuenta `gamificacion` (regla 2 + 3)
         var marca = on
           ? (b.pts ? '<span class="d-badge-plus">+' + b.pts + '</span>' : '')
           : '<span class="d-badge-lock">' + svg(IC.candado) + '</span>';
@@ -321,9 +342,19 @@
         : '¡Llegaste al oro! Excelente recorrido.';
       box.querySelector('[data-lg-puntos]').textContent = puntos;
       box.querySelector('[data-lg-relleno]').style.width = Math.min(100, puntos / tope * 100).toFixed(1) + '%';
-      box.querySelector('[data-lg-hitos]').innerHTML = ms.map(function (x) {
-        var left = (x.desde / tope * 100).toFixed(1);
-        return '<span class="d-lg-hito' + (x.desde === 0 ? ' is-inicio' : '') + '" style="left:' + left + '%;--c:' +
+      /* Dos umbrales cerca (cardio: plata 115, oro 130) pisaban sus
+         etiquetas (v1.9.127): la de la izquierda se alinea a la izquierda de
+         su marca y la de la derecha, a la derecha. La última, si cae al
+         final de la barra, también se alinea hacia adentro. */
+      var pos = ms.map(function (x) { return x.desde / tope * 100; });
+      box.querySelector('[data-lg-hitos]').innerHTML = ms.map(function (x, k) {
+        var left = pos[k].toFixed(1);
+        var lado = '';
+        if (x.desde !== 0) {
+          if (k + 1 < pos.length && pos[k + 1] - pos[k] < 18) lado = ' is-izq';
+          else if ((k > 0 && pos[k] - pos[k - 1] < 18 && ms[k - 1].desde !== 0) || pos[k] > 88) lado = pos[k] > 88 ? ' is-izq' : ' is-der';
+        }
+        return '<span class="d-lg-hito' + (x.desde === 0 ? ' is-inicio' : '') + lado + '" style="left:' + left + '%;--c:' +
           (COLOR_MEDALLA[x.id] || '#96A5BE') + '"><i></i>' + esc(cap(x.nombre)) + ' · ' + x.desde + '</span>';
       }).join('');
     }
@@ -370,7 +401,7 @@
       if (b.pts) { puntos += b.pts; pulsarChip(); if (global.__fxCoin) global.__fxCoin(b.pts); }
       updateHud();
       render();
-      if (global.Player) global.Player.toast('🏆 Logro: ' + b.nom + (b.pts ? ' · +' + b.pts : ''));
+      if (global.Player) global.Player.toast('🏆 ¡Nuevo logro: ' + b.nom + '!' + (b.pts ? ' · +' + b.pts : ''));
       if (global.XAPI) global.XAPI.awarded(id, b.nom);
       if (global.CotoUI && global.CotoUI.sStreak) global.CotoUI.sStreak();
       document.dispatchEvent(new CustomEvent('logroganado', { detail: { id: id, nombre: b.nom, txt: b.txt, icono: b.icono || null, ic: b.ic || null, pts: b.pts || 0 } }));
@@ -432,6 +463,15 @@
          los cursos reales casi no tienen fichas opcionales adentro de
          una diapositiva (cardio ninguna, alimentaria una): habría sido
          un logro imposible. */
+      /* A mitad de camino y Curso completo: los de recorrido del kit. */
+      document.addEventListener('slidechange', function () {
+        var m = global.motor;
+        if (!m || !m.slides || !m.current) return;
+        var i = m.slides.indexOf(m.current()), n = m.slides.length;
+        if (i < 0 || n < 2) return;
+        if (tiene.mitad && i >= Math.floor((n - 1) / 2)) unlock('mitad');
+        if (tiene.completo && i === n - 1) unlock('completo');
+      });
       var NO_EXPLORA = { glosario: 1, instrucciones: 1 };
       var porClic = null;
       function exigido(id) {

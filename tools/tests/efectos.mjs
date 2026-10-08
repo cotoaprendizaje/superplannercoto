@@ -21,6 +21,8 @@
          y fuegos artificiales.
      4 · Llegar a la última diapositiva NAVEGANDO → lluvia de papelitos y
          la barra se pone verde. Arrancar ahí (retomar) no festeja.
+     1b · Con un pop-up abierto la tarjeta espera, y si se abre uno con la
+         tarjeta a la vista, se guarda y vuelve al cerrarlo (v1.9.127).
      5 · Con "reducir movimiento": la tarjeta sale igual, sin partículas.
    Un curso sin `fx.js` no tiene nada que revisar. */
 import { chromium } from 'playwright-core';
@@ -91,6 +93,34 @@ if (!tieneFx) {
     const despues = await page.evaluate(() => ({ clic: window.__fxClic, sigue: !!document.querySelector('.fx-logro') }));
     if (!despues.clic) fallos.push('con la tarjeta "¡Nuevo logro!" abierta, un toque NO llegó al botón de abajo.');
     if (despues.sigue) fallos.push('la tarjeta "¡Nuevo logro!" no se cerró con un toque.');
+  }
+
+  /* 1b · Nunca encima de un pop-up (v1.9.127): al llegar a la mini
+     práctica, "Unidad 2 completa" salía encima del aviso previo. Con un
+     pop-up abierto la tarjeta espera; al cerrarlo, sale. Y si un pop-up
+     se abre con la tarjeta a la vista, la tarjeta se guarda y vuelve. */
+  const pop = await page.evaluate(() => {
+    const id = Array.from(document.querySelectorAll('[data-popup]')).map((x) => x.getAttribute('data-popup')).find((x) => x === 'recursos' || x === 'sidenav' || x === 'logros');
+    if (!id) return null;
+    const m = window.motor;
+    m.showPopup(id);
+    document.dispatchEvent(new CustomEvent('logroganado', { detail: { id: 'p1', nombre: 'Prueba uno', pts: 20 } }));
+    const conPopup = !!document.querySelector('.fx-logro');
+    return { id, conPopup };
+  });
+  if (pop) {
+    if (pop.conPopup) fallos.push(`la tarjeta "¡Nuevo logro!" salió ENCIMA del pop-up "${pop.id}": tiene que esperar a que se cierre.`);
+    await page.evaluate(() => window.motor.closePopup());
+    await page.waitForTimeout(500);
+    const alCerrar = await page.evaluate(() => !!document.querySelector('.fx-logro'));
+    if (!alCerrar) fallos.push('al cerrar el pop-up, la tarjeta del logro que esperaba no salió.');
+    const guardada = await page.evaluate((id) => { window.motor.showPopup(id); return !document.querySelector('.fx-logro'); }, pop.id);
+    if (!guardada) fallos.push('se abrió un pop-up con la tarjeta del logro a la vista y la tarjeta quedó encima.');
+    await page.evaluate(() => window.motor.closePopup());
+    await page.waitForTimeout(500);
+    const volvio = await page.evaluate(() => { const t = document.querySelector('.fx-logro'); const ok = !!(t && /Prueba uno/.test(t.textContent)); if (t) t.querySelector('.fx-logro-seguir').click(); return ok; });
+    if (!volvio) fallos.push('la tarjeta del logro que se guardó al abrirse un pop-up no volvió al cerrarlo.');
+    await page.waitForTimeout(400);
   }
 
   /* 2 · "+N" que sube. */

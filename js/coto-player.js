@@ -69,6 +69,36 @@
       toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, ms || 2200);
     }
 
+    /* ---- "¡Listo! Ya podés seguir" (canvas del rediseño, v1.9.127) ----
+       El quinto aviso del tablero "Avisos que aparecen solos": cuando se
+       completa lo que la pantalla pedía, el motor emite `gateabierto` en
+       el mismo instante en que brilla "Siguiente". Vive acá y no en
+       `initGateHints` porque ésa la llama cada curso a su manera (la
+       plantilla la trae comentada), y este aviso tiene que salir en
+       todos. Si hay otro aviso a la vista (los puntos de la ficha que se
+       acaba de cerrar, un logro) espera a que termine: pisarlo se comería
+       el "+10", y pisado por él no se leía. Se apaga con `initPlayer({ avisoListo: false })`. */
+    if (opts.avisoListo !== false) {
+      document.addEventListener('gateabierto', function (e) {
+        var id = e.detail && e.detail.id;
+        function decir() {
+          var cur = global.motor && global.motor.current && global.motor.current();
+          if (id && cur && cur.getAttribute('data-slide') !== id) return;
+          toast('✓ ¡Listo! Ya podés seguir');
+        }
+        /* Se mira un rato después y no en el acto: hay cursos que dan
+           el "+10" de la última ficha DESPUÉS de destrabar la pantalla
+           (Seguridad alimentaria), y un "¡Listo!" inmediato quedaba
+           pisado. Mientras haya un aviso a la vista, se espera (hasta 6 s). */
+        var intentos = 0;
+        function mirar() {
+          if (toastEl && toastEl.classList.contains('show') && intentos++ < 15) setTimeout(mirar, 400);
+          else decir();
+        }
+        setTimeout(mirar, 350);
+      });
+    }
+
     /* ---- Saludo con el nombre del alumno ----
        El emoji va en su propio <span class="ic"> (no pegado al texto)
        para poder ocultarlo aparte en pantallas angostas sin tocar el
@@ -176,7 +206,7 @@
           popMuteBtn.setAttribute('aria-label', off ? 'Activar sonido' : 'Silenciar sonido');
         }
         var pctVal = Math.round(volume * 100);
-        if (range) range.value = String(pctVal);
+        if (range) { range.value = String(pctVal); range.style.setProperty('--pct', pctVal + '%'); }
         if (pct) pct.textContent = pctVal + '%';
         // Ecualizador decorativo: cuántas barras "prenden" es proporcional
         // al volumen — puramente visual, no representa audio real (no
@@ -528,6 +558,13 @@
       var toggleBtn = document.getElementById('d-narr-toggle');
       if (!range || !replayBtn || !('speechSynthesis' in global)) return;
 
+      /* La parte recorrida de la barra va pintada de azul, como en el
+         canvas del rediseño (v1.9.127): un <input type=range> no la
+         pinta solo, la lee de `--pct`. */
+      function llenar() {
+        var max = parseFloat(range.max) || 0;
+        range.style.setProperty('--pct', (max > 0 ? Math.min(100, (parseFloat(range.value) || 0) / max * 100) : 0) + '%');
+      }
       var arrastrando = false;
       range.addEventListener('pointerdown', function () { arrastrando = true; });
       ['pointerup', 'pointercancel'].forEach(function (ev) {
@@ -596,6 +633,7 @@
           if (!arrastrando) { range.max = 0; range.value = 0; }
           if (timeEl) timeEl.textContent = '0:00';
           if (totalEl) totalEl.textContent = '0:00';
+          llenar();
           return;
         }
         /* BUG REAL reportado por el cliente: *"no está funcionando la
@@ -616,6 +654,7 @@
         }
         if (totalEl) totalEl.textContent = mmss(p.segTotal || 0);
         if (status) status.hidden = !!p.terminado;
+        llenar();
       }
       pintar(global.Narrador.progreso());
       document.addEventListener('narracionprogreso', function (e) { pintar(e.detail); });
@@ -628,6 +667,7 @@
         // Mientras se arrastra solo se mueve el reloj: cortar y volver a
         // hablar en cada píxel del recorrido sería un tartamudeo.
         if (timeEl) timeEl.textContent = mmss(parseFloat(range.value) || 0);
+        llenar();
       });
       range.addEventListener('change', function () {
         global.Narrador.seekSeg(parseFloat(range.value) || 0);
@@ -1033,7 +1073,7 @@
       if (!caja || !menos || !mas || !val || !('speechSynthesis' in global)) return;
       var MIN = 0.75, MAX = 1.4, PASO = 0.05;
       oyentesRate.push(function (f) {
-        val.textContent = f.toFixed(2) + 'x';
+        val.textContent = f.toFixed(2).replace('.', ',') + 'x';
         menos.disabled = f <= MIN + 0.001;
         mas.disabled = f >= MAX - 0.001;
       });

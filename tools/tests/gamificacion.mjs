@@ -78,7 +78,9 @@ const g = await page.evaluate(() => ({
      después. kit-base v1.9.81. */
   practicaDeclarada: document.body.getAttribute('data-practica') || '',
   hayPractica: !!document.querySelector('[data-repaso-item], .d-q, .d-mj-panel, [data-repaso], [data-sim-rail]'),
-  badges: document.querySelectorAll('#d-badges-list .d-badge').length
+  badges: document.querySelectorAll('#d-badges-list .d-badge').length,
+  plus: document.querySelectorAll('#d-badges-list .d-badge[data-tipo="plus"]').length,
+  recorrido: document.querySelectorAll('#d-badges-list .d-badge[data-tipo="recorrido"]').length
 }));
 
 /* Los dos síntomas se juntaban en un solo mensaje que además afirmaba
@@ -132,12 +134,25 @@ if (g.badges && g.badges !== LOGROS) {
   fails.push(`el catálogo declara ${g.badges} logro(s) y la convención del cliente es EXACTAMENTE ` +
     `${LOGROS} por curso (kit v1.9.125, CLAUDE.md §7.74). ` +
     (g.badges < LOGROS
-      ? 'Completar con los del kit: en curso.json → logros, ids "punteria", "racha", "curioso", "explorador", "impecable".'
+      ? 'Completar con los del kit: en curso.json → logros, 2 de recorrido ("mitad", "completo" o propios) y 3 de plus ("impecable", "racha", "explorador", "punteria", "curioso").'
       : 'Si dos logros miden lo mismo partido en dos, fusionarlos.'));
 }
 
+/* ---- 2 de recorrido + 3 de plus (kit-base v1.9.127) ----
+   REGLA DEL CLIENTE, en el simulador: "son muy genéricos y por defecto
+   todos los usuarios los van a lograr… la mitad deben ser genéricos pero
+   la otra mitad deben premiar el plus". De los 5: 2 que salen con el
+   recorrido (del curso, o `mitad`/`completo` del kit) y 3 de plus (los del
+   kit: punteria, racha, curioso, explorador, impecable; o propios con
+   `plus: true`). El tipo lo pone coto-logros.js en cada tarjeta. */
+if (g.badges === LOGROS && g.plus + g.recorrido === LOGROS && (g.plus !== 3 || g.recorrido !== 2)) {
+  fails.push(`los logros son ${g.recorrido} de recorrido y ${g.plus} de plus; la regla del cliente es 2 de RECORRIDO ` +
+    '(salen con el recorrido normal: "Unidad 1 completa", o "mitad"/"completo" del kit) + 3 de PLUS (premian el ' +
+    'extra: "impecable", "racha", "explorador", "punteria", "curioso"). Kit v1.9.127.');
+}
+
 console.log(`  · ${palabras} palabras · ${g.terminosGlosario} término(s) de glosario · ` +
-  `${g.badges} logro(s) en el catálogo` +
+  `${g.badges} logro(s) en el catálogo (${g.recorrido} de recorrido + ${g.plus} de plus)` +
   (g.practicaDeclarada ? ` · práctica declarada: "${g.practicaDeclarada}"` : ''));
 
 if (errors.length) fails.push(...errors.map((e) => 'error de consola: ' + e));

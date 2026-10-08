@@ -58,18 +58,17 @@
    ver nota de arriba). `position:relative;overflow:hidden` en la
    tarjeta son requisito del brillo de la regla siguiente, no
    decoración. */
-.d-cert-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.6rem;margin:1.1rem 0 .9rem}
-.d-cert-stats .s{position:relative;overflow:hidden;display:grid;gap:.15rem;justify-items:center;
-  text-align:center;background:var(--surface-2);border:1px solid var(--line);
-  border-radius:var(--r);padding:.7rem .5rem}
-.d-cert-stats .s b{font-family:var(--font-title);font-size:1.35rem;line-height:1;color:var(--brand)}
-.d-cert-stats .s span{font-size:.75rem;line-height:1.25;color:var(--text-soft)}
+/* v1.9.127, como el canvas: una fila de círculos con anillo, el rótulo
+   abajo (antes, tarjetas de 2×2). */
+.d-cert-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:1.1rem 0 .9rem}
+.d-cert-stats .s{position:relative;overflow:visible;display:grid;gap:6px;justify-items:center;
+  text-align:center;background:none;border:0;padding:0}
+.d-cert-stats .s b{display:grid;place-items:center;width:64px;height:64px;border-radius:50%;background:#EBF0FF;
+  box-shadow:inset 0 0 0 4px var(--brand);font-family:var(--font-title);font-size:1rem;line-height:1;color:var(--brand)}
+.d-cert-stats .s span{font-size:.72rem;line-height:1.2;color:var(--text-soft)}
 
-.d-cert-stats .s.d-shine::after{content:"";position:absolute;inset:0;left:-70%;width:45%;
-  background:linear-gradient(100deg,transparent,color-mix(in srgb,#fff 65%,transparent),transparent);
-  animation:d-cert-shine .95s ease forwards}
-@keyframes d-cert-shine{to{left:130%}}
-@media (prefers-reduced-motion:reduce){.d-cert-stats .s.d-shine::after{animation:none;display:none}}
+/* El brillo que cruzaba cada tarjeta (`.d-shine`) se fue con las tarjetas
+   (v1.9.127): sobre un círculo con anillo no tiene dónde verse. */
 
 /* ============================================================
    LAYOUT DEL RESUMEN DE CIERRE  ·  .d-cierre-*
@@ -108,8 +107,8 @@
   background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:#fff;font-family:var(--font-title);font-weight:900;font-size:1.5rem;text-align:left}
 .d-cierre-summary .who{font-weight:800;font-size:1.1rem;color:var(--cat-ink);margin:0 0 .5rem;font-family:var(--font-title)}
 .d-cierre-summary p{color:var(--text);margin:0 0 .9rem;font-size:.92rem}
-.d-cierre-results .cta{margin:.9rem 0 0;display:flex;flex-direction:column;gap:.55rem}
-.d-cierre-results .cta .btn{width:100%;justify-content:center;font-size:.9rem;padding:.65rem 1rem;border-radius:999px}
+.d-cierre-results .cta{margin:auto 0 0;padding-top:.9rem;display:flex;flex-direction:row;gap:.55rem}
+.d-cierre-results .cta .btn{flex:1;width:100%;justify-content:center;font-size:.8rem;padding:.65rem .4rem;border-radius:999px;white-space:nowrap;min-width:0}
 .d-cierre-results .cta .btn-cat{background:var(--brand);color:#fff;border:0}
 .d-cierre-results .cta .btn-cat-ghost{background:#fff;color:var(--brand);border:2px solid var(--brand-soft)}
 .d-cierre-recap{position:relative;overflow:hidden;height:100%;padding:0 20px 18px; border-radius:28px;background:var(--surface);border:0;box-shadow:0 10px 34px rgba(10,40,70,.14)}
@@ -147,16 +146,17 @@
 @media (max-height:860px){
   .d-medalla{padding:.5rem .7rem;margin-bottom:.45rem}
   .d-medalla-ic{font-size:1.8rem}
-  .d-medalla-tit{font-size:1rem}
-  .d-medalla-sub{font-size:.76rem}
+  .d-medalla .d-medalla-tit{font-size:1rem}
+  .d-medalla .d-medalla-sub{font-size:.76rem}
   .d-medalla-rangos{margin-bottom:.5rem}
   .d-medalla-rangos li{padding:.3rem .2rem}
   .d-medalla-rangos li span{font-size:.95rem}
   .d-medalla-rangos li b{font-size:.72rem}
   .d-medalla-rangos li i{font-size:.62rem}
   .d-cert-stats{gap:.28rem;margin-bottom:.55rem}
+  .d-cert-stats .s b{width:52px;height:52px;font-size:.9rem}
   .d-cert-note{font-size:.76rem;line-height:1.35;margin-bottom:.55rem}
-  .d-cierre-results .cta .btn{padding:.5rem .8rem;font-size:.82rem}
+  .d-cierre-results .cta .btn{padding:.5rem .4rem;font-size:.8rem}
   .d-cierre-recap{padding:.9rem 1.1rem}
   .d-cierre-recap h3{font-size:.95rem;margin-bottom:.5rem}
   .d-cierre-recap-col h4{font-size:.8rem;margin-bottom:.3rem}
@@ -171,10 +171,11 @@
 @media (max-height:740px){
   .d-medalla{padding:.4rem .6rem;margin-bottom:.35rem}
   .d-medalla-ic{font-size:1.5rem}
-  .d-medalla-tit{font-size:.9rem}
-  .d-medalla-sub{font-size:.7rem}
+  .d-medalla .d-medalla-tit{font-size:.9rem}
+  .d-medalla .d-medalla-sub{font-size:.7rem}
   .d-medalla-rangos li i{font-size:.58rem}
   .d-cert-stats .s{padding:.35rem .2rem}
+  .d-cert-stats .s b{width:46px;height:46px;font-size:.84rem}
   .d-cert-note{font-size:.7rem;margin-bottom:.4rem}
   .d-cierre-recap{padding:.7rem .9rem}
   .d-cierre-recap h3{font-size:.88rem;margin-bottom:.4rem}
@@ -189,8 +190,8 @@
 @media (max-height:660px){
   .d-medalla{padding:.3rem .5rem;margin-bottom:.3rem;gap:.6rem}
   .d-medalla-ic{font-size:1.25rem}
-  .d-medalla-tit{font-size:.82rem}
-  .d-medalla-sub{font-size:.64rem}
+  .d-medalla .d-medalla-tit{font-size:.82rem}
+  .d-medalla .d-medalla-sub{font-size:.64rem}
   .d-medalla-rangos{margin-bottom:.35rem}
   .d-medalla-rangos li{padding:.2rem .15rem}
   .d-medalla-rangos li span{font-size:.8rem}
@@ -198,6 +199,7 @@
   .d-medalla-rangos li i{font-size:.54rem}
   .d-cert-stats{margin-bottom:.4rem}
   .d-cert-stats .s{padding:.25rem .15rem}
+  .d-cert-stats .s b{width:40px;height:40px;font-size:.76rem;box-shadow:inset 0 0 0 3px var(--brand)}
   .d-cert-stats .s span{font-size:.5rem}
   .d-cert-note{font-size:.64rem;padding:.4rem .55rem;margin-bottom:.35rem}
   .d-cierre-results .cta .btn{padding:.4rem .6rem;font-size:.74rem}
@@ -266,3 +268,36 @@
    Ver la nota larga en `js/coto-cierre.js`, donde estaba la función.
    OJO: `.d-cert-stats`, `.d-cert-note` y `@keyframes d-cert-shine`
    NO son de esto — son del RESUMEN DE CIERRE y siguen en uso. */
+
+/* ============================================================
+   "Tu resultado:" como el canvas del rediseño (v1.9.127)
+   El cliente comparó el resumen con el tablero "Resumen" del canvas y no
+   había quedado igual. Lo que cambia, sin tocar el marcado de los cursos:
+   · la medalla lleva su cinta y arriba "Terminaste con";
+   · los rangos van de bronce a oro, cada uno con su medalla dibujada (no
+     el emoji), y el alcanzado en azul claro con borde azul;
+   · los números del alumno, en una fila de círculos con anillo;
+   · la nota de la evaluación, como aviso amarillo con "!".
+   ============================================================ */
+.d-cierre-results .d-medalla{padding:16px 18px}
+.d-cierre-results .d-medalla .d-medalla-ic{margin-top:22px}
+.d-cierre-results .d-medalla::before{content:"";position:absolute;left:30px;top:6px;width:44px;height:36px;z-index:0;
+  background:linear-gradient(90deg,var(--brand-navy) 0 50%,var(--brand-deep) 50% 100%);
+  clip-path:polygon(0 0,40% 0,50% 70%,60% 0,100% 0,72% 100%,28% 100%)}
+.d-cierre-results .d-medalla > *{position:relative;z-index:1}
+.d-cierre-results .d-medalla .d-medalla-tit::before{content:"Terminaste con";display:block;margin-bottom:4px;
+  font-family:var(--font-body);font-weight:700;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;opacity:.9}
+.d-medalla-rangos li span{position:relative;width:36px;height:44px;font-size:0;line-height:0}
+.d-medalla-rangos li span::before{content:"";position:absolute;left:8px;top:0;width:20px;height:18px;
+  background:linear-gradient(90deg,var(--brand-navy) 0 50%,var(--brand-deep) 50% 100%);
+  clip-path:polygon(0 0,40% 0,50% 70%,60% 0,100% 0,72% 100%,28% 100%)}
+.d-medalla-rangos li span::after{content:"★";position:absolute;left:2px;top:12px;width:32px;height:32px;box-sizing:border-box;
+  border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(10,40,70,.2);display:grid;place-items:center;
+  font-size:14px;line-height:1;background:#c9d3de;color:#46506A}
+.d-medalla-rangos li[data-rango="bronce"] span::after{background:#d38b4f;color:#fff}
+.d-medalla-rangos li[data-rango="oro"] span::after{background:#ffd25e;color:#8A5200}
+.d-cierre-results .d-cert-note{position:relative;display:block;margin:.6rem 0;padding:10px 14px 10px 52px;border-radius:16px;
+  background:#fff8e1;border:2px solid #ffd25e;color:#8A5200;font-size:.84rem;line-height:1.35;text-align:left}
+.d-cierre-results .d-cert-note::before{content:"!";position:absolute;left:14px;top:50%;margin-top:-14px;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;
+  background:#ffd25e;color:#8A5200;font-weight:700}
+.d-cierre-results .d-cert-note b,.d-cierre-results .d-cert-note strong{color:inherit}

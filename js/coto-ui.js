@@ -488,6 +488,28 @@
         caja.querySelector('text').textContent = pct + '%';
       }
       document.querySelectorAll('.d-sidenav-list').forEach(function (lista) {
+        /* Número = el de la UNIDAD (v1.9.126, pedido de diseño: "confunde
+           que Inicio sea 1 y la Unidad 1 sea 2"). Si los grupos se llaman
+           "Unidad N", el círculo dice N y los demás (Inicio, Práctica y
+           cierre) llevan un punto sin número. Un curso sin "Unidad N" en
+           sus grupos sigue numerando todos en orden. */
+        var porUnidad = false;
+        Array.prototype.forEach.call(lista.querySelectorAll('.d-sidenav-group'), function (g) {
+          var completo = g.getAttribute('data-titulo') || (g.textContent || '').trim();
+          var m = completo.match(/^Unidad\s+(\d+)\s*(?:[—–:\-.]\s*)?(.*)$/i);
+          if (m) {
+            g.setAttribute('data-unidad', m[1]); porUnidad = true;
+            /* Como en el canvas: "Riesgo alimentario" con el 1 en el
+               círculo, no "Unidad 1 — Riesgo alimentario" (v1.9.127). El
+               título entero queda para el lector de pantalla. */
+            if (m[2] && !g.hasAttribute('data-titulo')) {
+              g.setAttribute('data-titulo', completo);
+              g.setAttribute('aria-label', completo);
+              g.textContent = m[2];
+            }
+          } else g.removeAttribute('data-unidad');
+        });
+        lista.classList.toggle('d-ix-por-unidad', porUnidad);
         var grupo = null, cuenta = null;
         var cerrar = function () {
           if (!grupo) return;
@@ -842,8 +864,15 @@
       var desbloqueados = [];
       terminos.forEach(function (t) {
         var visto = !!seen(t.id);
-        if (!silencioso && t.bloqueado && visto) desbloqueados.push(t.label);
+        if (!silencioso && t.bloqueado && visto) { desbloqueados.push(t.label); t.dt.classList.add('is-nuevo'); }
         t.bloqueado = !visto;
+        /* La pastilla del bloqueado dice dónde se descubre (canvas). */
+        if (t.donde === undefined) {
+          var sl = document.querySelector('[data-slide="' + t.id + '"]');
+          var ti = sl && (sl.querySelector('[data-slide-title]') || sl.querySelector('h1, h2'));
+          t.donde = ti ? ti.textContent.trim() : '';
+        }
+        if (t.donde) t.link.setAttribute('data-en', 'En “' + t.donde + '”');   // en el BOTÓN: attr() del ::after lee el suyo
         t.dt.classList.toggle('is-locked', !visto);
         t.link.disabled = !visto;
         /* ---- Y el atributo `hidden`, no solo la clase (kit-base v1.9.96) ----

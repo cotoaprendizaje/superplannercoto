@@ -290,6 +290,12 @@
      de a uno; Impecable + Puntería en un curso sin repaso es el caso
      real) ---- */
   var cola = [], abierta = null, cierreT = null;
+  /* Nunca encima de un pop-up (v1.9.127, lo vio el cliente: al llegar a
+     la mini práctica, "Unidad 2 completa" salía encima del aviso previo,
+     que el motor abre al entrar). Con un pop-up abierto el logro espera en
+     la cola; si un pop-up se abre con la tarjeta a la vista, la tarjeta se
+     guarda y vuelve, entera, al cerrarlo. */
+  function hayPopup() { return !!document.querySelector('[data-popup].open'); }
   function cerrarLogro() {
     if (!abierta) return;
     var el = abierta; abierta = null;
@@ -298,7 +304,7 @@
     setTimeout(function () { el.remove(); siguienteLogro(); }, reduce ? 0 : 220);
   }
   function siguienteLogro() {
-    if (abierta || !cola.length) return;
+    if (abierta || !cola.length || hayPopup()) return;
     var d = cola.shift();
     var ic = d.icono
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + escH(d.icono) + '"/></svg>'
@@ -321,6 +327,7 @@
         '<button type="button" class="fx-logro-seguir" tabindex="-1">Seguir con el curso</button>' +
       '</div>';
     el.querySelector('.fx-logro-seguir').addEventListener('click', cerrarLogro);
+    el.__logro = d;
     abierta = el;
     cierreT = setTimeout(cerrarLogro, 4600);
   }
@@ -329,6 +336,14 @@
       cola.push(e.detail || {});
       siguienteLogro();
     });
+    document.addEventListener('popupopen', function () {
+      if (!abierta) return;
+      var el = abierta; abierta = null;
+      clearTimeout(cierreT);
+      cola.unshift(el.__logro);
+      el.remove();
+    });
+    document.addEventListener('popupclose', function () { setTimeout(siguienteLogro, 250); });
     /* Cualquier toque o tecla la cierra, sin comerse el gesto: el clic
        sigue hasta lo que el alumno quería tocar. */
     ['pointerdown', 'keydown'].forEach(function (ev) {

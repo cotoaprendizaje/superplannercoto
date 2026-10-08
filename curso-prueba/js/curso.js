@@ -600,22 +600,14 @@
       tira.setAttribute('data-repaso', f.id);
       tira.setAttribute('data-no-tapa-arte', '');
       tira.innerHTML =
-        /* El rótulo "Repaso rápido" deja de OCUPAR un renglón, pero no
-           se borra: queda `.sr-only`, visible solo para un lector de
-           pantalla, que sin él se encuentra una pregunta suelta sin
-           saber qué es.
-           Por qué se fue de la vista: ese renglón mide 26px en notebook
-           —4,2 puntos de la lámina— y era lo único que había para
-           liberar. El cliente pidió aire entre el chip y la ilustración
-           y además la ilustración más grande, y las dos cosas salen del
-           mismo lugar: entre la caja del título y el renglón de abajo
-           hay 70 puntos fijos donde tienen que entrar el aire, el dibujo
-           y esta tarjeta. Sin este renglón la tarjeta pasa de 22,07 a
-           15,28 puntos (notebook 1366x768, que es el tamaño que manda) y
-           con eso alcanza para 5,5 puntos de aire Y +7,8% de dibujo.
-           Las tres opciones y el recuadro verde de la devolución dejan
-           claro qué es la tarjeta sin necesidad del rótulo. */
-        '<b class="sr-only">Repaso rápido</b>' +
+        /* El rótulo "Repaso rápido:" volvió a la vista (kit v1.9.127,
+           pedido del cliente en el simulador: "le falta el título"), en
+           la barra azul de las tarjetas del kit. Para que la tarjeta no
+           crezca —el lugar entre el título y el renglón de abajo es fijo—
+           la pregunta y las respuestas van en UNA fila: la pregunta a la
+           izquierda, las respuestas como pastillas compactas a la derecha
+           (y abajo, si no entran). */
+        '<b class="d-repaso-title">Repaso rápido:</b>' +
         '<div class="d-repaso-item is-current" data-repaso-item data-repaso-ok="' + f.ok + '">' +
           '<p class="d-repaso-q">' + f.q + '</p>' +
           '<div class="d-repaso-btns">' +

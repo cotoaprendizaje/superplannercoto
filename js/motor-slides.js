@@ -1037,7 +1037,18 @@
         b.classList.add('d-nav-unlock-glow');
       });
     }
+    /* Para el aviso "¡Listo! Ya podés seguir" del canvas (v1.9.127, lo
+       dice `initPlayer` en coto-player.js): el gate pasó de trabado a
+       libre SIN cambiar de diapositiva. No va atado al brillo: un curso
+       que resincroniza por su cuenta (`_syncNav()` al cerrar la ficha,
+       Seguridad alimentaria) llega acá con `permitirGlow` en false y el
+       aviso no salía nunca. Llegar a una diapositiva libre no cuenta:
+       el gate trabado era de OTRA (`_gateIdx`). */
+    if (eraGateado && puede && this._gateIdx === this.index) {
+      this._emit('gateabierto', { id: cur && cur.getAttribute('data-slide') });
+    }
     this._navGated = !puede;
+    this._gateIdx = this.index;
   };
 
   /* ---- Capas dentro de una diapositiva ---- */

@@ -16077,3 +16077,148 @@ sobre un HTML de v1.9.124 (Índice en su cápsula, micrófono tachado) y la
 migración de `curso.json` (aviso de la práctica, "segunda" → "explorador"),
 cada caso rojo con el paso sacado. `check-vista-editor` nuevo en
 `test:kit`.
+
+## 7.76 Segunda ronda del simulador y la auditoría contra el canvas (kit-base v1.9.127)
+
+Dos cosas en esta versión. La segunda ronda de comentarios del equipo sobre
+el simulador (§7.75), y un pedido del cliente con capturas del canvas del
+rediseño: *"cosas que no creo que hayan quedado igual a como dejamos el
+artefacto de rediseño"*. Se repasó tablero por tablero (Glosario, Resumen,
+Barra, Avisos, Toasts, Efectos, Íconos, Índice, Mis logros) y lo que no
+coincidía se arregló en el KIT. Donde el canvas y un pedido posterior del
+cliente chocan, gana el pedido posterior: está anotado abajo.
+
+### Logros: 2 de recorrido + 3 de plus (regla del cliente)
+
+*"La mitad deben ser genéricos pero la otra mitad deben premiar el plus"*, y
+después *"dale, armalo como regla"*. Cada logro tiene `mide`: `recorrido` (se
+gana haciendo el curso, sin bono) o `plus` (+20, nunca con lo mínimo).
+- Dos genéricos de recorrido nuevos: **"A mitad de camino"** (`mitad`, al
+  pasar la mitad de las diapositivas) y **"Curso completo"** (`completo`, al
+  llegar a la última). `pts:0`, `plus:false`.
+- La lista por defecto pasa a `['mitad','completo','impecable','racha',
+  'explorador']` (`new-course`); `migrarDatosCurso()` cambia la lista por
+  defecto VIEJA por ésta y no toca una lista armada a mano.
+- Un logro propio del curso es de recorrido salvo que diga `plus:true`; uno
+  del kit conserva lo suyo (`expandir()`). Las tarjetas llevan `data-tipo`.
+- `gamificacion` exige, con 5 logros, exactamente 2 de recorrido y 3 de
+  plus (rojo en cardio con la lista toda de plus). `logros-kit` exige que el
+  camino mínimo gane los de recorrido pedidos con bono 0 y ningún plus (rojo
+  con el `coto-logros.js` anterior).
+- El texto de "Mis logros", el del instructivo y el de la plantilla lo
+  dicen; la migración reemplaza los textos viejos (tres variantes medidas).
+- "Mis logros" sin medallas definidas en `initLogros` (cardio): leía
+  `null` y no dibujaba el bloque de la medalla. Ahora cae a las medallas
+  de los datos del curso. Las etiquetas de los hitos de la barra se
+  encimaban cuando dos quedaban a menos de 18 % o pasado el 88 %: van a un
+  lado de su marca (`is-izq`/`is-der`).
+
+### Simulador: comentarios del equipo (segunda ronda)
+
+- **Barras de scroll** con el diseño: finas, pulgar `--brand-soft` (y
+  `--brand` al pasar), en todo el curso (`coto-base.css`).
+- **Índice:** la unidad 1 ya no lleva el "1" de Inicio que confundía: los
+  grupos "Unidad N — Nombre" llevan el número en su círculo
+  (`data-unidad`) y el nombre como texto; los que no son unidad, un punto.
+  El título del grupo vuelve a la tipografía de títulos y sin mayúsculas,
+  como el canvas (le gana al pedido de §7.75: lo pidió el cliente con la
+  captura del canvas).
+- **Sonido y Locución:** el título del panel dice "Sonido:" y "Locución:",
+  igual que el botón (pedido: "hay que unificar"). El canvas decía
+  "Volumen:"/"Avance:": gana el pedido. La migración cambia los títulos
+  viejos.
+- **Instructivo:** el tramo rectangular del camino, más abajo.
+- **Repaso con factores (cardio):** rediseño. Barra de título "Repaso
+  rápido:", la pregunta en fila con sus opciones, pastillas compactas, y al
+  contestar la devolución reemplaza a la pregunta (antes la tarjeta crecía
+  y tapaba la ilustración).
+- **Pop-ups encimados:** la tarjeta "¡Nuevo logro!" esperaba solo a los
+  paneles; ahora espera también a cualquier `[data-popup].open`, y si se
+  abre uno con la tarjeta a la vista se guarda y vuelve al cerrarlo
+  (`efectos`, punto 1b; rojo con el `fx.js` anterior).
+- **Diapositiva de cierre de cardio:** el texto que estaba quemado en la
+  imagen pasa a texto real ("LA OTRA OPCIÓN"). `armarCierre` acepta `capas`
+  (HTML encima de la lámina) y `leerCierre` lo extrae; la imagen se limpió.
+
+### Simulador: herramienta
+
+- **Recorrido libre** en la pestaña "Editor": anula los gates (`canAdvance`,
+  los `data-gate-popup`, los ítems trabados del índice y el cierre) para
+  hacer cambios rápidos. Se recuerda (`ev-libre`); al apagarlo recarga.
+- **"Ir a"**: un selector que salta a cualquier diapositiva.
+
+### Auditoría contra el canvas
+
+- **Glosario:** el término bloqueado dice "En «diapositiva»"; el recién
+  desbloqueado lleva la pastilla "Recién descubierto" y fondo `#EBF0FF`; la
+  pista sin cursiva.
+- **Mis logros:** el bloque de la medalla y los rangos de bronce a oro
+  (`row-reverse`, el alcanzado en azul claro con borde azul), el candado
+  adentro del círculo de la tarjeta.
+- **Resumen ("Tu resultado:"):** la medalla con su cinta y "Terminaste
+  con"; los rangos con su medalla dibujada (no el emoji); los números en
+  una fila de 4 círculos con anillo (52/46/40px en pantallas bajas); la
+  nota de la evaluación como aviso amarillo con "!" (era flex: partía la
+  frase en columnas, igual que en §7.75; ahora bloque con el "!"
+  absoluto); los dos botones lado a lado sin cortar el texto. Se sacó el
+  brillo `d-shine`. Sin scroll en 1280×760 y 1920×1080.
+- **Paneles de Sonido y Locución:** botón de silenciar de 38px, barra de
+  8px pintada hasta donde va (`--pct`, lo pone coto-player.js; un range no
+  pinta solo su parte recorrida), pulgar de 20px, ecualizador en escalera
+  de 8 a 21,5px. Locución: play de 44px, tiempos alineados con la barra,
+  pie con línea: "Repetir" a la izquierda y "Velocidad − 1,05x +" a la
+  derecha (`row-reverse`: en el marcado la velocidad va primero, como la
+  lee un lector de pantalla). **La velocidad con coma** ("1,05x").
+- **Pop-up de contenido:** dos campos opcionales de la ficha,
+  `icono` (un id del banco: el círculo de 64px arriba del texto) y
+  `entendido` (`true` o el texto del botón: el pie "Escuchá o leé" + el
+  botón que cierra). Sin ellos la ficha sale como siempre. Cardio los usa
+  en las 4 fichas de tipos de ENT (se sacó su círculo propio).
+- **Avisos que aparecen solos:** faltaba el quinto, **"¡Listo! Ya podés
+  seguir"** (verde), al completar lo que la pantalla pedía. El motor emite
+  `gateabierto` cuando el gate pasa de trabado a libre sin cambiar de
+  diapositiva. Primero iba atado al brillo de "Siguiente" y la suite de
+  Seguridad alimentaria lo encontró mudo: ese curso resincroniza solo al
+  cerrar la ficha (`_syncGate(false)`, sin brillo) y el cambio ya había
+  pasado cuando llegaba el del motor. Lo escucha
+  `initPlayer` (no `initGateHints`: la plantilla la trae comentada y cada
+  curso la llama a su manera, y este aviso tiene que salir en todos). Si
+  hay otro aviso a la vista (el "+10" de la ficha recién cerrada) espera a
+  que termine; mira 350ms después y no en el acto, porque en ese mismo curso
+  el "+10" sale DESPUÉS de destrabar y lo pisaba. Se apaga con `initPlayer({ avisoListo: false })`. El de
+  logro dice "¡Nuevo logro: X! · +20".
+- **Efectos:** estaban los diez. La medalla de "¡Subiste a …!" sola (sin la
+  tarjeta del logro) pasa de 38 a 66px, como el canvas: chica, el giro de
+  plata a oro no se veía.
+- **Íconos:** los de logros coinciden trazo por trazo. Sin cambios.
+
+**Del canvas que NO se llevó, a propósito:**
+- Estado "prendido" de Sonido/Locución: el canvas lo pinta como pastilla
+  blanca con círculo azul; queda la cápsula azul que pidió el equipo en
+  §7.75 ("la blanca contrastaba mucho").
+- El aviso "Esta pantalla tiene locución: subí el volumen" al entrar a una
+  diapositiva con audio: en cada diapositiva narrada sería ruido, y el
+  canvas no dice cuándo callarlo. Queda sin hacer hasta que el cliente lo
+  defina.
+
+### Tests
+
+69 tests de navegador (+1): **`aviso-listo`** abre los pop-ups de la primera
+diapositiva con gate de pop-ups y exige "¡Listo!" en verde, después del
+"+N"; y la velocidad con coma. Rojo con `coto-player.js` y `motor-slides.js`
+de v1.9.126 (los dos fallos), verde con los nuevos; y rojo sobre
+Seguridad alimentaria con la primera versión (atada al brillo); en un curso sin gates
+de pop-ups el punto 1 no tiene qué revisar (el curso nuevo).
+`gamificacion`, `logros-kit` y `efectos` cambiaron (arriba).
+`check-migracion` suma los títulos Sonido/Locución, el texto de los logros
+y la lista por defecto (cada caso rojo con el paso sacado).
+**`check-fichas`** nuevo en `test:kit` (sin navegador): arma cardio y exige el
+círculo y el pie en las fichas que los piden, que la ida y vuelta por
+`extraer-curso` devuelva el mismo `curso.json`, y que una ficha sin los
+campos salga como antes. Rojo con el `extraer-curso.mjs` de v1.9.126 (las
+fichas no vuelven con sus campos) y con el `curso-datos.mjs` (salen sin las
+piezas).
+
+**Pendiente:** teléfono vertical en el resultado de la mini práctica y
+teléfono acostado en el resumen; el resto de los tableros del canvas
+(Repaso, Quiz, Predicción, Recursos, Config, Salida, Video…).

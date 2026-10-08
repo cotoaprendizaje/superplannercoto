@@ -153,15 +153,10 @@
    lienzo 2:1, scrollea DENTRO de la diapositiva, nunca la página. */
 .slide-cierre.unlocked .d-cierre-summary:not([hidden]){display:block;width:min(1400px,100%);
   max-height:100%;overflow-y:auto;overflow-x:hidden}
-/* Antes era blanco liso (`var(--surface)`) — pedido del cliente, "tunear
-   el color de la caja blanca": un degradado muy suave con el color de
-   categoría (10-15% de mezcla) le da algo de personalidad sin perder
-   legibilidad, consistente con el resto de tarjetas del curso que ya
-   usan degradados sutiles (ej. `.d-medalla[data-nivel]`). */
-.d-cierre-results{position:relative;overflow:hidden;text-align:center;padding:1.8rem 1.6rem;
-  display:flex;flex-direction:column;border-radius:var(--r-xl);
-  background:linear-gradient(160deg,color-mix(in srgb,var(--cat-soft) 16%,var(--surface)) 0%,var(--surface) 55%);
-  border:1px solid var(--line);box-shadow:var(--shadow-card)}
+/* La tarjeta "Tu resultado" es la del kit desde v1.9.125 (barra azul con
+   el título). La de este curso (degradado y 1.8rem de aire arriba y abajo)
+   era del diseño anterior: además de pisar el nuevo, le sumaba alto y el
+   resumen scrolleaba a 1366×768 (comentario del cliente, kit v1.9.127). */
 .d-cierre-summary .who{margin:0 0 .8rem}
 .d-cierre-summary p{margin:0 0 1.1rem}
 /* 5 tarjetas en una sola FILA, no en 2 columnas: en 2 columnas eran 3
@@ -176,30 +171,15 @@
    57px con rótulos que necesitan 66 ("Respuestas correctas") y 52
    ("Intentos de práctica"): se veían cortados. Medido a 1920x1080.
    Solo se conserva el margen de este curso. */
-.d-cert-stats{margin:0 0 1.1rem}
-/* Más aire real (reporte del cliente: "se ven muy apretados") — padding
-   vertical y horizontal más generoso, y la tarjeta pasa de gris plano a
-   blanco con sombra propia: se separa mejor del fondo ya tinteado de
-   `.d-cierre-results`, en vez de fundirse con él. */
-.d-cert-stats .s{position:relative;overflow:hidden;border-radius:var(--r-lg);padding:.85rem .5rem;
-  background:#fff;border:1px solid var(--line);
-  box-shadow:0 3px 10px color-mix(in srgb,#000 6%,transparent);
-  transition:transform .15s,box-shadow .15s;text-align:center}
-.d-cert-stats .s:hover{transform:translateY(-2px);box-shadow:0 8px 18px color-mix(in srgb,#000 10%,transparent)}
-/* "Brillo de medalla": barrido de luz que cruza cada tarjeta de stat,
-   escalonado, disparado por celebrate() en curso.js junto con el confeti
-   del cierre. Puramente cosmético y barato -1 clase, 1 keyframe- así que
-   es candidato directo a sumarse al kit junto al resto del festejo. */
-.d-cert-stats .s.d-shine::after{content:"";position:absolute;inset:0;left:-70%;width:45%;
-  background:linear-gradient(100deg,transparent,color-mix(in srgb,#fff 65%,transparent),transparent);
-  animation:d-cert-shine .95s ease forwards}
-
-.d-cert-stats .s b{display:block;margin-bottom:.2rem;font-family:var(--font-num);font-weight:800;font-size:clamp(.95rem,1.5vw,1.35rem);line-height:1.15}
-.d-cert-stats .s span{display:block;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
-.d-cierre-results .cta{margin:1.2rem 0 0;gap:.65rem}
-.d-gloss > div{padding:.26rem .2rem}
-.d-gloss dt{font-size:.92rem}
-.d-gloss dd{font-size:.85rem;line-height:1.32}
+/* Los números del resumen, los rangos y la nota son los del kit desde
+   v1.9.127 (como el canvas del rediseño). Lo que había acá —tarjetas con
+   brillo, rótulos en mayúscula, el rango alcanzado en turquesa— era del
+   diseño anterior y le ganaba al kit. Se sacó. */
+/* "Conceptos clave" del mismo tamaño que las otras columnas del resumen
+   (v1.9.127): más grande, a 1024×768 hacía scrollear la diapositiva. */
+.d-gloss > div{padding:.2rem .2rem}
+.d-gloss dt{font-size:.85rem}
+.d-gloss dd{font-size:.76rem;line-height:1.32}
 
 /* ---- Barra "Retomá donde dejaste" (initResume en curso.js) ----
    Descartable y con autoocultado — nunca navega sola, ver README (era
@@ -378,8 +358,6 @@
 /* Cuerpo de los 4 pop-ups de tipo de ENT. Candidato a subir al addendum
    si otro curso repite el patrón "ícono + definición + datos + cierre". */
 .d-ent-pop{text-align:center}
-.d-ent-pop-icon{width:64px;height:64px;margin:0 auto .8rem;background:var(--cat-soft);color:var(--cat-ink)}
-.d-ent-pop-icon svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 /* La descripción, del MISMO tamaño que la lista de abajo (pedido de diseño en
    el simulador, kit v1.9.126): con 16px contra .92rem se leía como otro bloque. */
 .d-ent-pop > p{margin:0 0 .9rem;font-size:.92rem;line-height:1.5}
@@ -672,8 +650,6 @@
   background:radial-gradient(circle,color-mix(in srgb,#fff 75%,transparent) 0%,transparent 70%)}
 
 /* Los 3 rangos siempre visibles: el que se alcanzó, destacado. */
-.d-medalla-rangos{list-style:none;display:flex;gap:.4rem;margin:0 0 1.2rem;padding:0}
-.d-medalla-rangos li.is-logrado{background:var(--cat-soft)}
 
 /* ---- Pop-up de intro de la mini práctica ----
    Desde v1.9.125 es el del kit (tres tarjetas, como "Mis logros"). Lo
@@ -698,12 +674,10 @@
    El contenido no se recorta — se achica. */
 @media (max-height:740px){
   .d-medalla-ic{font-size:1.4rem;width:46px;height:46px}
-  .d-cert-stats .s{padding:.55rem .35rem}
 }
 /* Netbooks de sucursal (1024x640): último escalón. */
 @media (max-height:660px){
   .d-medalla-ic{font-size:1.15rem;width:38px;height:38px}
-  .d-cert-stats .s{padding:.45rem .3rem}
 }
 /* El resumen mantiene 3 columnas mientras haya ancho: apilarlas lo hace
    crecer a lo alto justo cuando menos alto hay. */
@@ -731,17 +705,25 @@
    como cualquier párrafo. */
 .d-repaso--factor .d-repaso-item{ padding-left: 0; }
 .d-repaso--factor .d-repaso-item::before{ content: none; display: none; }
-/* Con el rediseño del kit (v1.9.125), pedido del cliente en el simulador
-   del editor: la tira de factor no tiene lugar para la barra azul de
-   "Repaso rápido:" sin pisar el dibujo, así que la PREGUNTA va en la
-   barra azul, como la pregunta de la práctica: mismo lenguaje, cero alto
-   extra. El rótulo sigue para el lector de pantalla (`.sr-only`). */
-.d-repaso--factor{ overflow: hidden; }
-.d-repaso--factor .d-repaso-q{ margin: 0 -1em .3em; padding: .2em 1em; line-height: 1.2; color: #fff; font-weight: 700;
-  background: linear-gradient(180deg, var(--brand), var(--brand-deep)); }
-/* Teléfono vertical: la tarjeta sale a la franja libre bajo la lámina
-   solo si entra (`acomodarTiras`); con la pregunta en la barra, las de
-   dos renglones se pasaban unos píxeles y quedaban encima del dibujo. */
+/* Rediseño de la tira de factor (kit v1.9.127, pedido del cliente en el
+   simulador: "los círculos de respuestas están demasiado alargados", "le
+   falta el título de repaso rápido", "que entre bien dentro de la diapo"):
+   la barra azul con "Repaso rápido:" y, abajo, UNA fila con la pregunta a
+   la izquierda y las respuestas como pastillas de su ancho (no estiradas)
+   a la derecha. Si no entran al lado, bajan. */
+.d-repaso--factor{ overflow: hidden; padding-bottom: .55em; }
+.d-repaso--factor .d-repaso-title{ flex: none; min-height: 0; margin: 0 -1em .3em; padding: .2em 1em; font-size: 1.05em; }   /* em: escala con la lámina, como el resto de la tarjeta */
+.d-repaso--factor .d-repaso-item.is-current{ flex-direction: row; flex-wrap: wrap; align-items: center; gap: .35em .8em; }   /* el kit la pone en columna */
+.d-repaso--factor .d-repaso-q{ flex: 1 1 13em; margin: 0; padding: 0; background: none; color: var(--brand-navy);
+  font-weight: 700; font-size: .88em; line-height: 1.25; }
+.d-repaso--factor .d-repaso-btns{ flex: 0 0 auto; gap: .4em; }
+.d-repaso--factor .d-repaso-btns button{ flex: 0 0 auto; min-width: 3.8em; padding: .22em .8em; font-size: .88em; }
+/* Contestada, la devolución ocupa el LUGAR de la pregunta (a la izquierda
+   de las pastillas), no un renglón más: la tarjeta crecía hacia arriba y
+   tapaba el dibujo (bloque-no-tapa-arte, 25 casos). */
+.d-repaso--factor .d-repaso-fb{ font-size: .82em; }   /* em: los tamaños del kit van en rem y en teléfono quedaban enormes */
+.d-repaso--factor .d-repaso-item.is-answered .d-repaso-q{ display: none; }
+.d-repaso--factor .d-repaso-item.is-answered .d-repaso-fb{ order: -1; flex: 1 1 13em; margin-top: 0; }
 /* Teléfono acostado: la tira va SOBRE la lámina con el alto que le da el kit
    (`data-h`, 65px) y una pregunta de dos renglones pide 91: con el
    `overflow:hidden` de arriba, los botones quedaban recortados (lo marcó
@@ -749,7 +731,7 @@
    su contenido. */
 @media (max-height: 560px){ .d-repaso-marco:has(.d-repaso--factor){ height: auto !important; } }
 @media (max-width: 560px){
-  .d-repaso--factor .d-repaso-q{ padding: .1em 1em; margin-bottom: .15em; line-height: 1.1; }
+  .d-repaso--factor .d-repaso-title{ padding: .15em 1em; margin-bottom: .25em; }
   .d-repaso--factor .d-repaso-btns button{ padding-block: .15em; }
 }
 
@@ -929,3 +911,14 @@
 
    El `:focus-visible` del kit queda intacto: es el único indicador del
    recorrido por teclado. */
+
+/* ---- El texto final de la lámina de cierre (kit v1.9.127) ----
+   "Recordá que ya estás habilitado…" venía DIBUJADO en img/cierre.webp,
+   en blanco fino sobre turquesa: no se leía (comentario del cliente en el
+   simulador). Se borró de la imagen y va como texto real, en una capa del
+   cierre (`capas` en curso.json, posicionada con data-place), en azul
+   oscuro. `cqw`: escala con la lámina, como el resto del arte. */
+.slide-cierre .d-cierre-shot .d-shot{ container-type: inline-size; }   /* cqw = ancho de la LÁMINA, no de la pantalla */
+.d-cierre-arte-txt{ position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; text-align: center;
+  color: var(--brand-navy); font-size: 1.6cqw; line-height: 1.3; font-weight: 500; text-wrap: balance; pointer-events: none; }
+.d-cierre-arte-txt b{ display: block; font-weight: 800; }

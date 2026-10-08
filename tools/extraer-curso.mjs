@@ -281,6 +281,8 @@ const r = await page.evaluate((html) => { try {
     const extraImg = {};
     for (const a of img.attributes) if (!['class', 'src', 'alt', 'aria-hidden'].includes(a.name)) extraImg[a.name] = a.value;
     if (Object.keys(extraImg).length) d.atributosImagen = extraImg;
+    const capas = Array.from(img.parentNode.children).filter((c) => c !== img).map((c) => c.outerHTML).join('');
+    if (capas) d.capas = capas;
     const lock = q(':scope > p.locked');
     if (lock) d.bloqueo = interno(lock);
     if (narr) d.narracion = leerNarracion(narr);
@@ -419,6 +421,10 @@ const r = await page.evaluate((html) => { try {
     if (claseExtra(m, ['modal'])) f.claseModal = claseExtra(m, ['modal']);
     if (claseExtra(card, ['modal-card'])) f.claseTarjeta = claseExtra(card, ['modal-card']);
     if (!hd.classList.contains('modal-hd--dark')) f.claro = true;
+    const ic = card.querySelector(':scope > .modal-ic use');
+    if (ic) f.icono = (ic.getAttribute('href') || '').replace(/^#/, '');
+    const pie = card.querySelector(':scope > .modal-pie > button');
+    if (pie) f.entendido = pie.textContent === 'Entendido' ? true : interno(pie);
     const nf = notasDe(m);
     if (nf) f.notas = nf;
     if (igual(m, desde(CD.armarFicha(f, '')))) { fichas.push(f); fichasEl.push(m); }

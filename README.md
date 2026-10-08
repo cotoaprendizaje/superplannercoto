@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.126** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.127** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -96,7 +96,7 @@ kit-base/
 │   │                           no es liso (v1.9.105)
 │   ├── check-keyframes.mjs   — toda `animation` con su `@keyframes` (v1.9.108)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 68 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 69 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -169,7 +169,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 68, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 69, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -430,6 +430,27 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.127 — logros 2 + 3 y el kit igual al canvas
+
+Ver CLAUDE.md §7.76.
+
+- **Logros: 2 de recorrido + 3 de plus.** Nuevos "A mitad de camino" y "Curso
+  completo" (sin bono); la lista por defecto pasa a `mitad, completo,
+  impecable, racha, explorador` y `actualizar-kit` cambia la vieja.
+- **Auditoría contra el canvas:** glosario ("En «…»", "Recién descubierto"),
+  "Tu resultado:" (medalla con cinta, rangos dibujados, números en círculos,
+  aviso amarillo), paneles de Sonido y Locución (barras pintadas, pie con
+  Repetir y Velocidad, "1,05x" con coma), medalla de 66px al subir de rango.
+- **Aviso nuevo "¡Listo! Ya podés seguir"** al completar lo que pide la
+  pantalla (`gateabierto` del motor); el de logro dice "¡Nuevo logro: X!".
+- **Fichas con `icono` y `entendido`** (opcionales): el círculo del ícono y
+  el pie "Escuchá o leé" + "Entendido".
+- **Simulador:** recorrido libre y "Ir a" en la pestaña "Editor".
+- Barras de scroll con el diseño; índice con el número en las unidades;
+  paneles titulados "Sonido:" y "Locución:"; la tarjeta de logro ya no se
+  encima con un pop-up.
+- Tests: `aviso-listo` nuevo (69), `check-fichas` nuevo en `test:kit`.
 
 ### v1.9.126 — el simulador del editor
 

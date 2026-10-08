@@ -80,8 +80,9 @@ const VIEJO = `<svg style="display:none"><symbol id="i-check" viewBox="0 0 24 24
 const r1 = migrarMarcado(VIEJO, KIT);
 const h = r1.html;
 const exige = (cond, msg) => { if (!cond) fallos.push(msg); };
-exige(/<span class="d-vol-title">Volumen:<\/span>/.test(h), 'no puso "Volumen:"');
-exige(/<span class="d-narr-title">Avance:<\/span>/.test(h), 'no puso "Avance:"');
+exige(/<span class="d-vol-title">Sonido:<\/span>/.test(h), 'el menú de Sonido no pasó a "Sonido:" (decía "Volumen")');
+exige(/<span class="d-narr-title">Locución:<\/span>/.test(h), 'el menú de Locución no pasó a "Locución:" (decía "Avance")');
+exige(migrarMarcado('<span class="d-vol-title">Volumen:</span><span class="d-narr-title">Avance:</span>', KIT).html === '<span class="d-vol-title">Sonido:</span><span class="d-narr-title">Locución:</span>', 'un curso de v1.9.125/126 ("Volumen:", "Avance:") no pasa a "Sonido:"/"Locución:"');
 exige(/<span class="d-fab-pop-title">Ajustes:<\/span>/.test(h), 'no cambió "Configuración" por "Ajustes:"');
 exige(/<span class="d-fab-pop-title">Ayuda:<\/span>/.test(h), 'no puso "Ayuda:"');
 exige(/Preguntas frecuentes:<\/p>/.test(h), 'no puso "Preguntas frecuentes:"');
@@ -100,6 +101,18 @@ exige(/<div class="d-top-group d-top-group--indice"[^>]*>\s*<button class="d-ico
 exige(/id="i-check"/.test(h), 'se llevó otro símbolo del sprite (#i-check)');
 exige(/<svg class="ic-off"[^>]*><path d="M12 1a3 3 0 0 0-3 3v8"\/><line class="ic-tachado"/.test(h), 'no tachó el micrófono de "Locución" apagada');
 exige(!/<svg class="ic-on"[^>]*>(?:(?!<\/svg>)[\s\S])*ic-tachado/.test(h), 'tachó el micrófono de "Locución" PRENDIDA');
+
+/* Textos de logros que la regla 2 + 3 (v1.9.127) volvió falsos. */
+for (const [nombre, viejo] of [
+  ['el de v1.9.125', 'Con lo obligatorio llegás a <strong>bronce o plata</strong>. El <strong>oro</strong> es para quien hace un poco más: cada logro suma <strong>+20 puntos</strong> y ninguno se gana con lo mínimo.'],
+  ['una variante del v3 (cardio)', 'Vas sumando <strong>✦ puntos</strong> a medida que avanzás (ver un video, responder bien) y ganás un <strong>🏆 logro</strong> al completar del todo cada actividad.']]) {
+  const r = migrarMarcado(`<p class="d-badges-intro">${viejo}</p>`, KIT).html;
+  exige(/3 logros de plus/.test(r), `el texto de "Mis logros" (${nombre}) no pasó al de la regla 2 de recorrido + 3 de plus`);
+}
+const pill = migrarMarcado('<span><b>Hay 5 logros escondidos.</b> Cada uno suma +20 y te acerca a la medalla de oro.</span>', KIT).html;
+exige(/Los 3 de plus suman \+20/.test(pill), 'la pastilla de logros del instructivo sigue diciendo "cada uno suma +20"');
+const propioIntro = '<p class="d-badges-intro">Un texto que escribió el curso.</p>';
+exige(migrarMarcado(propioIntro, KIT).html === propioIntro, 'tocó un texto de "Mis logros" escrito por el curso');
 
 /* Un #i-play EN USO no se saca. */
 const conUso = migrarMarcado('<svg><symbol id="i-play"><path/></symbol></svg><button><svg><use href="#i-play"/></svg></button>', KIT);
@@ -132,6 +145,13 @@ exige(sd && JSON.stringify(sd.logros.slice(0, 5)) === JSON.stringify(['punteria'
 const ambos = migrarDatosCurso(JSON.stringify({ logros: ['segunda', 'explorador'] }), KIT);
 exige(JSON.parse(ambos.texto).logros.join() === 'explorador', 'con "segunda" y "explorador" a la vez quedó un logro repetido');
 exige(migrarDatosCurso(sj.texto, KIT).cambios.length === 0, 'el cambio de "segunda" no es idempotente');
+
+/* Regla 2 de recorrido + 3 de plus (v1.9.127): la lista por defecto vieja
+   pasa a la nueva; una lista propia del curso no se toca. */
+const vieja = migrarDatosCurso(JSON.stringify({ logros: ['punteria', 'racha', 'curioso', 'explorador', 'impecable'] }), KIT);
+exige(JSON.parse(vieja.texto).logros.join() === 'mitad,completo,impecable,racha,explorador', 'la lista de logros por defecto vieja no pasó a 2 de recorrido + 3 de plus');
+const propia = JSON.stringify({ logros: ['punteria', 'racha', 'curioso', 'impecable', { id: 'u1', nom: 'U1' }] });
+exige(migrarDatosCurso(propia, KIT).texto === propia, 'tocó una lista de logros que el curso armó a mano');
 
 if (fallos.length) {
   console.error(`✗ check-migracion — ${fallos.length} fallo(s):\n  - ` + fallos.join('\n  - '));

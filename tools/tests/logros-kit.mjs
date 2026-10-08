@@ -10,7 +10,9 @@
 
    QUÉ HACE. Con un LMS en memoria que sobrevive la recarga:
      1 · Recorrido MÍNIMO: entrar y avanzar sin tocar nada → ningún logro
-         del kit, bono 0. "Ninguno se gana con lo mínimo".
+         de PLUS, bono 0; y los dos de RECORRIDO del kit (`mitad`,
+         `completo`, si el curso los pide) sí salen (v1.9.127, regla 2 de
+         recorrido + 3 de plus).
      2 · Cada logro con el gesto REAL del alumno, de a uno, y exige que se
          gane, que sume su bono UNA vez y que el contador de puntos lo
          muestre:
@@ -71,7 +73,9 @@ const estado = (page) => page.evaluate(() => {
   };
 });
 
-const KIT = ['punteria', 'racha', 'curioso', 'explorador', 'impecable'];
+const PLUS = ['punteria', 'racha', 'curioso', 'explorador', 'impecable'];
+const RECORRIDO = ['mitad', 'completo'];   // v1.9.127: regla 2 de recorrido + 3 de plus
+const KIT = [...PLUS, ...RECORRIDO];
 const { page, errores } = await abrir();
 /* Lo que el curso PIDE sale de sus datos (`curso.json` → logros), no de
    las tarjetas dibujadas: si el módulo no entendiera los ids del kit, las
@@ -91,8 +95,14 @@ if (!pedidos.length) {
   await page.evaluate(() => { const m = window.motor; for (let i = 0; i < m.slides.length; i++) m.go(i, true); });
   await page.waitForTimeout(400);
   const e1 = await estado(page);
-  const deMas = e1.ganados.filter((id) => KIT.includes(id));
-  if (deMas.length) fallos.push(`con el recorrido MÍNIMO (avanzar sin tocar nada) ya se ganan: ${deMas.join(', ')}. Un logro del kit es un plus: nunca sale con lo obligatorio.`);
+  const deMas = e1.ganados.filter((id) => PLUS.includes(id));
+  if (deMas.length) fallos.push(`con el recorrido MÍNIMO (avanzar sin tocar nada) ya se ganan: ${deMas.join(', ')}. Un logro de PLUS nunca sale con lo obligatorio.`);
+  /* Los de recorrido del kit, al revés: salen solos con avanzar. */
+  const faltan = RECORRIDO.filter((id) => pedidos.includes(id) && !e1.ganados.includes(id));
+  if (faltan.length) fallos.push(`recorriendo el curso de punta a punta no se ganaron ${faltan.join(', ')}: son de RECORRIDO, salen solos al llegar a la mitad y al final.`);
+  RECORRIDO.filter((id) => pedidos.includes(id) && e1.ganados.includes(id)).forEach((id) => console.log(`  · ${id}: ✓ (recorrer el curso)`));
+  const bonoRecorrido = e1.bono;
+  if (bonoRecorrido) fallos.push(`los logros de recorrido sumaron ${bonoRecorrido} puntos de bono: el +20 es solo para los de plus.`);
 
   const exigir = async (id, gesto, como) => {
     if (!pedidos.includes(id)) return;

@@ -234,18 +234,25 @@
      lista es la que scrollea, y la línea tiene que moverse con ella. */
   background:linear-gradient(#D7DEEC,#D7DEEC) no-repeat 20.5px var(--ix-desde,24px) / 3px var(--ix-largo,calc(100% - 42px));
   background-origin:content-box;background-attachment:local}
-/* El título de la unidad en tipografía de SUBTÍTULO —Roboto Bold, en
-   mayúsculas— (v1.9.126, pedido de diseño); el número del círculo sigue
-   en la de títulos. */
-.d-sidenav-group{position:relative;display:block;counter-increment:ix;min-height:44px;margin:12px 0 4px;padding:4px 0 0 56px;
-  font-family:var(--font-body);font-weight:700;font-size:.875rem;line-height:1.25;letter-spacing:.02em;text-transform:uppercase;
+/* El título de la unidad como en el canvas del rediseño (v1.9.127, lo
+   marcó el cliente con la captura): tipografía de títulos, sin mayúsculas,
+   y sin el "Unidad N —", que ya dice el círculo (coto-ui.js lo saca de la
+   vista y lo deja para el lector de pantalla). En v1.9.126 había pasado a
+   Roboto Bold mayúscula por un comentario de diseño; manda el canvas. */
+.d-sidenav-group{position:relative;display:block;counter-increment:ix;min-height:44px;margin:12px 0 4px;padding:3px 0 0 56px;
+  font-family:var(--font-title);font-weight:900;font-size:1.125rem;line-height:1.1;letter-spacing:0;text-transform:none;
   color:var(--brand);border:0}
 .d-sidenav-group::before{content:counter(ix);position:absolute;left:0;top:0;width:44px;height:44px;border-radius:50%;
   display:grid;place-items:center;background:var(--brand-soft);color:#fff;font-family:var(--font-title);font-weight:900;font-size:1.375rem;letter-spacing:0}
+/* Con unidades ("Unidad N", lo marca coto-ui.js): el círculo dice el número
+   de la unidad, y los grupos que no son unidad llevan un punto chico sobre
+   la línea, sin número (v1.9.126). */
+.d-ix-por-unidad .d-sidenav-group::before{content:attr(data-unidad)}
+.d-ix-por-unidad .d-sidenav-group:not([data-unidad])::before{content:"";left:11px;top:11px;width:22px;height:22px}
 .d-sidenav-group.is-empezado::before{background:var(--brand)}
 .d-sidenav-group.is-completo::before{background:var(--success)}
 .d-sidenav-group::after{content:attr(data-avance);display:block;margin-top:2px;font-family:var(--font-body);
-  font-weight:400;font-size:.75rem;letter-spacing:0;text-transform:none;color:#6B7690}
+  font-weight:400;font-size:.75rem;color:#6B7690}
 
 .d-sidenav-item{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;
   min-height:36px;margin-left:42px;padding:0 12px;text-align:left;border:none;border-radius:999px;background:none;
@@ -477,6 +484,11 @@
 .d-lg-hito{position:absolute;top:2px;transform:translateX(-50%);display:flex;align-items:center;gap:5px;white-space:nowrap;
   padding:2px 8px 2px 3px;border-radius:999px;background:#fff;color:var(--brand-deep);font-size:.75rem;font-weight:700}
 .d-lg-hito.is-inicio{transform:none}
+/* Umbrales cercanos (coto-logros.js): la etiqueta va a un lado de su marca, no centrada. */
+.d-lg-hito.is-izq{transform:translateX(calc(-100% + 8px))}
+.d-lg-hito.is-der{transform:translateX(-8px)}
+.d-lg-hito.is-izq::before{left:auto;right:6px}
+.d-lg-hito.is-der::before{left:6px}
 .d-lg-hito i{width:14px;height:14px;border-radius:50%;background:var(--c)}
 .d-lg-hito::before{content:"";position:absolute;left:50%;top:-34px;width:3px;height:30px;border-radius:2px;background:#fff;opacity:.9}
 .d-lg-hito.is-inicio::before{display:none}
@@ -680,10 +692,14 @@
 [data-nivel="oro"] .d-medalla-ic{background:#ffd25e;color:#7a5300}
 [data-nivel="plata"] .d-medalla-ic{background:#c9d3de;color:var(--brand-deep)}
 [data-nivel="bronce"] .d-medalla-ic{background:#d38b4f;color:#fff}
-.d-medalla-tit{margin:0;font-family:var(--font-title);font-weight:900;
+/* `.d-medalla .x` y no `.x` solo (v1.9.127): en el cierre la tarjeta vive
+   dentro de `.d-cierre-summary`, y `.d-cierre-summary p` (coto-cierre.css,
+   texto oscuro) le ganaba por especificidad: "Medalla de bronce" salía
+   azul oscuro sobre el azul de la tarjeta, ilegible (lo vio el cliente). */
+.d-medalla .d-medalla-tit{margin:0;font-family:var(--font-title);font-weight:900;
   font-size:1.6rem;line-height:1.05;color:#fff}
-.d-medalla-tit b{color:#fff}
-.d-medalla-sub{margin:.3rem 0 0;font-size:.875rem;line-height:1.35;color:#fff}
+.d-medalla .d-medalla-tit b{color:#fff}
+.d-medalla .d-medalla-sub{margin:.3rem 0 0;font-size:.875rem;line-height:1.35;color:#fff}
 
 /* ---- Efecto cinematográfico al revelar la medalla ----
    Quien llama a pintarMedalla() suma `.is-revealing` al `.d-medalla`
@@ -714,22 +730,24 @@
   .d-medalla.is-revealing .d-medalla-ic::after{animation:none;display:none}
 }
 
-.d-medalla-rangos{list-style:none;display:flex;gap:.4rem;margin:0 0 1.2rem;padding:0}
+/* v1.9.127, como el canvas: de bronce a oro (el marcado va al revés) y
+   todos a color; el alcanzado, en azul claro con borde azul. */
+.d-medalla-rangos{list-style:none;display:flex;flex-direction:row-reverse;gap:.4rem;margin:0 0 1.2rem;padding:0}
 .d-medalla-rangos li{flex:1;display:flex;flex-direction:column;align-items:center;gap:.1rem;
   padding:.45rem .3rem;border-radius:16px;background:#fff;border:2px solid #E9EEF8;
-  text-align:center;opacity:.7}
+  text-align:center}
 .d-medalla-rangos li span{font-size:1.15rem;line-height:1}
 .d-medalla-rangos li b{font-size:.8rem;color:var(--brand-navy)}
 .d-medalla-rangos li i{font-style:normal;font-size:.7rem;color:var(--text-soft)}
-.d-medalla-rangos li.is-logrado{opacity:1;background:#F4F7FE;border-color:var(--brand-soft);box-shadow:none}
+.d-medalla-rangos li.is-logrado{background:#EBF0FF;border-color:var(--brand);box-shadow:none}
 @media (max-height:800px){
   .d-medalla{padding:.6rem .8rem;margin-bottom:.5rem}
   .d-medalla-ic{font-size:1.9rem;width:64px;height:64px}
   .d-medalla-rangos{margin-bottom:.6rem}
 }
 @media (max-height:860px){
-  .d-medalla-tit{font-size:1rem}
-  .d-medalla-sub{font-size:.76rem}
+  .d-medalla .d-medalla-tit{font-size:1rem}
+  .d-medalla .d-medalla-sub{font-size:.76rem}
   .d-medalla-rangos li{padding:.3rem .2rem}
   .d-medalla-rangos li span{font-size:.95rem}
   .d-medalla-rangos li b{font-size:.72rem}
@@ -1046,7 +1064,14 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
 .d-glossary dt > .d-gloss-term-btn::after{content:"";flex:none;font-family:var(--font-body);font-size:.6875rem;font-weight:700;
   padding:3px 9px;border-radius:999px}
 .d-glossary dt.is-consultado > .d-gloss-term-btn::after{content:"Consultado";background:color-mix(in srgb,var(--success) 12%,#fff);color:var(--success-ink)}
+/* Como el canvas (v1.9.127): el bloqueado dice DÓNDE se descubre
+   (`data-en`, lo pone coto-ui.js con el nombre de la diapositiva), y el
+   que se acaba de destrabar en esta visita, "Recién descubierto". */
 .d-glossary dt.is-locked > .d-gloss-term-btn::after{content:"Bloqueado";background:#E9EEF8;color:#6B7690}
+.d-glossary dt.is-locked > .d-gloss-term-btn[data-en]::after{content:attr(data-en)}
+.d-glossary dt.is-nuevo:not(.is-consultado) > .d-gloss-term-btn::after{content:"Recién descubierto";background:var(--brand);color:#fff}
+.d-glossary dt.is-nuevo:not(.is-consultado),.d-glossary dt.is-nuevo:not(.is-consultado) + dd{background:#EBF0FF;border-color:var(--brand-soft)}
+.d-glossary dt.is-locked + dd .d-gloss-hint{font-style:normal;font-weight:400}
 
 /* ---- Glosario interactivo (initGlossaryUnlock, coto-ui.js): click en
    el término navega a la diapositiva (vía data-goto, ya cableado por
@@ -1142,9 +1167,11 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
    el simulador del editor: "replicar las líneas de las diapos del arte"):
    el aro grueso translúcido cortado por el borde, abajo a la izquierda, y
    abajo a la derecha el círculo fino con la línea que sube y dobla en
-   curva. Colores del manual; la tarjeta los recorta (`overflow:hidden`). */
+   curva. Colores del manual; la tarjeta los recorta (`overflow:hidden`).
+   v1.9.127: la línea que dobla, 28px más abajo ("un poco más abajo", mismo
+   comentario de diseño): ya no pasa a la altura de la pastilla de logros. */
 .d-instr-modal::before{left:-80px;bottom:-130px;width:250px;height:250px;border-radius:50%;border:16px solid #E9EEF8}
-.d-instr-modal::after{right:0;bottom:0;width:260px;height:140px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Ccircle cx='212' cy='118' r='86' fill='none' stroke='%23D7DEEC' stroke-width='2'/%3E%3Cpath d='M58 140 V102 Q58 66 94 66 H260' fill='none' stroke='%23006EA0' stroke-width='2.5'/%3E%3C/svg%3E") right bottom/100% 100% no-repeat}
+.d-instr-modal::after{right:0;bottom:0;width:260px;height:140px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Ccircle cx='212' cy='118' r='86' fill='none' stroke='%23D7DEEC' stroke-width='2'/%3E%3Cpath d='M58 140 V124 Q58 94 88 94 H260' fill='none' stroke='%23006EA0' stroke-width='2.5'/%3E%3C/svg%3E") right bottom/100% 100% no-repeat}
 .d-instr-modal > .modal-hd{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:.75rem;min-height:50px;box-sizing:border-box;
   padding:0 8px 0 22px;background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:#fff}
 .d-instr-modal > .modal-hd h3{margin:0;font-family:var(--font-title);font-weight:900;font-size:1.5rem;line-height:1;color:#fff}
@@ -1352,3 +1379,19 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
    sirve de verdad. */
 .modal-card[tabindex="-1"]:focus,
 .modal-card[tabindex="-1"]:focus-visible { outline: none; }
+
+/* ============================================================
+   Pop-up de contenido como el canvas (tablero "Avisos", v1.9.127):
+   círculo con el ícono arriba del texto y pie con "Escuchá o leé" y
+   el botón que cierra. Los dos son opcionales (campos `icono` y
+   `entendido` de la ficha, `tools/curso-datos.mjs`).
+   ============================================================ */
+.modal-card > .modal-ic{align-self:center;display:grid;place-items:center;flex:none;width:64px;height:64px;margin:18px auto 0;
+  border-radius:50%;background:#EBF0FF;color:var(--brand)}
+.modal-card > .modal-ic svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.modal-card > .modal-ic + .modal-bd{padding-top:18px}
+.modal-card > .modal-pie{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:none;padding:0 24px 22px}
+.modal-pie-oir{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--text-dim)}
+.modal-pie-oir::before{content:"♪";display:grid;place-items:center;width:26px;height:26px;border-radius:50%;
+  background:#EBF0FF;color:var(--brand)}
+.modal-card > .modal-pie .btn{padding:10px 26px;border-radius:999px;font-size:.875rem}

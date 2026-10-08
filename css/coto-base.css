@@ -272,7 +272,20 @@
 
    ⚠️ Los `@media` del kit están en `px` y siguen midiendo el viewport,
    no la raíz: los cortes de 959/1194 no se mueven por esto. */
-html{scroll-behavior:smooth; font-size:clamp(16px, calc(7.7px + 0.52vw), 21px)}
+/* Barras de scroll del curso (v1.9.126, pedido de diseño en el simulador:
+   "hacerlas más lindas y parecidas a nuestro diseño"): finas, en el gris
+   azulado de la marca y sin carril. `scrollbar-color` se hereda, así que
+   alcanza con ponerlo en <html> para el índice, el glosario, los paneles y
+   los pop-ups; `scrollbar-width` NO se hereda: va en todos. Chrome, Edge y
+   Firefox lo toman de acá; Safari (iPad) solo entiende los
+   `::-webkit-scrollbar` de abajo. */
+html{scroll-behavior:smooth; font-size:clamp(16px, calc(7.7px + 0.52vw), 21px);
+  scrollbar-color:var(--brand-soft) transparent}
+*{scrollbar-width:thin}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--brand-soft);border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background-color:var(--brand)}
 body{margin:0;font-family:var(--font-body);color:var(--text);background:var(--bg);
   line-height:var(--lh-body);-webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{font-family:var(--font-title);font-weight:900;color:var(--brand-navy);

@@ -659,6 +659,7 @@
       "tipo": "cierre",
       "titulo": "Cierre del curso",
       "imagen": "img/cierre.webp",
+      "capas": "<p class=\"d-cierre-arte-txt\" data-place=\"\" data-l=\"54\" data-t=\"76.5\" data-w=\"27\" data-h=\"12\" aria-hidden=\"true\">Recordá que ya estás habilitado para realizar la evaluación. <b>¡Muchos éxitos!</b></p>",
       "bloqueo": "🔒 Hacé la mini práctica para desbloquear el cierre del curso.",
       "narracion": [
         {
@@ -959,7 +960,9 @@
       "etiqueta": "Enfermedades cardiovasculares",
       "titulo": "Enfermedades cardiovasculares:",
       "clase": "d-ent-pop",
-      "cuerpo": "<div class=\"icon-circle d-ent-pop-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-heart-pulse\"></use></svg></div>\n        <p>Afectan al <b>corazón</b> y a los <b>vasos sanguíneos</b>. Incluyen la enfermedad coronaria, el ACV y la arteriopatía periférica.</p>\n        <ul>\n          <li>Son el tipo de ENT que más muertes causa: <b>36,7%</b> en América y <b>40%</b> en Argentina.</li>\n          <li>Su mecanismo principal es la <b>aterosclerosis</b>: la placa de colesterol va tapando las arterias.</li>\n          <li>Es el tipo de ENT del que se ocupa este curso.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Controlando los factores de riesgo se puede disminuir <b>50%</b> de la mortalidad cardiovascular.</p>",
+      "cuerpo": "<p>Afectan al <b>corazón</b> y a los <b>vasos sanguíneos</b>. Incluyen la enfermedad coronaria, el ACV y la arteriopatía periférica.</p>\n        <ul>\n          <li>Son el tipo de ENT que más muertes causa: <b>36,7%</b> en América y <b>40%</b> en Argentina.</li>\n          <li>Su mecanismo principal es la <b>aterosclerosis</b>: la placa de colesterol va tapando las arterias.</li>\n          <li>Es el tipo de ENT del que se ocupa este curso.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Controlando los factores de riesgo se puede disminuir <b>50%</b> de la mortalidad cardiovascular.</p>",
+      "icono": "i-heart-pulse",
+      "entendido": true,
       "notas": [
         " Los 4 tipos de ENT (se abren desde los círculos de la diapositiva\n       \"¿Qué son las ENT?\"). Todos usan .modal-hd--dark por la regla de\n       consistencia de encabezados (CLAUDE.md §4): en un mismo curso no se\n       mezclan las dos variantes. Los datos son los que ya trae el curso\n       (América: diapositiva \"Las ENT en la región de las Américas\";\n       Argentina: \"Fallecimiento por ENT\") — no se sumó ninguna\n       estadística nueva. "
       ]
@@ -969,21 +972,27 @@
       "etiqueta": "Cáncer",
       "titulo": "Cáncer:",
       "clase": "d-ent-pop",
-      "cuerpo": "<div class=\"icon-circle d-ent-pop-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-cells\"></use></svg></div>\n        <p>Crecimiento <b>descontrolado de células</b> que puede aparecer en casi cualquier órgano del cuerpo.</p>\n        <ul>\n          <li>Es el segundo tipo de ENT en muertes: <b>24,6%</b> en América y <b>25%</b> en Argentina.</li>\n          <li>Comparte factores de riesgo con las enfermedades cardiovasculares: <b>tabaco</b>, alcohol, obesidad y sedentarismo.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Por eso los hábitos que trabaja este curso protegen bastante más que al corazón.</p>"
+      "cuerpo": "<p>Crecimiento <b>descontrolado de células</b> que puede aparecer en casi cualquier órgano del cuerpo.</p>\n        <ul>\n          <li>Es el segundo tipo de ENT en muertes: <b>24,6%</b> en América y <b>25%</b> en Argentina.</li>\n          <li>Comparte factores de riesgo con las enfermedades cardiovasculares: <b>tabaco</b>, alcohol, obesidad y sedentarismo.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Por eso los hábitos que trabaja este curso protegen bastante más que al corazón.</p>",
+      "icono": "i-cells",
+      "entendido": true
     },
     {
       "id": "ent-respiratorias",
       "etiqueta": "Enfermedades respiratorias crónicas",
       "titulo": "Enfermedades respiratorias crónicas:",
       "clase": "d-ent-pop",
-      "cuerpo": "<div class=\"icon-circle d-ent-pop-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-lungs\"></use></svg></div>\n        <p>Afectan las <b>vías respiratorias</b> y los <b>pulmones</b>, y se sostienen en el tiempo.</p>\n        <ul>\n          <li>Causan el <b>8,6%</b> de las muertes por ENT en América.</li>\n          <li>El <b>tabaco</b> es su principal factor de riesgo evitable.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Dejar de fumar mejora al mismo tiempo la salud respiratoria y la cardiovascular.</p>"
+      "cuerpo": "<p>Afectan las <b>vías respiratorias</b> y los <b>pulmones</b>, y se sostienen en el tiempo.</p>\n        <ul>\n          <li>Causan el <b>8,6%</b> de las muertes por ENT en América.</li>\n          <li>El <b>tabaco</b> es su principal factor de riesgo evitable.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Dejar de fumar mejora al mismo tiempo la salud respiratoria y la cardiovascular.</p>",
+      "icono": "i-lungs",
+      "entendido": true
     },
     {
       "id": "ent-diabetes",
       "etiqueta": "Diabetes",
       "titulo": "Diabetes:",
       "clase": "d-ent-pop",
-      "cuerpo": "<div class=\"icon-circle d-ent-pop-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-droplet-plus\"></use></svg></div>\n        <p>Niveles elevados de <b>glucosa en sangre</b> que, sostenidos en el tiempo, dañan corazón, vasos sanguíneos, ojos, riñones y nervios.</p>\n        <ul>\n          <li>Causa el <b>6,4%</b> de las muertes por ENT en América y el <b>35%</b> en Argentina.</li>\n          <li>Es también uno de los <b>7 factores de riesgo</b> cardiovascular que vas a ver más adelante.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Es el factor de riesgo más relevante en las enfermedades cardiovasculares.</p>"
+      "cuerpo": "<p>Niveles elevados de <b>glucosa en sangre</b> que, sostenidos en el tiempo, dañan corazón, vasos sanguíneos, ojos, riñones y nervios.</p>\n        <ul>\n          <li>Causa el <b>6,4%</b> de las muertes por ENT en América y el <b>35%</b> en Argentina.</li>\n          <li>Es también uno de los <b>7 factores de riesgo</b> cardiovascular que vas a ver más adelante.</li>\n        </ul>\n        <p class=\"d-ent-pop-note\">Es el factor de riesgo más relevante en las enfermedades cardiovasculares.</p>",
+      "icono": "i-droplet-plus",
+      "entendido": true
     }
   ],
   "practica": {
@@ -1130,20 +1139,8 @@
       "txt": "Recorriste toda la Unidad 2.",
       "pista": "Terminá la Unidad 2 para desbloquearlo."
     },
-    {
-      "id": "practica",
-      "nom": "Práctica hecha",
-      "ic": "🏅",
-      "txt": "Completaste la mini práctica.",
-      "pista": "Completá la mini práctica para desbloquearlo."
-    },
-    {
-      "id": "curso",
-      "nom": "Curso completo",
-      "ic": "🎓",
-      "txt": "Terminaste \"Prevención cardiovascular\".",
-      "pista": "Llegá al cierre del curso para desbloquearlo."
-    },
+    "impecable",
+    "racha",
     "explorador"
   ],
   "medallas": [

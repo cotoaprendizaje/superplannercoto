@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.126**.
+Vigente para **kit-base v1.9.127**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -197,17 +197,21 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   La plantilla ya guarda las erradas (`seenMal`/`markMal`), así vuelven
   marcadas al retomar. `repaso-errada` lo mide: contesta todo mal y exige
   los mismos logros (§7.73).
-- **Los 5 logros del kit vienen solos** (Puntería, En racha, Curioso,
-  Explorador, Impecable; +20 cada uno). Explorador pide abrir con un clic 3
-  paneles o fichas que ninguna diapositiva exige (Índice, Recursos, Mis
-  logros…); reemplazó a "Segunda mirada" en v1.9.126 y `actualizar-kit`
-  hace el cambio en `curso.json`. `new-course` los escribe en
-  `curso.json` como `logros: ['punteria', …]` y el kit los detecta por
-  eventos de sus piezas. No hay que cablear nada; un logro propio del curso
-  se suma al catálogo como objeto. Ninguno se gana con lo mínimo, y
-  reintentar no suma (decisión del cliente). Las medallas, si el curso no
-  las declara: plata = 85 % del máximo, oro = máximo + 40. `logros-kit` gana
-  cada uno con el gesto real (§7.74).
+- **5 logros por curso: 2 de recorrido + 3 de plus** (regla del cliente,
+  v1.9.127). Los de RECORRIDO salen con el recorrido normal: los del curso
+  ("Unidad 1 completa", como objetos en `curso.json` → `logros`) o los dos
+  del kit, `mitad` y `completo`, que se detectan solos. Los de PLUS premian
+  el extra, nunca salen con lo mínimo y suman +20: Puntería (todo el repaso
+  bien), En racha (3 bien seguidas), Curioso (3 términos del glosario),
+  Explorador (abrir con un clic 3 paneles o fichas que nada exige) e
+  Impecable (la práctica o el minijuego sin errores, al primer intento). Un
+  logro propio de plus lleva `plus: true`. `new-course` escribe
+  `['mitad', 'completo', 'impecable', 'racha', 'explorador']`; con unidades,
+  cambiar `mitad`/`completo` por los de cada unidad. `actualizar-kit` pasa a
+  esta lista a los cursos que tenían la de antes sin tocar, y
+  `gamificacion` exige 2 + 3. Reintentar no suma (decisión del cliente).
+  Las medallas, si el curso no las declara: plata = 85 % del máximo, oro =
+  máximo + 40. `logros-kit` gana cada uno con el gesto real (§7.74, §7.76).
 - **Un repaso o unos logros PROPIOS del curso no reciben lo nuevo del
   kit** (reintentar, los 5 logros, los efectos de logro): pasar a
   `initRepasoRapido` e `initLogros` del kit (§7.74).
@@ -331,7 +335,9 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   y un aviso dice qué falta (`initGateHints`). Decisión del cliente
   (§7.70): con `disabled` un lector de pantalla no anuncia por qué el
   botón no reacciona. Si algún día se cambia, cambian todos los gates
-  juntos.
+  juntos. Al completar lo que faltaba, el kit avisa solo **"¡Listo! Ya
+  podés seguir"** (v1.9.127): no hace falta escribirlo en el curso, y se
+  apaga con `initPlayer({ avisoListo: false })`.
 
 - **Todo lo ≤600px se prueba en viewport táctil REAL**
   (`isMobile:true`, `hasTouch:true`, `openCourseMobile()`), en la misma
@@ -445,7 +451,9 @@ la fuente (`curso.json`, marco, CSS propio, o al kit si es del kit).
 
 - La pestaña **"Editor"** (borde izquierdo) comenta la diapositiva o un
   elemento señalado, y **"Ver como"** muestra el curso en PC, Full HD, iPad y
-  teléfono, horizontal y vertical, a su medida exacta.
+  teléfono, horizontal y vertical, a su medida exacta. **"Recorrido
+  libre"** saca las trabas de avance para hacer cambios rápidos, e **"Ir
+  a"** salta a cualquier diapositiva (v1.9.127).
 - Un comentario le llega a Claude solo si lo manda alguien que puede
   EDITAR el artefacto ("Send to Claude" o `@claude` en el hilo). Los del
   resto del equipo los activa el dueño respondiendo en el hilo.
@@ -479,6 +487,11 @@ la fuente (`curso.json`, marco, CSS propio, o al kit si es del kit).
 - **Los rangos de medalla del cierre no se escriben**: salen de
   `medallas`. Solo un curso que los cuenta de otra forma (en logros, por
   ejemplo) los trae en `rangos` (§7.63).
+- **Una ficha puede llevar `icono` y `entendido`** (v1.9.127): `icono` es
+  un id del banco de íconos (el círculo arriba del texto) y `entendido`
+  (`true`, o el texto del botón) suma el pie "Escuchá o leé" con el botón
+  que cierra. Es el pop-up de contenido del canvas; sin los campos la
+  ficha sale como siempre.
 - **Los cursos nuevos nacen como datos** (v1.9.116). Los que ya existen
   pueden pasarse con `extraer-curso.mjs` cuando se los retome; no es
   obligatorio (§7.65).

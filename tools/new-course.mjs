@@ -560,12 +560,15 @@ if (!args.sinDatos) {
   /* Los 5 logros del kit, de entrada (kit-base v1.9.125, §7.74). Pedido
      del cliente: "todos los cursos con 5 logros por defecto". Son ids:
      el texto, el ícono, el bono de +20 y la detección los pone el kit
-     (coto-logros.js). Un curso los puede cambiar por logros propios. */
+     (coto-logros.js). Un curso los puede cambiar por logros propios.
+     v1.9.127, regla del cliente: 2 de RECORRIDO + 3 de PLUS. Los de
+     recorrido del kit (`mitad`, `completo`) se cambian, cuando el curso
+     tiene unidades, por los suyos ("Unidad 1 completa"…). */
   if (comoDatos) {
     const fCurso = path.join(destinoAbs, 'curso.json');
     const datosCurso = JSON.parse(fs.readFileSync(fCurso, 'utf8'));
     if (datosCurso.logros === undefined) {
-      datosCurso.logros = ['punteria', 'racha', 'curioso', 'explorador', 'impecable'];
+      datosCurso.logros = ['mitad', 'completo', 'impecable', 'racha', 'explorador'];
       fs.writeFileSync(fCurso, JSON.stringify(datosCurso, null, 2) + '\n');
     }
   }
