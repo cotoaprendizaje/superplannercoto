@@ -14,7 +14,8 @@
      1 · Busca una diapositiva con gate de pop-ups (`[data-popup-trigger]`
          adentro que traba "Siguiente"), abre y cierra cada uno, y exige
          el aviso en tono "ok" con "¡Listo! Ya podés seguir".
-     2 · Si el curso tiene el atajo de velocidad, exige la coma.
+     2 · Si el curso tiene el atajo de velocidad o el de Ajustes, exige la
+         coma en los dos.
    Un curso sin diapositivas con gate de pop-ups no tiene nada que revisar
    en el punto 1. */
 import { chromium } from 'playwright-core';
@@ -87,6 +88,8 @@ if (!slide) {
 /* 2 · La velocidad, con coma. */
 const vel = await page.evaluate(() => { const v = document.getElementById('d-narr-rate-val'); const c = v && v.closest('.d-narr-rate'); return v && c && !c.hidden ? v.textContent : null; });
 if (vel != null && !/^\d,\d\dx$/.test(vel)) fallos.push(`el atajo de velocidad dice "${vel}": tiene que ir con coma ("1,05x"), como en el canvas.`);
+const velCfg = await page.evaluate(() => { const v = document.getElementById('d-rate-value'); const c = document.getElementById('d-rate-field'); return v && c && !c.hidden ? v.textContent : null; });
+if (velCfg != null && !/^\d,\d\dx/.test(velCfg)) fallos.push(`Ajustes dice la velocidad "${velCfg}": con coma, igual que el panel de Locución.`);
 
 if (errores.length) fallos.push('errores en consola: ' + errores.slice(0, 3).join(' | '));
 await browser.close();

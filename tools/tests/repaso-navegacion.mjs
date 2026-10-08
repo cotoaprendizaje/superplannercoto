@@ -8,7 +8,8 @@
      2. una respuesta ERRADA de otra sesión se restaura (`seenMal`): se
         marca cuál eligió y cuál era la buena, sin narrar nada al cargar;
      3. cada respuesta avisa (`onAnswer`), por ejemplo para xAPI;
-     4. al entrar arranca en la primera pregunta SIN contestar.
+     4. al entrar arranca en la primera pregunta SIN contestar;
+     5. el contador de preguntas va a la derecha de la barra (v1.9.127).
 
    El test arma SU tira (dos preguntas V/F) dentro de la diapositiva activa
    y la inicializa con un `seenMal` que dice que la 1 se contestó mal. La
@@ -69,6 +70,18 @@ const r = await page.evaluate(async () => {
     buena: (items[0].querySelector('.es-la-correcta') || {}).textContent || '',
     dichosAlCargar: dichos.length
   };
+  /* 5 (v1.9.127): en la pregunta 2, sin contestar, "Reintentar" está
+     escondido y el contador va pegado a la DERECHA de la barra, como en el
+     canvas. La regla `.d-repaso-reintentar + .d-repaso-nav` le sacaba el
+     margen automático aunque el botón estuviera `hidden`: el contador
+     saltaba al lado del título. */
+  {
+    const t = tira.querySelector('.d-repaso-title').getBoundingClientRect();
+    const n = tira.querySelector('.d-repaso-nav').getBoundingClientRect();
+    const re = tira.querySelector('.d-repaso-reintentar');
+    res.navHueco = (re && re.hidden && t.width > 0) ? Math.round(t.right - n.right) : null;
+    res.navAncho = Math.round(t.width);
+  }
 
   /* Gate `data-require-repaso` (v1.9.121, §7.70): la 1 está contestada
      (mal, de otra sesión) y cuenta; falta la 2. */
@@ -151,6 +164,7 @@ else {
   if (r.arrancaEn !== 1) fallos.push(`con la pregunta 1 ya contestada (mal), la tira arrancó en la ${r.arrancaEn + 1}: tiene que arrancar en la primera SIN contestar.`);
   if (!/Falso/.test(r.elegida)) fallos.push(`la respuesta errada de otra sesión no se restauró: la marcada como elegida es "${r.elegida}" (tenía que ser "Falso").`);
   if (!/Verdadero/.test(r.buena)) fallos.push('al restaurar la respuesta errada no se señala cuál era la correcta.');
+  if (r.navHueco != null && r.navHueco > 40) fallos.push(`con "Reintentar" escondido, el contador de preguntas quedó ${r.navHueco}px antes del borde derecho de la barra (de ${r.navAncho}px): tiene que ir pegado a la derecha.`);
   if (r.dichosAlCargar) fallos.push(`al cargar se narraron ${r.dichosAlCargar} cosa(s): restaurar una respuesta no tiene que hablar.`);
   if (!r.respuestas.length || r.respuestas[0][0] !== 'zz-dos' || r.respuestas[0][1] !== true) {
     fallos.push(`contestar la pregunta 2 no avisó por \`onAnswer\` (avisos: ${JSON.stringify(r.respuestas)}).`);

@@ -1033,9 +1033,11 @@
        sería mentira — es la velocidad normal. */
     function etiquetaRate(f) {
       var base = global.Narrador.getRateDefault ? global.Narrador.getRateDefault() : 1;
-      if (f <= base - 0.1) return f.toFixed(2) + 'x (más lento)';
-      if (f >= base + 0.1) return f.toFixed(2) + 'x (más rápido)';
-      return f.toFixed(2) + 'x (normal)';
+      /* Con coma, como el atajo del panel de Locución (v1.9.127). */
+      var x = f.toFixed(2).replace('.', ',') + 'x';
+      if (f <= base - 0.1) return x + ' (más lento)';
+      if (f >= base + 0.1) return x + ' (más rápido)';
+      return x + ' (normal)';
     }
 
     function initRatePicker() {

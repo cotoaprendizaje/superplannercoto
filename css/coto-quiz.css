@@ -85,11 +85,13 @@
 .d-opt.is-ok,.d-opt.is-ok:has(input:checked){border-color:var(--success);background:#e7f6ee}
 /* Tilde que se dibuja (efecto del rediseño, v1.9.125): la letra se vuelve un
    tilde blanco que se traza; la animación está dentro del SVG. */
-.d-opt.is-ok .d-opt-letra{font-size:0;color:transparent;background:var(--success) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cstyle%3Epath%7Bstroke-dasharray:24;stroke-dashoffset:24;animation:d .5s ease-out .05s forwards%7D@keyframes d%7Bto%7Bstroke-dashoffset:0%7D%7D@media (prefers-reduced-motion:reduce)%7Bpath%7Banimation:none;stroke-dashoffset:0%7D%7D%3C/style%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/58% no-repeat}
+/* `input:checked ~` también (v1.9.127): la elegida azul (`.d-opt input:checked ~
+   .d-opt-letra`, más específica) le ganaba y la correcta ELEGIDA quedaba azul sin tilde. */
+.d-opt.is-ok .d-opt-letra,.d-opt.is-ok input:checked ~ .d-opt-letra{font-size:0;color:transparent;background:var(--success) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cstyle%3Epath%7Bstroke-dasharray:24;stroke-dashoffset:24;animation:d .5s ease-out .05s forwards%7D@keyframes d%7Bto%7Bstroke-dashoffset:0%7D%7D@media (prefers-reduced-motion:reduce)%7Bpath%7Banimation:none;stroke-dashoffset:0%7D%7D%3C/style%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/58% no-repeat}
 /* `:has(input:checked)` también: si no, la elegida (más específica) quedaba azul en vez de roja. */
 .d-opt.is-bad,.d-opt.is-bad:has(input:checked){border-color:var(--danger);background:#fdecec;
   animation:d-shake .4s} /* @keyframes d-shake vive en coto-player-bottom.css (cargarlo antes) */
-.d-opt.is-bad .d-opt-letra{background:var(--danger);color:#fff}
+.d-opt.is-bad .d-opt-letra,.d-opt.is-bad input:checked ~ .d-opt-letra{background:var(--danger);color:#fff}
 @media (prefers-reduced-motion:reduce){.d-opt.is-bad{animation:none}.d-quiz-streak.bump{animation:none}}
 
 .d-quiz-fb{margin:12px 6px 0;border-radius:18px;padding:12px 14px;font-size:.9rem;line-height:1.4;color:var(--brand-navy);border:2px solid}
@@ -213,7 +215,7 @@
 .d-slide-quiz.is-quiz-resultado .slide-inner > h2{ display: none; }
 
 @media (max-height: 760px){
-  .d-quiz-anillo{ width: 100px; height: 100px; }
+  .d-quiz-anillo{ width: 120px; height: 120px; }
   .d-quiz-review ul{ gap: .45rem; }
   .d-quiz-review li{ padding: .55rem .8rem; }
   .d-quiz-actions{ margin-top: .7rem; }

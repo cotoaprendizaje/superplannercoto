@@ -174,6 +174,24 @@ for (const vp of VPS) {
     });
     await page.click('[data-quiz] [data-answer]', { force: true }).catch(() => {});
     await page.waitForTimeout(350);
+    /* 4 (v1.9.127) · la ELEGIDA lleva el color del resultado: verde si era la
+       correcta, roja si no. La regla de "elegida" (azul) era más específica
+       y les ganaba a las dos: la correcta elegida quedaba azul y sin tilde. */
+    if (i === 0) {
+      const marca = await page.evaluate(() => {
+        const ins = [...document.querySelectorAll('[data-quiz] .d-opt input')].find((x) => x.checked);
+        const opt = ins && ins.closest('.d-opt');
+        const letra = opt && opt.querySelector('.d-opt-letra');
+        if (!letra || !(opt.classList.contains('is-ok') || opt.classList.contains('is-bad'))) return null;
+        const sonda = document.createElement('span');
+        sonda.style.background = opt.classList.contains('is-ok') ? 'var(--success)' : 'var(--danger)';
+        opt.appendChild(sonda);
+        const quiere = getComputedStyle(sonda).backgroundColor;
+        sonda.remove();
+        return { tiene: getComputedStyle(letra).backgroundColor, quiere, ok: opt.classList.contains('is-ok') };
+      });
+      if (marca && marca.tiene !== marca.quiere) fallos.push(`[${vp.label}] la opción elegida (${marca.ok ? 'correcta' : 'incorrecta'}) tiene la letra en ${marca.tiene}: tiene que ir en ${marca.ok ? 'verde con la tilde' : 'rojo'} (${marca.quiere}), no en el azul de "elegida".`);
+    }
     const sig = await page.$('[data-quiz] [data-next]:not([hidden])');
     if (sig) { await sig.click({ force: true }).catch(() => {}); await page.waitForTimeout(350); }
   }

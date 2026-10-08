@@ -203,6 +203,17 @@ try {
         avisosMarcado.push(`css/${f} le pone ancho a \`.d-instr-modal\` (era para el instructivo v3): con el v4 del kit` +
           '\n  queda angosto y scrolleando. Sacar ese bloque; el kit ya trae el tamaño.');
       }
+      /* La tira de repaso copiada al CSS del curso antes del rediseño
+         (v1.9.127, §7.77): sus reglas sueltas le ganan a las del kit y
+         el título queda azul sobre la barra azul, sin leerse. Lo tenía
+         Seguridad alimentaria. Solo las reglas SUELTAS: una acotada a una
+         variante propia (`.d-repaso--factor .d-repaso-title`, cardio) es
+         del curso y está bien. */
+      if (/(^|\})\s*\.d-repaso-title\s*\{/.test(css) || /(^|\})\s*\.d-repaso-btns\s+button\s*\{/.test(css)) {
+        avisosMarcado.push(`css/${f} trae su propia copia de la tira de repaso (\`.d-repaso-title\`, \`.d-repaso-btns button\`…),` +
+          '\n  anterior al rediseño: le gana al kit (el título no se lee sobre la barra azul, botones chicos). Sacar' +
+          '\n  ese bloque y volver a medir el alto (`data-h`) de cada tira: la contestada del kit es más alta.');
+      }
     }
   }
 } catch (e) {}

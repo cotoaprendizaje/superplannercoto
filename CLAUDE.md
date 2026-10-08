@@ -16222,3 +16222,84 @@ piezas).
 **Pendiente:** teléfono vertical en el resultado de la mini práctica y
 teléfono acostado en el resumen; el resto de los tableros del canvas
 (Repaso, Quiz, Predicción, Recursos, Config, Salida, Video…).
+
+## 7.77 El resto de los tableros del canvas (kit-base v1.9.128)
+
+Sigue la auditoría de §7.76 con los tableros que no estaban en las capturas
+del cliente: Repaso, Repaso en diapositiva, Predicción, Recursos, Ajustes,
+Ayuda, Quiz, Resultado del quiz y Salida. Cada uno se miró en un curso real
+(cardio, Seguridad alimentaria o el curso nuevo) contra el marcado del
+tablero.
+
+### Lo que se arregló en el kit
+
+- **Contador de la tira de repaso, a la derecha siempre.** La regla
+  `.d-repaso-reintentar + .d-repaso-nav{margin-left:.4em}` corría aunque
+  "Reintentar" estuviera `hidden`: el contador perdía el margen automático y
+  quedaba pegado al título hasta contestar mal. Ahora `:not([hidden])`.
+  `repaso-navegacion` (punto 5) lo mide: rojo con el CSS de v1.9.127 (803px
+  antes del borde), verde con el arreglo.
+- **Diapositiva de repaso del tamaño del canvas:** la pregunta a 19px con su
+  número en un círculo de 38px, pastillas altas, barra de 50px, pasos de
+  38px. Usaba los tamaños de la tira (hechos para ir sobre una lámina) y
+  quedaba chica con media tarjeta vacía. Por variable `--repaso-*`, así la
+  capa compacta sigue ganando en pantallas bajas (en teléfono acostado
+  vuelve a lo chico). Sin scroll en 1920×1080, 1366×768, 1280×660,
+  1024×768, 1180×820, 820×1180 y 844×390, contestada.
+- **Mini práctica: la opción ELEGIDA no mostraba el resultado.** La regla de
+  "elegida" (azul, `.d-opt input:checked ~ .d-opt-letra`) era más
+  específica que la de correcta e incorrecta: la correcta elegida quedaba
+  azul y sin tilde, la incorrecta elegida azul en vez de roja. `mini-practica`
+  (punto 4) compara el color de la letra elegida con `--success`/`--danger`:
+  rojo con el `coto-quiz.css` de v1.9.127 en las 4 medidas, verde con el
+  arreglo. (Sobre el curso nuevo no corre: no tiene mini práctica.)
+- **Resultado de la práctica:** el anillo de 100 a 120px en pantallas de
+  ≤760px de alto (la columna de la nota es más baja que la de respuestas:
+  no suma alto). `mini-practica` sigue sin recorte ni scroll.
+- **"Curso finalizado":** el aviso de la evaluación (`.d-salida-eval`) era
+  flex y partía la frase en columnas por las `<b>`, el mismo defecto que la
+  nota del resumen en §7.76. Ahora bloque con el "!" absoluto. Test nuevo
+  **`nota-en-linea`**: arma las dos notas con negritas en 520px y exige que
+  "Te queda pendiente la" ocupe un renglón; rojo con el addendum de v1.9.127
+  (3 renglones, display flex) y con la nota del resumen en flex.
+- **Ajustes:** la velocidad dice "1,05x (normal)", con coma, como el atajo
+  de Locución. `aviso-listo` (punto 2) lo exige en los dos; rojo con el
+  `coto-player.js` de v1.9.127.
+- **`actualizar-kit` avisa la tira de repaso copiada en el CSS del curso**
+  (reglas sueltas de `.d-repaso-title` o `.d-repaso-btns button`). La tenía
+  Seguridad alimentaria (`assets.css`, el bloque "Repaso rápido v2"): el
+  título salía azul sobre la barra azul, sin leerse, y los botones chicos.
+  Sacando ese bloque la tira queda como el canvas, pero contestada mide
+  202px contra los 162 del lugar que el curso le reservó (`data-h`), que
+  se midió para la versión chica: el arreglo es del curso (sacar el bloque
+  y agrandar el `data-h` de sus tres tiras), va en su ficha. Una regla
+  acotada a una variante propia (`.d-repaso--factor .d-repaso-title`,
+  cardio) no avisa.
+
+### En cardio
+
+Se sacó su `.d-salida-eval` con el fondo de la categoría, que pisaba la caja
+amarilla.
+
+### Coincidían, sin cambios
+
+Predicción (opciones numeradas, tilde, devolución en caja, botón verde; la
+cabecera conserva el color de la categoría, decisión de §7.74), Recursos (sin
+documentos no hay botón ni panel vacío) y Ayuda.
+
+### Del canvas que NO se llevó
+
+- **Ajustes:** el canvas elige la velocidad con cuatro botones (x0,75 · x1 ·
+  x1,25 · x1,5) y agrega dos interruptores (subtítulos de la voz, sonidos de
+  los logros). El kit sigue con el deslizante (más fino, 0,75 a 1,40, y lo
+  miden los tests) y sin los interruptores, que son funciones nuevas
+  (§7.74).
+- **Resultado de la práctica:** las pastillas "+20 pts" y "Racha" y la pista
+  del logro de puntería. La práctica no sabe cuántos puntos da cada curso
+  (los da el curso en sus `onAnswer`).
+- **Video:** la barra de título del tablero sigue afuera por §6.12.
+
+### Tests
+
+70 tests de navegador (+1, `nota-en-linea`). Cambiaron `repaso-navegacion`,
+`mini-practica` y `aviso-listo` (arriba).

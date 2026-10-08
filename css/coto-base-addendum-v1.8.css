@@ -1292,17 +1292,19 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
 @media (prefers-reduced-motion: reduce){ .d-obj-pip{ transition:none; } }
 
 /* Aviso destacado de la pantalla de salida (típicamente: "la
-   evaluación es aparte, en la plataforma"). Borde izquierdo, no un
-   recuadro parejo: lee como una nota al margen, no como una alerta de
-   error — es información de proceso, no algo que salió mal. */
+   evaluación es aparte, en la plataforma"): la caja amarilla con "!" del
+   canvas. Bloque con el "!" absoluto, NO flex (v1.9.127): con `<b>`
+   adentro, flex hacía de cada pedazo de texto una columna y la frase se
+   leía partida ("Te queda pendiente la | evaluación final | : es un…"),
+   el mismo defecto que tenía la nota del resumen. */
 .d-salida-eval{
-  display:flex; gap:10px; align-items:center; align-self:stretch;
-  padding:10px 14px; border-radius:16px;
+  position:relative; display:block; align-self:stretch;
+  padding:10px 14px 10px 52px; border-radius:16px;
   border:2px solid #ffd25e; background:#fff8e1; color:#8A5200;
   font-size:.875rem; text-align:left;
 }
 .d-salida-card .d-salida-eval{color:#8A5200;font-size:.875rem}
-.d-salida-eval::before{content:"!"; flex:none; width:28px; height:28px; border-radius:50%;
+.d-salida-eval::before{content:"!"; position:absolute; left:14px; top:50%; margin-top:-14px; width:28px; height:28px; border-radius:50%;
   background:#ffd25e; display:grid; place-items:center; font-weight:700; color:#8A5200}
 
 /* Pie pegajoso de los pop-ups largos (instructivo, reglas de un

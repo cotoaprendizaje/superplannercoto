@@ -659,8 +659,8 @@
 /* ---- Pantalla de salida del curso ---- */
 .d-salida{position:fixed;inset:0;z-index:200;display:grid;place-items:center;
   background:color-mix(in srgb,var(--brand-navy) 92%,transparent);padding:1.5rem}
-.d-salida-eval{background:var(--cat-soft);
-  color:var(--brand-navy)}
+/* El aviso de la evaluación es la caja amarilla del kit (canvas, v1.9.127):
+   acá había un fondo de la categoría que la pisaba. Se sacó. */
 
 /* ---- El resumen del cierre entra sin scroll ----
    Medido a 1366x768: las 2 columnas necesitaban 818px contra 648
