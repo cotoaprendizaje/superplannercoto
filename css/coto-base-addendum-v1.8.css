@@ -228,17 +228,24 @@
    (decisión del cliente, 2026-10-07: "solo el punto, como el canvas"):
    el `.ic` sigue en el marcado de los cursos y se esconde acá.
    Azul = en curso, verde = completo, gris = pendiente. */
-.d-sidenav-list{display:flex;flex-direction:column;gap:2px;counter-reset:ix;
-  background:linear-gradient(#D7DEEC,#D7DEEC) no-repeat 20.5px 24px / 3px calc(100% - 42px);background-origin:content-box}
-.d-sidenav-group{position:relative;display:block;counter-increment:ix;min-height:44px;margin:12px 0 4px;padding:3px 0 0 56px;
-  font-family:var(--font-title);font-weight:900;font-size:1.125rem;line-height:1.1;letter-spacing:0;text-transform:none;
+.d-sidenav-list{position:relative;display:flex;flex-direction:column;gap:2px;counter-reset:ix;
+  /* `--ix-desde` / `--ix-largo`: del centro del círculo de la unidad 1 al
+     punto del último tema, los mide coto-ui.js (v1.9.126). `local`: la
+     lista es la que scrollea, y la línea tiene que moverse con ella. */
+  background:linear-gradient(#D7DEEC,#D7DEEC) no-repeat 20.5px var(--ix-desde,24px) / 3px var(--ix-largo,calc(100% - 42px));
+  background-origin:content-box;background-attachment:local}
+/* El título de la unidad en tipografía de SUBTÍTULO —Roboto Bold, en
+   mayúsculas— (v1.9.126, pedido de diseño); el número del círculo sigue
+   en la de títulos. */
+.d-sidenav-group{position:relative;display:block;counter-increment:ix;min-height:44px;margin:12px 0 4px;padding:4px 0 0 56px;
+  font-family:var(--font-body);font-weight:700;font-size:.875rem;line-height:1.25;letter-spacing:.02em;text-transform:uppercase;
   color:var(--brand);border:0}
 .d-sidenav-group::before{content:counter(ix);position:absolute;left:0;top:0;width:44px;height:44px;border-radius:50%;
-  display:grid;place-items:center;background:var(--brand-soft);color:#fff;font-size:1.375rem}
+  display:grid;place-items:center;background:var(--brand-soft);color:#fff;font-family:var(--font-title);font-weight:900;font-size:1.375rem;letter-spacing:0}
 .d-sidenav-group.is-empezado::before{background:var(--brand)}
 .d-sidenav-group.is-completo::before{background:var(--success)}
 .d-sidenav-group::after{content:attr(data-avance);display:block;margin-top:2px;font-family:var(--font-body);
-  font-weight:400;font-size:.75rem;color:#6B7690}
+  font-weight:400;font-size:.75rem;letter-spacing:0;text-transform:none;color:#6B7690}
 
 .d-sidenav-item{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;
   min-height:36px;margin-left:42px;padding:0 12px;text-align:left;border:none;border-radius:999px;background:none;
@@ -431,7 +438,9 @@
        <span class="i">🏅</span><span class="n">Nombre</span><span class="d">Descripción.</span>
      </div>
    ============================================================ */
-.d-badges-intro{margin:0 0 .8rem;font-size:.86rem;color:var(--text-soft);line-height:1.4}
+/* Más angosta y centrada (v1.9.126, pedido de diseño): a lo ancho del panel
+   eran dos renglones de ~1000px, difíciles de seguir. */
+.d-badges-intro{max-width:640px;margin:0 auto .8rem;text-align:center;text-wrap:balance;font-size:.86rem;color:var(--text-soft);line-height:1.4}
 
 /* ---- Rediseño v1.9.125 (§7.74): el panel "Mis logros:" del canvas ----
    Más ancho que un `.d-wide` común: entran la medalla, la barra y las
@@ -482,16 +491,19 @@
   background:#E9EEF8;color:var(--brand-soft);font-size:1.9rem;flex:none}
 .d-badge.earned .i{background:var(--brand);color:#fff}
 .d-badge .i svg{width:34px;height:34px}
-.d-badge-lock{position:absolute;right:-2px;bottom:2px;width:30px;height:30px;border-radius:50%;background:#fff;
+/* El candado va ADENTRO del círculo (v1.9.126, pedido de diseño: "que los
+   íconos no sobresalgan del círculo contenedor"). 24px en un círculo de 74:
+   a 7px del borde queda entero adentro. */
+.d-badge-lock{position:absolute;right:7px;bottom:7px;width:24px;height:24px;border-radius:50%;background:#fff;
   border:2px solid #D7DEEC;box-sizing:border-box;display:grid;place-items:center;color:#6B7690}
-.d-badge-lock svg{width:15px;height:15px;stroke-width:2.4}
+.d-badge .i .d-badge-lock svg{width:12px;height:12px;stroke-width:2.6}   /* `.d-badge .i svg` (34px) le ganaba: el candado salía de 34px y desbordaba */
 .d-badge-plus{position:absolute;right:-4px;bottom:0;padding:3px 8px;border-radius:999px;background:#ffd25e;color:var(--warning-ink);
   font-size:.75rem;font-weight:700;border:2px solid #fff;line-height:1.1}
 .d-badge .n{font-family:var(--font-title);font-weight:900;font-size:1.125rem;line-height:1.05;color:#6B7690;margin:0}
 .d-badge.earned .n{color:var(--brand)}
 .d-badge .d{display:block;font-size:.75rem;line-height:1.3;color:#46506A;margin:0}
 .d-badge-pie{margin-top:auto;padding-top:4px;width:100%;display:flex;flex-direction:column;gap:6px}
-.d-badge-est{display:flex;justify-content:space-between;gap:6px;font-size:.75rem;color:#46506A}
+.d-badge-est{display:flex;justify-content:space-between;gap:6px;min-height:1.35em;font-size:.75rem;color:#46506A}   /* min-height: vacía (sin nada que contar) las barras siguen alineadas */
 .d-badge-est b{color:#6B7690}
 .d-badge.earned .d-badge-est b{color:var(--warning-ink)}
 .d-badge-bar{height:7px;border-radius:999px;background:#E9EEF8;overflow:hidden}
@@ -531,8 +543,8 @@
   .d-badge .n{font-size:.78rem;hyphens:manual}
   .d-badge .d,.d-badge-bar,.d-badge-est{display:none}
   .d-badge-pill{min-height:24px;font-size:.66rem;padding:0 4px}
-  .d-badge-lock{width:20px;height:20px}
-  .d-badge-lock svg{width:10px;height:10px}
+  .d-badge-lock{width:18px;height:18px;right:4px;bottom:4px;border-width:1.5px}
+  .d-badge .i .d-badge-lock svg{width:9px;height:9px}
 }
 /* Teléfono parado: la medalla arriba y los puntos debajo. */
 @media (max-width:560px){
@@ -1125,29 +1137,35 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
    (La v3 de acá —esquina de 70px, kicker, grilla 2x2 en --cat— quedó en
    el historial: §6.36, §6.60.) */
 .d-instr-modal{position:relative;overflow:hidden;width:min(1000px,92vw);border-radius:32px}
-.d-instr-modal::before,.d-instr-modal::after{content:"";position:absolute;border-radius:50%;box-sizing:border-box;pointer-events:none}
-.d-instr-modal::before{right:-110px;bottom:-170px;width:360px;height:360px;border:2px solid #D7DEEC}
-.d-instr-modal::after{right:-60px;bottom:-120px;width:260px;height:260px;border:2px solid var(--brand-soft)}
+.d-instr-modal::before,.d-instr-modal::after{content:"";position:absolute;box-sizing:border-box;pointer-events:none}
+/* Las líneas del arte de los cursos (v1.9.126, comentario del cliente en
+   el simulador del editor: "replicar las líneas de las diapos del arte"):
+   el aro grueso translúcido cortado por el borde, abajo a la izquierda, y
+   abajo a la derecha el círculo fino con la línea que sube y dobla en
+   curva. Colores del manual; la tarjeta los recorta (`overflow:hidden`). */
+.d-instr-modal::before{left:-80px;bottom:-130px;width:250px;height:250px;border-radius:50%;border:16px solid #E9EEF8}
+.d-instr-modal::after{right:0;bottom:0;width:260px;height:140px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 140'%3E%3Ccircle cx='212' cy='118' r='86' fill='none' stroke='%23D7DEEC' stroke-width='2'/%3E%3Cpath d='M58 140 V102 Q58 66 94 66 H260' fill='none' stroke='%23006EA0' stroke-width='2.5'/%3E%3C/svg%3E") right bottom/100% 100% no-repeat}
 .d-instr-modal > .modal-hd{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:.75rem;min-height:50px;box-sizing:border-box;
   padding:0 8px 0 22px;background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:#fff}
 .d-instr-modal > .modal-hd h3{margin:0;font-family:var(--font-title);font-weight:900;font-size:1.5rem;line-height:1;color:#fff}
 .d-instr-modal > .modal-hd .modal-x{position:static;order:2;flex:none;width:34px;height:34px;background:rgba(255,255,255,.2)}
-.d-instr-modal .modal-bd{position:relative;z-index:1;padding:30px 40px 30px;gap:0}
+.d-instr-modal .modal-bd{position:relative;z-index:1;padding:24px 36px 24px;gap:0}   /* 30/40 → 24/36 (v1.9.126): "un poco grande", comentario del cliente */
 .d-instr-pasos{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
-.d-instr-camino{position:absolute;left:0;top:18px;width:100%;height:120px;overflow:visible;pointer-events:none}
+.d-instr-camino{position:absolute;left:0;top:2px;width:100%;height:120px;overflow:visible;pointer-events:none}
 .d-instr-camino path{fill:none;stroke:var(--brand-soft);stroke-width:5;stroke-dasharray:2 14;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .d-instr-paso{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
-.d-instr-paso:nth-child(odd){padding-top:34px}   /* el 2º y el 4º paso (el svg es el 1º hijo) bajan, como el camino */
-.d-instr-paso-ic{width:84px;height:84px;border-radius:50%;background:var(--brand);display:grid;place-items:center;flex:none}
-.d-instr-paso-ic svg{width:40px;height:40px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.d-instr-paso b{margin-top:8px;font-family:var(--font-title);font-weight:900;font-size:1.3125rem;line-height:1.1;color:var(--brand)}
-.d-instr-paso > span:last-child{font-size:.875rem;line-height:1.45;color:#46506A;max-width:200px}
-.d-instr-logros{display:flex;align-items:center;justify-content:center;gap:12px;width:min(600px,100%);min-height:51px;box-sizing:border-box;
-  margin:26px auto 0;padding:0 20px 0 10px;border-radius:999px;background:#fff8e1;border:2px solid #ffd25e;
+.d-instr-paso:nth-child(odd){padding-top:34px}   /* el 2º y el 4º paso (el svg es el 1º hijo) bajan lo mismo que el camino (66 − 32 = 34) */
+.d-instr-paso-ic{width:68px;height:68px;border-radius:50%;background:var(--brand);display:grid;place-items:center;flex:none}
+.d-instr-paso-ic svg{width:32px;height:32px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.d-instr-paso b{margin-top:4px;font-family:var(--font-title);font-weight:900;font-size:1.2rem;line-height:1.1;color:var(--brand)}
+.d-instr-paso > span:last-child{font-size:.875rem;line-height:1.4;color:#46506A;max-width:210px}
+.d-instr-logros{display:flex;align-items:center;justify-content:center;gap:12px;width:fit-content;max-width:100%;white-space:nowrap;min-height:51px;box-sizing:border-box;   /* una sola línea (v1.9.126, comentario del cliente); se ajusta al texto */
+  margin:20px auto 0;padding:0 20px 0 10px;border-radius:999px;background:#fff8e1;border:2px solid #ffd25e;
   font-size:.9375rem;color:var(--warning-ink);text-align:center}
 .d-instr-logros-ic{width:34px;height:34px;flex:none;border-radius:50%;background:#ffd25e;display:grid;place-items:center}
+@media (max-width:640px){ .d-instr-logros{white-space:normal} }   /* en un teléfono vertical no entra en una línea */
 .d-instr-logros-ic svg{width:18px;height:18px;fill:none;stroke:var(--warning-ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.d-instr-modal .d-instr-cta{margin-top:18px;background:none;position:static}
+.d-instr-modal .d-instr-cta{margin-top:14px;background:none;position:static}
 .d-instr-empezar{flex:none;padding:14px 30px;border-radius:999px;border:0;background:var(--brand);color:#fff;cursor:pointer;
   font-family:var(--font-title);font-weight:900;font-size:1.1875rem;box-shadow:0 6px 0 var(--brand-deep);transition:transform .12s,box-shadow .12s}
 .d-instr-empezar:hover{filter:brightness(1.06)}

@@ -59,7 +59,7 @@
    medalla". Rediseñado en el canvas con el cliente. Tres cambios:
 
    1 · EL CATÁLOGO ACEPTA IDS DEL KIT. En `curso.json` → `logros` alcanza
-       con escribir `["punteria", "racha", "curioso", "segunda", "impecable"]`:
+       con escribir `["punteria", "racha", "curioso", "explorador", "impecable"]`:
        el texto, el ícono y el bono los pone el kit, y los detecta solo
        (más abajo, "Detectores"). Un curso puede mezclar ids del kit con
        logros propios (objetos, como siempre).
@@ -86,7 +86,7 @@
     punteria: 'M12 3v3M12 18v3M3 12h3M18 12h3M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10zM12 11a1 1 0 1 0 0 2 1 1 0 0 0 0-2z',
     racha: 'M12 3c1 3.5 5 5.2 5 10a5 5 0 0 1-10 0c0-2.2 1.2-3.8 2.4-4.6.1 1.6.9 2.6 2 3C11 9 11 6 12 3z',
     curioso: 'M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20M9 8h7M9 12h5',
-    segunda: 'M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2',
+    explorador: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM15.5 8.5l-2 5-5 2 2-5z',
     impecable: 'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z',
     candado: 'M5 11h14v10H5z M8 11V8a4 4 0 0 1 8 0v3',
     estrella: 'M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z'
@@ -98,10 +98,10 @@
     punteria:  { nom: 'Puntería', mide: 'acierto', txt: 'Contestaste bien todos los repasos al primer intento.' },
     racha:     { nom: 'En racha', mide: 'acierto', txt: 'Encadenaste 3 respuestas correctas seguidas.' },
     curioso:   { nom: 'Curioso', mide: 'recorrido', txt: 'Consultaste 3 términos del glosario por tu cuenta.' },
-    segunda:   { nom: 'Segunda mirada', mide: 'recorrido', txt: 'Volviste a una diapositiva para repasarla.' },
+    explorador: { nom: 'Explorador', mide: 'recorrido', txt: 'Abriste por tu cuenta 3 paneles o fichas opcionales.' },
     impecable: { nom: 'Impecable', mide: 'acierto', txt: 'Terminaste la práctica o el minijuego sin un error, al primer intento.' }
   };
-  var IDS_GENERICOS = ['punteria', 'racha', 'curioso', 'segunda', 'impecable'];
+  var IDS_GENERICOS = ['punteria', 'racha', 'curioso', 'explorador', 'impecable'];
   var COLOR_MEDALLA = { bronce: '#d38b4f', plata: '#c9d3de', oro: '#ffd25e' };
   var TINTA_MEDALLA = { bronce: '#ffffff', plata: '#00466E', oro: '#7a5300' };
 
@@ -155,7 +155,7 @@
        logros del kit): pr = repaso acertado, pm = repaso errado, rs = racha
        actual, gl = términos consultados (por posición), pi = la primera
        práctica o el primer minijuego ya terminados. */
-    var lg = { pr: [], pm: 0, rs: 0, gl: [], pi: 0 };
+    var lg = { pr: [], pm: 0, rs: 0, gl: [], pi: 0, ex: [] };
     var tiene = {};
     BADGES.forEach(function (b) { if (b.generico) tiene[b.id] = true; });
     var hayGenericos = Object.keys(tiene).length > 0;
@@ -185,11 +185,17 @@
         a.setAttribute('aria-hidden', 'true');
         if (copa && /🏆/.test(copa.textContent)) chip.replaceChild(a, copa); else chip.insertBefore(a, chip.firstChild);
       }
-      var n = BADGES.length, circ = 2 * Math.PI * 16, seg = circ / n, h = '<circle cx="20" cy="20" r="16" fill="#fff"/>';
+      /* Un aro CONTINUO de fondo y, encima, un tramo verde por logro
+         ganado (v1.9.126). Antes eran N tramos sueltos con huecos sobre
+         blanco y el aro se leía cortado, como un engranaje (comentario
+         del cliente en el simulador del editor). */
+      var n = BADGES.length, circ = 2 * Math.PI * 16, seg = circ / n, hueco = 0;   /* sin huecos: con logros ganados también se lee continuo (pedido del cliente) */
+      var h = '<circle cx="20" cy="20" r="18.5" class="d-lg-anillo-fondo"/>' +
+        '<circle cx="20" cy="20" r="16" fill="none" stroke-width="5" class="d-lg-anillo-pista"/>';
       BADGES.forEach(function (b, i) {
-        h += '<circle cx="20" cy="20" r="16" fill="none" stroke-width="5" transform="rotate(-90 20 20)" class="' +
-          (obtenidos[b.id] ? 'is-on' : '') + '" stroke-dasharray="' + (seg - 3).toFixed(2) + ' ' + (circ - seg + 3).toFixed(2) +
-          '" stroke-dashoffset="' + (-i * seg).toFixed(2) + '"/>';
+        if (!obtenidos[b.id]) return;
+        h += '<circle cx="20" cy="20" r="16" fill="none" stroke-width="5" transform="rotate(-90 20 20)" class="is-on" stroke-dasharray="' +
+          (seg - hueco).toFixed(2) + ' ' + (circ - seg + hueco).toFixed(2) + '" stroke-dashoffset="' + (-i * seg - hueco / 2).toFixed(2) + '"/>';
       });
       h += '<text x="20" y="25" text-anchor="middle">' + Object.keys(obtenidos).length + '</text>';
       a.innerHTML = h;
@@ -236,11 +242,15 @@
       if (b.id === 'punteria' && b.generico) {
         var t = totalRepaso();
         if (lg.pm) return { txt: 'hubo una errada', pct: 0 };
-        return t ? { txt: lg.pr.length + ' de ' + t + ' preguntas', pct: Math.round(lg.pr.length / t * 100) } : { txt: 'todavía no', pct: 0 };
+        return t ? { txt: lg.pr.length + ' de ' + t + ' preguntas', pct: Math.round(lg.pr.length / t * 100) } : { txt: '', pct: 0 };
       }
-      if (b.id === 'racha' && b.generico) return { txt: lg.rs ? 'racha de ' + lg.rs : 'todavía no', pct: Math.round(Math.min(lg.rs, 3) / 3 * 100) };
+      if (b.id === 'racha' && b.generico) return { txt: lg.rs + ' de 3 seguidas', pct: Math.round(Math.min(lg.rs, 3) / 3 * 100) };
       if (b.id === 'curioso' && b.generico) return { txt: lg.gl.length + ' de 3 términos', pct: Math.round(Math.min(lg.gl.length, 3) / 3 * 100) };
-      return { txt: 'todavía no', pct: 0 };
+      if (b.id === 'explorador' && b.generico) return { txt: lg.ex.length + ' de 3 abiertos', pct: Math.round(Math.min(lg.ex.length, 3) / 3 * 100) };
+      /* Sin nada que contar, la línea va vacía: el botón de abajo ya dice
+         "Todavía no" y repetirlo arriba (v1.9.125) se leía como un error
+         (pedido de diseño, v1.9.126). */
+      return { txt: '', pct: 0 };
     }
 
     /* Contrato del kit: el contenedor es #d-badges-list.d-badges-grid y
@@ -411,23 +421,44 @@
         if (lg.gl.length >= 3) unlock('curioso');
         guardar();
       });
-      /* Segunda mirada: llegar a una diapositiva ANTERIOR a la más
-         avanzada que ya se vio (con "Anterior", el índice o "Repasar en").
-         Retomar donde se dejó no cuenta: eso es avanzar. */
-      var maxVista = -1;
-      document.addEventListener('slidechange', function () {
-        var m = global.motor;
-        if (!m || !m.slides || !m.current) return;
-        var i = m.slides.indexOf(m.current());
-        if (i < 0) return;
-        if (tiene.segunda && maxVista >= 0 && i < maxVista) unlock('segunda');
-        if (i > maxVista) maxVista = i;
+      /* Explorador (v1.9.126, reemplaza a "Segunda mirada", que el
+         cliente encontró molesta: se ganaba sin querer al usar
+         "Anterior"). Cuenta los pop-ups que el alumno abre POR SU CUENTA
+         —con un clic en su `[data-popup-trigger]`— y que ninguna
+         diapositiva le exige: Índice, Recursos, Mis logros, una ficha
+         opcional. No cuentan el glosario (eso es Curioso), el
+         instructivo, ni lo que se abre solo (un gate, el aviso de la
+         práctica). Se pensó "todo lo opcional de 3 diapositivas", pero
+         los cursos reales casi no tienen fichas opcionales adentro de
+         una diapositiva (cardio ninguna, alimentaria una): habría sido
+         un logro imposible. */
+      var NO_EXPLORA = { glosario: 1, instrucciones: 1 };
+      var porClic = null;
+      function exigido(id) {
+        return Array.prototype.some.call(document.querySelectorAll('[data-slide]'), function (s) {
+          return ['data-require-popups', 'data-require-fichas', 'data-gate-popup'].some(function (a) {
+            return (s.getAttribute(a) || '').split(/\s+/).indexOf(id) >= 0;
+          });
+        });
+      }
+      document.addEventListener('click', function (e) {
+        var t = e.target && e.target.closest && e.target.closest('[data-popup-trigger]');
+        porClic = t ? t.getAttribute('data-popup-trigger') : null;
+      }, true);
+      document.addEventListener('popupopen', function (e) {
+        var id = e.detail && e.detail.id;
+        var propio = !!id && id === porClic;
+        porClic = null;
+        if (!tiene.explorador || !propio || NO_EXPLORA[id] || lg.ex.indexOf(id) >= 0 || exigido(id)) return;
+        lg.ex.push(id);
+        if (lg.ex.length >= 3) unlock('explorador');
+        guardar();
       });
     }
 
     function serialize() {
       var s = { p: puntos, b: Object.keys(obtenidos) };
-      if (hayGenericos && (lg.pr.length || lg.pm || lg.rs || lg.gl.length || lg.pi)) s.lg = lg;
+      if (hayGenericos && (lg.pr.length || lg.pm || lg.rs || lg.gl.length || lg.pi || lg.ex.length)) s.lg = lg;
       return s;
     }
 
@@ -456,6 +487,7 @@
         lg.rs = +s.lg.rs || 0;
         lg.gl = Array.isArray(s.lg.gl) ? s.lg.gl : [];
         lg.pi = s.lg.pi ? 1 : 0;
+        lg.ex = Array.isArray(s.lg.ex) ? s.lg.ex : [];
       }
       updateHud();
       render();

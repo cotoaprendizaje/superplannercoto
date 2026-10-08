@@ -196,6 +196,7 @@
 
     function renderQ() {
       var it = QUIZ[cur]; qn.textContent = cur + 1; renderDots();
+      host.classList.remove('is-devolucion');
       var h = '<div class="d-q"><div class="d-q-title"><span class="d-q-num">' + (cur + 1) + '</span>' + it.q + '</div>';
       /* Nomenclatura a) b) c) (kit-base v1.9.98). Pedido del cliente.
          No es decoración: sin letra, para referirse a una opción hay que
@@ -227,6 +228,10 @@
         var ch = -1; body.querySelectorAll('input').forEach(function (r) { if (r.checked) ch = +r.value; });
         if (ch === -1) return; answers[cur] = ch; var ok = ch === it.ok;
         body.querySelectorAll('.d-opt').forEach(function (o, i) { o.classList.toggle('is-ok', i === it.ok); o.classList.toggle('is-bad', i === ch && !ok); o.querySelector('input').disabled = true; });
+        /* `.is-devolucion` (v1.9.126): con la devolución a la vista, en
+           pantalla baja coto-quiz.css saca la fila de avance y pone
+           "Siguiente" al lado de la devolución (cardio a 844×390: 60px de más). */
+        host.classList.add('is-devolucion');
         fb.hidden = false; fb.className = 'd-quiz-fb ' + (ok ? 'ok' : 'bad'); fb.innerHTML = '<b>' + (ok ? '✔ ¡Correcto!' : '✘ No es correcta.') + '</b> ' + it.why;
         track('practica-q' + (cur + 1), it.q, ok, it.opts[ch]);
         if (ok) { streak++; mface.textContent = streak >= 3 ? '🤩' : '😄'; mtext.textContent = pick(streak >= 3 ? HOT : HAPPY); mascot.className = 'd-quiz-mascot happy'; }
@@ -323,7 +328,12 @@
       document.dispatchEvent(new CustomEvent('cotopractica', { detail: { correctas: correct, total: QUIZ.length, primera: firstTime } }));
       renderDots();
       onFinish();
-      respondiendo(false);
+      /* La marca "respondiendo" NO se saca acá (v1.9.126): al contestar la
+         última pregunta su devolución sigue en pantalla, y sin la marca
+         volvía la intro de la diapositiva (título, bajada, el aviso del
+         curso) y la empujaba: la diapositiva scrolleaba, lo vio el cliente
+         en cardio. Se saca al dibujar el resultado, en `finish()`. */
+      respondiendo(false, false, true);
       /* La diapositiva de la práctica deja de trabar en este momento:
          se avisa al motor para que habilite "Siguiente" ya (§7.68). */
       document.dispatchEvent(new Event('gatechange'));
@@ -339,6 +349,7 @@
 
     function finish() {
       registrar();
+      host.classList.remove('is-devolucion');
       var correct = aciertos();
       renderDots();
       /* Rediseño v1.9.125 (§7.74), del canvas: dos columnas. A la izquierda
@@ -376,7 +387,7 @@
       /* `.is-quiz-resultado` (v1.9.125): el resultado en dos columnas es el
          estado más alto; en pantallas bajas la intro se va igual que
          mientras se responde (coto-quiz.css). */
-      if (slideDelQuiz) slideDelQuiz.classList.add('is-quiz-resultado');
+      if (slideDelQuiz) { slideDelQuiz.classList.add('is-quiz-resultado'); slideDelQuiz.classList.remove('is-quiz-running'); }
       onResult(body.querySelector('.d-quiz-result'), aciertos(), QUIZ.length);
     }
 
@@ -395,8 +406,8 @@
          `data-intro-popup` en la diapositiva, que el motor ya sabe abrir
          sin pisar la locución (con un `setTimeout` propio, cardio pisaba
          la narración y `locucion-control` lo marcó). Completa, se saca. */
-    function respondiendo(si, reintento) {
-      if (slideDelQuiz) slideDelQuiz.classList.toggle('is-quiz-running', !!si);
+    function respondiendo(si, reintento, mantenerMarca) {
+      if (slideDelQuiz && !mantenerMarca) slideDelQuiz.classList.toggle('is-quiz-running', !!si);
       if (slideDelQuiz && si) slideDelQuiz.classList.remove('is-quiz-resultado');
       if (slideDelQuiz && opts.introPopup) {
         if (completa()) slideDelQuiz.removeAttribute('data-intro-popup');

@@ -19,7 +19,7 @@
      · que el `curso.json` siga siendo JSON válido. */
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { migrarMarcado, migrarTituloRepaso } from './_migrar-marcado.mjs';
+import { migrarMarcado, migrarTituloRepaso, migrarDatosCurso } from './_migrar-marcado.mjs';
 
 const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const fallos = [];
@@ -31,6 +31,12 @@ const VIEJO = `<svg style="display:none"><symbol id="i-check" viewBox="0 0 24 24
 <section class="slide" data-slide="indice"><h2 data-slide-title class="sr-only">Índice de contenidos</h2></section>
 <div class="d-vol-hd"><span class="d-vol-title">Volumen</span></div>
 <span class="d-narr-title">Avance</span>
+<header class="d-top"><div class="d-top-group d-top-group--audio"><button class="d-iconbtn d-iconbtn--labeled is-on" id="d-narrate" type="button">
+            <svg class="ic-off" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8"/></svg>
+            <svg class="ic-on" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8"/><path d="M4.5 8a7.5 7.5 0 0 0 0 5"/></svg></button></div><div class="d-top-left">
+        <button class="d-iconbtn d-iconbtn--labeled" type="button" data-popup-trigger="sidenav" aria-label="Índice del curso"><svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/></svg>
+          <span class="lbl">Índice</span>
+        </button></div></header>
 <span class="d-fab-pop-title">Configuración</span>
 <span class="d-fab-pop-title">Ayuda</span>
 <p class="d-fab-acc-hd">Preguntas frecuentes</p>
@@ -90,7 +96,10 @@ exige(!/Para avanzar necesitás completar cada interacción/.test(h), 'dejó el 
 exige(/d-pracintro-n" aria-hidden="true">5</.test(h), 'el aviso de la práctica no conservó "5 preguntas"');
 exige(/Con lo obligatorio llegás a <strong>bronce o plata<\/strong>/.test(h), 'no actualizó el texto de "Mis logros"');
 exige(!/id="i-play"/.test(h), 'dejó el símbolo #i-play sin uso en el sprite');
+exige(/<div class="d-top-group d-top-group--indice"[^>]*>\s*<button class="d-iconbtn d-iconbtn--labeled"[^>]*data-popup-trigger="sidenav"/.test(h), 'no metió el botón "Índice" suelto en su cápsula .d-top-group--indice');
 exige(/id="i-check"/.test(h), 'se llevó otro símbolo del sprite (#i-check)');
+exige(/<svg class="ic-off"[^>]*><path d="M12 1a3 3 0 0 0-3 3v8"\/><line class="ic-tachado"/.test(h), 'no tachó el micrófono de "Locución" apagada');
+exige(!/<svg class="ic-on"[^>]*>(?:(?!<\/svg>)[\s\S])*ic-tachado/.test(h), 'tachó el micrófono de "Locución" PRENDIDA');
 
 /* Un #i-play EN USO no se saca. */
 const conUso = migrarMarcado('<svg><symbol id="i-play"><path/></symbol></svg><button><svg><use href="#i-play"/></svg></button>', KIT);
@@ -103,6 +112,26 @@ const json = JSON.stringify({ diapos: [{ html: '<b class="d-repaso-title">🔍Re
 const j = migrarTituloRepaso(json);
 let ok = false; try { ok = JSON.parse(j.texto).diapos[0].html.includes('Repaso rápido:<span'); } catch { ok = false; }
 exige(j.n === 1 && ok, 'en curso.json no puso "Repaso rápido:" o dejó un JSON inválido');
+
+/* El aviso de la práctica como FICHA de curso.json (cardio), v1.9.126. */
+const conFicha = JSON.stringify({ formato: 1, fichas: [{ id: 'practica-intro', titulo: 'Antes de empezar:', clase: 'd-pracintro',
+  cuerpo: '<ul><li>Son <b>4 preguntas</b> para repasar.</li></ul><button data-pracintro-go>Empezar</button>' }, { id: 'otra', cuerpo: '<p>x</p>' }] }, null, 2) + '\n';
+const fj = migrarDatosCurso(conFicha, KIT);
+let fd = null; try { fd = JSON.parse(fj.texto); } catch { fd = null; }
+exige(fd && /d-pracintro-n" aria-hidden="true">4</.test(fd.fichas[0].cuerpo) && /d-pracintro-card/.test(fd.fichas[0].claseTarjeta || ''),
+  'la ficha "practica-intro" de curso.json no pasó a las tarjetas del kit conservando "4 preguntas"');
+exige(fd && fd.fichas[1].cuerpo === '<p>x</p>', 'tocó otra ficha de curso.json que no era el aviso de la práctica');
+exige(migrarDatosCurso(fj.texto, KIT).cambios.length === 0, 'la migración de curso.json cambia algo la segunda vez');
+
+/* "Segunda mirada" → "Explorador" (v1.9.126): el curso sigue con 5. */
+const conSegunda = JSON.stringify({ formato: 1, logros: ['punteria', 'racha', 'curioso', 'segunda', 'impecable', { id: 'propio', nom: 'Propio' }] }, null, 2) + '\n';
+const sj = migrarDatosCurso(conSegunda, KIT);
+let sd = null; try { sd = JSON.parse(sj.texto); } catch { sd = null; }
+exige(sd && JSON.stringify(sd.logros.slice(0, 5)) === JSON.stringify(['punteria', 'racha', 'curioso', 'explorador', 'impecable']) && sd.logros[5].id === 'propio',
+  'el logro "segunda" de curso.json no pasó a "explorador" en su lugar (o tocó un logro propio)');
+const ambos = migrarDatosCurso(JSON.stringify({ logros: ['segunda', 'explorador'] }), KIT);
+exige(JSON.parse(ambos.texto).logros.join() === 'explorador', 'con "segunda" y "explorador" a la vez quedó un logro repetido');
+exige(migrarDatosCurso(sj.texto, KIT).cambios.length === 0, 'el cambio de "segunda" no es idempotente');
 
 if (fallos.length) {
   console.error(`✗ check-migracion — ${fallos.length} fallo(s):\n  - ` + fallos.join('\n  - '));

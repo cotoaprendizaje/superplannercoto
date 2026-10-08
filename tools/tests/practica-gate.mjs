@@ -84,12 +84,13 @@ const fallos = [];
     const alTerminar = { corre: diapo.classList.contains('is-quiz-running'), intro: diapo.getAttribute('data-intro-popup') };
     host.querySelector('[data-next]').click();          // "Ver resultado"
     await espera(60);
+    const alResultado = { corre: diapo.classList.contains('is-quiz-running'), resultado: diapo.classList.contains('is-quiz-resultado') };
     const btnRetry = host.querySelector('[data-retry]');
     if (btnRetry) btnRetry.click();
     await espera(60);
     const alReintentar = { corre: diapo.classList.contains('is-quiz-running'), start: ev.start, retry: ev.retry };
     diapo.remove();
-    return { sinPractica, antes, enOtra, despues, avisos, alArrancar, alTerminar, alReintentar };
+    return { sinPractica, antes, enOtra, despues, avisos, alArrancar, alTerminar, alResultado, alReintentar };
   });
   if (r.no) fallos.push(r.no);
   else {
@@ -104,7 +105,12 @@ const fallos = [];
       if (!a.corre) fallos.push('al arrancar la práctica la diapositiva no tiene `.is-quiz-running`: en el marco de Moodle la intro no se va y la pregunta queda bajo el pliegue.');
       if (a.start < 1) fallos.push('al arrancar la práctica no se emitió `quizstart`.');
       if (a.intro !== 'zz-intro') fallos.push(`con \`introPopup: 'zz-intro'\` y la práctica sin hacer, la diapositiva tiene \`data-intro-popup="${a.intro}"\`: el aviso de "no es la evaluación" no se abre.`);
-      if (t.corre) fallos.push('completada la práctica, la diapositiva sigue con `.is-quiz-running`.');
+      /* v1.9.126 (§7.75): con la ÚLTIMA devolución todavía en pantalla la
+         marca se queda —sacarla ahí devolvía la intro y la diapositiva
+         scrolleaba (lo vio el cliente en cardio)—; se va al dibujar el
+         resultado. */
+      if (!t.corre) fallos.push('al contestar la última pregunta, con su devolución en pantalla, la diapositiva perdió `.is-quiz-running`: vuelve la intro y empuja la devolución (scroll dentro de la diapositiva).');
+      if (r.alResultado.corre || !r.alResultado.resultado) fallos.push('con el resultado en pantalla la diapositiva tiene que tener `.is-quiz-resultado` y no `.is-quiz-running`.');
       if (t.intro) fallos.push('completada la práctica, el aviso previo se sigue abriendo al entrar (`data-intro-popup` no salió).');
       if (!q.corre || q.retry < 1 || q.start < 2) fallos.push(`"Practicar de nuevo" no avisó: \`.is-quiz-running\` ${q.corre ? 'sí' : 'no'}, \`quizretry\` ${q.retry}, \`quizstart\` ${q.start} (tiene que ser 2).`);
       if (r.avisos < 1) fallos.push('al completar la práctica no se emitió `gatechange`: "Siguiente" queda deshabilitado hasta que otra cosa refresque la nav.');

@@ -122,7 +122,7 @@ if (!g.hayPractica && !g.practicaDeclarada) {
    frenaba los MÁS de 5, así que un curso con 4 pasaba en verde
    (relevo de "Seguridad de la información", A23: el cliente lo vio en el
    curso entregado). Ahora son 5, ni más ni menos. Los cinco del kit
-   (`punteria`, `racha`, `curioso`, `segunda`, `impecable`) se piden por id
+   (`punteria`, `racha`, `curioso`, `explorador`, `impecable`) se piden por id
    en `curso.json` → `logros`; un curso puede cambiar alguno por uno propio.
 
    Un curso sin logros todavía no falla por esto: el piso lo pone el
@@ -132,7 +132,7 @@ if (g.badges && g.badges !== LOGROS) {
   fails.push(`el catálogo declara ${g.badges} logro(s) y la convención del cliente es EXACTAMENTE ` +
     `${LOGROS} por curso (kit v1.9.125, CLAUDE.md §7.74). ` +
     (g.badges < LOGROS
-      ? 'Completar con los del kit: en curso.json → logros, ids "punteria", "racha", "curioso", "segunda", "impecable".'
+      ? 'Completar con los del kit: en curso.json → logros, ids "punteria", "racha", "curioso", "explorador", "impecable".'
       : 'Si dos logros miden lo mismo partido en dos, fusionarlos.'));
 }
 

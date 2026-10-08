@@ -76,10 +76,12 @@
              lo tenía como ☰ suelto, el único botón del header sin palabra.
              El `aria-label` ya decía "Índice del curso"; lo que faltaba era
              que se leyera en pantalla. -->
-        <button class="d-iconbtn d-iconbtn--labeled" type="button" data-popup-trigger="sidenav" aria-haspopup="dialog" aria-label="Índice del curso" title="Índice">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-          <span class="lbl">Índice</span>
-        </button>
+        <div class="d-top-group d-top-group--indice" role="group" aria-label="Índice">
+          <button class="d-iconbtn d-iconbtn--labeled" type="button" data-popup-trigger="sidenav" aria-haspopup="dialog" aria-label="Índice del curso" title="Índice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            <span class="lbl">Índice</span>
+          </button>
+        </div>
         <span class="d-brand">
           <span class="lg" aria-hidden="true">
             <img src="img/icono-servicio-medico.webp" alt="" width="20" height="20">
@@ -137,7 +139,7 @@
              confiable con las voces de red. Suma el botón "Repetir". -->
         <div class="d-audio-ctl" data-audio-ctl="locucion">
           <button class="d-iconbtn d-iconbtn--labeled" id="d-narrate" type="button" aria-label="Escuchar la diapositiva" aria-pressed="false" title="Locución" hidden="">
-            <svg class="ic-off" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+            <svg class="ic-off" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line><line class="ic-tachado" x1="3.5" y1="2.5" x2="20.5" y2="21.5"></line></svg>
             <svg class="ic-on" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line><path d="M4.5 8a7.5 7.5 0 0 0 0 5"></path><path d="M19.5 8a7.5 7.5 0 0 1 0 5"></path></svg>
             <span class="lbl">Locución</span>
           </button>

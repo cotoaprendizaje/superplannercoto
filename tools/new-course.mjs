@@ -565,7 +565,7 @@ if (!args.sinDatos) {
     const fCurso = path.join(destinoAbs, 'curso.json');
     const datosCurso = JSON.parse(fs.readFileSync(fCurso, 'utf8'));
     if (datosCurso.logros === undefined) {
-      datosCurso.logros = ['punteria', 'racha', 'curioso', 'segunda', 'impecable'];
+      datosCurso.logros = ['punteria', 'racha', 'curioso', 'explorador', 'impecable'];
       fs.writeFileSync(fCurso, JSON.stringify(datosCurso, null, 2) + '\n');
     }
   }

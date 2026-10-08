@@ -1,0 +1,42 @@
+/* editor-vivo.css — capa del "simulador del editor" (kit-base v1.9.126)
+   Solo existe en la vista que arma `tools/vista-editor.mjs` para publicar
+   un curso como artefacto de claude.ai. NUNCA va en el zip del curso.
+   Colores fijos (no del tema del curso): la capa tiene que leerse como
+   herramienta, no como parte del curso. */
+/* Pestaña en el borde izquierdo, a media altura: abajo a la izquierda tapaba
+   "Siguiente" de la práctica en teléfono acostado (lo encontró mini-practica). */
+.ev-root{position:fixed;left:0;top:50%;transform:translateY(-50%);display:flex;flex-direction:row-reverse;align-items:center;gap:8px;z-index:2147483000;font:500 13px/1.35 Roboto,system-ui,sans-serif;color:#EBF0FF}
+.ev-tab{display:inline-flex;align-items:center;gap:8px;padding:12px 6px;border:0;border-radius:0 12px 12px 0;cursor:pointer;writing-mode:vertical-rl;transform:rotate(180deg);
+  background:#1E2D46;color:#EBF0FF;font:inherit;font-weight:700;box-shadow:0 8px 24px rgba(10,30,60,.35)}
+.ev-tab:focus-visible,.ev-btn:focus-visible{outline:3px solid #96A5BE;outline-offset:2px}
+.ev-dot{width:9px;height:9px;border-radius:50%;background:#00A578;box-shadow:0 0 0 3px rgba(0,165,120,.25)}
+.ev-card{width:min(300px,calc(100vw - 48px));max-height:calc(100vh - 16px);overflow:auto;box-sizing:border-box;padding:12px 12px 10px;border-radius:18px;
+  background:#1E2D46;box-shadow:0 14px 40px rgba(10,30,60,.4);display:grid;gap:8px}
+.ev-card[hidden]{display:none}
+.ev-hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.ev-hd b{font-family:Faible,Roboto,sans-serif;font-weight:900;font-size:16px;color:#fff}
+.ev-donde{font-size:12px;color:#96A5BE;font-variant-numeric:tabular-nums;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border-radius:12px;border:1px solid rgba(235,240,255,.18);
+  background:rgba(235,240,255,.06);color:#EBF0FF;font:inherit;font-weight:700;text-align:left;cursor:pointer}
+.ev-btn:hover{background:rgba(235,240,255,.12)}
+.ev-btn[aria-pressed="true"]{background:#006EA0;border-color:#006EA0;color:#fff}
+.ev-btn small{display:block;font-weight:400;color:#96A5BE;font-size:11.5px}
+.ev-btn[aria-pressed="true"] small{color:#EBF0FF}
+.ev-ic{flex:none;width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:rgba(235,240,255,.1);font-size:14px}
+.ev-nota{margin:2px 2px 0;font-size:11.5px;color:#96A5BE}
+.ev-nota b{color:#EBF0FF;font-weight:700}
+/* Modo "señalar": el elemento bajo el puntero se marca. */
+html.ev-senalando, html.ev-senalando *{cursor:crosshair!important}
+.ev-marca{outline:3px solid #F02850!important;outline-offset:2px!important;box-shadow:0 0 0 6px rgba(240,40,80,.18)!important}
+@media (prefers-reduced-motion:no-preference){.ev-card{animation:ev-in .18s ease both}}
+@keyframes ev-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* "Ver como": selector y escena con el marco del dispositivo. */
+.ev-ver{display:flex;flex-wrap:wrap;gap:4px}
+.ev-eq{flex:1 1 auto;padding:5px 8px;border-radius:999px;border:1px solid rgba(235,240,255,.18);background:transparent;color:#EBF0FF;
+  font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.ev-eq[aria-pressed="true"]{background:#00A578;border-color:#00A578;color:#fff}
+.ev-escena{position:fixed;inset:0;z-index:2147482000;background:#0E1A2C;display:flex;flex-direction:column;align-items:center;gap:8px;padding:10px 12px 0}
+.ev-rotulo{margin:0;font:700 13px/1.4 Roboto,system-ui,sans-serif;color:#EBF0FF;text-align:center}
+.ev-caja{position:relative;overflow:hidden;border-radius:14px;box-shadow:0 0 0 2px #2C3E5C,0 18px 50px rgba(0,0,0,.5)}
+.ev-marco{position:absolute;left:0;top:0;border:0;background:#fff;transform-origin:0 0}
+.ev-btn:disabled{opacity:.45;cursor:not-allowed}

@@ -945,9 +945,10 @@
     {
       "id": "practica-intro",
       "etiqueta": "Antes de empezar la mini práctica",
-      "titulo": "Antes de empezar:",
+      "titulo": "Mini práctica · antes de empezar:",
       "clase": "d-pracintro",
-      "cuerpo": "<div class=\"icon-circle d-pracintro-ic\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\"><use href=\"#i-info\"></use></svg></div>\n        <p class=\"d-pracintro-lead\"><b>Esto no es la evaluación del curso.</b></p>\n        <ul>\n          <li>Son <b>3 preguntas</b> para repasar, cada una con su explicación.</li>\n          <li><b>No se guarda ninguna nota</b> y podés repetirla las veces que quieras.</li>\n          <li>Seguís dentro del contenido del curso: al terminar te queda el cierre.</li>\n        </ul>\n        <p class=\"d-pracintro-eval\">La <b>evaluación final</b> es un <b>cuestionario aparte</b>, que vas a encontrar en la plataforma <b>cuando termines de ver todo el contenido</b>.</p>\n        <div class=\"d-instr-cta\">\n          <button class=\"btn btn-cat btn-ic\" type=\"button\" data-pracintro-go=\"\">\n            <svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><use href=\"#i-examen\"></use></svg>\n            Empezar la mini práctica\n          </button>\n        </div>",
+      "cuerpo": "<p class=\"d-pracintro-lead\"><b>Esto no es la evaluación del curso.</b></p>\n      <ul>\n        <li><span class=\"d-pracintro-n\" aria-hidden=\"true\">3</span><span>preguntas cortas de lo que viste, cada una con su explicación</span></li>\n        <li><span class=\"d-pracintro-n\" aria-hidden=\"true\">↺</span><span>podés reintentarla las veces que quieras; no se guarda ninguna nota</span></li>\n        <li><span class=\"d-pracintro-n\" aria-hidden=\"true\">+</span><span>cada respuesta bien suma puntos en el primer intento</span></li>\n      </ul>\n      <p class=\"d-pracintro-eval\">La <b>evaluación final</b> es un <b>cuestionario aparte</b>, en la plataforma.</p>\n      <button class=\"btn btn-cat d-pracintro-go\" type=\"button\" data-pracintro-go=\"\">Empezar la práctica</button>",
+      "claseTarjeta": "d-pracintro-card",
       "notas": [
         " Intro de la mini práctica. Se abre ANTES de la primera pregunta,\n       a pedido del cliente: si el encuadre está solo en la diapositiva,\n       alguien puede empezar a responder creyendo que arrancó la\n       evaluación. Lleva botón porque ARRANCA la actividad (ver la regla\n       de pop-ups más arriba), no porque cierre. ",
         " Con dos puntos: la frase de arriba INTRODUCE lo que sigue, no es\n             un título suelto. Pedido del cliente, y va igual en el pop-up\n             previo a cada video (\"Un momento, pensemos:\"). "
@@ -1143,7 +1144,7 @@
       "txt": "Terminaste \"Prevención cardiovascular\".",
       "pista": "Llegá al cierre del curso para desbloquearlo."
     },
-    "segunda"
+    "explorador"
   ],
   "medallas": [
     {

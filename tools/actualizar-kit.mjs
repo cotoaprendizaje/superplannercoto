@@ -184,12 +184,26 @@ try {
       '\n  bloque de `index-boilerplate.html`.');
   }
   /* Restaurar logros filtrando por `BADGES` (v1.9.125, §7.74): desde el
-     rediseño, un logro del kit va en el catálogo como TEXTO ("segunda"),
+     rediseño, un logro del kit va en el catálogo como TEXTO ("explorador"),
      sin `.id`, y ese filtro lo pierde al recargar. Lo tenía cardio. */
   if (/BADGES\.map\(\s*function\s*\(\s*\w+\s*\)\s*\{\s*return\s+\w+\.id;?\s*\}\s*\)/.test(codigo) && /Logros\.restore\s*\(/.test(codigo)) {
     avisosMarcado.push('js/curso.js filtra los logros a restaurar con `BADGES.map(… .id)`: los logros del kit van en el' +
-      '\n  catálogo como texto ("punteria", "segunda"…) y sin `.id`, así que se perderían al recargar. Usar' +
+      '\n  catálogo como texto ("punteria", "explorador"…) y sin `.id`, así que se perderían al recargar. Usar' +
       '\n  `Logros.catalogo().map(…)` (ya los trae expandidos) y pasarle también `lg: s.lg` a `Logros.restore`.');
+  }
+  /* El instructivo v3 achicado desde el CSS del curso (v1.9.126, §7.75):
+     con el v4 del kit, un `width` propio en `.d-instr-modal` lo deja
+     angosto y con el contenido scrolleando. Lo tenía cardio. */
+  for (const d of ['css']) {
+    const dir = path.join(CURSO, d);
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.css') && !nuevos.has(d + '/' + x))) {
+      const css = fs.readFileSync(path.join(dir, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+      if (/\.d-instr-modal\s*\{[^}]*\bwidth\s*:/.test(css)) {
+        avisosMarcado.push(`css/${f} le pone ancho a \`.d-instr-modal\` (era para el instructivo v3): con el v4 del kit` +
+          '\n  queda angosto y scrolleando. Sacar ese bloque; el kit ya trae el tamaño.');
+      }
+    }
   }
 } catch (e) {}
 const testsPropios = plan.sinRegistro.filter((f) => /^tools\/tests\/[^_][^/]*\.mjs$/.test(f));
@@ -221,7 +235,7 @@ if (fs.existsSync(path.join(CURSO, 'curso.json')) && fs.existsSync(path.join(CUR
    dentro de curso.json) y el index se vuelve a ARMAR; si el index ya
    estaba desviado de los datos, se migra también él, para no perder lo
    que alguien le haya hecho a mano. */
-const { migrarMarcado, migrarTituloRepaso } = await import('./_migrar-marcado.mjs');
+const { migrarMarcado, migrarDatosCurso } = await import('./_migrar-marcado.mjs');
 const desdeDatos = fs.existsSync(path.join(CURSO, 'curso.json')) && fs.existsSync(path.join(CURSO, 'marco.html'));
 const migraciones = [];   // { f, texto, cambios }
 for (const f of desdeDatos ? ['marco.html', 'curso.json', ...(indexDesviado ? ['index.html'] : [])] : ['index.html']) {
@@ -229,7 +243,7 @@ for (const f of desdeDatos ? ['marco.html', 'curso.json', ...(indexDesviado ? ['
   if (!fs.existsSync(p)) continue;
   const antes = fs.readFileSync(p, 'utf8');
   let r;
-  if (f === 'curso.json') { const t = migrarTituloRepaso(antes); r = { html: t.texto, cambios: t.n ? [`título "Repaso rápido:" (${t.n})`] : [] }; }
+  if (f === 'curso.json') { const t = migrarDatosCurso(antes, KIT); r = { html: t.texto, cambios: t.cambios }; }
   else r = migrarMarcado(antes, KIT);
   if (r.cambios.length) migraciones.push({ f, texto: r.html, cambios: r.cambios });
 }

@@ -15945,3 +15945,135 @@ verde con este. Más `tools/check-migracion.mjs` en `test:kit`, sin
 navegador, con un HTML de v1.9.124 y trampas (una diapositiva "Índice de
 contenidos", una tarjeta con texto propio, un `#i-play` en uso): rojo con el
 primer borrador de la migración, verde ahora.
+
+## 7.75 El simulador del editor: el curso publicado como artefacto para revisarlo comentando (kit-base v1.9.126)
+
+Pedido del cliente: practicar "la edición en vivo" con el curso de prueba, y
+"usar este artefacto para ajustar cosas del diseño que ya queden en el kit".
+Se publicó "Prevención cardiovascular" (`curso-prueba`) como artefacto de
+claude.ai con comentarios; el cliente y su equipo comentaron sobre la página
+y cada comentario se resolvió en el KIT (o en la fuente de cardio, si era
+propio del curso), se rearmó la vista y se volvió a publicar en el mismo
+link. Esta sección es esa ronda.
+
+### La herramienta
+
+- **`tools/vista-editor.mjs <curso> <salida>`** arma la vista: el index (desde
+  `curso.json` + `marco.html`, o el `index.html`) con la forma que pide un
+  artefacto —sin `<!doctype>/<html>/<head>/<body>`, el `<title>` sin el
+  "· Área…", un script que devuelve a `<html>`/`<body>` sus atributos—, las
+  carpetas del curso sin archivos vacíos (los videos placeholder no se
+  publican), lo que falte del kit, y `archivos.json` para el `files` de la
+  publicación. **La fuente no se toca**: la salida es descartable.
+- **`tools/editor-vivo/`** es la capa: una pestaña "Editor" al borde
+  izquierdo con "Comentar esta diapositiva", "Señalar un elemento" (el
+  próximo clic no actúa sobre el curso: abre el comentador anclado ahí) y
+  **"Ver como"**: el curso dentro de un marco con la medida exacta de PC
+  (1366×768), PC Full HD (1920×1080 y la ventana real, 1920×945), iPad
+  (1180×820 y vertical 820×1180) y teléfono (844×390 y vertical 390×844),
+  escalado para entrar en la pantalla. En "Ver como" el comentario se ancla
+  a una barra que dice dispositivo, medida y diapositiva, así llega
+  diciendo dónde se vio. Adentro del marco la capa no se dibuja
+  (`?ev-marco=1`). Capacidad `comments {composer_only:true}`: no pide
+  permiso ni escribe nada sola. **Nunca va en el zip.**
+- La pestaña estaba abajo a la izquierda y tapaba el "Siguiente" de la
+  práctica en teléfono acostado (lo encontró `mini-practica` sobre la
+  vista): pasó al borde, a media altura.
+- **Quién puede mandarle un comentario a Claude:** solo quien puede editar
+  el artefacto ("Send to Claude" o `@claude` en el hilo). Lo de un
+  comentarista (el equipo de diseño) se lee, se aplica si el dueño lo pide,
+  pero el hilo no se puede contestar ni cerrar hasta que el dueño lo active.
+- `tools/check-vista-editor.mjs` (en `test:kit`, sin navegador) arma la vista
+  de cardio y exige: la fuente intacta, la página sin esqueleto propio, la
+  capa enlazada una vez y última, todo lo pedido publicado, la capa cortada
+  adentro del marco antes de dibujarse y las medidas de "Ver como". Rojo
+  sacando el `<script>` de la capa y sacando el corte del marco.
+
+### Lo que salió de la ronda, en el kit
+
+- **Aro de "Mis logros" en la barra:** eran 5 tramos con huecos ("se ve como
+  cortado"). Pista gris continua y los ganados en verde encima, sin huecos
+  ni en las puntas.
+- **"Explorador" reemplaza a "Segunda mirada"** (al cliente le resultó
+  molesto: salía sin querer al usar "Anterior"). Se pensó "todo lo opcional
+  de 3 diapositivas", pero medido en los cursos no hay fichas opcionales
+  adentro de las diapositivas (cardio 0, alimentaria 1): habría sido
+  imposible. Queda: abrir CON UN CLIC 3 paneles o fichas que ninguna
+  diapositiva exige (`data-require-popups/-fichas`, `data-gate-popup`);
+  no cuentan el glosario (es Curioso), el instructivo ni lo que se abre
+  solo. Estado en `lg.ex`. `actualizar-kit` cambia "segunda" por
+  "explorador" en `curso.json` (si ya estaban los dos, saca el viejo).
+  El §7.74 dice "Segunda mirada": es lo que era cierto entonces.
+- **Instructivo:** más ancho (era la copia vieja de cardio, 620px, que le
+  ganaba al kit; `actualizar-kit` ahora avisa ese resto en cualquier curso)
+  y más bajo (círculos 84→68px); la pastilla de los 5 logros en una línea;
+  las líneas del arte de las diapositivas (aro grueso, círculo y la línea
+  que dobla) en la tarjeta; el camino centrado en los cuatro círculos (0px
+  de desvío medido en 1440, 1280 y 1024).
+- **Aviso previo a la práctica** como ficha de `curso.json` (cardio): no lo
+  migraba nada y se veía deformado. `migrarDatosCurso()` lo pasa a las
+  tarjetas del kit conservando "N preguntas". En el kit, la nota "La
+  evaluación final…" partía la frase en columnas (era flex): bloque.
+- **Botón "Índice"** suelto (cursos de antes de v1.9.85): la migración lo
+  mete en su cápsula, como Glosario y Ampliar.
+- **Mini práctica sin scroll** ("nuestros cursos no deben tener scroll
+  dentro de la diapo"). Tres causas, todas medidas pregunta por pregunta:
+  1. al contestar la ÚLTIMA, `registrar()` sacaba `.is-quiz-running` con la
+     devolución todavía en pantalla: volvía la intro y la empujaba. Ahora
+     la marca se saca al dibujar el resultado (cardio además lo repetía en
+     su `curso.js`; se sacó);
+  2. el resultado no entraba en 1366×768 (64px) ni en iPad 1180×820 (90px),
+     fuera de la regla ≤760: en el resultado se van el título, la bajada y
+     "Pregunta N de M" en cualquier alto; el aviso propio del curso queda;
+  3. en teléfono acostado la devolución larga sobraba 60px:
+     `.is-devolucion` en el `[data-quiz]` saca la fila de avance y pone
+     "Siguiente" al lado de la devolución, a la IZQUIERDA (a la derecha
+     flotan Ayuda y Ajustes).
+  Sin scroll en 1920×1080, 1920×945, 1440×760, 1366×768, 1280×660,
+  1024×768, 1180×820, 820×1180 y 844×390. **Pendiente:** teléfono vertical
+  ("Ver igual, en vertical"), donde el resultado sobra ~440px.
+- **Comentarios del equipo de diseño:**
+  - índice: la línea arranca en el centro del círculo de la unidad 1 y
+    termina en el punto del último tema (`--ix-desde`/`--ix-largo`, los mide
+    coto-ui.js; `background-attachment:local` porque la lista scrollea).
+    De paso, BUG REAL de v1.9.125: la fila de objetivos A·B·C se buscaba
+    después de mover el texto a la caja y no se encontraba nunca: quedaba
+    suelta abajo del recuadro;
+  - título de la unidad en Roboto Bold y mayúsculas (el número sigue en la
+    tipografía de títulos);
+  - Sonido y Locución prendidos: pastilla azul como las cápsulas, círculo
+    blanco con el ícono azul (la blanca "contrastaba mucho");
+  - Locución apagada con el micrófono TACHADO: el kit lo tenía, los cursos
+    viejos no; la migración agrega la línea;
+  - el candado de las tarjetas de logros desbordaba: `.d-badge .i svg`
+    (34px) le ganaba a `.d-badge-lock svg`. Ahora entra entero en el
+    círculo;
+  - "Todavía no" dos veces en cada tarjeta: la línea de arriba va vacía si
+    no hay nada que contar (alto fijo, las barras siguen alineadas);
+  - la introducción de "Mis logros", más angosta (640px) y centrada.
+
+### En cardio (fuente en `curso-prueba`)
+
+Sacados los restos del diseño anterior que le ganaban al kit (instructivo
+v3, aviso de la práctica viejo, el número de pregunta en turquesa); el
+repaso de su diapositiva con video, en la barra azul y visible desde que se
+entra (no después del video), medido para no tapar la ilustración en
+notebook, iPad y teléfono (en teléfono acostado la tira crece con su
+contenido: con el alto fijo del kit, 65px, las preguntas de dos renglones
+recortaban los botones, lo marcó `clip-audit` en `probar.sh`); la
+descripción de los pop-ups de ENT del mismo tamaño que la lista. Marco y datos migrados con `actualizar-kit`.
+
+### Tests
+
+68 tests de navegador (sin cambios en la cuenta): `logros-kit` gana
+Explorador con el gesto real y exige que NO salga con pop-ups abiertos por
+código (rojo con el detector viejo y con el chequeo del clic sacado);
+`efectos` lo usa para la tarjeta de logro. `practica-gate` exigía que la
+marca "respondiendo" se fuera al contestar la última —justo la causa del
+scroll—: ahora exige que se quede con la devolución en pantalla y se vaya
+con el resultado (`.is-quiz-resultado`); rojo con el `coto-quiz.js` de
+v1.9.125. `check-migracion`: 16 cambios
+sobre un HTML de v1.9.124 (Índice en su cápsula, micrófono tachado) y la
+migración de `curso.json` (aviso de la práctica, "segunda" → "explorador"),
+cada caso rojo con el paso sacado. `check-vista-editor` nuevo en
+`test:kit`.

@@ -4,7 +4,7 @@
    el sistema de logros y puntos? Quiero que todos los cursos tengan 5
    logros por defecto y que estén bien asociados a los puntos, que todo
    ese sistema funcione correctamente". Los cinco logros del kit
-   (Puntería, En racha, Curioso, Segunda mirada, Impecable) se detectan
+   (Puntería, En racha, Curioso, Explorador, Impecable) se detectan
    solos, por eventos de las piezas del kit; si un evento deja de salir,
    el logro queda imposible sin un solo error en consola.
 
@@ -14,7 +14,9 @@
      2 · Cada logro con el gesto REAL del alumno, de a uno, y exige que se
          gane, que sume su bono UNA vez y que el contador de puntos lo
          muestre:
-           · Segunda mirada: volver a una diapositiva ya vista.
+           · Explorador: abrir con un clic 3 paneles o fichas que
+             ninguna diapositiva exige (Índice, Recursos, Mis logros…);
+             abrirlos por código —como un gate que se abre solo— no cuenta.
            · Curioso: tocar 3 términos del glosario (si el curso tiene).
            · En racha: 3 respuestas bien seguidas (con una mal en el medio
              la racha vuelve a cero).
@@ -69,7 +71,7 @@ const estado = (page) => page.evaluate(() => {
   };
 });
 
-const KIT = ['punteria', 'racha', 'curioso', 'segunda', 'impecable'];
+const KIT = ['punteria', 'racha', 'curioso', 'explorador', 'impecable'];
 const { page, errores } = await abrir();
 /* Lo que el curso PIDE sale de sus datos (`curso.json` → logros), no de
    las tarjetas dibujadas: si el módulo no entendiera los ids del kit, las
@@ -100,6 +102,7 @@ if (!pedidos.length) {
     await page.waitForTimeout(400);
     if (r === 'no-aplica') { console.log(`  · ${id}: el curso no tiene con qué medirlo (${como}).`); return; }
     if (r === 'cortada-no-corta') { fallos.push('"racha" se ganó con una respuesta mal en el medio: la errada tiene que cortar la racha.'); return; }
+    if (r === 'solo-cuenta') { fallos.push('"explorador" se ganó con pop-ups que se abrieron SOLOS (por código, como un gate): tiene que ser el alumno abriéndolos.'); return; }
     if (r === 'reintento') { fallos.push('"impecable" se ganó con un REINTENTO perfecto: tiene que ser el primer intento (reintentar no suma, decisión del cliente).'); return; }
     const despues = await estado(page);
     if (!despues.ganados.includes(id)) { fallos.push(`"${id}" no se ganó al ${como}: el detector del kit no se enteró.`); return; }
@@ -109,7 +112,23 @@ if (!pedidos.length) {
   };
 
   /* 2 · Cada uno con su gesto. */
-  await exigir('segunda', () => { const m = window.motor; m.go(1, true); return 'ok'; }, 'volver a una diapositiva ya vista');
+  await exigir('explorador', () => {
+    const m = window.motor;
+    const exigidos = new Set();
+    document.querySelectorAll('[data-slide]').forEach((s) => ['data-require-popups', 'data-require-fichas', 'data-gate-popup']
+      .forEach((a) => (s.getAttribute(a) || '').split(/\s+/).filter(Boolean).forEach((x) => exigidos.add(x))));
+    const vistos = new Set();
+    const botones = Array.from(document.querySelectorAll('[data-popup-trigger]')).filter((b) => {
+      const id = b.getAttribute('data-popup-trigger');
+      if (vistos.has(id) || exigidos.has(id) || id === 'glosario' || id === 'instrucciones' || !document.querySelector(`[data-popup="${id}"]`)) return false;
+      vistos.add(id); return true;
+    }).slice(0, 3);
+    if (botones.length < 3) return 'no-aplica';
+    botones.forEach((b) => { m.showPopup(b.getAttribute('data-popup-trigger')); m.closePopup(); });
+    if (document.querySelector('#d-badges-list .d-badge.earned[data-logro="explorador"]')) return 'solo-cuenta';
+    botones.forEach((b) => { b.click(); m.closePopup(); });
+    return 'ok';
+  }, 'abrir con un clic 3 paneles o fichas opcionales');
 
   await exigir('curioso', () => {
     const dts = Array.from(document.querySelectorAll('[data-popup="glosario"] dl.d-glossary dt'));

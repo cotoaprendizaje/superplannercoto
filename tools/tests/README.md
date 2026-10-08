@@ -1,6 +1,6 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.125 · Área Aprendizaje (COTO)
+kit-base v1.9.126 · Área Aprendizaje (COTO)
 
 Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 68 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
@@ -73,6 +73,10 @@ derecha del título, en la misma línea. Ese último salió de una foto, no de
 un test: la regla de los paneles heredó `flex-direction:column` y nada lo
 vio. La migración del marcado de `actualizar-kit` se prueba aparte, sin
 navegador, con `tools/check-migracion.mjs` (en `npm run test:kit`).
+Y la vista del simulador del editor (v1.9.126), con
+`tools/check-vista-editor.mjs`, también en `test:kit`. En v1.9.126
+`logros-kit` mide "Explorador" (que reemplazó a "Segunda mirada"): 3
+paneles opcionales abiertos con un clic, y que abiertos por código NO cuenten.
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

@@ -125,7 +125,8 @@
    coto-base-addendum-v1.2.css del próximo kit (ver README).
    ============================================================ */
 .d-quiz-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
-.d-q-num{background:var(--cat-strong)}
+/* (acá estaba `.d-q-num{background:var(--cat-strong)}`: con el rediseño el número va
+   en un círculo blanco sobre la caja azul de la pregunta, y el turquesa lo volvía ilegible) */
 
 /* ---- Gate genérico de avance (initSlideGates() en curso.js) ----
    Mismo patrón que "Surtido sin venta": el botón "Siguiente" nunca se
@@ -379,7 +380,9 @@
 .d-ent-pop{text-align:center}
 .d-ent-pop-icon{width:64px;height:64px;margin:0 auto .8rem;background:var(--cat-soft);color:var(--cat-ink)}
 .d-ent-pop-icon svg{width:32px;height:32px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.d-ent-pop > p{margin:0 0 .9rem;line-height:1.5}
+/* La descripción, del MISMO tamaño que la lista de abajo (pedido de diseño en
+   el simulador, kit v1.9.126): con 16px contra .92rem se leía como otro bloque. */
+.d-ent-pop > p{margin:0 0 .9rem;font-size:.92rem;line-height:1.5}
 .d-ent-pop ul{margin:0 0 .9rem;padding:0;list-style:none;display:flex;flex-direction:column;gap:.55rem;text-align:left}
 .d-ent-pop li{position:relative;padding-left:1.4rem;font-size:.92rem;line-height:1.45;color:var(--text-soft)}
 .d-ent-pop li::before{content:"";position:absolute;left:.35rem;top:.55em;width:7px;height:7px;border-radius:50%;background:var(--cat)}
@@ -672,19 +675,10 @@
 .d-medalla-rangos{list-style:none;display:flex;gap:.4rem;margin:0 0 1.2rem;padding:0}
 .d-medalla-rangos li.is-logrado{background:var(--cat-soft)}
 
-/* ---- Pop-up de intro de la mini práctica ---- */
-.d-pracintro{text-align:center}
-.d-pracintro-ic{width:56px;height:56px;margin:0 auto .7rem;background:var(--cat-soft);color:var(--cat-ink)}
-.d-pracintro-ic svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;
-  stroke-linecap:round;stroke-linejoin:round}
-.d-pracintro-lead{margin:0 0 .7rem;font-size:1.05rem;color:var(--brand-navy)}
-.d-pracintro ul{margin:0 0 .9rem;padding:0;list-style:none;display:flex;flex-direction:column;
-  gap:.45rem;text-align:left}
-.d-pracintro li{position:relative;padding-left:1.4rem;font-size:.92rem;line-height:1.4;color:var(--text-soft)}
-.d-pracintro li::before{content:"";position:absolute;left:.35rem;top:.55em;width:7px;height:7px;
-  border-radius:50%;background:var(--cat)}
-.d-pracintro-eval{margin:0 0 1.1rem;padding:.7rem .9rem;border-radius:var(--r-sm);
-  background:var(--cat-soft);color:var(--brand-navy);font-size:.88rem;line-height:1.45;text-align:left}
+/* ---- Pop-up de intro de la mini práctica ----
+   Desde v1.9.125 es el del kit (tres tarjetas, como "Mis logros"). Lo
+   que había acá era del diseño anterior y lo deformaba (comentario del
+   cliente en el simulador del editor, 2026-10-08). Se sacó. */
 
 /* ---- Pantalla de salida del curso ---- */
 .d-salida{position:fixed;inset:0;z-index:200;display:grid;place-items:center;
@@ -714,30 +708,12 @@
 /* El resumen mantiene 3 columnas mientras haya ancho: apilarlas lo hace
    crecer a lo alto justo cuando menos alto hay. */
 
-/* ---- Instructivo v3: grilla 2x2 de tarjetas ícono+texto ----
-   Referencia visual pasada por el cliente (otro curso), adaptada acá
-   100% con tokens de color (--cat/--cat-strong/--cat-soft/--cat-grad):
-   cambia de color de curso a curso solo con `data-cat`, sin tocar nada
-   de este bloque. Candidato a subir al addendum si un segundo curso
-   repite el patrón (ver comentario en el HTML). */
-.d-instr-modal{position:relative;overflow:hidden;width:min(620px,100%)}
-.d-instr-modal::before,.d-instr-modal::after{content:"";position:absolute;
-  border-radius:50%;background:var(--cat-grad,var(--brand));opacity:.14;pointer-events:none}
-.d-instr-modal::after{width:170px;height:170px;bottom:-90px;left:-70px}
-.d-instr-kicker{
-  background:var(--cat-soft);color:var(--on-cat,var(--brand-navy))}
-
-/* ---- Instructivo (Ayuda, siempre disponible): subtítulos y botón
-   centrado con ícono ---- */
-
-/* El botón queda PEGADO al pie de la tarjeta: el instructivo es el
-   pop-up más largo del curso y en pantallas bajas su llamado a la
-   acción quedaba abajo de todo, fuera de la vista. Un botón que hay que
-   ir a buscar scrolleando no se usa. Con `sticky` el contenido scrollea
-   y el botón se queda. Mismo criterio que `.modal-hd` sticky. */
-.d-instr-cta{display:flex;justify-content:center;margin-top:1.1rem;
-  position:sticky;bottom:0;z-index:2;
-  padding:.7rem 0 .2rem;background:linear-gradient(to top,#fff 65%,transparent)}
+/* ---- Instructivo ----
+   Desde v1.9.125 el instructivo es el v4 del kit (cuatro pasos sobre un
+   camino, tarjeta de 1000px). Lo que había acá era del v3 —tarjeta de
+   620px, círculos de fondo propios, botón pegajoso con degradé— y con el
+   v4 lo dejaba angosto y alto, con el contenido scrolleando (comentario
+   del cliente en el simulador del editor). Se sacó. */
 
 /* ⚠️ ACÁ VIVIERON el chip `.d-repaso-chip`, su banda `.d-banda-chip` y
    el ancho del pop-up `.modal--repaso` — los tres se fueron con el
@@ -755,6 +731,27 @@
    como cualquier párrafo. */
 .d-repaso--factor .d-repaso-item{ padding-left: 0; }
 .d-repaso--factor .d-repaso-item::before{ content: none; display: none; }
+/* Con el rediseño del kit (v1.9.125), pedido del cliente en el simulador
+   del editor: la tira de factor no tiene lugar para la barra azul de
+   "Repaso rápido:" sin pisar el dibujo, así que la PREGUNTA va en la
+   barra azul, como la pregunta de la práctica: mismo lenguaje, cero alto
+   extra. El rótulo sigue para el lector de pantalla (`.sr-only`). */
+.d-repaso--factor{ overflow: hidden; }
+.d-repaso--factor .d-repaso-q{ margin: 0 -1em .3em; padding: .2em 1em; line-height: 1.2; color: #fff; font-weight: 700;
+  background: linear-gradient(180deg, var(--brand), var(--brand-deep)); }
+/* Teléfono vertical: la tarjeta sale a la franja libre bajo la lámina
+   solo si entra (`acomodarTiras`); con la pregunta en la barra, las de
+   dos renglones se pasaban unos píxeles y quedaban encima del dibujo. */
+/* Teléfono acostado: la tira va SOBRE la lámina con el alto que le da el kit
+   (`data-h`, 65px) y una pregunta de dos renglones pide 91: con el
+   `overflow:hidden` de arriba, los botones quedaban recortados (lo marcó
+   clip-audit en diabetes y tabaquismo, kit v1.9.126). Ahí la tira crece con
+   su contenido. */
+@media (max-height: 560px){ .d-repaso-marco:has(.d-repaso--factor){ height: auto !important; } }
+@media (max-width: 560px){
+  .d-repaso--factor .d-repaso-q{ padding: .1em 1em; margin-bottom: .15em; line-height: 1.1; }
+  .d-repaso--factor .d-repaso-btns button{ padding-block: .15em; }
+}
 
 /* ============================================================
    Acá vivía el pop-up de PREDICCIÓN (.modal--reto / .d-reto*)
@@ -856,12 +853,6 @@
    puede —el círculo del ícono es decorativo y son 63px— y el pie se
    vuelve opaco para que el corte sea limpio. */
 @media (max-height: 560px) {
-  .d-pracintro-ic { display: none; }
-  .d-pracintro-lead { margin-bottom: .45rem; font-size: .98rem; }
-  .d-pracintro ul { margin-bottom: .55rem; gap: .3rem; }
-  .d-pracintro li { font-size: .86rem; line-height: 1.32; }
-  .d-pracintro-eval { margin-bottom: .6rem; padding: .5rem .7rem;
-    font-size: .82rem; line-height: 1.35; }
   .d-instr-cta { margin-top: .5rem; padding-top: .45rem;
     background: var(--surface); box-shadow: 0 -10px 12px -10px rgba(20,30,60,.35); }
 }

@@ -173,9 +173,12 @@
   background:#F4F7FE;border:2px solid #D7DEEC;font-size:.84rem;line-height:1.35;color:#46506A}
 .d-pracintro-n{width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;
   font-family:var(--font-title);font-weight:900;font-size:1.2rem}
-.d-pracintro-eval{display:flex;align-items:center;gap:10px;margin:0;padding:10px 14px;border-radius:16px;
+/* Bloque y no flex (v1.9.126): con `display:flex` cada <b> del texto era un
+   ítem aparte y la frase se partía en columnas ("La | evaluación final | es
+   un…"; comentario del cliente). El "!" va posicionado a la izquierda. */
+.d-pracintro-eval{position:relative;margin:0;padding:10px 14px 10px 52px;min-height:28px;border-radius:16px;
   background:#fff8e1;border:2px solid #ffd25e;color:var(--warning-ink);font-size:.875rem;line-height:1.45;text-align:left}
-.d-pracintro-eval::before{content:"!";flex:none;width:28px;height:28px;border-radius:50%;background:#ffd25e;display:grid;place-items:center;font-weight:700}
+.d-pracintro-eval::before{content:"!";position:absolute;left:12px;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:#ffd25e;display:grid;place-items:center;font-weight:700}
 .d-pracintro .d-pracintro-go{align-self:center;padding:13px 34px;border-radius:999px;border:0;background:var(--success);color:#fff;
   font-family:var(--font-title);font-weight:900;font-size:1.125rem;box-shadow:0 5px 0 var(--success-ink)}
 @media (max-height:520px),(max-width:560px){
@@ -195,6 +198,20 @@
    (`.is-quiz-running`, lo pone `initMiniQuiz`) la intro se va de la
    pantalla —no de la voz: `display`, no `hidden`—. `mini-practica` lo mide
    en 1655×690. */
+/* ---- El resultado, en CUALQUIER altura (v1.9.126) ----
+   Lo vio el cliente en cardio: la pantalla de resultado scrolleaba a
+   1366×768 (64px de más) y en iPad 1180×820 (90px), las dos fuera de la
+   regla de abajo (≤760). Con el resultado en pantalla el título y la
+   bajada de la diapositiva ya no dicen nada —la tarjeta dice "¡Práctica
+   completa!"—, ni la fila "Pregunta N de M". El aviso propio del curso
+   (cardio: "esto no es la evaluación") se QUEDA: el cliente lo quiere en
+   el resultado; lo saca solo la regla de pantalla baja. */
+.d-slide-quiz.is-quiz-resultado .d-quiz-head,
+.d-slide-quiz.is-quiz-resultado .slide-eyebrow,
+.d-slide-quiz.is-quiz-resultado .slide-lead,
+.d-slide-quiz.is-quiz-resultado > h2,
+.d-slide-quiz.is-quiz-resultado .slide-inner > h2{ display: none; }
+
 @media (max-height: 760px){
   .d-quiz-anillo{ width: 100px; height: 100px; }
   .d-quiz-review ul{ gap: .45rem; }
@@ -249,6 +266,17 @@
   .d-quiz-fb{ margin-top: 6px; padding: 7px 10px; font-size: .84rem; }
   .d-quiz-actions .btn{ padding: 8px 22px; font-size: .95rem; }
   .d-quiz-actions{ margin-top: .35rem; }
+  /* Con la devolución a la vista (`.is-devolucion`, coto-quiz.js,
+     v1.9.126): la fila "Pregunta N de M" se va —las barritas ya dijeron
+     su parte— y "Siguiente" pasa AL LADO de la devolución, no abajo: a
+     la IZQUIERDA, porque a la derecha flotan Ayuda y Ajustes.
+     Medido en cardio a 844×390: la devolución de dos o tres renglones
+     dejaba la diapositiva 60px más alta que la pantalla y scrolleaba. */
+  [data-quiz].is-devolucion .d-quiz-head{ display: none; }
+  [data-quiz].is-devolucion [data-qbody]{ display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center; }
+  [data-quiz].is-devolucion [data-qbody] > :not(.d-quiz-fb):not(.d-quiz-actions){ grid-column: 1 / -1; }
+  [data-quiz].is-devolucion .d-quiz-fb{ grid-column: 2; grid-row: 2; margin: 6px 58px 0 0; }   /* 58: que el texto no quede abajo de Ajustes */
+  [data-quiz].is-devolucion .d-quiz-actions{ grid-column: 1; grid-row: 2; margin: 6px 0 0 6px; }
 
   /* La pantalla de resultado es el estado MÁS ALTO (nota + una ficha de
      repaso por pregunta errada + dos botones), y es la que `scroll-audit`
@@ -264,9 +292,6 @@
      explicación completa ya se mostró al contestar cada pregunta. Lo
      resolvía cardio en su CSS (§7.74); vale para todo curso. */
   .d-quiz-review .ra{ display: none; }
-  /* Con el resultado en pantalla, las barritas de avance y "Pregunta N de
-     M" ya no dicen nada: se van (26px que faltaban a 844×390 en cardio). */
-  .d-slide-quiz.is-quiz-resultado .d-quiz-head{ display: none; }
   .d-quiz-review .rq{ line-height: 1.25; }
   .d-quiz-review .rv-go{ padding: 3px 10px; font-size: .72rem; }
   .d-quiz-nota .d-quiz-actions .btn{ padding: 6px 10px; font-size: .85rem; }

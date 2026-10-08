@@ -390,6 +390,26 @@
 
      Llamar `refresh()` (lo devuelve) cada vez que cambie lo visitado.
      ============================================================ */
+  /* La línea del índice arranca en el CENTRO del círculo de la primera
+     unidad, no arriba de todo (v1.9.126, pedido de diseño: pasaba por el
+     recuadro de avance y los objetivos). El alto del recuadro cambia por
+     curso, así que se mide: con el panel cerrado no hay medida (`display:
+     none`), por eso se vuelve a medir al abrirlo. */
+  function lineaDesdeUnidad1(lista) {
+    var g = lista.querySelector('.d-sidenav-group');
+    if (!g || !g.offsetParent) return;
+    var desde = g.offsetTop + 22;
+    lista.style.setProperty('--ix-desde', desde + 'px');
+    /* …y termina en el punto del último tema, no en el borde. */
+    var items = lista.querySelectorAll('.d-sidenav-item');
+    var u = items[items.length - 1];
+    if (u) lista.style.setProperty('--ix-largo', Math.max(0, u.offsetTop + u.offsetHeight / 2 - desde) + 'px');
+  }
+  document.addEventListener('popupopen', function (e) {
+    if (!e.detail || e.detail.id !== 'sidenav') return;
+    document.querySelectorAll('.d-sidenav-list').forEach(lineaDesdeUnidad1);
+  });
+
   function initIndexJumps(opts) {
     opts = opts || {};
     var sel = opts.selector || '.d-sidenav-item[data-goto], .d-shot-hit--indice';
@@ -452,10 +472,14 @@
           caja.innerHTML = '<svg class="d-ix-anillo" viewBox="0 0 62 62" aria-hidden="true">' +
             '<circle cx="31" cy="31" r="26"/><circle class="v" cx="31" cy="31" r="26" transform="rotate(-90 31 31)"/>' +
             '<text x="31" y="36" text-anchor="middle"></text></svg><div class="d-ix-resumen-txt"></div>';
+          /* La fila de objetivos se busca ANTES de mover el texto: la
+             v1.9.125 la buscaba después, adentro de la caja recién armada,
+             no la encontraba nunca y quedaba suelta abajo, con la línea del
+             índice pasando por al lado (lo vio diseño en cardio, v1.9.126). */
+          var obj = prog.parentNode.querySelector('.d-obj-progress');
           prog.parentNode.insertBefore(caja, prog);
           var txt = caja.querySelector('.d-ix-resumen-txt');
           txt.appendChild(prog);
-          var obj = prog.parentNode.parentNode.querySelector('.d-obj-progress');
           if (obj) txt.appendChild(obj);
         }
         var pct = Math.round(vistos / items.length * 100), circ = 2 * Math.PI * 26;
@@ -479,6 +503,7 @@
           }
         });
         cerrar();
+        lineaDesdeUnidad1(lista);
       });
 
       /* ---- Progreso por OBJETIVO de aprendizaje (kit-base v1.9.86) ----

@@ -716,7 +716,8 @@
      la pregunta fallada y devolvía la chance de los puntos, o sea que
      equivocarse no costaba nada. */
   function initRepasoFactor() {
-    /* La tira aparece cuando el video de ESE factor ya fue visto. Se
+    /* (Hasta 2026-10-08 la tira aparecía cuando el video de ESE factor ya
+       había sido visto; ahora está siempre. Queda la función porque se
        llama desde `markSeen` (boot) y en cada `slidechange`, no una sola
        vez al montar: el alumno puede ver el video y quedarse en la misma
        diapositiva, y ahí no hay ningún cambio de diapo que refresque
@@ -727,7 +728,11 @@
         if (!tira || !tira.parentElement) return;
         // El `hidden` va en el MARCO, que es el que ocupa lugar en la
         // lámina (y el que el narrador mira para saltearse el bloque).
-        tira.parentElement.hidden = !estado.videosVistos[f.video];
+        /* Visible DESDE EL INICIO de la diapositiva (pedido del cliente en
+           el simulador del editor, 2026-10-08): antes aparecía recién con
+           el video visto. Para avanzar sigue haciendo falta contestarla
+           (`faltaRepaso`) y ver el video (`faltanVideos`). */
+        tira.parentElement.hidden = false;
       });
     }
     refrescarRepaso = refrescar;
@@ -790,6 +795,11 @@
       pintarProgresoU2();
       refrescar();
       acomodarTiras();
+      /* Y otra vez cuando la diapositiva ya se dibujó: en el mismo
+         `slidechange` las medidas todavía no son las finales, y con la
+         tira visible desde el inicio (2026-10-08) un píxel decidía si
+         salía a la franja libre o quedaba sobre el dibujo. */
+      setTimeout(acomodarTiras, 250);
     });
     refrescar();
     pintarProgresoU2();
@@ -841,10 +851,26 @@
 
       /* `scrollHeight` y no `clientHeight`: lo que importa es lo que la
          tarjeta NECESITA, que en la banda chica es justamente lo que no
-         entra. Los 24px son el aire mínimo contra la lámina y el pie. */
+         entra. Los 20px son el aire mínimo contra la lámina y el pie (eran 24; con la pregunta en la barra azul, tabaquismo en iPhone vertical quedaba 1px corto y se quedaba sobre el dibujo, 2026-10-08). */
       var libre = sr.bottom - ir.bottom;
-      var afuera = libre >= tira.scrollHeight + 24;
       var yaAfuera = marco.classList.contains('d-repaso-marco--suelto');
+      /* Se mide EN la franja libre, no sobre la lámina: ahí la tarjeta es
+         más ancha y por lo tanto más BAJA. Medida sobre la lámina, una
+         pregunta de tres renglones "no entraba" afuera y se quedaba
+         tapando el dibujo (tabaquismo en teléfono vertical, 2026-10-08,
+         al mostrarse la tira desde el inicio: antes se medía oculta y
+         daba 0). Se prueba afuera y se vuelve si no entra. */
+      if (!yaAfuera) {
+        var padre = marco.parentElement, sig = marco.nextSibling, estilo = marco.getAttribute('style');
+        marco.classList.add('d-repaso-marco--suelto');
+        marco.removeAttribute('style');
+        slide.appendChild(marco);
+        var necesita = tira.scrollHeight + 20;
+        marco.classList.remove('d-repaso-marco--suelto');
+        if (estilo != null) marco.setAttribute('style', estilo);
+        padre.insertBefore(marco, sig);
+      }
+      var afuera = libre >= (yaAfuera ? tira.scrollHeight + 20 : necesita);
       if (afuera === yaAfuera) {
         if (afuera) marco.style.setProperty('--tira-arriba', Math.round(ir.bottom - sr.top) + 'px');
         return;
@@ -1242,35 +1268,20 @@
     });
 
     /* ---- Espacio para las preguntas mientras se responde ----
-       `.is-quiz-running` en la diapositiva oculta el eyebrow, la bajada
-       y el aviso destacado (CSS en diapositivas.css). Lo hacía el quiz
-       propio del curso antes de migrar; `initMiniQuiz` del kit no tiene
-       ese concepto, así que se maneja acá.
-       No es cosmético: a 1600x900 la diapositiva entra holgada, pero
-       dentro del iframe de Moodle el escenario mide ~570px de alto y
-       ahí la pregunta con sus 4 opciones queda debajo del pliegue. El
-       aviso de "esto no es la evaluación" no se pierde por ocultarlo:
-       ahora lo da el pop-up `practica-intro` al entrar, y vuelve a
-       aparecer en el resultado. */
+       `.is-quiz-running` (oculta la intro mientras se responde) la pone
+       y la saca `initMiniQuiz` del kit desde v1.9.121. Cardio la seguía
+       manejando acá además, y la sacaba en `onFinish` —al contestar la
+       última pregunta, con la devolución todavía en pantalla—: volvía la
+       intro y la diapositiva scrolleaba (lo vio el cliente, kit
+       v1.9.126). Acá queda solo lo propio: CUÁNDO se abre el aviso
+       previo (`data-intro-popup`), mientras la práctica no esté hecha. */
     function syncQuizRunning() {
       var slide = document.querySelector('[data-slide="evaluacion"]');
       if (!slide) return;
       var pendiente = !(estado.quiz && estado.quiz.done);
-      slide.classList.toggle('is-quiz-running', pendiente);
-      /* El aviso previo lo abre EL MOTOR (`data-intro-popup`) mientras la
-         práctica esté pendiente; una vez terminada, el atributo sale y la
-         diapositiva se narra normal. Ver el bloque del pop-up más abajo. */
       if (pendiente) slide.setAttribute('data-intro-popup', 'practica-intro');
       else slide.removeAttribute('data-intro-popup');
     }
-    // "Practicar de nuevo" (lo pinta el módulo dentro de [data-quiz]):
-    // vuelve a arrancar el cuestionario, así que hay que volver a ocultar.
-    document.addEventListener('click', function (e) {
-      if (e.target.closest('[data-quiz] [data-retry]')) {
-        var slide = document.querySelector('[data-slide="evaluacion"]');
-        if (slide) slide.classList.add('is-quiz-running');
-      }
-    });
 
     /* ---- Aviso previo a la mini práctica ----
        Pedido explícito del cliente: que quede sin lugar a dudas que la

@@ -136,9 +136,9 @@ export function migrarMarcado(html, KIT) {
   /* 3 · Aviso de la mini práctica (v1.9.121) → tarjetas (v1.9.125). */
   const ip = inicioPopup(h, 'practica-intro');
   const bp = ip >= 0 && bloqueDiv(h, ip);
-  if (bp && T.pracIntro && /d-pracintro-ic/.test(h.slice(...bp)) && !/d-pracintro-n/.test(h.slice(...bp))) {
+  if (bp && T.pracIntro && /data-pracintro-go/.test(h.slice(...bp)) && !/d-pracintro-n/.test(h.slice(...bp))) {   // cualquier aviso anterior (cardio no traía .d-pracintro-ic)
     const viejo = h.slice(...bp);
-    const n = (viejo.match(/<b>(\d+) preguntas<\/b>/) || [])[1];
+    const n = (viejo.match(/<b>(\d+) preguntas<\/b>/) || viejo.match(/(\d+)\s*(?:<\/b>)?\s*preguntas/) || [])[1];
     let nuevo = T.pracIntro;
     if (n) nuevo = nuevo.replace(/(<span class="d-pracintro-n" aria-hidden="true">)\d+(<\/span>)/, '$1' + n + '$2');
     h = h.slice(0, bp[0]) + nuevo + h.slice(bp[1]);
@@ -152,6 +152,31 @@ export function migrarMarcado(html, KIT) {
     cambios.push('texto de "Mis logros" (bronce/plata con lo obligatorio, oro con los logros)');
   }
 
+  /* 4b · El botón "Índice" suelto (cursos anteriores a v1.9.85): sin la
+     cápsula `.d-top-group--indice` no se parece a Glosario ni a Ampliar,
+     que sí la tienen (comentario del cliente en el simulador del editor,
+     sobre cardio). Se envuelve, sin tocar el botón. */
+  const reIndice = /([ \t]*)(<button class="d-iconbtn d-iconbtn--labeled"[^>]*data-popup-trigger="sidenav"[^>]*>[\s\S]*?<\/button>)/;
+  const mi = h.match(reIndice);
+  if (mi && !/d-top-group--indice"[^>]*>\s*$/.test(h.slice(0, mi.index + mi[1].length))) {
+    const sangria = mi[1];
+    const boton = mi[2].replace(/\n/g, '\n  ');
+    h = h.replace(reIndice, `${sangria}<div class="d-top-group d-top-group--indice" role="group" aria-label="Índice">\n${sangria}  ${boton}\n${sangria}</div>`);
+    cambios.push('botón "Índice" dentro de su cápsula (como Glosario y Ampliar)');
+  }
+
+  /* 4c · Locución apagada = micrófono TACHADO (el kit lo trae desde que
+     el cliente reportó "el ícono no cambia de estado"; los cursos de
+     antes tienen el micrófono liso en los dos estados). Lo volvió a
+     pedir diseño en el simulador, sobre cardio. Se suma la línea al
+     ícono de apagado, sin tocar nada más del botón. */
+  const reMic = /(<button[^>]*id="d-narrate"[^>]*>\s*<svg class="ic-off"[^>]*>)([\s\S]*?)(<\/svg>)/;
+  const mm = h.match(reMic);
+  if (mm && !/ic-tachado/.test(mm[2])) {
+    h = h.replace(reMic, (_, a1, a2, a3) => a1 + a2 + '<line class="ic-tachado" x1="3.5" y1="2.5" x2="20.5" y2="21.5"/>' + a3);
+    cambios.push('Locución apagada: micrófono tachado');
+  }
+
   /* 5 · `#i-play`: lo usaba solo el botón del instructivo v3. Sin uso,
      sale del sprite (lo marca `iconos-indice`). */
   if (!/(?:href|xlink:href)="#i-play"/.test(h)) {
@@ -161,3 +186,53 @@ export function migrarMarcado(html, KIT) {
 
   return { html: h, cambios };
 }
+
+/* ---- curso.json (cursos armados desde datos) ----
+   El HTML de las diapositivas y de las fichas va en cadenas JSON: los
+   títulos del repaso (ver arriba) y el aviso de la mini práctica cuando
+   es una FICHA (`fichas[].id === "practica-intro"`, así lo tiene cardio):
+   se le pone el cuerpo del kit v1.9.125, conservando la cantidad de
+   preguntas. Se reescribe el JSON solo si algo cambió, con la sangría que
+   ya tenía. */
+export function migrarDatosCurso(texto, KIT) {
+  const cambios = [];
+  const rep = migrarTituloRepaso(texto);
+  let t = rep.texto;
+  if (rep.n) cambios.push(`título "Repaso rápido:" (${rep.n})`);
+  let d;
+  try { d = JSON.parse(t); } catch { return { texto: t, cambios }; }
+  let reescribir = false;
+  const T = plantillas(KIT);
+  const f = (d.fichas || []).find((x) => x && x.id === 'practica-intro' && typeof x.cuerpo === 'string');
+  if (f && T.pracIntro && /data-pracintro-go/.test(f.cuerpo) && !/d-pracintro-n/.test(f.cuerpo)) {
+    const n = (f.cuerpo.match(/(\d+)\s*(?:<\/b>)?\s*preguntas/) || [])[1];
+    const bd = T.pracIntro.match(/<div class="modal-bd d-pracintro">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>\s*$/);
+    const titulo = (T.pracIntro.match(/<h3>([\s\S]*?)<\/h3>/) || [])[1];
+    if (bd) {
+      let cuerpo = bd[1].trim();
+      if (n) cuerpo = cuerpo.replace(/(<span class="d-pracintro-n" aria-hidden="true">)\d+(<\/span>)/, '$1' + n + '$2');
+      f.cuerpo = cuerpo;
+      f.claseTarjeta = [f.claseTarjeta, 'd-pracintro-card'].filter(Boolean).join(' ');
+      if (titulo) f.titulo = titulo;
+      reescribir = true;
+      cambios.push('aviso de la mini práctica (ficha) → tarjetas' + (n ? ` (${n} preguntas)` : ''));
+    }
+  }
+  /* v1.9.126: el logro del kit "Segunda mirada" ya no existe (lo
+     reemplaza "Explorador"). Un curso que lo pedía por id pasaría a
+     tener 4 logros y `gamificacion` lo frena. Si el curso ya pidió
+     "explorador" por su cuenta, solo se saca el viejo. */
+  if (Array.isArray(d.logros) && d.logros.includes('segunda')) {
+    d.logros = d.logros.includes('explorador')
+      ? d.logros.filter((x) => x !== 'segunda')
+      : d.logros.map((x) => (x === 'segunda' ? 'explorador' : x));
+    reescribir = true;
+    cambios.push('logro del kit "segunda" → "explorador"');
+  }
+  if (reescribir) {
+    const sangria = (t.match(/\n( +)"/) || [, '  '])[1].length;
+    t = JSON.stringify(d, null, sangria) + (t.endsWith('\n') ? '\n' : '');
+  }
+  return { texto: t, cambios };
+}
+

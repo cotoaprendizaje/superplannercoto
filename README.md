@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.125** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.126** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -430,6 +430,32 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.126 — el simulador del editor
+
+Ver CLAUDE.md §7.75.
+
+- **`tools/vista-editor.mjs`** arma un curso para publicarlo como artefacto de
+  claude.ai y revisarlo comentando; **`tools/editor-vivo/`** es la capa:
+  comentar una diapositiva, señalar un elemento y **"Ver como"** PC, Full HD,
+  iPad y teléfono (horizontal y vertical). Nunca va en el zip.
+- **"Explorador" reemplaza a "Segunda mirada"**: abrir con un clic 3 paneles o
+  fichas que ninguna diapositiva exige. `actualizar-kit` lo cambia en
+  `curso.json`.
+- **Mini práctica sin scroll** en todas las medidas salvo teléfono vertical:
+  la intro ya no vuelve con la última devolución, el resultado entra en
+  notebook e iPad, y en teléfono acostado "Siguiente" va al lado de la
+  devolución.
+- **Ajustes de diseño del equipo:** aro de logros continuo, instructivo más
+  ancho y más bajo con las líneas del arte, índice con la línea desde la
+  unidad 1 y títulos en Roboto Bold mayúscula (y la fila A·B·C adentro del
+  recuadro, que no entraba nunca), Sonido y Locución azules con el micrófono
+  tachado al apagar, candado de logros adentro del círculo, un solo
+  "Todavía no", intro de "Mis logros" más angosta.
+- **`actualizar-kit` migra más:** el botón "Índice" a su cápsula, el
+  micrófono tachado, el aviso de la práctica cuando viene en `curso.json`, y
+  avisa el instructivo viejo de 620px en el CSS propio.
+- `tools/check-vista-editor.mjs` nuevo en `test:kit`.
 
 ### v1.9.125 — el rediseño
 

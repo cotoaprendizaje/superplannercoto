@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.125**.
+Vigente para **kit-base v1.9.126**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -198,7 +198,10 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   marcadas al retomar. `repaso-errada` lo mide: contesta todo mal y exige
   los mismos logros (§7.73).
 - **Los 5 logros del kit vienen solos** (Puntería, En racha, Curioso,
-  Segunda mirada, Impecable; +20 cada uno): `new-course` los escribe en
+  Explorador, Impecable; +20 cada uno). Explorador pide abrir con un clic 3
+  paneles o fichas que ninguna diapositiva exige (Índice, Recursos, Mis
+  logros…); reemplazó a "Segunda mirada" en v1.9.126 y `actualizar-kit`
+  hace el cambio en `curso.json`. `new-course` los escribe en
   `curso.json` como `logros: ['punteria', …]` y el kit los detecta por
   eventos de sus piezas. No hay que cablear nada; un logro propio del curso
   se suma al catálogo como objeto. Ninguno se gana con lo mínimo, y
@@ -424,6 +427,29 @@ python3 tools/build-zip.py <curso> <salida.zip>            # DOS zips: el del LM
 - **Releer §7.3 del diario** (los 20 bugs que ya se pagaron una vez).
 - El zip no lleva `README.md` del kit junto al `README-CURSO.md`
   (`build-zip.py` lo resuelve) (§7.3 #10).
+
+### Revisarlo con el equipo: el simulador del editor (§7.75)
+
+Antes de entregar —o en cualquier momento después de `new-course`— el curso
+se puede publicar como artefacto de claude.ai para que el equipo lo recorra y
+comente sobre la página misma:
+
+```bash
+node kit-base/tools/vista-editor.mjs . <carpeta-temporal>/vista
+```
+
+Se publica `pagina.html` de esa carpeta con `files` = su `archivos.json` y la
+capacidad `comments {composer_only:true}`; para actualizar, se rearma y se
+publica en el MISMO link. La vista es descartable: los cambios van siempre a
+la fuente (`curso.json`, marco, CSS propio, o al kit si es del kit).
+
+- La pestaña **"Editor"** (borde izquierdo) comenta la diapositiva o un
+  elemento señalado, y **"Ver como"** muestra el curso en PC, Full HD, iPad y
+  teléfono, horizontal y vertical, a su medida exacta.
+- Un comentario le llega a Claude solo si lo manda alguien que puede
+  EDITAR el artefacto ("Send to Claude" o `@claude` en el hilo). Los del
+  resto del equipo los activa el dueño respondiendo en el hilo.
+- La capa nunca entra en el zip.
 
 ---
 

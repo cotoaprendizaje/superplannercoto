@@ -48,11 +48,15 @@ if (!tieneFx) {
   console.log('  · el curso no carga fx.js: nada que revisar.');
 } else {
   /* 1 · La tarjeta del logro. */
-  const conSegunda = await page.evaluate(() => !!document.querySelector('#d-badges-list .d-badge[data-logro="segunda"]:not(.earned)'));
-  await page.evaluate((conSegunda) => {
-    if (conSegunda) { const m = window.motor; m.go(2, true); m.go(1, true); }
-    else document.dispatchEvent(new CustomEvent('logroganado', { detail: { id: 'x', nombre: 'Prueba', txt: 'Un logro de prueba.', pts: 20 } }));
-  }, conSegunda);
+  /* Con el gesto real si el curso tiene "Explorador" (3 paneles
+     opcionales abiertos con un clic); si no, el evento a mano. */
+  await page.evaluate(() => {
+    const m = window.motor;
+    const ids = ['sidenav', 'recursos', 'logros'].filter((id) => document.querySelector(`[data-popup-trigger="${id}"]`));
+    if (document.querySelector('#d-badges-list .d-badge[data-logro="explorador"]:not(.earned)') && ids.length === 3) {
+      ids.forEach((id) => { document.querySelector(`[data-popup-trigger="${id}"]`).click(); m.closePopup(); });
+    } else document.dispatchEvent(new CustomEvent('logroganado', { detail: { id: 'x', nombre: 'Prueba', txt: 'Un logro de prueba.', pts: 20 } }));
+  });
   await page.waitForTimeout(500);
   const t = await page.evaluate(() => {
     const el = document.querySelector('.fx-logro');
