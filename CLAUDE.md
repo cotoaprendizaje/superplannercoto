@@ -15804,3 +15804,144 @@ una vez. Tres cambios:
 - **SI A20.1/A20.2:** son del layout de dos columnas que armó SI, el mismo
   de la diapositiva de repaso del rediseño. Las variables de tamaño y el
   corte compacto van con ese marcado.
+
+## 7.74 El rediseño: el canvas aprobado por el cliente, llevado al kit y a los cursos (kit-base v1.9.125)
+
+El rediseño se diseñó con el cliente en un canvas (tableros "Main", "Índice",
+"Glosario", "Instrucciones", "Recursos", "Config", "Barra", "Repaso",
+"RepasoDiapo", "Quiz", "QuizResultado", "PracticaIntro", "Predicción",
+"Avisos", "Video", "Resumen", "Salida", "Toasts", "Efectos", "Íconos").
+Todo se hizo editando las reglas del kit EN SU LUGAR —`check-css-duplicates`
+no admite una hoja que pise a otra—, así que los cursos reciben el aspecto
+nuevo con `actualizar-kit`, sin tocar su HTML. Lo que vive escrito en el HTML
+del curso lo migra `actualizar-kit` (abajo).
+
+### Decisiones del cliente (2026-10-07/08)
+
+- **Cabeceras:** azul de marca en los paneles del kit (índice, glosario,
+  recursos, logros, instructivo, ayuda, ajustes); los pop-ups de CONTENIDO
+  conservan el color de su categoría, con la forma nueva (barra de 50px,
+  título en Faible 24px, ✕ centrada a la derecha).
+- **Reintentar no suma** (práctica y repaso).
+- **Índice:** solo el punto de estado, sin íconos por tema (el marcado de
+  los ítems se conserva; `iconos-indice` sigue cuidando que no haya
+  símbolos sin uso).
+- **Logros:** 5 por defecto (Puntería, En racha, Curioso, Segunda mirada,
+  Impecable), +20 cada uno, ninguno se gana con lo mínimo. Medallas por
+  defecto: plata = 85 % del máximo redondeado a 5, oro = máximo + 40.
+- **Efectos, por escalón:** chicos siempre (tilde, sacudida, "+N", contador);
+  medianos solo en logros (destellos, sello); grandes en el oro y al
+  terminar (fuegos, lluvia y serpentinas). Todos se apagan con "reducir
+  movimiento".
+
+### Lo que NO se hizo, y por qué
+
+- Los interruptores "Subtítulos de la voz" y "Sonidos de los logros" del
+  tablero Config: son funciones nuevas, no aspecto. Quedan para una versión
+  propia.
+- La barra de título del tablero Video: choca con la decisión §6.12 (el
+  pop-up de video sin cabecera, pedido del cliente). Se respetó §6.12.
+
+### Fases
+
+- **A · base:** tokens de la paleta del manual, la cabecera unificada de los
+  paneles, banco de íconos, arcos de fondo, modales centrados.
+- **B · logros y medallas:** `coto-logros.js` reescrito. El catálogo acepta
+  ids del kit como texto (`logros: ['punteria', …]`, que `new-course`
+  escribe en `curso.json`); `pts` por logro (`data-bono` en `#d-points`);
+  detectores por eventos de las piezas (`cotorespuesta`, `cotopractica`,
+  `cotominijuego`, `cotoglosario`, `slidechange`) con su estado en
+  suspend_data (`lg`). Anillo de logros en el chip, bloque de medalla con
+  rangos, tarjetas nuevas. `gamificacion` exige exactamente 5 (SI A23).
+- **C · paneles:** índice (puntos, resumen con anillo, avance por unidad),
+  glosario ("Descubriste N de M", consulta que suma a Curioso), instructivo
+  v4 (cuatro pasos sobre un camino), recursos (tarjetas con miniatura y
+  cuenta), ayuda/ajustes (FAB), barra (pastillas de Sonido y Locución,
+  toasts por tono).
+- **D · contenido:** repaso (tarjeta con barra azul, diapositiva
+  `.d-repaso-diapo`, variables `--repaso-c-*` y bloques compactos de SI
+  A20.1/A20.2), práctica (pregunta en caja azul, opciones-pastilla, resultado
+  en dos columnas con "Repasemos tus respuestas:"), aviso de la práctica,
+  predicción, cierre, salida ("Curso finalizado:" con el tilde verde y la
+  nota dorada) y la forma nueva de la cabecera de los pop-ups de contenido.
+- **E · efectos y reintentar:** en `fx.js` + `coto-fx.css`, que todos los
+  cursos ya cargan. Escuchan `logroganado`, `medallasube` (nuevo, de
+  `coto-logros.js`, solo en vivo: nunca al restaurar) y `courseend`. La
+  tarjeta "¡Nuevo logro!" es `aria-hidden` (el toast ya lo anuncia), deja
+  pasar los clics y se va sola o con cualquier toque. "↺ Reintentar" en el
+  repaso lo arma `coto-ui.js`: la pregunta queda `data-ya-contestada` (el
+  gate y la barra de pasos la siguen contando), el reintento no paga, no
+  guarda y llega a los logros como `repetida`. En la práctica, "Practicar de
+  nuevo" pasó a "↺ Reintentar" (mismo `[data-retry]`).
+- **F · migración:** `tools/_migrar-marcado.mjs`, llamado por
+  `actualizar-kit`. Cambia solo lo que reconoce como escrito por el kit
+  anterior: títulos con ":" de los paneles (el del índice, SOLO dentro de
+  `.d-sidenav-hd`), el instructivo v3 → v4 conservando los textos propios
+  de cada tarjeta, el aviso de la práctica conservando la cantidad de
+  preguntas, el texto de "Mis logros" si es el de fábrica, "Repaso rápido:"
+  (también dentro de `curso.json`) y `#i-play` si nadie lo usa. En un curso
+  armado desde datos migra marco + curso.json y vuelve a ARMAR el index; si
+  el index ya estaba desviado, lo migra también para no perder lo hecho a
+  mano. Respaldo en `.kit-anterior/`, y correrlo dos veces no cambia nada.
+
+### Lo que se encontró en el camino
+
+- **Un comentario dentro de un comentario** en `index-boilerplate.html`
+  (una nota `<!-- -->` dentro del bloque de referencia de la práctica)
+  cerraba el comentario antes: el resto del bloque se volvía marcado real
+  y las diapositivas de un curso NUEVO quedaban fuera de `.d-app`.
+  Lo detectan dos chequeos que ya existían —`check-comentarios-html` (en
+  `test:kit`) y `markup-sanity` sobre un curso nuevo—; ninguno se había
+  corrido todavía. Lo vio `scroll-audit` (26px de scroll en cada
+  diapositiva). Lección: `test:kit` después de CADA edición del boilerplate.
+- **`.modal-hd` en columna:** la forma nueva de la cabecera de contenido
+  (columna, por las bajadas) la heredaron las reglas de los paneles, que
+  decían `display:flex` sin dirección: título arriba, ✕ abajo. Se vio en
+  una foto. Test nuevo `cabecera-paneles`.
+- **La tira de repaso de alimentaria scrolleaba** con la barra del título
+  nueva, un borde de 4px del "Repaso completo" escondido y un `min-height`
+  en "Siguiente". `repaso-tira` lo marcó; se ajustaron los tres.
+- **La barra superior con Recursos** se pasaba 21px a 1280 y 17 a 960 con
+  las pastillas nuevas: el saludo cede con elipsis (1195–1365), se esconde
+  con Recursos entre 1195 y 1279, y el chip y el nombre se achican en
+  960–1023. Medido de 800 a 1440.
+- **Seguridad alimentaria** tiene su propio `initRepasoRapido` y no llama a
+  `initLogros`: el reintento del repaso y los 5 logros del kit no le llegan
+  hasta que su `curso.js` use los del kit (va a su ficha; `repaso-reintentar`
+  lo marca en rojo, con razón).
+
+### Lo que encontró el curso de prueba (cardio, `probar.sh`)
+
+- **"↺ Reintentar" va en la barra del título** de la tira, uno por tira,
+  sobre la pregunta en pantalla. En el cuerpo sumaba una fila y las tiras
+  de factor de cardio, colocadas sobre la lámina, crecían sobre el dibujo
+  (`bloque-no-tapa-arte`). Sin barra de título, va al final de la pregunta.
+- **El repaso conserva los TAMAÑOS de v1.9.124** (letra, interlineado,
+  margen, relleno de los botones): el rediseño los había agrandado 13px y
+  las tiras colocadas se midieron con los de antes. Y los botones V/F se
+  reparten por contenido (`flex: 1 1 auto`): repartidos por igual, el
+  "← esta era" partía el texto en dos líneas en iPad. El rediseño del
+  repaso es de color y forma, no de tamaño.
+- **El resultado de la práctica en pantallas bajas:** con el resultado en
+  pantalla, la diapositiva lleva `.is-quiz-resultado` y la intro se va
+  igual que mientras se responde (≤760px de alto); en teléfono acostado
+  se van también las barritas de avance y la línea "Respuesta correcta"
+  (ya se mostró la explicación al contestar). La fila del repaso se alinea
+  a la izquierda aunque el curso tenga `text-align:center`.
+- **Lo de cardio, en su copia del kit:** su CSS achicaba la práctica con
+  medidas del diseño anterior (con el nuevo la agrandaban: "Responder"
+  6px afuera) y una grilla para la lista de repaso que descolocaba las
+  filas nuevas; se sacaron. Su `curso.js` filtraba los logros a restaurar
+  con `BADGES.map(… .id)`, que pierde un logro del kit (va como texto, sin
+  `.id`): ahora usa `Logros.catalogo()` y pasa `lg`. `actualizar-kit` avisa
+  ese patrón en cualquier curso. Y tenía 4 logros: se le sumó "segunda"
+  para llegar a 5; cuáles quedan es del chat del curso.
+
+### Tests (64 → 68)
+
+`logros-kit`, `repaso-reintentar`, `efectos` y `cabecera-paneles`, cada uno
+verificado rojo con el código anterior (o con el defecto reintroducido) y
+verde con este. Más `tools/check-migracion.mjs` en `test:kit`, sin
+navegador, con un HTML de v1.9.124 y trampas (una diapositiva "Índice de
+contenidos", una tarjeta con texto propio, un `#i-play` en uso): rojo con el
+primer borrador de la migración, verde ahora.

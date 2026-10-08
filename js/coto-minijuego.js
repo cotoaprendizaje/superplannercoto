@@ -137,6 +137,7 @@
     var repasoTitleEl = document.querySelector('[data-mj-repaso-title]');
     var repasoSubEl = document.querySelector('[data-mj-repaso-sub]');
 
+    var partidas = 0;   // partidas terminadas en esta sesión (logro Impecable)
     var mj = { vidas: VIDAS, hallados: {}, errados: {}, orden: [], activo: false, errores: 0 };
     var pistaTimer = null;
     var pendienteFin = null;
@@ -302,6 +303,11 @@
         Object.keys(mj.errados).forEach(function (id) { memoria.errados[id] = true; });
         OPCIONES.forEach(function (o) { if (o.ok && !mj.hallados[o.id]) memoria.errados[o.id] = true; });
       }
+
+      /* Para el logro Impecable del kit (coto-logros.js, v1.9.125): la
+         primera partida de la sesión, ganada y sin errores. */
+      partidas++;
+      document.dispatchEvent(new CustomEvent('cotominijuego', { detail: { gano: !!gano, errores: mj.errores, primera: partidas === 1 } }));
 
       if (opts.onFin) {
         opts.onFin({ gano: gano, hallados: hallados, total: TOTAL,

@@ -183,6 +183,14 @@ try {
       '\n  ("Ver igual, en vertical"): con el giro bloqueado, el iPad vertical queda tapado sin salida. Copiar el' +
       '\n  bloque de `index-boilerplate.html`.');
   }
+  /* Restaurar logros filtrando por `BADGES` (v1.9.125, §7.74): desde el
+     rediseño, un logro del kit va en el catálogo como TEXTO ("segunda"),
+     sin `.id`, y ese filtro lo pierde al recargar. Lo tenía cardio. */
+  if (/BADGES\.map\(\s*function\s*\(\s*\w+\s*\)\s*\{\s*return\s+\w+\.id;?\s*\}\s*\)/.test(codigo) && /Logros\.restore\s*\(/.test(codigo)) {
+    avisosMarcado.push('js/curso.js filtra los logros a restaurar con `BADGES.map(… .id)`: los logros del kit van en el' +
+      '\n  catálogo como texto ("punteria", "segunda"…) y sin `.id`, así que se perderían al recargar. Usar' +
+      '\n  `Logros.catalogo().map(…)` (ya los trae expandidos) y pasarle también `lg: s.lg` a `Logros.restore`.');
+  }
 } catch (e) {}
 const testsPropios = plan.sinRegistro.filter((f) => /^tools\/tests\/[^_][^/]*\.mjs$/.test(f));
 
@@ -202,6 +210,28 @@ if (fs.existsSync(path.join(CURSO, 'curso.json')) && fs.existsSync(path.join(CUR
   } catch (e) {
     indexDesviado = 'curso.json o marco.html no se pueden armar (' + e.message + ')';
   }
+}
+
+/* ---- el marcado del kit que vive en el HTML del curso (v1.9.125, §7.74) ----
+   Los CSS y JS se reemplazan arriba; los títulos de los paneles, el
+   instructivo, el aviso de la práctica y el sprite están ESCRITOS en el
+   curso. `_migrar-marcado.mjs` cambia solo lo que reconoce como escrito por
+   el kit anterior (lo propio del curso no coincide y no se toca). En un
+   curso armado desde datos se migra el marco (y los títulos del repaso
+   dentro de curso.json) y el index se vuelve a ARMAR; si el index ya
+   estaba desviado de los datos, se migra también él, para no perder lo
+   que alguien le haya hecho a mano. */
+const { migrarMarcado, migrarTituloRepaso } = await import('./_migrar-marcado.mjs');
+const desdeDatos = fs.existsSync(path.join(CURSO, 'curso.json')) && fs.existsSync(path.join(CURSO, 'marco.html'));
+const migraciones = [];   // { f, texto, cambios }
+for (const f of desdeDatos ? ['marco.html', 'curso.json', ...(indexDesviado ? ['index.html'] : [])] : ['index.html']) {
+  const p = path.join(CURSO, f);
+  if (!fs.existsSync(p)) continue;
+  const antes = fs.readFileSync(p, 'utf8');
+  let r;
+  if (f === 'curso.json') { const t = migrarTituloRepaso(antes); r = { html: t.texto, cambios: t.n ? [`título "Repaso rápido:" (${t.n})`] : [] }; }
+  else r = migrarMarcado(antes, KIT);
+  if (r.cambios.length) migraciones.push({ f, texto: r.html, cambios: r.cambios });
 }
 
 /* ---- informe ---- */
@@ -242,6 +272,11 @@ if (indexDesviado) {
     '\n  cambió son los datos y nadie armó todavía, alcanza con armar.');
 }
 
+if (migraciones.length) {
+  console.log('\nMarcado del kit a actualizar en el HTML del curso (lo propio del curso no se toca):');
+  migraciones.forEach((m) => console.log(`  ${m.f}:\n    · ` + m.cambios.join('\n    · ')));
+  if (desdeDatos && !indexDesviado) console.log('  index.html: se vuelve a armar desde curso.json + marco.html.');
+}
 avisosMarcado.forEach((a) => console.log('\n⚠️ ' + a));
 if (testsPropios.length) {
   console.log(`\n⚠️ ${testsPropios.length} test(s) del curso se llaman igual que uno del kit: ${testsPropios.join(', ')}.` +
@@ -278,6 +313,25 @@ for (const f of [...reemplazar, ...plan.agregar]) {
 }
 for (const f of plan.quitar) fs.rmSync(path.join(CURSO, f));
 fs.writeFileSync(path.join(CURSO, 'kit-version.json'), JSON.stringify(registroDeVersion(KIT, CURSO), null, 2) + '\n');
+
+/* El marcado (ver arriba), con su respaldo junto al de los archivos. */
+for (const m of migraciones) {
+  const d = path.join(dirRespaldo, m.f);
+  fs.mkdirSync(path.dirname(d), { recursive: true });
+  fs.copyFileSync(path.join(CURSO, m.f), d);
+  fs.writeFileSync(path.join(CURSO, m.f), m.texto);
+}
+if (migraciones.length && desdeDatos && !indexDesviado) {
+  const { armarIndex } = await import('./curso-datos.mjs');
+  const ix = path.join(CURSO, 'index.html');
+  const d = path.join(dirRespaldo, 'index.html');
+  fs.mkdirSync(path.dirname(d), { recursive: true });
+  if (fs.existsSync(ix)) fs.copyFileSync(ix, d);
+  fs.writeFileSync(ix, armarIndex(JSON.parse(fs.readFileSync(path.join(CURSO, 'curso.json'), 'utf8')),
+    fs.readFileSync(path.join(CURSO, 'marco.html'), 'utf8')));
+}
+if (migraciones.length) console.log(`  Marcado del kit: ${migraciones.map((m) => m.f + ' (' + m.cambios.length + ')').join(', ')}` +
+  (desdeDatos && !indexDesviado ? ' · index.html vuelto a armar' : '') + '.');
 
 /* ---- El manifiesto acompaña al kit (kit-base v1.9.117) ----
    Relevo de "Prevención cardiovascular", 2026-10-05: después de actualizar,
@@ -348,5 +402,5 @@ if (fs.existsSync(readmeCurso) && !/^#{1,6}\s+.*relevo al kit/im.test(fs.readFil
 }
 
 console.log(`\n✓ Curso llevado a v${versionNueva}: ${reemplazar.length} reemplazado(s), ${plan.agregar.length} agregado(s), ${plan.quitar.length} sacado(s).`);
-if (respaldar.length) console.log(`  Respaldo de lo reemplazado o sacado: ${path.relative(CURSO, dirRespaldo)}/`);
+if (respaldar.length || migraciones.length) console.log(`  Respaldo de lo reemplazado o sacado: ${path.relative(CURSO, dirRespaldo)}/`);
 console.log('  Siguiente: correr la suite del curso (npm test) antes de empaquetar.');

@@ -191,7 +191,8 @@
    ------------------------------------------------------------
    El marcado lo arma `montarControles()` en coto-media.js; acá está
    el vestido. Mismo lenguaje que el resto del chrome del curso:
-   píldoras redondeadas, el color de la categoría, Faible/Roboto.
+   píldoras redondeadas, Faible/Roboto y, desde el rediseño v1.9.125, el
+   azul de marca (antes era el color de la categoría; lo de abajo es historia).
    Existe porque la barra NATIVA de Safari no es estilable (shadow DOM
    cerrado), trae botones que no se pueden sacar y decide sola cuándo
    esconderse — las cuatro fallas de iPad salían de ahí.
@@ -242,10 +243,10 @@
 .d-vp-btn:active { transform: scale(.94); }
 .d-vp-btn svg { width: 17px; height: 17px; fill: currentColor; pointer-events: none; }
 .d-vp-btn--play {
-  width: 42px; height: 42px; background: var(--cat); color: #fff;
-  box-shadow: 0 3px 12px -2px color-mix(in srgb, var(--cat) 75%, transparent);
+  width: 42px; height: 42px; background: var(--brand); color: #fff;
+  box-shadow: 0 3px 12px -2px color-mix(in srgb, var(--brand) 75%, transparent);
 }
-.d-vp-btn--play:hover { background: var(--cat-strong); }
+.d-vp-btn--play:hover { background: var(--brand-deep); }
 .d-vp-btn--play svg { width: 18px; height: 18px; }
 /* Foco visible: quien navega con teclado tiene que ver dónde está.
    Los controles nativos no dan ninguna garantía sobre esto. */
@@ -269,25 +270,25 @@
 .d-vp-seek::-webkit-slider-runnable-track, .d-vp-vol::-webkit-slider-runnable-track {
   height: 6px; border-radius: 99px;
   background: linear-gradient(to right,
-    var(--cat) 0 var(--pct, 0%),
+    var(--brand) 0 var(--pct, 0%),
     rgba(255, 255, 255, .22) var(--pct, 0%) var(--buf, var(--pct, 0%)),
     rgba(255, 255, 255, .3) var(--buf, var(--pct, 0%)) 100%);
 }
 .d-vp-seek::-moz-range-track, .d-vp-vol::-moz-range-track {
   height: 6px; border-radius: 99px;
   background: linear-gradient(to right,
-    var(--cat) 0 var(--pct, 0%),
+    var(--brand) 0 var(--pct, 0%),
     rgba(255, 255, 255, .22) var(--pct, 0%) var(--buf, var(--pct, 0%)),
     rgba(255, 255, 255, .3) var(--buf, var(--pct, 0%)) 100%);
 }
 .d-vp-seek::-webkit-slider-thumb, .d-vp-vol::-webkit-slider-thumb {
   -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 50%;
-  background: #fff; border: 3px solid var(--cat); margin-top: -4.5px;
+  background: #fff; border: 3px solid var(--brand); margin-top: -4.5px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, .45); cursor: grab;
 }
 .d-vp-seek::-moz-range-thumb, .d-vp-vol::-moz-range-thumb {
   width: 15px; height: 15px; border-radius: 50%; background: #fff;
-  border: 3px solid var(--cat); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); cursor: grab;
+  border: 3px solid var(--brand); box-shadow: 0 2px 6px rgba(0, 0, 0, .45); cursor: grab;
 }
 
 /* ---- el aviso que reemplaza al rectángulo negro ---- */
@@ -301,7 +302,7 @@
 }
 .d-vp-spin {
   width: 40px; height: 40px; border-radius: 50%;
-  border: 3.5px solid rgba(255, 255, 255, .22); border-top-color: var(--cat);
+  border: 3.5px solid rgba(255, 255, 255, .22); border-top-color: var(--brand);
   animation: d-video-cargando .9s linear infinite;
 }
 @keyframes d-video-cargando { to { transform: rotate(360deg); } }

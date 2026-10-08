@@ -76,24 +76,37 @@
    así no entrara, scrollea en vez de cortar — cortar es contenido
    inalcanzable, y eso es lo que persigue `clip-audit`. */
 .d-repaso{ font-size: var(--d-escala-lamina, 1rem); max-height: 100%; overflow: auto;
-  position: relative; width: 100%; display: flex; flex-direction: column; gap: .15em; background: linear-gradient(180deg, #fff 0%, color-mix(in srgb, var(--cat) 6%, #fff) 100%); border: 1.5px solid color-mix(in srgb, var(--cat) 30%, var(--line)); border-radius: var(--r-lg, 16px); padding: .5em .8em .55em; box-shadow: 0 1px 0 #fff inset, 0 2px 4px rgba(20, 30, 60, .06), 0 10px 22px -10px rgba(20, 30, 60, .28); }
-.d-repaso-q{ margin: 0 0 .3rem; color: var(--text); font-size: clamp(.78rem, 1.15cqw, .9rem); line-height: 1.26; }
-.d-repaso-fb{ align-items: flex-start; gap: .3rem; max-height: 0; opacity: 0; overflow: hidden; margin: 0; border-radius: 9px; padding: 0 .55rem; font-size: clamp(.72rem, 1.02cqw, .82rem); line-height: 1.24; transition: max-height .35s cubic-bezier(.2, .8, .3, 1), opacity .3s ease .05s, padding .35s ease, margin .35s ease; }
+  position: relative; width: 100%; display: flex; flex-direction: column; gap: .3em; background: #fff; border: 2px solid #D7DEEC; border-radius: 1.4em; padding: 0 1em .8em; box-shadow: 0 14px 40px rgba(10,40,70,.18); }
+/* Tamaños por VARIABLE (kit-base v1.9.125, relevo de SI A20.1): un curso
+   que agranda el repaso escribe `--repaso-fs-q` (y compañía) en vez de
+   `.mi-lamina .d-repaso-q{font-size:…}`. Así la regla compacta del kit
+   —que reasigna `--repaso-c-*`, una capa de más prioridad— le sigue
+   ganando en pantallas bajas sin pelear por especificidad. MEDIDO en SI:
+   con la regla del curso, iPhone 12 acostado pasaba de 51 a 113px de
+   scroll dentro de la tarjeta. */
+/* Tamaños de v1.9.124 (margen, interlineado, letra): las tiras COLOCADAS
+   sobre la lámina se midieron con ellos, y el rediseño los había agrandado
+   13px (`bloque-no-tapa-arte`, factores de cardio). El rediseño es de
+   color y forma, no de tamaño. */
+.d-repaso-q{ margin: 0 0 .3rem; color: var(--brand-navy); font-weight: 500; font-size: var(--repaso-c-fs-q, var(--repaso-fs-q, clamp(.78rem, 1.15cqw, .9rem))); line-height: 1.26; }
+.d-repaso-fb{ align-items: flex-start; gap: .3rem; max-height: 0; opacity: 0; overflow: hidden; margin: 0; border-radius: 9px; padding: 0 .55rem; font-size: var(--repaso-c-fs-fb, var(--repaso-fs-fb, clamp(.72rem, 1.02cqw, .82rem))); line-height: 1.24; transition: max-height .35s cubic-bezier(.2, .8, .3, 1), opacity .3s ease .05s, padding .35s ease, margin .35s ease; }
 .d-repaso-nav{ margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: .3rem; }
 .d-repaso-btns{ display: flex; gap: .5rem; }
-.d-repaso-done{ display: flex; align-items: center; justify-content: center; gap: .4rem; max-height: 0; opacity: 0; overflow: hidden; margin: 0 .15rem; padding: 0 .6rem; border-radius: 10px; background: color-mix(in srgb, var(--success) 14%, var(--surface)); color: var(--success-ink); font-weight: 800; font-size: .74rem; transition: max-height .3s cubic-bezier(.22, 1.3, .4, 1), opacity .3s ease, padding .3s ease, margin .3s ease; }
+.d-repaso-done{ display: flex; align-items: center; justify-content: center; gap: .4rem; max-height: 0; opacity: 0; overflow: hidden; margin: 0 .15rem; padding: 0 .6rem; border-radius: 10px; background: #e7f6ee; border: 0 solid #9fd9bd; color: var(--success-ink); font-weight: 700; font-size: .8rem; transition: max-height .3s cubic-bezier(.22, 1.3, .4, 1), opacity .3s ease, padding .3s ease, margin .3s ease; }
 .d-repaso-item{ display: none; position: relative; padding-left: 2rem; }
-.d-repaso-next{ align-self: flex-end; display: none; align-items: center; gap: .3rem; margin-top: .34rem; padding: .3rem .85rem; border-radius: 999px; border: none; cursor: pointer; background: linear-gradient(180deg, var(--cat), var(--cat-strong)); color: #fff; font-family: var(--font-body); font-weight: 800; font-size: .74rem; box-shadow: 0 1px 0 color-mix(in srgb, #fff 35%, transparent) inset, 0 6px 14px -6px color-mix(in srgb, var(--cat-strong) 75%, transparent); transition: transform .15s, box-shadow .15s, filter .15s; }
-.d-repaso-arrow{ flex: none; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; border: none; cursor: pointer; background: var(--surface-2); color: var(--text-soft); font-size: .9rem; line-height: 1; padding: 0; transition: background .15s ease, color .15s ease, transform .15s ease; }
-.d-repaso-count{ flex: none; display: inline-flex; align-items: center; padding: .18rem .6rem; border-radius: 999px; background: var(--surface-2); color: var(--text-soft); font-family: var(--font-body); font-weight: 800; font-size: .68rem; white-space: nowrap; transition: background .2s ease, color .2s ease; }
-.d-repaso-title{ display: flex; align-items: center; gap: .5rem; color: var(--cat-strong); font-family: var(--font-title); font-weight: 900; font-size: clamp(.86rem, 1.3cqw, 1rem); }
-.d-repaso-title-ic{ display: grid; place-items: center; flex: none; width: 1.7em; height: 1.7em; border-radius: 50%; background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 26%, #fff), color-mix(in srgb, var(--cat) 14%, #fff)); box-shadow: 0 1px 0 #fff inset, 0 3px 8px -3px color-mix(in srgb, var(--cat-strong) 45%, transparent); font-size: .82em; }
+.d-repaso-next{ align-self: flex-end; display: none; align-items: center; gap: .3rem; margin-top: .4rem; padding: .4rem 1.1rem; border-radius: 999px; border: none; cursor: pointer; background: var(--brand); color: #fff; font-family: var(--font-body); font-weight: 700; font-size: .78rem; box-shadow: none; transition: transform .15s, filter .15s; }
+.d-repaso-arrow{ flex: none; display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; border: none; cursor: pointer; background: rgba(255,255,255,.2); color: #fff; font-size: .9rem; line-height: 1; padding: 0; transition: background .15s ease, color .15s ease, transform .15s ease; }
+.d-repaso-count{ flex: none; display: inline-flex; align-items: center; padding: .18rem .6rem; border-radius: 999px; background: rgba(255,255,255,.18); color: #fff; font-family: var(--font-body); font-weight: 800; font-size: .68rem; white-space: nowrap; transition: background .2s ease, color .2s ease; }
+/* Rediseño v1.9.125 (§7.74): la barra azul de los paneles del kit, en
+   chico, arriba de la tarjeta. */
+.d-repaso-title{ display: flex; align-items: center; gap: .5rem; margin: 0 -1em .4em; padding: .4em 1em; min-height: 2.2em; box-sizing: border-box; background: linear-gradient(180deg, var(--brand), var(--brand-deep)); color: #fff; font-family: var(--font-title); font-weight: 900; font-size: clamp(.9rem, 1.4cqw, 1.15rem); border-radius: 1.2em 1.2em 0 0; }
+.d-repaso-title-ic{ display: none; place-items: center; flex: none; width: 1.7em; height: 1.7em; border-radius: 50%; background: linear-gradient(180deg, color-mix(in srgb, var(--cat) 26%, #fff), color-mix(in srgb, var(--cat) 14%, #fff)); box-shadow: 0 1px 0 #fff inset, 0 3px 8px -3px color-mix(in srgb, var(--cat-strong) 45%, transparent); font-size: .82em; }
 .d-repaso-fb::before{ flex: none; font-size: 1em; line-height: 1.35; margin-right: .1rem; }
 .d-repaso-fb[hidden]{ display: flex !important; }
-.d-repaso-next:hover{ filter: brightness(1.07); transform: translateY(-2px); box-shadow: 0 1px 0 color-mix(in srgb, #fff 35%, transparent) inset, 0 10px 18px -7px color-mix(in srgb, var(--cat-strong) 80%, transparent); }
-.d-repaso-btns button{ flex: 0 0 auto; display: flex; align-items: center; justify-content: center; gap: .3rem; padding: .34rem .85rem; border-radius: 999px; border: 2px solid var(--cat-strong); background: linear-gradient(180deg, #fff 0%, #fbfbfe 100%); color: var(--cat-strong); font-size: .76rem; font-weight: 800; cursor: pointer; box-shadow: 0 1px 0 #fff inset, 0 3px 8px -3px rgba(20, 30, 60, .18); transition: background .15s, border-color .15s, color .15s, transform .15s, box-shadow .15s; }
+.d-repaso-next:hover{ filter: brightness(1.07); transform: translateY(-2px); }
+.d-repaso-btns button{ flex: 1 1 auto; display: flex; align-items: center; justify-content: center; gap: .3rem; padding: var(--repaso-c-pad-btn, var(--repaso-pad-btn, .34rem .85rem)); border-radius: 999px; border: 2px solid #D7DEEC; background: #fff; color: var(--brand-navy); font-size: var(--repaso-c-fs-btn, var(--repaso-fs-btn, .82rem)); font-weight: 700; cursor: pointer; box-shadow: none; transition: background .15s, border-color .15s, color .15s, transform .15s, box-shadow .15s; }
 .d-repaso-next:active{ transform: translateY(0); }
-.d-repaso-item::before{ content: attr(data-repaso-n); position: absolute; left: 0; top: .05rem; width: 1.45rem; height: 1.45rem; border-radius: 50%; background: var(--surface-2); color: var(--text-dim); font-size: .72rem; font-weight: 800; display: grid; place-items: center; border: 1.5px solid var(--line); transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s cubic-bezier(.22, 1.4, .4, 1); }
+.d-repaso-item::before{ content: attr(data-repaso-n); position: absolute; left: 0; top: .05rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--brand); color: #fff; font-family: var(--font-title); font-size: .85rem; font-weight: 900; display: grid; place-items: center; border: 0; transition: background .2s ease, color .2s ease, border-color .2s ease, transform .2s cubic-bezier(.22, 1.4, .4, 1); }
 .d-repaso-arrow:disabled{ opacity: .35; cursor: default; }
 /* ---- Los tres `@keyframes` del repaso (kit-base v1.9.108) ----
    NO ESTABAN, y el efecto era silencioso. Cuando la tira se mudó de
@@ -136,14 +149,14 @@
 .d-repaso-item.is-current{ display: flex; flex-direction: column; animation: d-repaso-in .32s cubic-bezier(.2, .8, .3, 1) both; }
 .d-repaso-btns button::before{ font-size: .9em; }
 .d-repaso-btns button:disabled{ cursor: default; }
-.d-repaso-item.is-answered::before{ background: var(--cat); color: #fff; border-color: var(--cat); transform: scale(1.08); }
-.d-repaso-arrow:hover:not(:disabled){ background: color-mix(in srgb, var(--cat) 20%, var(--surface-2)); color: var(--cat-strong); }
-.d-repaso-item.is-wrong .d-repaso-fb{ background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger-ink); }
-.d-repaso.is-complete .d-repaso-done{ max-height: 3em; opacity: 1; margin-top: .08rem; padding: .22rem .6rem; }
+.d-repaso-item.is-answered::before{ background: var(--brand-deep); color: #fff; transform: scale(1.08); }
+.d-repaso-arrow:hover:not(:disabled){ background: rgba(255,255,255,.34); color: #fff; }
+.d-repaso-item.is-wrong .d-repaso-fb{ background: #fdecec; color: var(--brand-navy); border: 2px solid var(--danger); }
+.d-repaso.is-complete .d-repaso-done{ max-height: 3em; opacity: 1; margin-top: .08rem; padding: .22rem .6rem; border-width: 2px; }  /* el borde, solo a la vista: escondido sumaba 4px (v1.9.125) */
 .d-repaso-arrow:active:not(:disabled){ transform: scale(.92); }
-.d-repaso.is-complete .d-repaso-count{ background: color-mix(in srgb, var(--success) 18%, var(--surface)); color: var(--success-ink); }
-.d-repaso-item.is-correct .d-repaso-fb{ background: color-mix(in srgb, var(--success) 12%, transparent); color: var(--success-ink); }
-.d-repaso-item.is-answered .d-repaso-fb{ max-height: 12em; opacity: 1; margin-top: .28rem; padding: .3rem .55rem; }
+.d-repaso.is-complete .d-repaso-count{ background: var(--success); color: #fff; }
+.d-repaso-item.is-correct .d-repaso-fb{ background: #e7f6ee; color: var(--brand-navy); border: 2px solid var(--success); }
+.d-repaso-item.is-answered .d-repaso-fb{ max-height: 12em; opacity: 1; margin-top: .28rem; padding: .2rem .55rem; }  /* .2 (era .3): compensa el borde de 2px del rediseño */
 /* Devolución DOBLE (kit-base v1.9.120, §7.69): contestada la pregunta,
    la que no corresponde queda con `hidden`, y la regla de arriba más
    `.d-repaso-fb[hidden]{display:flex !important}` la mostraban igual
@@ -153,7 +166,22 @@
    animar la entrada. `repaso-navegacion` lo mide. */
 .d-repaso-item.is-answered .d-repaso-fb[hidden]{ display: none !important; }
 .d-repaso-item.is-answered .d-repaso-next{ display: inline-flex; animation: d-repaso-in .32s ease .12s both; }
-.d-repaso-btns button:hover:not(:disabled){ border-color: var(--cat); background: var(--cat-soft); transform: translateY(-2px); box-shadow: 0 10px 18px -8px rgba(20, 30, 60, .3); }
+/* "↺ Reintentar" (rediseño v1.9.125, §7.74): lo agrega coto-ui.js en la
+   BARRA del título, a la izquierda de las flechas. Ahí no suma alto: en el
+   cuerpo, las tiras colocadas sobre la lámina crecían sobre el dibujo
+   (`bloque-no-tapa-arte`, las de factor de cardio). Pastilla con borde
+   blanco sobre el azul; en `em` porque la barra escala con la lámina. */
+.d-repaso-reintentar{ flex: none; display: inline-flex; align-items: center; gap: .25em; margin-left: auto; padding: .15em .7em;
+  border-radius: 999px; border: 1.5px solid rgba(255,255,255,.7); background: transparent; color: #fff;
+  font-family: var(--font-body); font-weight: 700; font-size: .72em; line-height: 1.2; cursor: pointer; animation: d-repaso-in .32s ease .12s both; }
+.d-repaso-reintentar[hidden]{ display: none; }
+.d-repaso-reintentar:hover{ background: rgba(255,255,255,.18); border-color: #fff; }
+.d-repaso-reintentar:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
+.d-repaso-reintentar + .d-repaso-nav{ margin-left: .4em; }
+/* Sin barra de título (un repaso armado a mano): al final de la pregunta. */
+.d-repaso-item > .d-repaso-reintentar{ align-self: flex-start; margin: .4rem 0 0; border-color: var(--brand-soft); color: var(--brand); font-size: .78rem; }
+@media (prefers-reduced-motion: reduce){ .d-repaso-reintentar{ animation: none; } }
+.d-repaso-btns button:hover:not(:disabled){ border-color: var(--brand-soft); background: #F4F7FE; transform: translateY(-2px); }
 .d-repaso-btns button:active:not(:disabled){ transform: translateY(0); }
 .d-repaso-item.is-wrong .d-repaso-fb::before{ content: "💡"; }
 .d-repaso-item.is-correct .d-repaso-fb::before{ content: "🎉"; }
@@ -170,9 +198,9 @@
    `data-repaso-ans="true"`: con `false` habría varias "correctas". */
 .d-repaso-btns--vf button[data-repaso-ans="true"]::before{ content: "✓"; }
 .d-repaso-btns--vf button[data-repaso-ans="false"]::before{ content: "✕"; }
-.d-repaso-item.is-wrong .d-repaso-btns button[data-chosen]{ background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 88%, #fff), var(--danger)); animation: d-repaso-shake .45s ease; }
-.d-repaso-item.is-correct .d-repaso-btns button[data-chosen]{ background: linear-gradient(180deg, color-mix(in srgb, var(--success) 88%, #fff), var(--success)); animation: d-repaso-celebrate .5s ease; }
-.d-repaso-item.is-answered .d-repaso-btns button[data-chosen]{ color: #fff; border-color: transparent; box-shadow: 0 8px 18px -6px rgba(20, 30, 60, .4); }
+.d-repaso-item.is-wrong .d-repaso-btns button[data-chosen]{ background: var(--danger); animation: d-repaso-shake .45s ease; }
+.d-repaso-item.is-correct .d-repaso-btns button[data-chosen]{ background: var(--success); animation: d-repaso-celebrate .5s ease; }
+.d-repaso-item.is-answered .d-repaso-btns button[data-chosen]{ color: #fff; border-color: transparent; box-shadow: none; }
 .d-repaso-item.is-answered .d-repaso-btns button:not([data-chosen]){ opacity: .45; }
 
 /* ---- Cuál ERA la correcta (kit-base v1.9.81) ----
@@ -424,3 +452,63 @@
   font-family: var(--font-body); font-weight: 700; font-size: .8rem;
 }
 
+
+
+/* ============================================================
+   DIAPOSITIVA DE REPASO  ·  .d-repaso-diapo   (kit-base v1.9.125, §7.74)
+   ------------------------------------------------------------
+   El canvas del rediseño: dos tarjetas lado a lado. A la izquierda la
+   unidad (etiqueta, nombre, bajada, los pasos y "Lo que acabás de
+   ver:"); a la derecha la tarjeta de preguntas, que es un `.d-repaso`
+   común (mismo JS, misma voz, mismos tests). Es lo que armó "Seguridad
+   de la información" a mano (`.d-repaso-lamina`), hecho pieza del kit.
+   Marcado de ejemplo en index-boilerplate.html.
+   ============================================================ */
+.d-repaso-diapo{ position: absolute; inset: 6% 7% 8%; display: grid; grid-template-columns: minmax(0, 38%) minmax(0, 1fr); gap: 22px; align-items: stretch; }
+.d-repaso-diapo-lado{ display: flex; flex-direction: column; gap: 14px; padding: 0 22px 22px; border-radius: 28px; background: #fff;
+  box-shadow: 0 14px 40px rgba(10,40,70,.14); overflow: hidden; min-height: 0; }
+.d-repaso-diapo-lado > h3{ margin: 0 -22px; padding: 0 22px; min-height: 50px; display: flex; align-items: center; flex: none;
+  background: linear-gradient(180deg, var(--brand), var(--brand-deep)); color: #fff; font-family: var(--font-title); font-weight: 900; font-size: 1.5rem; }
+.d-repaso-diapo-eti{ font-size: .75rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6B7690; margin: 0; }
+.d-repaso-diapo-titulo{ font-family: var(--font-title); font-weight: 900; font-size: 2.1rem; line-height: 1; color: var(--brand); margin: 0; }
+.d-repaso-diapo-bajada{ font-size: .875rem; color: #46506A; margin: 0; }
+.d-repaso-diapo-ideas{ margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+.d-repaso-diapo-ideas > b{ font-family: var(--font-title); font-weight: 900; font-size: 1.0625rem; color: var(--brand); }
+.d-repaso-diapo-ideas ul{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.d-repaso-diapo-ideas li{ display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; border-radius: 16px; background: #F4F7FE;
+  border: 2px solid #D7DEEC; font-size: .84rem; line-height: 1.35; color: var(--brand-navy); }
+.d-repaso-diapo-ideas li::before{ content: "✓"; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--success); color: #fff;
+  display: grid; place-items: center; font-size: .75rem; font-weight: 700; }
+.d-repaso-diapo > .d-repaso{ max-height: 100%; font-size: 1.1rem; }
+
+/* ============================================================
+   Compacto por VARIABLES (v1.9.125, SI A20.1/A20.2)
+   ------------------------------------------------------------
+   La capa `--repaso-c-*` es la del kit para pantallas bajas: pisa lo que
+   el curso haya puesto en `--repaso-*`, sea cual sea la especificidad de
+   su regla. Dos disparadores: la ventana baja (480px, el de siempre) y
+   el ESCENARIO bajo (360px), que es el que vio SI: un 844×390 con la
+   barra en una fila deja ~296px de escenario, y el corte viejo de 260px
+   no llegaba. Va AL FINAL del archivo a propósito: pisa a las reglas base
+   de `.d-repaso-diapo`, que tienen la misma especificidad.
+   ============================================================ */
+@media (max-height: 480px) {
+  .d-repaso{ --repaso-c-fs-q: .74rem; --repaso-c-fs-btn: .7rem; --repaso-c-fs-fb: .68rem; --repaso-c-pad-btn: .26em .8em; }
+  /* La diapositiva de repaso en un teléfono acostado: menos aire, la
+     unidad angosta y sin "Lo que acabás de ver" (se sigue narrando: es
+     `display`, no `hidden`). */
+  /* A la derecha deja la canaleta de los botones flotantes (`--d-fab-canal`). */
+  .d-repaso-diapo{ inset: 2% var(--d-fab-canal, 74px) 3% 3%; grid-template-columns: minmax(0, 30%) minmax(0, 1fr); gap: 10px; }
+  .d-repaso-diapo-lado{ gap: 6px; padding: 0 12px 10px; border-radius: 18px; }
+  .d-repaso-diapo-lado > h3{ margin: 0 -12px; padding: 0 12px; min-height: 34px; font-size: 1rem; }
+  .d-repaso-diapo-titulo{ font-size: 1.15rem; }
+  .d-repaso-diapo-ideas{ display: none; }
+  .d-repaso-diapo > .d-repaso{ font-size: 1rem; }
+}
+@container (max-height: 360px) {
+  .d-repaso{ --repaso-c-fs-q: .74rem; --repaso-c-fs-btn: .7rem; --repaso-c-fs-fb: .68rem; --repaso-c-pad-btn: .26em .8em; }
+  .d-repaso-diapo{ grid-template-columns: minmax(0, 32%) minmax(0, 1fr); gap: 8px; }
+  .d-repaso-diapo-lado{ padding: 0 10px 8px; }
+  .d-repaso-diapo-titulo{ font-size: 1.1rem; }
+  .d-repaso-diapo-ideas{ display: none; }
+}

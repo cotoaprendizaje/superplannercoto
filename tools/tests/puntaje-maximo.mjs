@@ -78,7 +78,13 @@ const puntos = () => page.evaluate(() => {
   const p = document.getElementById('d-points');
   if (!p) return 0;
   const v = p.getAttribute('data-valor');      // el número VERDADERO, sin esperar la animación
-  return v !== null ? parseInt(v, 10) : parseInt((p.textContent || '0').replace(/\D/g, ''), 10) || 0;
+  /* Sin el bono de los logros (`data-bono`, kit-base v1.9.125): el máximo
+     declarado es el de lo que da puntos SIN logros, y las pasadas 2 y 3
+     ganan "Segunda mirada" con solo volver a recorrer. Un logro paga una
+     vez por construcción (coto-logros.js), así que restarlo no esconde
+     ningún pago repetido. */
+  const bono = parseInt(p.getAttribute('data-bono') || '0', 10) || 0;
+  return (v !== null ? parseInt(v, 10) : parseInt((p.textContent || '0').replace(/\D/g, ''), 10) || 0) - bono;
 });
 
 const ids = await page.evaluate(() =>

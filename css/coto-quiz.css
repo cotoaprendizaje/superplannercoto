@@ -14,24 +14,27 @@
    ACÁ porque nacieron junto al quiz, pero @keyframes d-shake también
    lo usa el gate genérico de avance (data-require-seen) de cada curso.
    ============================================================ */
-.d-quiz-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
-.d-quiz-count{font-size:.88rem;font-weight:600;color:var(--text-soft)}
-.d-quiz-count b{font-family:var(--font-title);font-weight:900;color:var(--cat-ink)}
+/* ---- Rediseño v1.9.125 (§7.74), del canvas ----
+   La pregunta en una caja azul con su número en un círculo blanco, las
+   opciones como pastillas con la letra en un círculo (verde la buena, roja
+   la elegida mal), la devolución en una tarjeta y los botones azules con
+   relieve. Colores del manual y de estado; ya no de la categoría. Mismo
+   marcado que arma coto-quiz.js: solo cambia cómo se ve. */
+.d-quiz-head{display:flex;align-items:center;justify-content:flex-end;gap:.6rem;margin-bottom:.8rem;flex-wrap:wrap}
+.d-quiz-count{order:2;font-size:.8125rem;font-weight:700;color:#6B7690}
+.d-quiz-count b{font-weight:700;color:inherit}
 .d-quiz-streak{display:inline-flex;align-items:center;gap:.3rem;font-size:.85rem;font-weight:700;
-  color:var(--warning-ink);background:color-mix(in srgb,var(--warning) 16%,transparent);
-  padding:.3rem .7rem;border-radius:var(--r-pill)}
+  padding:.2rem .6rem;border-radius:var(--r-pill);color:var(--warning-ink);background:color-mix(in srgb,var(--warning) 16%,transparent)}
 .d-quiz-streak.bump{animation:d-bump .3s ease}
 .d-quiz-streak.hot{color:var(--danger-ink);background:color-mix(in srgb,var(--danger) 14%,transparent)}
 @keyframes d-bump{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
-.d-quiz-dots{display:inline-flex;gap:.55rem}
-.d-quiz-dots i{width:13px;height:13px;border-radius:50%;background:var(--line);display:block;
-  transition:transform .2s,background .2s}
-.d-quiz-dots i.cur{background:linear-gradient(135deg,var(--cat-strong),var(--cat));transform:scale(1.35)}
+.d-quiz-dots{display:inline-flex;gap:8px}
+.d-quiz-dots i{width:34px;height:8px;border-radius:999px;background:#D7DEEC;display:block;transition:background .2s}
+.d-quiz-dots i.cur{background:var(--brand)}
 .d-quiz-dots i.ok{background:var(--success)}
 .d-quiz-dots i.bad{background:var(--danger)}
-
-.d-q{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:var(--r-lg);
-  background:var(--surface);padding:1.3rem 1.5rem;box-shadow:var(--shadow-card)}
+.d-q{position:relative;overflow:hidden;border:0;border-radius:28px;
+  background:var(--surface);padding:14px;box-shadow:0 14px 40px rgba(10,40,70,.14)}
 /* ---- Enunciado a la vista en pantallas bajas (kit-base v1.9.71, §7.17) ----
    Bug real, y solo aparece midiendo: en un teléfono acostado (~390px de
    alto) la tarjeta del quiz es más alta que el lienzo, así que al
@@ -57,71 +60,86 @@
     box-shadow: 0 6px 10px -8px rgba(20,30,60,.45);
   }
 }
-.d-q-title{font-family:var(--font-title);font-weight:900;font-size:1.12rem;color:var(--text);
-  display:flex;gap:.8rem;align-items:baseline;margin:0 0 1.1rem}
-.d-q-num{flex:none;width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;
-  font-size:.95rem;background:var(--cat-ink);color:#fff}
-.d-opt{display:flex;align-items:flex-start;gap:.8rem;padding:.9rem 1.05rem;border-radius:var(--r-lg);
-  border:1.5px solid var(--line);cursor:pointer;margin-top:.6rem;transition:border-color .15s,background .15s}
+.d-q-title{position:relative;display:flex;gap:14px;align-items:center;margin:0 0 12px;padding:14px 18px;border-radius:22px;
+  background:var(--brand);color:#fff;font-family:var(--font-title);font-weight:900;font-size:1.375rem;line-height:1.15}
+.d-q-num{flex:none;width:44px;height:44px;border-radius:50%;display:inline-grid;place-items:center;
+  font-size:1.375rem;background:#fff;color:var(--brand)}
+.d-opt{display:flex;align-items:center;gap:14px;padding:10px 16px 10px 10px;border-radius:999px;
+  border:2px solid #D7DEEC;background:#fff;cursor:pointer;margin:10px 6px 0;transition:border-color .15s,background .15s}
 .d-opt:first-of-type{margin-top:0}
-.d-opt:hover{border-color:var(--cat-strong);background:color-mix(in srgb,var(--cat) 8%,var(--surface))}
+.d-opt:hover{border-color:var(--brand-soft);background:#F4F7FE}
+.d-opt:has(input:checked){border-color:var(--brand);background:var(--brand-tint)}
 .d-opt input{position:absolute;opacity:0;width:0;height:0}
-.d-opt-mark{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);
-  margin-top:.1rem;display:grid;place-items:center}
-.d-opt-mark::after{content:"";width:11px;height:11px;border-radius:50%;background:var(--cat-strong);
-  transform:scale(0);transition:transform .15s}
-.d-opt input:checked + .d-opt-mark{border-color:var(--cat-strong)}
-.d-opt input:checked + .d-opt-mark::after{transform:scale(1)}
-.d-opt input:focus-visible + .d-opt-mark{outline:3px solid var(--focus);outline-offset:2px}
-/* Letra de la opción (kit-base v1.9.98). Va entre la marca del radio y
-   el texto, con ancho FIJO: así los textos de las 3 opciones arrancan
-   todos en la misma columna, que es la mitad de para qué sirve
-   numerarlas. `--cat-ink` y no `--cat-strong`: es texto chico y tiene
-   que pasar AA (§6.5). */
+/* El círculo del radio ya no se dibuja: la LETRA es el círculo. */
+.d-opt-mark{display:none}
+.d-opt input:focus-visible ~ .d-opt-letra{outline:3px solid var(--focus);outline-offset:2px}
+/* Letra de la opción (kit-base v1.9.98, pedido del cliente: "a) b) c)"),
+   ahora dentro de un círculo. */
 .d-opt-letra{
-  flex:none; width:1.35em; color:var(--cat-ink);
-  font-family:var(--font-num); font-weight:800; font-size:.95rem;
-  line-height:1.5; text-align:left;
+  flex:none; width:36px; height:36px; border-radius:50%; display:grid; place-items:center;
+  background:var(--brand-tint); color:var(--brand);
+  font-family:var(--font-title); font-weight:900; font-size:1rem; line-height:1;
 }
-.d-opt.is-ok .d-opt-letra{color:var(--success)}
-.d-opt.is-bad .d-opt-letra{color:var(--danger)}
-.d-opt-text{color:var(--text);font-size:.97rem;font-weight:600}
-.d-opt.is-ok{border-color:var(--success);background:color-mix(in srgb,var(--success) 16%,var(--surface))}
-.d-opt.is-bad{border-color:var(--danger);background:color-mix(in srgb,var(--danger) 12%,var(--surface));
+.d-opt input:checked ~ .d-opt-letra{background:var(--brand);color:#fff}
+.d-opt-text{flex:1;color:var(--brand-navy);font-size:1rem;font-weight:500}
+.d-opt.is-ok,.d-opt.is-ok:has(input:checked){border-color:var(--success);background:#e7f6ee}
+/* Tilde que se dibuja (efecto del rediseño, v1.9.125): la letra se vuelve un
+   tilde blanco que se traza; la animación está dentro del SVG. */
+.d-opt.is-ok .d-opt-letra{font-size:0;color:transparent;background:var(--success) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cstyle%3Epath%7Bstroke-dasharray:24;stroke-dashoffset:24;animation:d .5s ease-out .05s forwards%7D@keyframes d%7Bto%7Bstroke-dashoffset:0%7D%7D@media (prefers-reduced-motion:reduce)%7Bpath%7Banimation:none;stroke-dashoffset:0%7D%7D%3C/style%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/58% no-repeat}
+/* `:has(input:checked)` también: si no, la elegida (más específica) quedaba azul en vez de roja. */
+.d-opt.is-bad,.d-opt.is-bad:has(input:checked){border-color:var(--danger);background:#fdecec;
   animation:d-shake .4s} /* @keyframes d-shake vive en coto-player-bottom.css (cargarlo antes) */
+.d-opt.is-bad .d-opt-letra{background:var(--danger);color:#fff}
 @media (prefers-reduced-motion:reduce){.d-opt.is-bad{animation:none}.d-quiz-streak.bump{animation:none}}
 
-.d-quiz-fb{margin-top:1.1rem;border-radius:var(--r-lg);padding:1rem 1.15rem;font-size:.95rem;line-height:1.45}
-.d-quiz-fb.ok{background:color-mix(in srgb,var(--success) 14%,var(--surface));border-left:5px solid var(--success);color:var(--success-ink)}
-.d-quiz-fb.bad{background:color-mix(in srgb,var(--danger) 12%,var(--surface));border-left:5px solid var(--danger);color:var(--danger-ink)}
-.d-quiz-mascot{display:flex;align-items:center;gap:.7rem;margin-top:.8rem;font-size:.92rem;color:var(--text-soft)}
-/* BUG REAL (kit-base v1.9.52): `coto-quiz.js` viene escribiendo
-   `mascot.className = 'd-quiz-mascot happy' | 'd-quiz-mascot oops'`
-   desde v1.6, pero `.happy`/`.oops` no tenían NINGUNA regla — las dos
-   clases eran letra muerta y el comentario del mascota se veía igual
-   (gris `--text-soft`) hubieras acertado o no. Se completan con los
-   mismos tokens de estado que ya usan `.d-quiz-fb.ok/.bad` y
-   `.d-opt.is-ok/.is-bad` acá arriba, para que el bloque entero hable
-   un solo idioma de color y no se invente una paleta nueva. */
-.d-quiz-mascot.happy{color:var(--success-ink);font-weight:600}
-.d-quiz-mascot.oops{color:var(--warning-ink);font-weight:600}
+.d-quiz-fb{margin:12px 6px 0;border-radius:18px;padding:12px 14px;font-size:.9rem;line-height:1.4;color:var(--brand-navy);border:2px solid}
+.d-quiz-fb.ok{background:#e7f6ee;border-color:var(--success)}
+.d-quiz-fb.ok b{color:var(--success-ink)}
+.d-quiz-fb.bad{background:#fdecec;border-color:var(--danger)}
+.d-quiz-fb.bad b{color:var(--danger-ink)}
+/* La mascota no está en el rediseño: la devolución ya dice si estuvo bien. */
+.d-quiz-mascot{display:none}
 .d-quiz-mface{font-size:1.6rem;flex:none}
-.d-quiz-actions{display:flex;justify-content:center;gap:.8rem;margin-top:1rem;flex-wrap:wrap}
-.d-quiz-result{position:relative;overflow:hidden;text-align:center;border-radius:var(--r-lg);
-  padding:1.6rem 1.7rem;border:1px solid var(--line);background:var(--surface)}
-.d-quiz-result::before{content:"";position:absolute;top:0;left:0;right:0;height:5px;background:var(--line)}
-.d-quiz-result.pass{background:linear-gradient(160deg,color-mix(in srgb,var(--success) 16%,var(--surface)),var(--surface))}
-.d-quiz-result.pass::before{background:linear-gradient(90deg,var(--success),color-mix(in srgb,var(--success) 60%,#fff),var(--success))}
-.d-quiz-result strong{font-family:var(--font-title);font-size:1.35rem;display:block}
-.d-quiz-result p{margin:.5rem 0 0;color:var(--text)}
-.d-quiz-review{margin-top:1.1rem;text-align:left}
-.d-quiz-review .rv-title{font-weight:700;margin:0 0 .5rem}
-.d-quiz-review ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.7rem}
-.d-quiz-review li{background:var(--surface-2);border-radius:var(--r);padding:.8rem .95rem;font-size:.88rem}
-.d-quiz-review .rq{display:block;font-weight:700;color:var(--text)}
-.d-quiz-review .ra{display:block;margin-top:.3rem;color:var(--text-soft)}
-.d-quiz-review .rv-go{margin-top:.6rem}
+.d-quiz-actions{display:flex;justify-content:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+.d-quiz-actions .btn{border-radius:999px;font-family:var(--font-title);font-weight:900;font-size:1.0625rem;padding:12px 30px}
+.d-quiz-actions .btn-cat{background:var(--brand);color:#fff;border:0;box-shadow:0 5px 0 var(--brand-deep)}
+.d-quiz-actions .btn-cat:disabled{background:#E9EEF8;color:var(--brand-soft);box-shadow:none}
+.d-quiz-actions .btn-cat-ghost{background:#fff;color:var(--brand);border:2px solid var(--brand-soft);box-shadow:none}
+.d-quiz-result .d-quiz-actions .btn-cat{background:var(--success);box-shadow:0 4px 0 var(--success-ink)}
+
+/* El resultado: nota a la izquierda, repaso de las respuestas a la derecha. */
+.d-quiz-result{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:18px;align-items:start;text-align:left}
+.d-quiz-result.is-hecha{grid-template-columns:minmax(0,340px);justify-content:center}
+.d-quiz-nota,.d-quiz-review{display:flex;flex-direction:column;gap:10px;padding:0 14px 14px;border-radius:28px;background:#fff;
+  box-shadow:0 14px 40px rgba(10,40,70,.14);overflow:hidden}
+.d-quiz-nota{align-items:center;text-align:center}
+.d-quiz-result .d-quiz-nota-hd,.d-quiz-review .rv-title{align-self:stretch;margin:0 -14px 4px;padding:0 22px;min-height:50px;display:flex;align-items:center;
+  background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:#fff;font-family:var(--font-title);font-weight:900;font-size:1.375rem;line-height:1.05}
+.d-quiz-anillo{width:130px;height:130px;flex:none}
+.d-quiz-anillo circle{fill:none;stroke:#E9EEF8;stroke-width:12}
+.d-quiz-anillo circle.v{stroke:var(--brand);stroke-linecap:round}
+.d-quiz-anillo.is-todas circle.v{stroke:var(--success)}
+.d-quiz-anillo text{text-anchor:middle;font-family:var(--font-title);font-weight:900;font-size:24px;fill:var(--brand)}
+.d-quiz-anillo text.sub{font-family:var(--font-body);font-weight:400;font-size:10px;fill:#6B7690}
+.d-quiz-result strong{font-family:var(--font-body);font-weight:700;font-size:.9rem;color:var(--brand-navy);display:block}
+.d-quiz-result p{margin:0;color:#46506A;font-size:.85rem}
+.d-quiz-nota .d-quiz-actions{align-self:stretch;margin-top:4px}
+.d-quiz-nota .d-quiz-actions{flex-wrap:nowrap}
+.d-quiz-nota .d-quiz-actions .btn{flex:1;justify-content:center;text-align:center;white-space:nowrap;padding:10px 12px;font-size:.9rem}
+.d-quiz-review{text-align:left}
+.d-quiz-review ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.d-quiz-review li{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:20px;border:2px solid #D7DEEC;background:#F4F7FE;font-size:.88rem}
+.d-quiz-review li.is-bad{border-color:#f0b3b3;background:#fff6f6}
+.rv-ic{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;background:var(--success)}
+.d-quiz-review li.is-bad .rv-ic{background:var(--danger)}
+.rv-txt{flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:5px;min-width:0;text-align:left}  /* flex:1 + left: un text-align:center del curso la corría al medio */
+.d-quiz-review .rq{display:block;font-weight:700;color:var(--brand-navy)}
+.d-quiz-review .ra{display:block;color:#46506A}
+.d-quiz-review .rv-go{align-self:flex-start;margin-top:2px;padding:5px 12px;border-radius:999px;border:0;background:var(--brand);color:#fff;font-size:.78rem;font-weight:700}
 .d-quiz-allgood{font-weight:700;color:var(--success-ink)}
+@media (max-width:760px){
+  .d-quiz-result{grid-template-columns:1fr}
+}
 
 /* ---- "Esto no es la evaluación" (kit-base v1.9.121, §7.70) ----
    La regla del molde es que la evaluación final va aparte, en Moodle: todo
@@ -143,19 +161,29 @@
 .d-aviso-ic svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
 .d-aviso-practica p{margin:0;font-size:.9rem;line-height:1.45;color:var(--brand-navy)}
 .d-aviso-practica p + p{margin-top:.4rem;color:var(--text-soft)}
-.d-pracintro{text-align:center}
-.d-pracintro-ic{display:grid;place-items:center;width:56px;height:56px;margin:0 auto .7rem;
-  border-radius:50%;background:var(--cat-soft);color:var(--cat-ink)}
-.d-pracintro-ic svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;
-  stroke-linecap:round;stroke-linejoin:round}
-.d-pracintro-lead{margin:0 0 .7rem;font-size:1.05rem;color:var(--brand-navy)}
-.d-pracintro ul{margin:0 0 .9rem;padding:0;list-style:none;display:flex;flex-direction:column;
-  gap:.45rem;text-align:left}
-.d-pracintro li{position:relative;padding-left:1.4rem;font-size:.92rem;line-height:1.4;color:var(--text-soft)}
-.d-pracintro li::before{content:"";position:absolute;left:.35rem;top:.55em;width:7px;height:7px;
-  border-radius:50%;background:var(--cat)}
-.d-pracintro-eval{margin:0 0 1.1rem;padding:.7rem .9rem;border-radius:var(--r-sm);
-  background:var(--cat-soft);color:var(--brand-navy);font-size:.88rem;line-height:1.45;text-align:left}
+/* Rediseño v1.9.125 (§7.74), del canvas: tres datos en tarjetas con su
+   número en un círculo azul, el aviso de la evaluación en la pastilla
+   dorada y el botón verde con relieve. */
+.modal-card.d-pracintro-card{width:min(600px,92vw);border-radius:30px;overflow:hidden}
+.d-pracintro{text-align:center;padding:20px 28px 26px;gap:14px}
+.d-pracintro-ic{display:none}
+.d-pracintro-lead{margin:0;font-size:1.125rem;color:var(--brand-navy);text-align:left}
+.d-pracintro ul{margin:0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;text-align:center}
+.d-pracintro li{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 10px;border-radius:20px;
+  background:#F4F7FE;border:2px solid #D7DEEC;font-size:.84rem;line-height:1.35;color:#46506A}
+.d-pracintro-n{width:40px;height:40px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;
+  font-family:var(--font-title);font-weight:900;font-size:1.2rem}
+.d-pracintro-eval{display:flex;align-items:center;gap:10px;margin:0;padding:10px 14px;border-radius:16px;
+  background:#fff8e1;border:2px solid #ffd25e;color:var(--warning-ink);font-size:.875rem;line-height:1.45;text-align:left}
+.d-pracintro-eval::before{content:"!";flex:none;width:28px;height:28px;border-radius:50%;background:#ffd25e;display:grid;place-items:center;font-weight:700}
+.d-pracintro .d-pracintro-go{align-self:center;padding:13px 34px;border-radius:999px;border:0;background:var(--success);color:#fff;
+  font-family:var(--font-title);font-weight:900;font-size:1.125rem;box-shadow:0 5px 0 var(--success-ink)}
+@media (max-height:520px),(max-width:560px){
+  .d-pracintro{padding:12px 16px 16px;gap:8px}
+  .d-pracintro li{padding:8px 6px;gap:4px;font-size:.75rem}
+  .d-pracintro-n{width:30px;height:30px;font-size:1rem}
+  .d-pracintro .d-pracintro-go{padding:9px 24px;font-size:1rem}
+}
 
 /* ---- El marco de Moodle: 690px de alto (kit-base v1.9.121, §7.70) ----
    Con "Mostrar paquete: ventana actual" el escenario queda en ~570px, y
@@ -168,8 +196,7 @@
    pantalla —no de la voz: `display`, no `hidden`—. `mini-practica` lo mide
    en 1655×690. */
 @media (max-height: 760px){
-  .d-quiz-result{ padding: 1rem 1.2rem; }
-  .d-quiz-review{ margin-top: .6rem; }
+  .d-quiz-anillo{ width: 100px; height: 100px; }
   .d-quiz-review ul{ gap: .45rem; }
   .d-quiz-review li{ padding: .55rem .8rem; }
   .d-quiz-actions{ margin-top: .7rem; }
@@ -177,7 +204,18 @@
   .d-slide-quiz.is-quiz-running > p,
   .d-slide-quiz.is-quiz-running .slide-eyebrow,
   .d-slide-quiz.is-quiz-running .slide-lead,
-  .d-slide-quiz.is-quiz-running .d-aviso-practica{ display: none; }
+  .d-slide-quiz.is-quiz-running .d-aviso-practica,
+  /* …y con el resultado en pantalla (v1.9.125): dos columnas con todas
+     las respuestas no entraban en el marco de Moodle (89px de más en
+     cardio, que tiene la intro y el aviso arriba). */
+  .d-slide-quiz.is-quiz-resultado > h2,
+  .d-slide-quiz.is-quiz-resultado > p,
+  .d-slide-quiz.is-quiz-resultado .slide-eyebrow,
+  .d-slide-quiz.is-quiz-resultado .slide-lead,
+  .d-slide-quiz.is-quiz-resultado .d-aviso-practica{ display: none; }
+  .d-quiz-review li{ font-size: .82rem; }
+  .rv-ic{ width: 28px; height: 28px; }
+  .d-quiz-nota-hd, .d-quiz-review .rv-title{ min-height: 42px; font-size: 1.2rem; }
 }
 
 @media (max-height: 560px){
@@ -202,20 +240,41 @@
      Lo que se gana, medido: 17.6 del padding de la tarjeta, 33.6 de los
      tres paddings de opción, 8 de los dos huecos entre opciones, 8 del
      margen del enunciado, 8 del de las acciones y 8.8 del encabezado. */
-  .d-quiz-head{ margin-bottom: .45rem; }
-  .d-q{ padding: .75rem .9rem; }
-  .d-q-title{ margin-bottom: .6rem; }
-  .d-opt{ padding: .55rem 1.05rem; margin-top: .35rem; }
-  .d-quiz-actions{ margin-top: .5rem; }
+  .d-quiz-head{ margin-bottom: .3rem; }   /* .45 → .3 y padding 8 → 6 (v1.9.125): "Responder" quedaba 6px afuera a 844×390 en cardio */
+  .d-q{ padding: 6px; border-radius: 20px; }
+  .d-q-title{ margin-bottom: 6px; padding: 7px 12px; gap: 10px; font-size: 1.05rem; border-radius: 16px; }
+  .d-q-num{ width: 30px; height: 30px; font-size: 1rem; }
+  .d-opt{ padding: 3px 12px 3px 5px; margin-top: 4px; gap: 10px; }  /* 3/4px (v1.9.125): "Responder" quedaba 6px afuera a 844×390 en cardio */
+  .d-opt-letra{ width: 30px; height: 30px; font-size: .9rem; }
+  .d-quiz-fb{ margin-top: 6px; padding: 7px 10px; font-size: .84rem; }
+  .d-quiz-actions .btn{ padding: 8px 22px; font-size: .95rem; }
+  .d-quiz-actions{ margin-top: .35rem; }
 
   /* La pantalla de resultado es el estado MÁS ALTO (nota + una ficha de
      repaso por pregunta errada + dos botones), y es la que `scroll-audit`
      nunca ve porque no responde el cuestionario. Mismo criterio: aire, no
      tipografía. */
-  .d-quiz-result{ padding: .45rem .9rem; }
-  .d-quiz-review{ margin-top: .35rem; }
-  .d-quiz-review li{ padding: .4rem .65rem; }
-  /* ---- La lista de repaso, a DOS COLUMNAS ----
+  .d-quiz-result{ gap: 10px; }
+  .d-quiz-nota, .d-quiz-review{ gap: 5px; padding: 0 8px 8px; border-radius: 18px; }
+  .d-quiz-result .d-quiz-nota-hd, .d-quiz-review .rv-title{ min-height: 34px; margin: 0 -8px 2px; padding: 0 12px; font-size: 1rem; }
+  .d-quiz-anillo{ width: 64px; height: 64px; }
+  .d-quiz-review li{ padding: .35rem .55rem; gap: 8px; font-size: .8rem; }
+  .rv-ic{ width: 24px; height: 24px; font-size: .8rem; }
+  /* La línea "Respuesta correcta: …" es lo primero que sobra: la
+     explicación completa ya se mostró al contestar cada pregunta. Lo
+     resolvía cardio en su CSS (§7.74); vale para todo curso. */
+  .d-quiz-review .ra{ display: none; }
+  /* Con el resultado en pantalla, las barritas de avance y "Pregunta N de
+     M" ya no dicen nada: se van (26px que faltaban a 844×390 en cardio). */
+  .d-slide-quiz.is-quiz-resultado .d-quiz-head{ display: none; }
+  .d-quiz-review .rq{ line-height: 1.25; }
+  .d-quiz-review .rv-go{ padding: 3px 10px; font-size: .72rem; }
+  .d-quiz-nota .d-quiz-actions .btn{ padding: 6px 10px; font-size: .85rem; }
+  /* ---- La lista de repaso, en UNA columna desde v1.9.125 ----
+     El rediseño ya pone la nota y el repaso lado a lado (dos columnas del
+     resultado), así que la lista vuelve a una sola. Lo de abajo queda
+     como historia de por qué se usó el ancho.
+     ---- (antes) La lista de repaso, a DOS COLUMNAS ----
      Recortar aire no alcanzaba para el estado más alto: quedaban 47px.
      La salida no es tipografía más chica ni scroll, es usar el ANCHO, que
      es lo que un teléfono acostado sí tiene de sobra — la tarjeta llega a
@@ -226,7 +285,7 @@
      `grid` y no `flex-wrap`: con grid las dos fichas de una fila quedan
      del mismo alto sin pedirlo, así que no hay escalones. */
   .d-quiz-review ul{
-    display: grid; grid-template-columns: 1fr 1fr; gap: .3rem;
+    display: grid; grid-template-columns: 1fr; gap: .3rem;
     align-items: start;
   }
   .d-quiz-review .rv-title{ margin-bottom: .25rem; }

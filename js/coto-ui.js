@@ -439,6 +439,48 @@
         prog.textContent = 'Viste ' + vistos + ' de ' + items.length + ' secciones';
       }
 
+      /* ---- Rediseño v1.9.125 (§7.74): el índice del canvas ----
+         Un recuadro arriba con el anillo de avance (la línea "Viste N de
+         M" y los objetivos van adentro) y cada grupo como una unidad
+         numerada con su "N de M". Se arma desde el marcado de siempre: un
+         curso viejo lo gana al actualizar el kit, sin tocar su index. */
+      if (prog && items.length) {
+        var caja = prog.closest('.d-ix-resumen');
+        if (!caja) {
+          caja = document.createElement('div');
+          caja.className = 'd-ix-resumen';
+          caja.innerHTML = '<svg class="d-ix-anillo" viewBox="0 0 62 62" aria-hidden="true">' +
+            '<circle cx="31" cy="31" r="26"/><circle class="v" cx="31" cy="31" r="26" transform="rotate(-90 31 31)"/>' +
+            '<text x="31" y="36" text-anchor="middle"></text></svg><div class="d-ix-resumen-txt"></div>';
+          prog.parentNode.insertBefore(caja, prog);
+          var txt = caja.querySelector('.d-ix-resumen-txt');
+          txt.appendChild(prog);
+          var obj = prog.parentNode.parentNode.querySelector('.d-obj-progress');
+          if (obj) txt.appendChild(obj);
+        }
+        var pct = Math.round(vistos / items.length * 100), circ = 2 * Math.PI * 26;
+        var v = caja.querySelector('circle.v');
+        v.setAttribute('stroke-dasharray', (circ * pct / 100).toFixed(1) + ' ' + circ.toFixed(1));
+        caja.querySelector('text').textContent = pct + '%';
+      }
+      document.querySelectorAll('.d-sidenav-list').forEach(function (lista) {
+        var grupo = null, cuenta = null;
+        var cerrar = function () {
+          if (!grupo) return;
+          grupo.setAttribute('data-avance', cuenta.v + ' de ' + cuenta.n);
+          grupo.classList.toggle('is-empezado', cuenta.v > 0 && cuenta.v < cuenta.n);
+          grupo.classList.toggle('is-completo', cuenta.n > 0 && cuenta.v === cuenta.n);
+        };
+        Array.prototype.forEach.call(lista.children, function (el) {
+          if (el.classList.contains('d-sidenav-group')) { cerrar(); grupo = el; cuenta = { v: 0, n: 0 }; }
+          else if (grupo && el.classList.contains('d-sidenav-item')) {
+            cuenta.n++;
+            if (el.classList.contains('is-done')) cuenta.v++;
+          }
+        });
+        cerrar();
+      });
+
       /* ---- Progreso por OBJETIVO de aprendizaje (kit-base v1.9.86) ----
          Las N diapositivas vistas dicen cuánto NAVEGASTE; no dicen cuánto
          de los objetivos declarados en la diapositiva "Objetivos" ya
@@ -638,6 +680,42 @@
     }
     input.addEventListener('input', filtrar);
     filtrar();
+
+    /* ---- Consultar un término (kit-base v1.9.125, §7.74) ----
+       Tocar un término desbloqueado lo marca como consultado y lee su
+       definición en voz alta. Es lo que mide el logro Curioso del kit
+       (coto-logros.js): "consultaste 3 términos por tu cuenta". Cada
+       término cuenta una vez, por su posición en el glosario. */
+    var todosDt = Array.prototype.slice.call(popup.querySelectorAll('dl.d-glossary dt'));
+    function consultar(dt) {
+      if (!dt || dt.classList.contains('is-locked')) return;
+      dt.classList.add('is-consultado');
+      var dd = dt.nextElementSibling && dt.nextElementSibling.tagName === 'DD' ? dt.nextElementSibling : null;
+      if (dd) dd.classList.add('is-consultado');
+      if (global.Narrador && global.Narrador.speak) {
+        global.Narrador.speak(dt.textContent.trim() + '. ' + (dd ? dd.textContent.trim() : ''), 'popup');
+      }
+      document.dispatchEvent(new CustomEvent('cotoglosario', { detail: { n: todosDt.indexOf(dt), termino: dt.textContent.trim() } }));
+    }
+    /* El término de un curso armado desde datos ya es un botón ("ir a la
+       diapositiva donde aparece"): tocarlo también cuenta como consultar.
+       Solo un `<dt>` de texto suelto se vuelve enfocable acá. */
+    todosDt.forEach(function (dt) {
+      if (dt.querySelector('button, a')) return;
+      if (!dt.hasAttribute('tabindex')) dt.setAttribute('tabindex', '0');
+      dt.setAttribute('role', 'button');
+    });
+    popup.addEventListener('click', function (e) {
+      var el = e.target.closest && e.target.closest('dl.d-glossary dt, dl.d-glossary dd');
+      if (!el) return;
+      consultar(el.tagName === 'DT' ? el : el.previousElementSibling);
+    });
+    popup.addEventListener('keydown', function (e) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('dl.d-glossary dt')) {
+        e.preventDefault();
+        consultar(e.target);
+      }
+    });
   }
 
   /* ============================================================
@@ -768,6 +846,23 @@
           if (pista) pista.hidden = visto;
         }
       });
+      /* "Descubriste N de M términos" arriba del buscador (rediseño
+         v1.9.125, §7.74). Se arma desde el marcado de siempre. */
+      if (terminos.length) {
+        var cuenta = popup.querySelector('.d-gloss-cuenta');
+        if (!cuenta) {
+          var bd = popup.querySelector('.modal-bd');
+          if (bd) {
+            cuenta = document.createElement('p');
+            cuenta.className = 'd-gloss-cuenta';
+            bd.insertBefore(cuenta, bd.firstChild);
+          }
+        }
+        if (cuenta) {
+          var abiertos = terminos.filter(function (t) { return !t.bloqueado; }).length;
+          cuenta.textContent = 'Descubriste ' + abiertos + ' de ' + terminos.length + (terminos.length === 1 ? ' término' : ' términos');
+        }
+      }
       if (desbloqueados.length && opts.onUnlock) opts.onUnlock(desbloqueados);
     }
     refresh(true); // aplica el estado ya restaurado sin avisar (no es "nuevo")
@@ -1114,6 +1209,30 @@
       var count = panel.querySelector('[data-repaso-count]');
       var prevBtn = panel.querySelector('[data-repaso-prev]');
       var nextBtn = panel.querySelector('[data-repaso-nextq]');
+      /* "↺ Reintentar" (rediseño v1.9.125, §7.74, del canvas): volver a
+         contestar la pregunta en pantalla para practicar. NO suma ni cambia
+         lo guardado (decisión del cliente: reintentar no suma); ver
+         `reintentar()`. Va en la BARRA del título, uno por tira: en el
+         cuerpo sumaba una fila, y las tiras colocadas sobre la lámina
+         (las de factor de cardio) crecían sobre el dibujo
+         (`bloque-no-tapa-arte`). Lo arma el kit: ningún curso toca su HTML.
+         Sin barra de título, va al final de la pregunta. */
+      var tituloTira = panel.querySelector('.d-repaso-title');
+      var reBtn = document.createElement('button');
+      reBtn.type = 'button';
+      reBtn.className = 'd-repaso-reintentar';
+      reBtn.setAttribute('data-repaso-reintentar', '');
+      reBtn.setAttribute('data-narrate-skip', '');
+      reBtn.innerHTML = '<span aria-hidden="true">↺</span> Reintentar';
+      reBtn.hidden = true;
+      if (tituloTira) tituloTira.insertBefore(reBtn, tituloTira.querySelector('.d-repaso-nav'));
+      reBtn.addEventListener('click', function () { reintentar(items[actual]); });
+      function syncReintentar() {
+        var it = items[actual];
+        if (!it) return;
+        if (!tituloTira && reBtn.parentNode !== it) it.appendChild(reBtn);
+        reBtn.hidden = !it.classList.contains('is-answered');
+      }
       if (!items.length) return;
 
       /* UNA pregunta por vez (pedido real del cliente): con las dos a la
@@ -1142,6 +1261,7 @@
           it.hidden = n !== i || panel.classList.contains('is-bloqueada');
         });
         if (count) count.textContent = (i + 1) + ' de ' + items.length;
+        syncReintentar();
         if (prevBtn) prevBtn.disabled = i === 0;
         if (nextBtn) nextBtn.disabled = i === items.length - 1;
 
@@ -1207,6 +1327,7 @@
         var fb = especifico ? null : item.querySelector('[data-repaso-fb]:not([data-fb-ok]):not([data-fb-no])');
         if (fb) fb.hidden = false;
         item.querySelectorAll('[data-repaso-ans]').forEach(function (b) { b.disabled = true; });
+        syncReintentar();
 
         /* ---- CUÁL ERA LA CORRECTA ----
            kit-base v1.9.81, relayado desde el primer simulador (y antes
@@ -1243,8 +1364,27 @@
           }
         }
         panel.classList.toggle('is-complete', items.every(function (it) {
-          return it.classList.contains('is-answered');
+          return it.classList.contains('is-answered') || it.hasAttribute('data-ya-contestada');
         }));
+      }
+
+      /* Deja la pregunta como nueva A LA VISTA, pero contestada para el
+         curso: `data-ya-contestada` la sigue contando en el gate
+         (`faltan`) y en la barra de pasos (coto-piezas.js), y lo guardado
+         (`seen`/`seenMal`) no se toca. */
+      function reintentar(item) {
+        item.setAttribute('data-ya-contestada', '');
+        item.classList.remove('is-answered', 'is-correct', 'is-wrong');
+        item.querySelectorAll('[data-repaso-ans]').forEach(function (b) {
+          b.disabled = false;
+          b.removeAttribute('data-chosen');
+          b.classList.remove('es-la-correcta');
+        });
+        item.querySelectorAll('[data-repaso-fb]').forEach(function (f) { f.hidden = true; });
+        if (global.Narrador && global.Narrador.cancel) global.Narrador.cancel();
+        var primero = item.querySelector('[data-repaso-ans]');
+        if (primero) primero.focus();
+        syncReintentar();
       }
 
       items.forEach(function (item, idx) {
@@ -1274,11 +1414,18 @@
             var acerto = eligio === ok;
             b.setAttribute('data-chosen', '');
             resolver(item, acerto);
+            if (item.hasAttribute('data-ya-contestada')) {
+              /* Un reintento: se ve y se escucha la devolución, pero no
+                 paga, no se guarda y los logros lo ignoran (`repetida`). */
+              document.dispatchEvent(new CustomEvent('cotorespuesta', { detail: { fuente: 'repaso', id: id, acerto: acerto, repetida: true } }));
+              return;
+            }
             if (acerto && id && !seen(id)) {
               mark(id);
               if (opts.onCorrect) opts.onCorrect(id);
             }
             if (!acerto && id) markMal(id, b.getAttribute('data-repaso-ans'));
+            document.dispatchEvent(new CustomEvent('cotorespuesta', { detail: { fuente: 'repaso', id: id, acerto: acerto } }));   // logros del kit (v1.9.125)
             onAnswer(id, acerto, b.getAttribute('data-repaso-ans'));
             document.dispatchEvent(new Event('gatechange'));   // por si la diapositiva lo exige (abajo)
           });
@@ -1335,7 +1482,7 @@
       faltan: function (slideEl) {
         if (!slideEl || !slideEl.hasAttribute || !slideEl.hasAttribute('data-require-repaso')) return [];
         return Array.prototype.slice.call(slideEl.querySelectorAll('[data-repaso-item]'))
-          .filter(function (it) { return !it.classList.contains('is-answered'); })
+          .filter(function (it) { return !it.classList.contains('is-answered') && !it.hasAttribute('data-ya-contestada'); })
           .map(function (it, k) { return it.getAttribute('data-repaso-id') || ('pregunta-' + (k + 1)); });
       }
     };
@@ -1444,6 +1591,7 @@
           respondido = true;
           var v = btn.getAttribute('data-pred-ok');
           var ok = v !== null && v !== 'false';
+          document.dispatchEvent(new CustomEvent('cotorespuesta', { detail: { fuente: 'prediccion', acerto: ok } }));   // logros del kit (v1.9.125)
           btn.classList.add(ok ? 'is-ok' : 'is-no');
           btn.setAttribute('aria-pressed', 'true');
           Array.prototype.forEach.call(opts, function (b) { b.disabled = true; });

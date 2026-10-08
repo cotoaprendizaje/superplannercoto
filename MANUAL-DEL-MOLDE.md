@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.124**.
+Vigente para **kit-base v1.9.125**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -197,6 +197,17 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   La plantilla ya guarda las erradas (`seenMal`/`markMal`), así vuelven
   marcadas al retomar. `repaso-errada` lo mide: contesta todo mal y exige
   los mismos logros (§7.73).
+- **Los 5 logros del kit vienen solos** (Puntería, En racha, Curioso,
+  Segunda mirada, Impecable; +20 cada uno): `new-course` los escribe en
+  `curso.json` como `logros: ['punteria', …]` y el kit los detecta por
+  eventos de sus piezas. No hay que cablear nada; un logro propio del curso
+  se suma al catálogo como objeto. Ninguno se gana con lo mínimo, y
+  reintentar no suma (decisión del cliente). Las medallas, si el curso no
+  las declara: plata = 85 % del máximo, oro = máximo + 40. `logros-kit` gana
+  cada uno con el gesto real (§7.74).
+- **Un repaso o unos logros PROPIOS del curso no reciben lo nuevo del
+  kit** (reintentar, los 5 logros, los efectos de logro): pasar a
+  `initRepasoRapido` e `initLogros` del kit (§7.74).
 
 ---
 
@@ -209,9 +220,16 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
   Para TEXTO, `--cat-ink` (nunca `--cat-strong`); para fondo que lleva
   texto, `--cat-wash` (nunca `--cat-soft`). `--cat-strong` es para
   bordes, sombras y degradados (§7.3 #16).
-- **Todos los pop-ups del menú superior con el mismo header** (degradado
-  de marca). Si hace falta otro estilo, en todos, nunca en uno solo
-  (§7.3 #1).
+- **Todos los paneles del kit con la misma barra** (azul de marca, 50px,
+  título en Faible terminado en ":" y la ✕ a la derecha). Los pop-ups de
+  CONTENIDO tienen la misma forma con el color de su categoría (decisión
+  del cliente, §7.74). Lo mide `cabecera-paneles`.
+- **Los efectos (logros, medalla, final) los pone el kit** desde `fx.js`;
+  el curso no dibuja festejos propios. Todos respetan "reducir movimiento"
+  y ninguno traba los clics (§7.74, `efectos`).
+- **Actualizar un curso migra también su marcado del kit** (títulos,
+  instructivo, aviso de la práctica): `actualizar-kit` lo lista sin
+  `--aplicar` y conserva lo propio del curso (§7.74).
 - **Lo que vive sobre la lámina se mide en `em` de
   `--d-escala-lamina` o en `cqh`, nunca en `rem`**: la caja escala con
   la lámina y el texto en `rem` no (§7.38).

@@ -116,21 +116,24 @@ if (!g.hayPractica && !g.practicaDeclarada) {
     '`<body data-practica="simulador">` y explicá en README-CURSO.md por qué.');
 }
 
-/* ---- Tope de 5 logros por curso (kit-base v1.9.97) ----
-   CONVENCIÓN DEL CLIENTE, fijada para TODOS los cursos y no para uno: el
-   catálogo va con un máximo de 5 logros. El catálogo en sí es contenido
-   del curso —así lo dice `coto-logros.js` en su cabecera, y está bien—
-   pero el TOPE es una regla de producto, y hasta acá no la sostenía nada:
-   un curso podía declarar 8 y la suite entera pasaba en verde.
+/* ---- Exactamente 5 logros por curso (kit-base v1.9.125, §7.74) ----
+   CONVENCIÓN DEL CLIENTE, para TODOS los cursos: "yo había querido
+   definir que siempre sean 5 logros". Desde v1.9.97 este test solo
+   frenaba los MÁS de 5, así que un curso con 4 pasaba en verde
+   (relevo de "Seguridad de la información", A23: el cliente lo vio en el
+   curso entregado). Ahora son 5, ni más ni menos. Los cinco del kit
+   (`punteria`, `racha`, `curioso`, `segunda`, `impecable`) se piden por id
+   en `curso.json` → `logros`; un curso puede cambiar alguno por uno propio.
 
-   Un curso que todavía no tiene logros no falla: el piso lo pone el
-   propio test más arriba ("en construcción"). Lo que se exige es no
-   PASARSE. */
-const TOPE_LOGROS = 5;
-if (g.badges > TOPE_LOGROS) {
-  fails.push(`el catálogo declara ${g.badges} logros y la convención del cliente es un máximo de ` +
-    `${TOPE_LOGROS} por curso (kit v1.9.97, CLAUDE.md §1). Si dos logros miden lo mismo partido en ` +
-    'dos, fusionarlos es lo que hizo el curso que fijó la regla.');
+   Un curso sin logros todavía no falla por esto: el piso lo pone el
+   propio test más arriba. */
+const LOGROS = 5;
+if (g.badges && g.badges !== LOGROS) {
+  fails.push(`el catálogo declara ${g.badges} logro(s) y la convención del cliente es EXACTAMENTE ` +
+    `${LOGROS} por curso (kit v1.9.125, CLAUDE.md §7.74). ` +
+    (g.badges < LOGROS
+      ? 'Completar con los del kit: en curso.json → logros, ids "punteria", "racha", "curioso", "segunda", "impecable".'
+      : 'Si dos logros miden lo mismo partido en dos, fusionarlos.'));
 }
 
 console.log(`  · ${palabras} palabras · ${g.terminosGlosario} término(s) de glosario · ` +

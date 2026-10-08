@@ -44,7 +44,26 @@
         toastEl.setAttribute('aria-live', 'polite');
         document.body.appendChild(toastEl);
       }
-      toastEl.textContent = text;
+      /* Rediseño v1.9.125 (§7.74), del canvas: pastilla con un círculo de
+         ícono a la izquierda y el tono según qué avisa (puntos, logro, lo
+         que falta, listo, información). Se deduce del TEXTO, así ningún
+         curso tiene que cambiar sus `Player.toast(...)`. El emoji del
+         principio pasa al círculo; el resto del texto queda igual. */
+      var t = String(text), ic = 'i', tono = 'info', m;
+      if ((m = t.match(/^\+(\d+)\s*·\s*/))) { tono = 'pts'; ic = '+' + m[1]; t = t.slice(m[0].length); }
+      else if (/^🏆\s*/.test(t)) { tono = 'logro'; ic = '★'; t = t.replace(/^🏆\s*/, ''); }
+      else if (/^(✓|✔)\s*/.test(t)) { tono = 'ok'; ic = '✓'; t = t.replace(/^(✓|✔)\s*/, ''); }
+      else if (/^🔓\s*/.test(t)) { tono = 'ok'; ic = '✓'; t = t.replace(/^🔓\s*/, ''); }
+      else if (/^🔒\s*/.test(t)) { tono = 'falta'; ic = '!'; t = t.replace(/^🔒\s*/, ''); }
+      else if ((m = t.match(/^Te (queda|quedan|falta|faltan) (\d+)/))) { tono = 'falta'; ic = m[2]; }
+      toastEl.className = 'd-award-toast d-toast--' + tono;
+      toastEl.textContent = '';
+      var ci = document.createElement('span');
+      ci.className = 'd-toast-ic'; ci.setAttribute('aria-hidden', 'true'); ci.textContent = ic;
+      var tx = document.createElement('span');
+      tx.className = 'd-toast-txt'; tx.textContent = t;
+      toastEl.appendChild(ci); toastEl.appendChild(tx);
+      void toastEl.offsetWidth;
       toastEl.classList.add('show');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, ms || 2200);
@@ -1323,6 +1342,18 @@
       var panel = document.querySelector('[data-popup="recursos"]');
       var hay = !!(panel && panel.querySelector('.d-recurso'));
       btn.hidden = !hay;
+      /* "N documentos para leer o llevarte" arriba de las fichas (rediseño
+         v1.9.125, §7.74), desde el marcado de siempre. */
+      if (hay) {
+        var n = panel.querySelectorAll('.d-recurso').length;
+        var bd = panel.querySelector('.modal-bd');
+        if (bd && !bd.querySelector('.d-recursos-cuenta')) {
+          var p = document.createElement('p');
+          p.className = 'd-recursos-cuenta';
+          p.textContent = n + (n === 1 ? ' documento para leer o llevarte' : ' documentos para leer o llevarte');
+          bd.insertBefore(p, bd.firstChild);
+        }
+      }
     }
 
     function initAvisoGirar() {

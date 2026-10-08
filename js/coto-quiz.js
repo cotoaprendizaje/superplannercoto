@@ -232,6 +232,12 @@
         if (ok) { streak++; mface.textContent = streak >= 3 ? '🤩' : '😄'; mtext.textContent = pick(streak >= 3 ? HOT : HAPPY); mascot.className = 'd-quiz-mascot happy'; }
         else { streak = 0; mface.textContent = '🤔'; mtext.textContent = pick(OOPS); mascot.className = 'd-quiz-mascot oops'; }
         onAnswer(ok, streak);
+        /* Para los logros del kit (coto-logros.js, v1.9.125): En racha cuenta
+           respuestas seguidas. Un reintento de la práctica no cuenta
+           (`repetida`): reintentar es para aprender, no suma (decisión del
+           cliente). */
+        var prevQ = getState();
+        document.dispatchEvent(new CustomEvent('cotorespuesta', { detail: { fuente: 'practica', acerto: ok, repetida: !!(prevQ && prevQ.done) } }));
         /* La locución PASA A LA DEVOLUCIÓN (kit-base v1.9.107). Pedido del
            cliente: *"si el colaborador responde mientras la locución
            todavía está leyendo la pregunta, la locución tiene que cortarse
@@ -313,6 +319,8 @@
       var attempts = ((prev && prev.attempts) || 0) + 1;
       setState({ correct: correct, total: QUIZ.length, best: Math.max(prevBest, correct), done: true }, attempts);
       if (firstTime) onFirstFinish(correct, QUIZ.length);
+      /* Impecable (y Puntería sin repaso) miran el PRIMER intento. */
+      document.dispatchEvent(new CustomEvent('cotopractica', { detail: { correctas: correct, total: QUIZ.length, primera: firstTime } }));
       renderDots();
       onFinish();
       respondiendo(false);
@@ -321,23 +329,41 @@
       document.dispatchEvent(new Event('gatechange'));
     }
 
+    /* El anillo de la nota (rediseño v1.9.125): azul, verde si están todas. */
+    function anilloNota(c, t) {
+      var circ = 2 * Math.PI * 40, largo = t ? circ * c / t : 0;
+      return '<svg class="d-quiz-anillo' + (c === t ? ' is-todas' : '') + '" viewBox="0 0 100 100" aria-hidden="true">' +
+        '<circle cx="50" cy="50" r="40"/><circle class="v" cx="50" cy="50" r="40" transform="rotate(-90 50 50)" stroke-dasharray="' +
+        largo.toFixed(1) + ' ' + circ.toFixed(1) + '"/><text x="50" y="55">' + c + '/' + t + '</text><text class="sub" x="50" y="70">bien</text></svg>';
+    }
+
     function finish() {
       registrar();
       var correct = aciertos();
       renderDots();
-      var wrongIdx = []; answers.forEach(function (a, i) { if (a !== QUIZ[i].ok) wrongIdx.push(i); });
-      var reviewHtml = wrongIdx.length
-        ? '<div class="d-quiz-review"><p class="rv-title">Para repasar</p><ul>' + wrongIdx.map(function (i) {
-            return '<li><span class="rq">' + QUIZ[i].q + '</span><span class="ra">Respuesta correcta: ' + QUIZ[i].opts[QUIZ[i].ok] + '</span>' +
-              (QUIZ[i].related ? '<button type="button" class="btn btn-cat-ghost rv-go" data-review-goto="' + i + '">Repasar en “' + (QUIZ[i].relatedLabel || 'este tema') + '” →</button>' : '') + '</li>';
-          }).join('') + '</ul></div>'
-        : '<p class="d-quiz-allgood">✔ ¡Todas correctas! Dominás el tema.</p>';
-      body.innerHTML = '<div class="d-quiz-result ' + (correct === QUIZ.length ? 'pass' : '') + '"><strong>' + correct + '/' + QUIZ.length + ' correctas</strong>' +
+      /* Rediseño v1.9.125 (§7.74), del canvas: dos columnas. A la izquierda
+         la nota en un anillo, la nota del curso y los botones; a la derecha
+         "Repasemos tus respuestas:", TODAS (bien y mal), y en las erradas
+         "Repasar en …". Mismas piezas que antes (`.d-quiz-result`,
+         `.d-quiz-review`, `[data-go-next]`, `[data-retry]`,
+         `[data-review-goto]`): los cursos que las usan no cambian. */
+      var reviewHtml = '<div class="d-quiz-review"><p class="rv-title">Repasemos tus respuestas:</p><ul>' + QUIZ.map(function (it, i) {
+          var bien = answers[i] === it.ok;
+          return '<li class="' + (bien ? 'is-ok' : 'is-bad') + '"><span class="rv-ic" aria-hidden="true">' + (bien ? '✓' : '✕') + '</span><span class="rv-txt">' +
+            '<span class="rq">' + (i + 1) + ' · ' + it.q + '</span>' +
+            '<span class="ra">' + (bien ? 'Tu respuesta: ' + it.opts[answers[i]] : 'Respuesta correcta: ' + it.opts[it.ok]) + '</span>' +
+            (!bien && it.related ? '<button type="button" class="btn btn-cat-ghost rv-go" data-review-goto="' + i + '">Repasar en “' + (it.relatedLabel || 'este tema') + '” →</button>' : '') +
+            '</span></li>';
+        }).join('') + '</ul></div>';
+      body.innerHTML = '<div class="d-quiz-result ' + (correct === QUIZ.length ? 'pass' : '') + '">' +
+        '<div class="d-quiz-nota"><p class="d-quiz-nota-hd">¡Práctica completa!</p>' + anilloNota(correct, QUIZ.length) +
+        '<strong>' + correct + '/' + QUIZ.length + ' correctas</strong>' +
+        (correct === QUIZ.length ? '<p class="d-quiz-allgood">✔ ¡Todas correctas! Dominás el tema.</p>' : '') +
         (opts.resultNote || '') +
-        reviewHtml +
         '<div class="d-quiz-actions">' +
-        '<button type="button" class="btn btn-cat" data-go-next>' + rotuloSeguir + '</button>' +
-        '<button type="button" class="btn btn-cat-ghost" data-retry>Practicar de nuevo</button></div></div>';
+        '<button type="button" class="btn btn-cat-ghost" data-retry><span aria-hidden="true">↺</span> Reintentar</button>' +
+        '<button type="button" class="btn btn-cat" data-go-next>' + rotuloSeguir + '</button></div></div>' +
+        reviewHtml + '</div>';
       body.querySelector('[data-retry]').addEventListener('click', resetQuiz);
       var goBtn = body.querySelector('[data-go-next]');
       if (goBtn) goBtn.addEventListener('click', seguir);
@@ -347,6 +373,10 @@
           goToRelated(it.related);
         });
       });
+      /* `.is-quiz-resultado` (v1.9.125): el resultado en dos columnas es el
+         estado más alto; en pantallas bajas la intro se va igual que
+         mientras se responde (coto-quiz.css). */
+      if (slideDelQuiz) slideDelQuiz.classList.add('is-quiz-resultado');
       onResult(body.querySelector('.d-quiz-result'), aciertos(), QUIZ.length);
     }
 
@@ -367,6 +397,7 @@
          la narración y `locucion-control` lo marcó). Completa, se saca. */
     function respondiendo(si, reintento) {
       if (slideDelQuiz) slideDelQuiz.classList.toggle('is-quiz-running', !!si);
+      if (slideDelQuiz && si) slideDelQuiz.classList.remove('is-quiz-resultado');
       if (slideDelQuiz && opts.introPopup) {
         if (completa()) slideDelQuiz.removeAttribute('data-intro-popup');
         else slideDelQuiz.setAttribute('data-intro-popup', opts.introPopup);
@@ -386,10 +417,11 @@
 
     var st = getState();
     if (st && st.done) {
-      body.innerHTML = '<div class="d-quiz-result"><strong>Ya hiciste la práctica · mejor: ' + st.best + '/' + QUIZ.length + '</strong>' +
+      body.innerHTML = '<div class="d-quiz-result is-hecha"><div class="d-quiz-nota"><p class="d-quiz-nota-hd">Ya hiciste la práctica</p>' +
+        anilloNota(st.best, QUIZ.length) + '<strong>Tu mejor resultado: ' + st.best + '/' + QUIZ.length + '</strong>' +
         (opts.resultNote || '') + '<div class="d-quiz-actions">' +
-        '<button type="button" class="btn btn-cat" data-go-next>' + rotuloSeguir + '</button>' +
-        '<button type="button" class="btn btn-cat-ghost" data-retry>Practicar de nuevo</button></div></div>';
+        '<button type="button" class="btn btn-cat-ghost" data-retry><span aria-hidden="true">↺</span> Reintentar</button>' +
+        '<button type="button" class="btn btn-cat" data-go-next>' + rotuloSeguir + '</button></div></div></div>';
       body.querySelector('[data-retry]').addEventListener('click', resetQuiz);
       var goBtn2 = body.querySelector('[data-go-next]');
       if (goBtn2) goBtn2.addEventListener('click', seguir);

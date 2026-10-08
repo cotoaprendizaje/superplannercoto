@@ -355,7 +355,12 @@
     var nom = document.querySelector('[data-medalla-nombre]');
     var lbl = document.querySelector('[data-medalla-lbl]');
     var sub = document.querySelector('[data-medalla-sub]');
-    if (ic) ic.textContent = m ? m.icono : '🔒';
+    /* La estrella del rediseño v1.9.125 en vez del emoji del rango: el
+       color lo pone el CSS según `data-nivel` (bronce, plata, oro). Sin
+       medalla todavía, el candado. */
+    if (ic) ic.innerHTML = m
+      ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>'
+      : '🔒';
     /* `[data-medalla-lbl]` es OPCIONAL y retrocompatible: si el curso
        lo trae, el kit escribe ahí la etiqueta que va delante del
        nombre ("Medalla de" / "Todavía sin medalla de") y el nombre

@@ -59,8 +59,15 @@ async function abrir() {
   return { page, errores };
 }
 
+/* Solo los logros de RECORRIDO (kit-base v1.9.125): los del kit que
+   miden ACIERTO —Puntería, En racha, Impecable— son el plus a propósito y
+   un alumno que contesta todo mal no los gana. Se reconocen por su id,
+   que es del kit (coto-logros.js, `GENERICOS`). */
 const logrosGuardados = (page) => page.evaluate(() => {
-  try { return ((window.SCORM && SCORM.loadState && SCORM.loadState()) || {}).b || []; } catch { return []; }
+  let b = [];
+  try { b = ((window.SCORM && SCORM.loadState && SCORM.loadState()) || {}).b || []; } catch { return []; }
+  const acierto = ['punteria', 'racha', 'impecable'];
+  return b.filter((id) => !acierto.includes(id));
 });
 
 /* El mismo recorrido de `puntaje-maximo` (todo lo que puede pagar o

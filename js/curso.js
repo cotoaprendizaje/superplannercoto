@@ -21,7 +21,7 @@
      6. CSS propio del curso en diapositivas.css (nunca en los .css
         del kit) + assets.css si hace falta
      7. imsmanifest.xml con la lista real de archivos
-     8. Antes de entregar: correr tools/tests/*.mjs (los 64, exit 0 en
+     8. Antes de entregar: correr tools/tests/*.mjs (los 68, exit 0 en
         todos) y tools/verify-hitboxes.mjs para inspección visual
    ============================================================ */
 (function () {
@@ -140,7 +140,11 @@
        progreso se guarda solo — antes cada curso tenía que acordarse
        de llamar a `persistir()` después de cada suma, y olvidárselo en
        UN lugar significa que el alumno pierde esos puntos al reabrir. */
-    Logros = initLogros({ badges: BADGES, onChange: persistir });
+    /* `medallas` (v1.9.125): con ellas el panel "Mis logros:" muestra la
+       medalla, los puntos y la barra. Sin `medallas` en curso.json, el kit
+       las calcula del máximo declarado (`data-puntaje-max`): plata al 85%,
+       oro = máximo + 2 logros. */
+    Logros = initLogros({ badges: BADGES, medallas: window.datosDelCurso ? datosDelCurso('medallas', null) : null, onChange: persistir });
     restaurar();
 
     /* `initPlayer()` además publica `window.Player` (kit-base v1.9.62),

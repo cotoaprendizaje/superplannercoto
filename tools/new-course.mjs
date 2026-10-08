@@ -557,6 +557,18 @@ if (!args.sinDatos) {
   /* Y el index se vuelve a escribir DESDE los datos: es el mismo curso
      (el extractor lo verificó), pero así es literalmente el archivo armado
      y `actualizar-kit` no lo toma por editado a mano. */
+  /* Los 5 logros del kit, de entrada (kit-base v1.9.125, §7.74). Pedido
+     del cliente: "todos los cursos con 5 logros por defecto". Son ids:
+     el texto, el ícono, el bono de +20 y la detección los pone el kit
+     (coto-logros.js). Un curso los puede cambiar por logros propios. */
+  if (comoDatos) {
+    const fCurso = path.join(destinoAbs, 'curso.json');
+    const datosCurso = JSON.parse(fs.readFileSync(fCurso, 'utf8'));
+    if (datosCurso.logros === undefined) {
+      datosCurso.logros = ['punteria', 'racha', 'curioso', 'segunda', 'impecable'];
+      fs.writeFileSync(fCurso, JSON.stringify(datosCurso, null, 2) + '\n');
+    }
+  }
   if (comoDatos) {
     const a = spawnSync(process.execPath, [path.join(AQUI, 'armar-curso.mjs'), destinoAbs], { encoding: 'utf8' });
     comoDatos = a.status === 0;

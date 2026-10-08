@@ -57,15 +57,19 @@
    El color dice el RESULTADO y la forma dice DÓNDE ESTÁS: las dos
    cosas por separado, para que se lean de un vistazo y también sin
    distinguir colores. */
+/* Rediseño v1.9.125: los pasos unidos por una línea, como en el canvas. */
 [data-repaso-pasos] {
   list-style: none; margin: 0; padding: 0;
-  display: flex; flex-wrap: wrap; gap: clamp(4px, .6cqw, 9px);
+  display: flex; flex-wrap: wrap; gap: 0; align-items: center;
 }
+.d-paso + .d-paso { margin-left: clamp(14px, 2.4cqw, 34px); position: relative; }
+.d-paso + .d-paso::before { content: ""; position: absolute; right: 100%; top: 50%; width: clamp(14px, 2.4cqw, 34px);
+  height: 3px; margin-right: 2px; transform: translateY(-50%); background: #D7DEEC; }
 .d-paso {
   display: grid; place-items: center;
   width: clamp(20px, 2.2cqw, 30px); height: clamp(20px, 2.2cqw, 30px);
-  border-radius: 50%; border: 2px solid var(--line);
-  background: var(--surface); color: var(--text-soft);
+  border-radius: 50%; border: 2px solid #D7DEEC; box-sizing: border-box;
+  background: var(--surface); color: #6B7690;
   font-family: var(--font-title); font-weight: 900;
   font-size: clamp(.6rem, .95cqw, .8rem); line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -77,7 +81,7 @@
 /* "Dónde estás" es un ARO por fuera, no un color: así sigue siendo
    legible sobre un paso ya contestado, que ya usa el color. */
 .d-paso.is-current {
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--cat-strong) 45%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 45%, transparent);
 }
 
 /* ---- 4. Ficha de detalle sobre el arte (.d-zona / .d-detalle) -----

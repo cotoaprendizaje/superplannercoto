@@ -23,11 +23,12 @@
      SPRITE DE ÍCONOS MÍNIMO — copiar al <body>, ANTES de este bloque
      (kit-base v1.9.49)
      ==============================================================
-     Solo los 2 íconos que el kit mismo necesita para funcionar:
-     `i-check` (el tilde de "diapositiva ya visitada" en el índice
-     lateral, `.ix-ck` — ver coto-base-addendum-v1.8.css) e `i-play`
-     (el botón "Empezar mi aprendizaje" DE ESTE MISMO ARCHIVO, más
-     abajo en el pop-up de instructivo). Sin esto, un curso que
+     Solo el ícono que el kit mismo referencia por id: `i-check` (el
+     tilde del índice lateral, `.ix-ck`; desde el rediseño v1.9.125 el
+     índice muestra un punto de estado y el tilde queda oculto, pero el
+     marcado de los ítems lo sigue usando). `i-play` se sacó en
+     v1.9.125: el botón "Empezar mi aprendizaje" ya no lleva ícono, y un
+     símbolo sin uso lo marca `iconos-indice`. Sin esto, un curso que
      arranca de cero con este boilerplate tiene un `<use href="#i-...">`
      apuntando a nada — el ícono no se rompe visualmente (queda vacío,
      sin error de consola), así que es fácil no notarlo hasta que
@@ -51,7 +52,6 @@
      -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
-  <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="10 8.5 16 12 10 15.5" fill="currentColor" stroke="none"/></symbol>
 </svg>
 
 <!-- El favicon NO va acá. Vivía en este bloque con un placeholder
@@ -127,7 +127,7 @@
           <span class="lbl">Sonido</span>
         </button>
         <div class="d-audio-pop d-vol-pop" role="group" aria-label="Volumen del sonido">
-          <div class="d-vol-hd"><span class="d-vol-title">Volumen</span><span class="d-vol-pct" id="d-vol-pct">100%</span></div>
+          <div class="d-vol-hd"><span class="d-vol-title">Volumen:</span><span class="d-vol-pct" id="d-vol-pct">100%</span></div>
           <div class="d-vol-row">
             <button class="d-vol-mute" id="d-vol-mute-btn" type="button" aria-label="Silenciar sonido" aria-pressed="false">
               <svg class="ic-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.2 9.3a3.6 3.6 0 0 1 0 5.4"/></svg>
@@ -176,7 +176,7 @@
                paneles a 20px y el mismo slider, la lectura por defecto
                era volumen. -->
           <div class="d-narr-hd">
-            <span class="d-narr-title">Avance</span>
+            <span class="d-narr-title">Avance:</span>
             <span class="d-narr-status" id="d-narr-status" hidden><span class="dot" aria-hidden="true"></span>En curso</span>
           </div>
           <!-- Estado en palabras. Antes, con la locución apagada o en
@@ -324,7 +324,7 @@
     <div class="d-fab-pop" role="dialog" aria-label="Configuración">
       <div class="d-fab-pop-hd">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83"/></svg>
-        <span class="d-fab-pop-title">Configuración</span>
+        <span class="d-fab-pop-title">Ajustes:</span>
       </div>
       <div class="field" id="d-voice-field" hidden>
         <label for="d-voice-select">Voz de la locución</label>
@@ -356,7 +356,7 @@
     <div class="d-fab-pop d-fab-pop--ayuda" role="dialog" aria-label="Ayuda">
       <div class="d-fab-pop-hd">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.8.4-1.4 1-1.4 2.1"/></svg>
-        <span class="d-fab-pop-title">Ayuda</span>
+        <span class="d-fab-pop-title">Ayuda:</span>
       </div>
       <!-- Bajada corta a propósito (kit-base v1.9.71, §7.17): la
            versión larga ya vive entera en el pop-up que abre el botón
@@ -369,7 +369,7 @@
         <svg viewBox="0 0 24 24"><path d="M1 4v6h6"/><path d="M3.5 15a9 9 0 1 0 2.1-9.4L1 10"/></svg>
         Volver a ver la introducción
       </button>
-      <p class="d-fab-acc-hd">Preguntas frecuentes</p>
+      <p class="d-fab-acc-hd">Preguntas frecuentes:</p>
       <div class="d-fab-acc" data-fab-acc>
         <div class="d-fab-acc-item">
           <button class="d-fab-acc-q" type="button">¿Qué tengo que hacer para avanzar?<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
@@ -441,7 +441,7 @@
         tipos de interacción) Y se abría sola al llegar al índice, sin
         que el alumno la pidiera — quedó "recargada" en la revisión del
         cliente.
-     3. La v3 (esta) es un rediseño pedido por el cliente sobre una
+     3. La v3 fue un rediseño pedido por el cliente sobre una
         referencia visual de otro curso: grilla 2x2 de tarjetas
         ícono+texto con acentos decorativos de color en las esquinas.
         Armada 100% con tokens del sistema de diseño
@@ -450,6 +450,11 @@
         bloque. El detalle de CONTROLES de la barra superior sigue sin
         estar acá: ya vive en los flotantes de Ayuda/Configuración (siempre accesibles,
         todas las diapositivas), no hace falta duplicarlo.
+     4. La v4 (kit-base v1.9.125, §7.74) es la del rediseño general del
+        kit, diseñada con el cliente en el canvas: la barra azul de todos
+        los paneles, cuatro pasos con ícono sobre un camino punteado, la
+        pastilla dorada de los 5 logros y el botón separado. Colores del
+        manual de marca, ya no de la categoría.
 
      El contenido es el mismo para cualquier curso del molde: habla de
      la DINÁMICA (interactivo, hay que ver todo, suma puntos, se puede
@@ -467,37 +472,41 @@
        selectores trae `TEXT_SEL`: bastaba agregar un <p> para que
        empezara a narrarse sin que nadie lo decidiera. Lo cuida
        `tools/tests/narracion-ayuda.mjs`. -->
+  <!-- Rediseño v1.9.125 (§7.74), del canvas aprobado por el cliente:
+       barra azul de los paneles del kit, cuatro pasos con ícono sobre un
+       camino punteado, la pastilla de los 5 logros y el botón aparte. -->
   <div class="modal-card d-instr-modal" data-narrate-skip>
-    <button class="modal-x" data-popup-close aria-label="Cerrar">✕</button>
-    <div class="d-instr-hd">
-      <span class="d-instr-kicker">Antes de empezar</span>
-      <h3>Cómo recorrer el curso</h3>
+    <div class="modal-hd">
+      <button class="modal-x" data-popup-close aria-label="Cerrar">✕</button>
+      <h3>Cómo recorrer el curso:</h3>
     </div>
     <div class="modal-bd">
-      <div class="d-instr-cardgrid">
-        <div class="d-instr-card">
-          <div class="d-instr-card-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3a1 1 0 0 0-2 0v7"/><path d="M11 10V8a1 1 0 0 0-2 0v2.5"/><path d="M9 10.2a1 1 0 0 0-2 .3c.3 4 1.6 9.5 7 9.5a5 5 0 0 0 5-5v-5.5a1 1 0 0 0-2 0V11"/><path d="M15 9V7a1 1 0 0 1 2 0v2.3"/><circle cx="12" cy="2.3" r="1" fill="currentColor" stroke="none"/><path d="M18.5 4.5l1.8-1.2M20 8h2.2M18.5 11l1.8 1.2" stroke-width="1.6"/></svg></div>
-          <div><b>Es interactivo</b><span>Mirá los videos, tocá los gráficos y respondé las actividades.</span></div>
+      <div class="d-instr-pasos">
+        <svg class="d-instr-camino" viewBox="0 0 920 120" preserveAspectRatio="none" aria-hidden="true"><path d="M107.5 32 C 190 32, 260 66, 342.5 66 S 500 32, 577.5 32 S 730 66, 812.5 66"/></svg>
+        <div class="d-instr-paso">
+          <span class="d-instr-paso-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5 M12 10V8.5a1.5 1.5 0 0 1 3 0V11 M15 10.5a1.5 1.5 0 0 1 3 0V15a6 6 0 0 1-6 6h-1a5 5 0 0 1-4-2l-3-4a1.5 1.5 0 0 1 2.3-2L9 15"/></svg></span>
+          <b>Es interactivo</b>
+          <span>Tocá los círculos, botones y tarjetas para descubrir el contenido.</span>
         </div>
-        <div class="d-instr-card">
-          <div class="d-instr-card-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div>
-          <div><b>Hay que ver todo</b><span>Para avanzar necesitás completar cada interacción — si te falta algo, te lo señalamos.</span></div>
+        <div class="d-instr-paso">
+          <span class="d-instr-paso-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          <b>Hay que ver todo</b>
+          <span>La flecha para seguir se habilita cuando terminás cada pantalla.</span>
         </div>
-        <div class="d-instr-card">
-          <div class="d-instr-card-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M15.3 9a4.3 4.3 0 0 1 0 6"/><path d="M18 6.3a8.2 8.2 0 0 1 0 11.4"/></svg></div>
-          <div><b>Subí el volumen</b><span>El curso se narra solo; silenciala desde <strong>"Locución"</strong> o cambiá la voz desde <strong>"Configuración"</strong>.</span></div>
+        <div class="d-instr-paso">
+          <span class="d-instr-paso-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z M15.5 9a4 4 0 0 1 0 6 M18.5 6.5a8 8 0 0 1 0 11"/></svg></span>
+          <b>Subí el volumen</b>
+          <span>Una voz te acompaña. Podés cambiar su velocidad en la rueda de ajustes.</span>
         </div>
-        <div class="d-instr-card">
-          <div class="d-instr-card-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5.2"/><path d="M9 12.8 7.3 21l4.7-2.8 4.7 2.8-1.7-8.2"/></svg></div>
-          <div><b>Sumás puntos</b><span>Ganás logros a medida que avanzás y una medalla final.</span></div>
+        <div class="d-instr-paso">
+          <span class="d-instr-paso-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg></span>
+          <b>Sumás puntos</b>
+          <span>Las prácticas dan puntos. Con un plus, ganás logros y mejor medalla.</span>
         </div>
       </div>
-
+      <p class="d-instr-logros"><span class="d-instr-logros-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg></span><span><b>Hay 5 logros escondidos.</b> Cada uno suma +20 y te acerca a la medalla de oro.</span></p>
       <div class="d-instr-cta">
-        <button class="btn btn-cat btn-ic" type="button" data-popup-close>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-play"/></svg>
-          Empezar mi aprendizaje
-        </button>
+        <button class="d-instr-empezar" type="button" data-popup-close>Empezar mi aprendizaje</button>
       </div>
     </div>
   </div>

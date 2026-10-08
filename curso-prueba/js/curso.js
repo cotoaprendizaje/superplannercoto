@@ -149,8 +149,13 @@
        guardado de una versión anterior del curso no debe inflar el
        contador X/N ni quedar huérfano. */
     if (Logros) {
-      var idsValidos = BADGES.map(function (b) { return b.id; });
+      /* `Logros.catalogo()` y no `BADGES` (kit v1.9.125): un logro del kit
+         va en el catálogo como texto ("segunda") y no tiene `.id`; filtrar
+         por BADGES lo perdía al recargar. `lg`: lo que llevan medido los
+         detectores de los logros del kit. */
+      var idsValidos = Logros.catalogo().map(function (b) { return b.id; });
       Logros.restore({
+        lg: s.lg,
         p: s.p != null ? s.p : (s.puntos || 0),
         b: (Array.isArray(s.b) ? s.b : Object.keys(s.logros || {}).filter(function (id) {
           return s.logros[id];

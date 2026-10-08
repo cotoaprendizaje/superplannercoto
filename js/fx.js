@@ -147,10 +147,25 @@
      5 · "MONEDA" flotante: el +N vuela desde el HUD hacia los puntos
      (se dispara escuchando el toast; liviano y desacoplado)
      ============================================================ */
-  function coin() {
+  function coin(n) {
     if (reduce) return;
     var target = document.getElementById('d-points'); if (!target) return;
     var tr = target.getBoundingClientRect();
+    /* "+N que sube" (rediseño v1.9.125, §7.74, efecto chico): con el
+       número, una pastilla dorada que nace en el contador y sube. Sin
+       número (un curso que todavía llama `__fxCoin()` a secas), la
+       estrellita de siempre. */
+    if (n) {
+      var p = document.createElement('div');
+      p.className = 'fx-mas';
+      p.setAttribute('aria-hidden', 'true');
+      p.textContent = '+' + n;
+      p.style.left = (tr.left + tr.width / 2) + 'px';
+      p.style.top = (tr.bottom + 40) + 'px';   // sube hasta el contador, sin taparlo de entrada
+      document.body.appendChild(p);
+      setTimeout(function () { p.remove(); }, 1300);
+      return;
+    }
     var c = document.createElement('div');
     c.className = 'fx-coin'; c.textContent = '✦';
     c.style.left = (tr.left + tr.width / 2) + 'px';
@@ -200,6 +215,186 @@
     });
   }
 
+  /* ============================================================
+     8 · LOS EFECTOS DEL REDISEÑO (kit-base v1.9.125, §7.74)
+     ------------------------------------------------------------
+     Los diez aprobados en el canvas, por escalón (decisión del cliente):
+       · chicos —tilde, sacudida, "+N" que sube, contador que rueda—:
+         siempre. Los dos primeros son CSS puro (coto-fx.css), el "+N" es
+         `coin(n)` y el contador ya era `CotoUI.countTo`.
+       · medianos —destellos y sello—: SOLO al ganar un logro, en la
+         tarjeta "¡Nuevo logro!".
+       · grandes —fuegos artificiales, lluvia y serpentinas—: llegar al
+         oro y terminar el curso. Más "medalla que gira" al subir de
+         medalla y "destello en la barra" al completarla.
+     Todos se apagan con "reducir movimiento": la tarjeta y el aviso de
+     medalla se muestran igual, quietos; las partículas no se crean.
+     Nada de esto es interactivo ni bloquea: la capa deja pasar los
+     clics (`pointer-events:none`), se va sola y con cualquier toque o
+     tecla. El texto ya lo anuncia el toast (role=status) de
+     coto-player.js, así que la capa es `aria-hidden` y no lo repite.
+     Escuchan eventos que el kit ya emite: `logroganado` y
+     `medallasube` (coto-logros.js) y `courseend` (motor-slides.js). */
+  var ORO = ['#ffd25e', '#006EA0', '#ffc531', '#00466E', '#00A578'];
+
+  function capa(clase) {
+    var el = document.createElement('div');
+    el.className = clase;
+    el.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(el);
+    return el;
+  }
+
+  /* Partículas: `fuegos` (estallidos desde 3 puntos) o `lluvia` (cae). */
+  function particulas(dentro, tipo) {
+    if (reduce) return;
+    var html = '';
+    if (tipo === 'fuegos') {
+      [[28, 34, 0], [72, 30, .25], [50, 56, .5]].forEach(function (b) {
+        for (var i = 0; i < 14; i++) {
+          var a = i / 14 * Math.PI * 2, r = 90 + (i % 3) * 30;
+          html += '<i class="fx-chispa" style="left:' + b[0] + '%;top:' + b[1] + '%;width:' + (i % 2 ? 9 : 12) + 'px;height:' + (i % 2 ? 9 : 12) +
+            'px;background:' + ORO[i % ORO.length] + ';--dx:' + Math.round(Math.cos(a) * r) + 'px;--dy:' + Math.round(Math.sin(a) * r) +
+            'px;animation-delay:' + b[2] + 's"></i>';
+        }
+      });
+    } else {
+      for (var j = 0; j < 46; j++) {
+        var serp = j % 4 === 0;
+        html += '<i class="fx-confeti" style="left:' + ((j * 37) % 100) + '%;width:' + (serp ? 4 : 8) + 'px;height:' + (serp ? 26 : (j % 3 ? 12 : 8)) +
+          'px;border-radius:' + (serp || j % 3 ? '2px' : '50%') + ';background:' + ORO[j % ORO.length] +
+          ';animation-delay:' + ((j % 9) * .16).toFixed(2) + 's;animation-duration:' + (2.2 + (j % 5) * .3).toFixed(1) + 's"></i>';
+      }
+    }
+    var cont = document.createElement('div');
+    cont.className = 'fx-particulas fx-particulas--' + tipo;
+    cont.innerHTML = html;
+    dentro.appendChild(cont);
+    setTimeout(function () { cont.remove(); }, 4200);
+  }
+
+  /* Medalla que gira: plata del lado de atrás, la nueva al frente. */
+  var COLOR_MED = { bronce: '#d38b4f', plata: '#c9d3de', oro: '#ffd25e' };
+  var TINTA_MED = { bronce: '#ffffff', plata: '#00466E', oro: '#7a5300' };
+  var ESTRELLA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>';
+  function medallaQueGira(de, a) {
+    return '<span class="fx-med"><span class="fx-med-giro">' +
+      '<span class="fx-med-cara" style="--c:' + (COLOR_MED[de] || '#E9EEF8') + ';--t:' + (TINTA_MED[de] || '#6B7690') + '">' + ESTRELLA + '</span>' +
+      '<span class="fx-med-cara fx-med-cara--atras" style="--c:' + (COLOR_MED[a] || '#ffd25e') + ';--t:' + (TINTA_MED[a] || '#7a5300') + '">' + ESTRELLA + '</span>' +
+      '</span></span>';
+  }
+  function mayus(t) { t = String(t || ''); return t.charAt(0).toUpperCase() + t.slice(1); }
+  function escH(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  /* ---- La tarjeta "¡Nuevo logro!" (con cola: dos logros juntos salen
+     de a uno; Impecable + Puntería en un curso sin repaso es el caso
+     real) ---- */
+  var cola = [], abierta = null, cierreT = null;
+  function cerrarLogro() {
+    if (!abierta) return;
+    var el = abierta; abierta = null;
+    clearTimeout(cierreT);
+    el.classList.add('is-saliendo');
+    setTimeout(function () { el.remove(); siguienteLogro(); }, reduce ? 0 : 220);
+  }
+  function siguienteLogro() {
+    if (abierta || !cola.length) return;
+    var d = cola.shift();
+    var ic = d.icono
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="' + escH(d.icono) + '"/></svg>'
+      : '<span class="fx-logro-emoji">' + escH(d.ic || '🏆') + '</span>';
+    var chispas = '';
+    [[8, 12, 22], [80, 6, 16], [92, 60, 24], [2, 70, 16], [50, -6, 14], [46, 96, 18]].forEach(function (p, i) {
+      chispas += '<svg class="fx-destello" viewBox="0 0 24 24" style="left:' + p[0] + '%;top:' + p[1] + '%;width:' + p[2] + 'px;height:' + p[2] +
+        'px;fill:' + (i % 2 ? '#ffd25e' : '#006EA0') + ';animation-delay:' + (.35 + i * .08).toFixed(2) + 's"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>';
+    });
+    var el = capa('fx-logro');
+    el.innerHTML =
+      '<div class="fx-logro-card">' +
+        '<span class="fx-logro-tit">¡Nuevo logro!</span>' +
+        '<span class="fx-logro-disco"><span class="fx-logro-ic">' + ic + '</span>' + chispas +
+          (d.pts ? '<span class="fx-logro-mas">+' + d.pts + '</span>' : '') + '</span>' +
+        '<b class="fx-logro-nom">' + escH(d.nombre) + '</b>' +
+        (d.txt ? '<span class="fx-logro-txt">' + escH(d.txt) + '</span>' : '') +
+        '<span class="fx-logro-sello">¡LOGRO!</span>' +
+        '<span class="fx-logro-med" hidden></span>' +
+        '<button type="button" class="fx-logro-seguir" tabindex="-1">Seguir con el curso</button>' +
+      '</div>';
+    el.querySelector('.fx-logro-seguir').addEventListener('click', cerrarLogro);
+    abierta = el;
+    cierreT = setTimeout(cerrarLogro, 4600);
+  }
+  function initLogroGanado() {
+    document.addEventListener('logroganado', function (e) {
+      cola.push(e.detail || {});
+      siguienteLogro();
+    });
+    /* Cualquier toque o tecla la cierra, sin comerse el gesto: el clic
+       sigue hasta lo que el alumno quería tocar. */
+    ['pointerdown', 'keydown'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) {
+        if (!abierta || (e.target && e.target.closest && e.target.closest('.fx-logro-seguir'))) return;
+        cerrarLogro();
+      }, true);
+    });
+  }
+
+  /* ---- Subir de medalla ----
+     Si la tarjeta del logro está abierta (el +20 del logro fue lo que la
+     subió), va adentro como "¡Subiste a Plata!"; si no, un aviso propio
+     arriba al centro. Al oro, además, fuegos artificiales. */
+  function initMedalla() {
+    document.addEventListener('medallasube', function (e) {
+      var d = e.detail || {};
+      var html = medallaQueGira(d.de, d.a) + '<span>¡Subiste a ' + escH(mayus(d.nombre || d.a)) + '!</span>';
+      var donde;
+      if (abierta) {
+        donde = abierta.querySelector('.fx-logro-med');
+        donde.innerHTML = html;
+        donde.hidden = false;
+        clearTimeout(cierreT);
+        cierreT = setTimeout(cerrarLogro, 5600);
+      } else {
+        donde = capa('fx-subio');
+        donde.innerHTML = '<span class="fx-subio-card">' + html + '</span>';
+        setTimeout(function () { donde.remove(); }, 3600);
+      }
+      /* Los fuegos van en una capa propia a pantalla completa: dentro del
+         aviso quedarían presos de su `transform` (un `fixed` adentro de
+         un ancestro transformado se mide contra él, no contra la ventana). */
+      if (d.a === 'oro') {
+        var cielo = abierta || capa('fx-lluvia');
+        particulas(cielo, 'fuegos');
+        if (!abierta) setTimeout(function () { cielo.remove(); }, 4300);
+      }
+    });
+  }
+
+  /* ---- Fin del curso: lluvia y serpentinas + destello en la barra ----
+     Una vez por carga, y no si el alumno ARRANCA en la última (retomar
+     el curso donde lo dejó no es terminarlo de nuevo). */
+  function initFinal() {
+    /* Si fx.js arranca después del primer `go()` del motor (orden de
+       carga del curso), la diapositiva inicial ya pasó: la próxima
+       llegada al final es de verdad. */
+    var primera = !(window.motor && window.motor.slides), festejado = false;
+    document.addEventListener('slidechange', function () { setTimeout(function () { primera = false; }, 0); });
+    document.addEventListener('courseend', function () {
+      if (primera || festejado) return;
+      festejado = true;
+      var track = document.querySelector('[data-progress-track]');
+      if (track && !reduce) {
+        track.classList.add('fx-barra-llena');
+        setTimeout(function () { track.classList.remove('fx-barra-llena'); }, 1800);
+      }
+      if (!reduce) {
+        var lluvia = capa('fx-lluvia');
+        particulas(lluvia, 'lluvia');
+        setTimeout(function () { lluvia.remove(); }, 4300);
+      }
+    });
+  }
+
   /* ---------- arranque ---------- */
   function boot() {
     initRipple();
@@ -207,6 +402,9 @@
     initUISounds();
     initCinema();
     initSpotlight();
+    initLogroGanado();
+    initMedalla();
+    initFinal();
     // expone coin() para que curso.js lo llame al sumar puntos (si quiere)
     window.__fxCoin = coin;
   }

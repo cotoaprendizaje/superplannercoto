@@ -481,7 +481,7 @@ kbd{font-family:var(--font-body);font-size:.8rem;font-weight:700;color:inherit;
    crecía a lo alto. Por eso el `minmax` de `.d-badges-grid` también
    baja — ver allá. Valores viejos: min(560px,100%) / 88vh. */
 .modal-card{position:relative;z-index:1;width:min(520px,46vw,100%);max-height:84vh;overflow:auto;
-  background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-pop);animation:pop .2s ease}
+  background:var(--surface);border-radius:30px;box-shadow:var(--shadow-pop);animation:pop .2s ease}  /* era var(--r-xl) — v1.9.125 */
 /* Variante ancha: pop-ups con contenido denso en grilla/columnas (ej. el
    pop-up de instrucciones con su grilla de accesos rápidos) no entran
    cómodos en los 560px del modal-card default. */
@@ -491,8 +491,15 @@ kbd{font-family:var(--font-body);font-size:.8rem;font-weight:700;color:inherit;
    términos) el .modal-card scrollea entero y el encabezado —con el
    título y el botón de cerrar— se iba de pantalla. Así queda siempre a
    la vista sin cambiar nada del marcado. */
+/* Rediseño v1.9.125 (§7.74): la FORMA de la cabecera de los paneles del
+   kit (50px de alto, título en Faible 24px, la ✕ centrada a la derecha)
+   también en los pop-ups de contenido; el COLOR sigue siendo el de la
+   categoría (decisión del cliente). Columna y no fila: hay cabeceras de
+   curso con una bajada (`.d-instr-kicker`) arriba del título. */
 .modal-hd{position:sticky;top:0;z-index:2;background:var(--cat-grad,var(--grad-brand));color:var(--on-cat,#fff);
-  padding:1.25rem 1.35rem 1rem;overflow:hidden}  /* era 1.6/1.6/1.3 — v1.9.82 */
+  min-height:50px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;
+  padding:.65rem 54px .65rem 22px;overflow:hidden}  /* era 1.25/1.35/1 — v1.9.125 */
+.modal-hd > h2,.modal-hd > h3{font-family:var(--font-title);font-weight:900;font-size:1.5rem;line-height:1.05}
 /* `.modal-hd--dark` · nueva en kit-base v1.6.
    ⚠️ REGLA DE CONSISTENCIA (hallazgo visual real en "Prevención
    cardiovascular"): las dos variantes de encabezado NO se mezclan
@@ -523,7 +530,7 @@ kbd{font-family:var(--font-body);font-size:.8rem;font-weight:700;color:inherit;
    pop-up "Cómo recorrer el curso" no cerraba — `.d-instr-hd`
    interceptaba el puntero. `z-index:2` la saca de la duda para
    siempre, sea cual sea el resto del marcado del modal. */
-.modal-x{position:absolute;top:.9rem;right:.9rem;width:34px;height:34px;border-radius:50%;border:none;
+.modal-x{position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:50%;border:none;
   cursor:pointer;background:rgba(255,255,255,.25);color:inherit;display:grid;place-items:center;z-index:2}
 /* BUG REAL (revisión general, CLAUDE.md §6.38): el pop-up abre con foco
    en la ✕ (accesibilidad — WCAG, el foco tiene que entrar al modal),

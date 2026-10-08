@@ -62,7 +62,7 @@
 .d-cert-stats .s{position:relative;overflow:hidden;display:grid;gap:.15rem;justify-items:center;
   text-align:center;background:var(--surface-2);border:1px solid var(--line);
   border-radius:var(--r);padding:.7rem .5rem}
-.d-cert-stats .s b{font-family:var(--font-title);font-size:1.35rem;line-height:1;color:var(--cat-ink)}
+.d-cert-stats .s b{font-family:var(--font-title);font-size:1.35rem;line-height:1;color:var(--brand)}
 .d-cert-stats .s span{font-size:.75rem;line-height:1.25;color:var(--text-soft)}
 
 .d-cert-stats .s.d-shine::after{content:"";position:absolute;inset:0;left:-70%;width:45%;
@@ -99,15 +99,24 @@
    100% sin margen deja el bloque pegado a los bordes. */
 .slide-cierre.unlocked .d-cierre-summary:not([hidden]){display:block;width:min(1680px,96%); max-height:100%;overflow-y:auto;overflow-x:hidden}
 .d-cierre-cols{display:grid;grid-template-columns:minmax(260px,320px) 1fr;gap:1.4rem;align-items:stretch}
-.d-cierre-results{position:relative;overflow:hidden;text-align:center;padding:1.4rem 1.3rem; display:flex;flex-direction:column;border-radius:var(--r-xl);background:var(--surface); border:1px solid var(--line);box-shadow:var(--shadow-card)}
-.d-cierre-results::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--cat-grad,var(--brand))}
+/* Rediseño v1.9.125 (§7.74): las dos columnas del cierre son tarjetas
+   con la barra azul de los paneles del kit. La de resultados trae su
+   título desde el CSS ("Tu resultado:"), así ningún curso tiene que
+   cambiar su marcado. */
+.d-cierre-results{position:relative;overflow:hidden;text-align:center;padding:0 14px 14px; display:flex;flex-direction:column;border-radius:28px;background:var(--surface); border:0;box-shadow:0 10px 34px rgba(10,40,70,.14)}
+.d-cierre-results::before{content:"Tu resultado:";display:flex;align-items:center;min-height:50px;margin:0 -14px 12px;padding:0 22px;flex:none;
+  background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:#fff;font-family:var(--font-title);font-weight:900;font-size:1.5rem;text-align:left}
 .d-cierre-summary .who{font-weight:800;font-size:1.1rem;color:var(--cat-ink);margin:0 0 .5rem;font-family:var(--font-title)}
 .d-cierre-summary p{color:var(--text);margin:0 0 .9rem;font-size:.92rem}
 .d-cierre-results .cta{margin:.9rem 0 0;display:flex;flex-direction:column;gap:.55rem}
-.d-cierre-results .cta .btn{width:100%;justify-content:center;font-size:.9rem;padding:.65rem 1rem}
-.d-cierre-recap{position:relative;overflow:hidden;height:100%;padding:1.3rem 1.8rem; border-radius:var(--r-xl);background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-card)}
-.d-cierre-recap::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:var(--cat-grad,var(--brand))}
-.d-cierre-recap h3{text-align:center;margin:0 0 .9rem;font-family:var(--font-title);font-weight:900;color:var(--text)}
+.d-cierre-results .cta .btn{width:100%;justify-content:center;font-size:.9rem;padding:.65rem 1rem;border-radius:999px}
+.d-cierre-results .cta .btn-cat{background:var(--brand);color:#fff;border:0}
+.d-cierre-results .cta .btn-cat-ghost{background:#fff;color:var(--brand);border:2px solid var(--brand-soft)}
+.d-cierre-recap{position:relative;overflow:hidden;height:100%;padding:0 20px 18px; border-radius:28px;background:var(--surface);border:0;box-shadow:0 10px 34px rgba(10,40,70,.14)}
+/* El primer título del resumen ES la barra azul (como "Lo que te llevás:"). */
+.d-cierre-recap h3{text-align:left;margin:0 0 .9rem;font-family:var(--font-title);font-weight:900;color:var(--brand)}
+.d-cierre-recap > h3:first-child{display:flex;align-items:center;min-height:50px;margin:0 -20px 14px;padding:0 22px;
+  background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:#fff;font-size:1.5rem}
 /* `align-items:start` (kit-base v1.9.100). Sin él las columnas se
    estiran todas al alto de la más larga —es el default del grid— y el
    filete vertical de `.d-cierre-recap-col::before` se estira con ellas:
@@ -117,12 +126,12 @@
    como un resumen "aplanado", que es justo lo que reportó el cliente. */
 .d-cierre-recap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:.9rem 2.4rem;align-items:start}
 .d-cierre-recap-col{position:relative;padding-left:1rem}
-.d-cierre-recap-col::before{content:"";position:absolute;top:.15rem;bottom:.15rem;left:0;width:3px; border-radius:2px;background:var(--cat,var(--brand))}
-.d-cierre-recap-col h4{margin:0 0 .5rem;font-family:var(--font-title);font-weight:900;font-size:.92rem;color:var(--cat-ink)}
+.d-cierre-recap-col::before{content:"";position:absolute;top:.15rem;bottom:.15rem;left:0;width:3px; border-radius:2px;background:var(--brand)}
+.d-cierre-recap-col h4{margin:0 0 .5rem;font-family:var(--font-title);font-weight:900;font-size:1rem;color:var(--brand)}
 .d-cierre-recap-col h4:not(:first-child){margin-top:.8rem}
 .d-cierre-recap-col ul{margin:0;padding-left:1.2rem}
 .d-cierre-recap-col li{margin:.26rem 0;font-size:.84rem;line-height:1.32;color:var(--text)}
-.d-cierre-recap-col li::marker{color:var(--cat-ink)}
+.d-cierre-recap-col li::marker{color:var(--brand)}
 .d-cierre-shot{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 
 @media (max-width:900px){.d-cierre-cols{grid-template-columns:1fr;height:auto}}

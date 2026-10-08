@@ -93,21 +93,23 @@
 }
 [data-doc-hoja] { cursor: zoom-in; background: #fff; }
 
-/* ---- Panel de recursos descargables ----
-   Cajón con los documentos del curso, abierto desde el header y desde
-   el cierre. El kit no tenía nada equivalente. */
-.d-recursos { display: grid; gap: .6rem; margin: .2rem 0 0; }
-.d-recurso {
+/* ---- Panel de recursos: la ficha como ENLACE (`a.d-recurso`) ----
+   Variante vieja, de cuando el kit no tenía panel de recursos. Acotada a
+   `a.d-recurso` en v1.9.125 (§7.74): sin el `a`, esta regla —que carga
+   después del addendum— pisaba la ficha del kit (`li.d-recurso`, la que
+   usan todos los cursos) con un `display:flex` y su grilla nunca se
+   aplicó. Medido en el rediseño: los botones salían apilados al costado. */
+a.d-recurso {
   display: flex; align-items: center; gap: .8rem;
   padding: .7rem .9rem; text-decoration: none;
   border: 1px solid var(--line); border-radius: var(--r-md, 10px);
   background: var(--surface); color: var(--text);
 }
-.d-recurso:hover { border-color: var(--cat-strong); background: var(--surface-2); }
-.d-recurso .i { flex: none; width: 26px; height: 26px; color: var(--cat-ink); fill: none; stroke: currentColor; }
-.d-recurso b { display: block; font-family: var(--font-title); font-weight: 900; font-size: .92rem; }
-.d-recurso small { color: var(--text-soft); font-size: .76rem; }
-.d-recurso .peso { margin-left: auto; color: var(--text-soft); font-size: .74rem; font-variant-numeric: tabular-nums; }
+a.d-recurso:hover { border-color: var(--cat-strong); background: var(--surface-2); }
+a.d-recurso .i { flex: none; width: 26px; height: 26px; color: var(--cat-ink); fill: none; stroke: currentColor; }
+a.d-recurso b { display: block; font-family: var(--font-title); font-weight: 900; font-size: .92rem; }
+a.d-recurso small { color: var(--text-soft); font-size: .76rem; }
+a.d-recurso .peso { margin-left: auto; color: var(--text-soft); font-size: .74rem; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 640px) {
   .d-visor-lienzo { height: min(52vh, 380px); }

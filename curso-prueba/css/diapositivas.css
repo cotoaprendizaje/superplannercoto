@@ -137,23 +137,9 @@
    y barato — candidato directo al kit junto con data-require-seen. */
 @keyframes d-nudge-pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--cat-strong) 55%,transparent)}
   50%{box-shadow:0 0 0 8px transparent}}
-/* Con las 3 preguntas falladas, el repaso son 3 tarjetas de 3 líneas y
-   un botón cada una: la pantalla de resultado se pasaba del alto
-   disponible de 1366x768 para abajo (recorte medido: 114-201px). En
-   pantallas bajas el repaso se compacta y el botón pasa a ser un enlace
-   en la misma línea. */
-@media (max-height:820px){
-  .d-quiz-review{margin-top:.7rem}
-  .d-quiz-review ul{gap:.4rem}
-  .d-quiz-review li{padding:.5rem .7rem;font-size:.82rem;
-    display:grid;grid-template-columns:1fr auto;column-gap:.7rem;align-items:center}
-  .d-quiz-review .rq{grid-column:1;font-size:.82rem}
-  .d-quiz-review .ra{grid-column:1;margin-top:.15rem;font-size:.78rem}
-  .d-quiz-review .rv-go{grid-column:2;grid-row:1 / span 2;margin-top:0;
-    padding:.35rem .6rem;font-size:.76rem;white-space:nowrap}
-  .d-quiz-result strong{font-size:1.1rem}
-  .d-quiz-result > p{font-size:.85rem;margin-bottom:.5rem}
-}
+/* La lista "Repasemos tus respuestas" en pantallas bajas la compacta el
+   kit desde v1.9.125 (rediseño, §7.74). La grilla que había acá era del
+   diseño anterior y descolocaba las filas nuevas (ícono + texto). */
 
 /* ---- Cierre: bloqueado hasta terminar la mini práctica ---- */
 .slide-cierre .locked{text-align:center;color:var(--text-soft);font-style:italic;border:1px dashed var(--line);
@@ -650,15 +636,12 @@
   .d-aviso-ic svg{width:16px;height:16px}
   .slide[data-slide="evaluacion"] .slide-lead{margin-bottom:.6rem;font-size:.9rem}
   .slide[data-slide="evaluacion"] h2{margin-bottom:.3rem}
-  .slide[data-slide="evaluacion"] .d-opt{padding-top:.45rem;padding-bottom:.45rem}
 }
 /* Pantallas bajas: además se oculta el título mientras se responde y la
    mascota del feedback (el texto del feedback ya dice lo mismo). */
 @media (max-height:720px){
   .slide.is-quiz-running h2{display:none}
   .slide.is-quiz-running .d-quiz-mascot{display:none}
-  .slide[data-slide="evaluacion"] .d-q{padding:.7rem .8rem}
-  .slide[data-slide="evaluacion"] .d-q-title{margin-bottom:.5rem}
 }
 
 /* ============================================================
@@ -857,34 +840,10 @@
   .slide[data-slide="evaluacion"] .slide-lead,
   .slide[data-slide="evaluacion"] .d-aviso-practica { display: none; }
   .slide[data-slide="evaluacion"] .slide-inner { max-height: 100%; min-height: 0; }
-  .slide[data-slide="evaluacion"] .d-quiz-head { margin-bottom: .45rem; }
-  .slide[data-slide="evaluacion"] .d-q { padding: .55rem .7rem; }
-  .slide[data-slide="evaluacion"] .d-q-title { margin-bottom: .45rem; font-size: 1rem; gap: .55rem; }
-  .slide[data-slide="evaluacion"] .d-q-num { width: 24px; height: 24px; font-size: .8rem; }
-  .slide[data-slide="evaluacion"] .d-opt { padding: .42rem .6rem; margin-top: .3rem; gap: .5rem; }
-  .slide[data-slide="evaluacion"] .d-opt-text { font-size: .86rem; }
-  .slide[data-slide="evaluacion"] .d-opt-letra { font-size: .86rem; }
-  .slide[data-slide="evaluacion"] .d-opt-mark { width: 17px; height: 17px; }
-  .slide[data-slide="evaluacion"] .d-quiz-actions { margin-top: .4rem; }
-
-  /* ---- La PANTALLA DE RESULTADO también tiene que entrar ----
-     Es el estado más alto de la diapositiva: nota + "Para repasar" con
-     una ficha por pregunta errada (enunciado + respuesta correcta +
-     botón "Repasar en…") + los dos botones del pie. Medido a 844x390
-     con las 3 erradas —el peor caso— se pasaba 53px y el botón
-     "Continuar" quedaba FUERA de la diapositiva.
-     Se compacta la lista, no la nota ni los botones: el "Respuesta
-     correcta: …" de cada ficha es lo primero que sobra, porque la
-     explicación completa ya se mostró al responder cada pregunta. */
-  .slide[data-slide="evaluacion"] .d-quiz-result > strong { font-size: 1rem; }
-  .slide[data-slide="evaluacion"] .d-quiz-review { margin-top: .4rem; }
-  .slide[data-slide="evaluacion"] .d-quiz-review .rv-title { font-size: .76rem; margin-bottom: .25rem; }
-  .slide[data-slide="evaluacion"] .d-quiz-review ul { gap: .25rem; }
-  .slide[data-slide="evaluacion"] .d-quiz-review li { padding: .3rem .5rem; }
-  .slide[data-slide="evaluacion"] .d-quiz-review .rq { font-size: .74rem; line-height: 1.25; }
-  .slide[data-slide="evaluacion"] .d-quiz-review .ra { display: none; }
-  .slide[data-slide="evaluacion"] .d-quiz-review .rv-go { padding: .22rem .5rem; font-size: .7rem; }
-  .slide[data-slide="evaluacion"] .d-quiz-result .d-quiz-actions .btn { padding: .4rem .8rem; font-size: .82rem; }
+  /* El tamaño de la pregunta y del resultado en pantallas bajas lo pone
+     el kit desde v1.9.125 (rediseño, §7.74): los ajustes propios que
+     había acá eran del diseño anterior y, con el nuevo, lo agrandaban
+     ("Responder" 6px afuera a 844×390). Se sacaron. */
 }
 
 /* ---- El aviso previo a la práctica, en teléfono acostado ----

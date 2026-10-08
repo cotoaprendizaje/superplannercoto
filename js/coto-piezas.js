@@ -228,6 +228,9 @@
       items.forEach(function (it, k) {
         var p = pasos[k];
         p.classList.toggle('is-current', it.classList.contains('is-current'));
+        /* Durante un "↺ Reintentar" (v1.9.125) la pregunta sigue contestada
+           para el curso: el paso conserva el color de la primera vez. */
+        if (it.hasAttribute('data-ya-contestada') && !it.classList.contains('is-answered')) return;
         p.classList.toggle('is-answered', it.classList.contains('is-answered'));
         p.classList.toggle('is-correct', it.classList.contains('is-correct'));
         p.classList.toggle('is-wrong', it.classList.contains('is-wrong'));
@@ -274,7 +277,7 @@
     if (!items.length) return null;
 
     function todasContestadas() {
-      return items.every(function (it) { return it.classList.contains('is-answered'); });
+      return items.every(function (it) { return it.classList.contains('is-answered') || it.hasAttribute('data-ya-contestada'); });
     }
 
     document.addEventListener('click', function (e) {

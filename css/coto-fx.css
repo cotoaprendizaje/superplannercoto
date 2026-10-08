@@ -33,3 +33,105 @@
 @media (prefers-reduced-motion:reduce){
   .fx-ripple,.fx-particles span,.fx-coin{animation:none!important;transition:none!important;display:none}
 }
+
+/* ============================================================
+   EFECTOS DEL REDISEÑO · kit-base v1.9.125 (§7.74)
+   Los diez del canvas "Efectos:". Escalones (decisión del cliente):
+   chicos siempre; medianos (destellos, sello) solo en logros; grandes
+   (fuegos, lluvia) en el oro y al terminar. Todo se apaga con
+   "reducir movimiento" (bloque al final). Los arma fx.js, salvo la
+   tilde y la sacudida, que son CSS puro sobre clases del kit.
+   ============================================================ */
+
+/* 1 · Tilde que se dibuja (respuesta correcta): en coto-quiz.css
+   (`.d-opt.is-ok .d-opt-letra`) y en el addendum (`.d-pred-opt.is-ok::before`),
+   editados en su lugar. La animación vive DENTRO del SVG. */
+
+/* 2 · Sacudida suave (error). La práctica ya sacudía (`.d-opt.is-bad`) y
+   el repaso también; faltaba la predicción (`.d-pred-opt.is-no`, en el
+   addendum, usa este keyframe). */
+@keyframes fx-sacude{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+
+/* 3 · "+N" que sube desde el contador de puntos (`coin(n)` de fx.js). */
+.fx-mas{position:fixed;z-index:120;pointer-events:none;transform:translate(-50%,0);
+  padding:4px 12px;border-radius:999px;background:#ffd25e;color:#8A5200;
+  font-family:var(--font-title);font-weight:900;font-size:1.1rem;line-height:1.1;
+  box-shadow:0 4px 12px rgba(10,40,70,.18);animation:fx-sube 1.2s ease-out both}
+@keyframes fx-sube{0%{transform:translate(-50%,0) scale(.7);opacity:0}15%{opacity:1;transform:translate(-50%,-6px) scale(1.15)}100%{transform:translate(-50%,-56px) scale(1);opacity:0}}
+
+/* 4 · Contador que rueda: `CotoUI.countTo` (coto-ui.js), ya existía. */
+
+/* 5 y 6 · Tarjeta "¡Nuevo logro!": destellos alrededor del disco y el
+   sello "¡LOGRO!". Deja pasar los clics; la cierra cualquier toque. */
+.fx-logro{position:fixed;inset:0;z-index:300;display:grid;place-items:center;padding:16px;
+  background:rgba(15,40,70,.45);pointer-events:none;animation:fx-fade .2s ease both}
+.fx-logro.is-saliendo{animation:fx-fade .2s ease reverse both}
+@keyframes fx-fade{from{opacity:0}to{opacity:1}}
+.fx-logro-card{position:relative;width:min(520px,100%);box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:26px 26px 22px;border-radius:30px;background:#fff;box-shadow:0 30px 80px rgba(5,30,60,.45);overflow:hidden;text-align:center}
+.fx-logro-card::after{content:"";position:absolute;left:-60px;right:-60px;bottom:-130px;height:190px;border-radius:50%;background:var(--brand);opacity:.12;pointer-events:none}
+.fx-logro-tit{font-family:var(--font-title);font-weight:900;font-size:2.2rem;line-height:1;color:var(--brand);animation:fx-entra-txt .4s ease both}
+.fx-logro-disco{position:relative;width:128px;height:128px;margin:10px 0 4px}
+.fx-logro-ic{position:absolute;inset:0;display:grid;place-items:center;border-radius:50%;color:#fff;
+  background:linear-gradient(180deg,var(--brand),var(--brand-deep));border:6px solid #fff;box-shadow:0 14px 30px rgba(10,60,100,.3);
+  animation:fx-entra .7s cubic-bezier(.3,1.4,.5,1) both}
+.fx-logro-ic svg{width:56px;height:56px}
+.fx-logro-emoji{font-size:3.4rem;line-height:1}
+.fx-destello{position:absolute;animation:fx-destello .9s ease-out both}
+@keyframes fx-destello{0%{transform:scale(0) rotate(0);opacity:0}40%{transform:scale(1.2) rotate(40deg);opacity:1}100%{transform:scale(.9) rotate(90deg);opacity:.9}}
+.fx-logro-mas{position:absolute;right:-46px;top:2px;padding:4px 12px;border-radius:999px;border:3px solid #fff;
+  background:#ffd25e;color:#8A5200;font-family:var(--font-title);font-weight:900;font-size:1.5rem;animation:fx-entra-txt .4s ease .45s both}
+.fx-logro-nom{font-family:var(--font-title);font-weight:900;font-size:1.8rem;line-height:1.05;color:var(--brand-navy);animation:fx-entra-txt .4s ease .25s both}
+.fx-logro-txt{max-width:420px;font-size:1rem;line-height:1.4;color:#46506A;animation:fx-entra-txt .4s ease .32s both}
+.fx-logro-sello{position:absolute;right:22px;top:22px;padding:4px 12px;border-radius:10px;border:3px solid var(--success);color:var(--success);
+  font-family:var(--font-title);font-weight:900;font-size:1.1rem;letter-spacing:.06em;transform:rotate(-8deg);animation:fx-sello .6s cubic-bezier(.3,1.4,.5,1) .55s both}
+@keyframes fx-sello{0%{transform:scale(2.6) rotate(-20deg);opacity:0}60%{transform:scale(.92) rotate(-8deg);opacity:1}80%{transform:scale(1.05) rotate(-8deg)}100%{transform:scale(1) rotate(-8deg);opacity:1}}
+@keyframes fx-entra{0%{transform:scale(.2) rotate(-25deg);opacity:0}55%{transform:scale(1.15) rotate(6deg);opacity:1}75%{transform:scale(.95) rotate(-2deg)}100%{transform:scale(1) rotate(0)}}
+@keyframes fx-entra-txt{0%{transform:translateY(14px);opacity:0}100%{transform:translateY(0);opacity:1}}
+.fx-logro-seguir{position:relative;z-index:1;margin-top:10px;min-height:46px;padding:0 28px;border-radius:999px;border:0;cursor:pointer;
+  background:var(--brand-deep);color:#fff;font-family:var(--font-body);font-weight:700;font-size:1rem;pointer-events:auto}
+.fx-logro-med:not([hidden]),.fx-subio-card{display:inline-flex;align-items:center;gap:10px;padding:6px 18px 6px 6px;border-radius:999px;
+  background:#fff;border:2px solid var(--brand);font-family:var(--font-title);font-weight:900;font-size:1.25rem;color:var(--brand);
+  animation:fx-entra-txt .4s ease both, fx-aro 1.2s ease-out .4s 2}
+@keyframes fx-aro{0%{box-shadow:0 0 0 0 rgba(0,110,160,.45)}100%{box-shadow:0 0 0 16px rgba(0,110,160,0)}}
+@media (max-height:560px){
+  .fx-logro-card{padding:14px 20px;gap:4px}
+  .fx-logro-tit{font-size:1.6rem}
+  .fx-logro-disco{width:84px;height:84px;margin:4px 0 0}
+  .fx-logro-ic svg{width:38px;height:38px}
+  .fx-logro-nom{font-size:1.35rem}
+  .fx-logro-seguir{min-height:38px;margin-top:4px}
+}
+
+/* 7 · Medalla que gira (subir de medalla): adentro de la tarjeta del
+   logro o en un aviso propio arriba al centro. */
+.fx-subio{position:fixed;left:50%;top:72px;z-index:300;transform:translateX(-50%);pointer-events:none}
+.fx-subio-card{box-shadow:0 14px 34px rgba(10,40,70,.25)}
+.fx-med{position:relative;flex:none;width:38px;height:38px;perspective:300px}
+.fx-med-giro{position:absolute;inset:0;transform-style:preserve-3d;animation:fx-gira .9s cubic-bezier(.4,1.3,.5,1) .3s both}
+.fx-med-cara{position:absolute;inset:0;border-radius:50%;display:grid;place-items:center;background:var(--c);border:3px solid #fff;
+  box-sizing:border-box;box-shadow:0 3px 8px rgba(10,40,70,.2);backface-visibility:hidden}
+.fx-med-cara svg{width:18px;height:18px;fill:var(--t)}
+.fx-med-cara--atras{transform:rotateY(180deg)}
+@keyframes fx-gira{0%{transform:rotateY(0)}100%{transform:rotateY(180deg)}}
+
+/* 8 y 9 · Fuegos artificiales (oro) y lluvia de papelitos (fin). */
+.fx-particulas{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
+.fx-chispa{position:absolute;border-radius:50%;animation:fx-fuego 1.1s cubic-bezier(.2,.7,.3,1) both}
+@keyframes fx-fuego{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(.3);opacity:0}}
+.fx-lluvia{position:fixed;inset:0;z-index:299;pointer-events:none}
+.fx-confeti{position:absolute;top:-30px;animation:fx-cae 2.4s ease-in both}
+@keyframes fx-cae{0%{transform:translate(0,0) rotate(0);opacity:1}25%{transform:translate(12px,25vh) rotate(80deg)}50%{transform:translate(-10px,50vh) rotate(170deg)}75%{transform:translate(10px,75vh) rotate(250deg)}100%{transform:translate(0,105vh) rotate(330deg);opacity:.2}}
+
+/* 10 · Destello en la barra al completarla: se pone verde y la cruza
+   un brillo. */
+.fx-barra-llena [data-slide-progress]{background:var(--success)!important;transition:background .4s ease .6s;overflow:hidden}  /* ya es position:absolute (coto-player-bottom.css): no pisarlo */
+.fx-barra-llena [data-slide-progress]::after{content:"";position:absolute;top:0;bottom:0;left:0;width:40%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.75),transparent);animation:fx-brillo 1.4s ease-out both}
+@keyframes fx-brillo{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+
+@media (prefers-reduced-motion:reduce){
+  .fx-mas,.fx-logro,.fx-logro *,.fx-subio *,.fx-particulas,.fx-lluvia,
+  .fx-barra-llena [data-slide-progress]::after{animation:none!important;transition:none!important}
+  .fx-mas,.fx-particulas,.fx-lluvia,.fx-destello{display:none}
+}

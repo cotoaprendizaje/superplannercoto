@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.124 · Área Aprendizaje (COTO)
+kit-base v1.9.125 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 64 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 68 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -61,6 +61,18 @@ arman el mismo LMS en memoria, pero guardado en `sessionStorage` para que
 sobreviva una recarga: es lo que ve un alumno que sale y vuelve.
 `repaso-errada` contesta todo el repaso bien con un alumno y todo mal con
 otro, y exige los mismos logros; un curso sin repaso no tiene nada que medir.
+Del rediseño (v1.9.125) salieron cuatro: `logros-kit.mjs` gana cada uno de
+los 5 logros del kit con el gesto real del alumno y exige +20 una sola vez
+(también al recargar); `repaso-reintentar.mjs` usa el mismo LMS en
+`sessionStorage` y exige que "↺ Reintentar" no sume, no cambie lo guardado
+ni gane logros; `efectos.mjs` provoca cada efecto aprobado (tarjeta del
+logro, "+N", medalla, fuegos, lluvia, barra) y además exige que la tarjeta
+DEJE PASAR los clics y que con "reducir movimiento" no haya partículas; y
+`cabecera-paneles.mjs` abre cada panel del kit y mide que la ✕ quede a la
+derecha del título, en la misma línea. Ese último salió de una foto, no de
+un test: la regla de los paneles heredó `flex-direction:column` y nada lo
+vio. La migración del marcado de `actualizar-kit` se prueba aparte, sin
+navegador, con `tools/check-migracion.mjs` (en `npm run test:kit`).
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

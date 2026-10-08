@@ -220,46 +220,50 @@
    togglea, solo `is-active` (diapositiva actual).
    ============================================================ */
 .d-sidenav{width:100%}
-.d-sidenav-list{display:flex;flex-direction:column;gap:.15rem}
-.d-sidenav-group{display:block;font-family:var(--font-title);font-weight:900;font-size:.82rem;
-  letter-spacing:.3px;text-transform:uppercase;color:var(--cat-strong,var(--brand));
-  margin:1.1rem 0 .5rem;padding-top:.9rem;border-top:1px solid var(--line)}
-.d-sidenav-group:first-child{margin-top:0;padding-top:0;border-top:none}
+/* ---- Rediseño v1.9.125 (§7.74): el índice del canvas ----
+   Unidades numeradas (el `.d-sidenav-group`, con su "N de M" que escribe
+   `initIndexJumps`) sobre una línea continua, y cada tema con un PUNTO de
+   estado y su rótulo a la derecha: "Visto" (verde), "Estás acá" (azul,
+   con el punto adentro), "Bloqueado" (gris). Sin íconos por tema
+   (decisión del cliente, 2026-10-07: "solo el punto, como el canvas"):
+   el `.ic` sigue en el marcado de los cursos y se esconde acá.
+   Azul = en curso, verde = completo, gris = pendiente. */
+.d-sidenav-list{display:flex;flex-direction:column;gap:2px;counter-reset:ix;
+  background:linear-gradient(#D7DEEC,#D7DEEC) no-repeat 20.5px 24px / 3px calc(100% - 42px);background-origin:content-box}
+.d-sidenav-group{position:relative;display:block;counter-increment:ix;min-height:44px;margin:12px 0 4px;padding:3px 0 0 56px;
+  font-family:var(--font-title);font-weight:900;font-size:1.125rem;line-height:1.1;letter-spacing:0;text-transform:none;
+  color:var(--brand);border:0}
+.d-sidenav-group::before{content:counter(ix);position:absolute;left:0;top:0;width:44px;height:44px;border-radius:50%;
+  display:grid;place-items:center;background:var(--brand-soft);color:#fff;font-size:1.375rem}
+.d-sidenav-group.is-empezado::before{background:var(--brand)}
+.d-sidenav-group.is-completo::before{background:var(--success)}
+.d-sidenav-group::after{content:attr(data-avance);display:block;margin-top:2px;font-family:var(--font-body);
+  font-weight:400;font-size:.75rem;color:#6B7690}
 
-.d-sidenav-item{position:relative;display:flex;align-items:center;gap:.65rem;width:100%;
-  text-align:left;border:none;background:none;cursor:pointer;padding:.55rem .7rem;
-  border-radius:var(--r-sm);color:var(--text);font-family:var(--font-body);
-  font-size:.92rem;font-weight:500;transition:background .15s,color .15s}
-.d-sidenav-item:hover{background:var(--surface-2)}
-.d-sidenav-item:focus-visible{outline:3px solid var(--cat,var(--brand));outline-offset:2px}
-/* Pedido del cliente: el índice lateral no puede dejar saltear a
-   diapositivas todavía no vistas (ver `marcarVistas()` en curso.js,
-   que ahora pone `disabled` ahí) — acá solo el estilo, para que se LEA
-   como no clickeable: cursor normal, sin hover/focus y semi-apagado
-   (no oculto — sigue diciendo qué viene después). */
-.d-sidenav-item:disabled{cursor:default;opacity:.45}
+.d-sidenav-item{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;width:auto;
+  min-height:36px;margin-left:42px;padding:0 12px;text-align:left;border:none;border-radius:999px;background:none;
+  cursor:pointer;color:var(--brand-navy);font-family:var(--font-body);font-size:.875rem;font-weight:500;transition:background .15s}
+.d-sidenav-item:hover{background:#F4F7FE}
+.d-sidenav-item:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+/* El punto, sobre la línea. */
+.d-sidenav-item::before{content:"";position:absolute;left:-29px;top:50%;width:18px;height:18px;box-sizing:border-box;
+  transform:translateY(-50%);border-radius:50%;background:#fff;border:3px solid #fff;box-shadow:0 0 0 2px #D7DEEC}
+/* El rótulo de estado, a la derecha. */
+.d-sidenav-item::after{content:"";flex:none;font-size:.75rem;font-weight:700;color:var(--brand-soft)}
+.d-sidenav-item.is-done::before{background:var(--brand);border-color:var(--brand);box-shadow:0 0 0 2px var(--brand)}
+.d-sidenav-item.is-done::after{content:"Visto";color:var(--success)}
+/* Pedido del cliente: el índice no deja saltear a lo que todavía no se
+   vio (`initIndexJumps` pone `disabled`). Se lee como bloqueado, no se
+   esconde: sigue diciendo qué viene después. */
+.d-sidenav-item:disabled{cursor:default;color:var(--brand-soft);opacity:1}
 .d-sidenav-item:disabled:hover{background:none}
-.d-sidenav-item .ic{width:19px;height:19px;flex:none;fill:none;stroke:currentColor;stroke-width:2;
-  stroke-linecap:round;stroke-linejoin:round;opacity:.7}
-.d-sidenav-item.is-active .ic{opacity:1}
+.d-sidenav-item:disabled::after{content:"Bloqueado"}
+.d-sidenav-item .ic,.d-sidenav-item .ix-ck{display:none}
 .d-sidenav-item span{flex:1;min-width:0}
-
-/* checkmark de "visto": mismo criterio visual que .d-shot-hit.is-done/
-   .d-concept-tab.is-seen (ver coto-base.css), reposicionado EN LÍNEA acá
-   (position:static, no flotante) porque el ítem del índice ya reserva su
-   propio espacio a la derecha, a diferencia de un hitbox sobre la imagen. */
-.ix-ck{flex:none;margin-left:auto;width:20px;height:20px;padding:3px;border-radius:50%;
-  background:var(--surface);fill:none;stroke:var(--success);stroke-width:3;
-  stroke-linecap:round;stroke-linejoin:round;opacity:0;transform:scale(.6);
-  transition:opacity .2s,transform .2s}
-.d-sidenav-item.is-done .ix-ck{opacity:1;transform:scale(1)}
-
-/* diapositiva actual — mismo patrón de fondo tenue que .chip-cat/.badge-soft
-   (color-mix al 16% sobre la categoría) para no introducir un tono nuevo */
-.d-sidenav-item.is-active{background:color-mix(in srgb,var(--cat,var(--brand)) 16%,transparent);
-  color:var(--cat-strong,var(--brand));font-weight:700}
-
-@media (max-width:767px){.d-sidenav-item{padding:.65rem .7rem}}
+/* Diapositiva actual: punto azul con el blanco adentro y "Estás acá". */
+.d-sidenav-item.is-active{background:var(--brand-tint);color:var(--brand);font-weight:700}
+.d-sidenav-item.is-active::before{background:var(--brand);border-color:#fff;box-shadow:0 0 0 2px var(--brand)}
+.d-sidenav-item.is-active::after{content:"Estás acá";color:var(--brand)}
 
 /* ---- Variante "drawer" — pegado a un borde, no centrado ----
    BUG REAL corregido (verificado contra "Surtido sin venta"): el índice
@@ -279,20 +283,14 @@
             </div>
    (mismo contrato de [data-goto]/.d-sidenav-item de más arriba — acá
    solo cambia el contenedor, no la lista). */
-.modal--drawer{justify-content:flex-start;padding:0}
+.modal--drawer{justify-content:flex-start;padding:14px}
 .modal--drawer .modal-back{background:color-mix(in srgb,var(--brand-navy) 45%,transparent)}
-.modal-card.d-sidenav{width:min(340px,86vw);max-width:100%;height:100%;max-height:100%;margin:0;
-  border-radius:0 var(--r-xl) var(--r-xl) 0;display:flex;flex-direction:column;overflow:hidden}
-/* mismo azul del header (no el color de categoría): el índice se lee como
-   parte de la barra superior, no como una tarjeta de contenido más. */
-.d-sidenav-hd{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex:none;
-  padding:1.1rem 1.3rem;background:linear-gradient(100deg,var(--brand-deep),var(--brand));color:#fff}
-/* color:#fff explícito — la regla global h1,h2,h3,h4{color:var(--brand-navy)}
-   de coto-base.css le gana al blanco heredado (un valor heredado SIEMPRE
-   pierde contra cualquier regla explícita, sin importar especificidad). */
-.d-sidenav-hd h2{margin:0;font-family:var(--font-title);font-weight:900;font-size:1.05rem;color:#fff}
-.d-sidenav-hd .modal-x{position:static;flex:none}
-.modal-card.d-sidenav>.d-sidenav-list{flex:1;overflow-y:auto;padding:.6rem}
+.modal-card.d-sidenav{width:min(400px,86vw);max-width:100%;height:100%;max-height:100%;margin:0;
+  border-radius:28px;display:flex;flex-direction:column;overflow:hidden}
+/* El encabezado del índice es el de todos los paneles del kit
+   (`.d-sidenav-hd`, más abajo, junto a los demás). Los dos cajones flotan
+   a 14px del borde con las esquinas redondeadas (rediseño v1.9.125). */
+.modal-card.d-sidenav>.d-sidenav-list{flex:1;overflow-y:auto;padding:0 22px 18px}
 
 /* ---- Cajón del lado DERECHO  ·  .modal--drawer-right ----
    kit-base v1.8. Mismo criterio que .modal--drawer (izquierda, para el
@@ -303,14 +301,13 @@
    que es justo lo que un glosario largo necesita.
    Marcado: <div class="modal modal--drawer-right" data-popup="glosario">
               <div class="modal-card d-drawer-r"> … */
-.modal--drawer-right{justify-content:flex-end;padding:0}
+.modal--drawer-right{justify-content:flex-end;padding:14px}
 .modal--drawer-right .modal-back{background:color-mix(in srgb,var(--brand-navy) 45%,transparent)}
 .modal-card.d-drawer-r{width:min(460px,92vw);max-width:100%;height:100%;max-height:100%;margin:0;
-  border-radius:var(--r-xl) 0 0 var(--r-xl);display:flex;flex-direction:column;overflow:hidden}
+  border-radius:28px;display:flex;flex-direction:column;overflow:hidden}
 /* El encabezado no scrollea con el contenido y el cuerpo se lleva todo
    el alto restante — sin esto, en un cajón a pantalla completa el
    .modal-bd se estira y el scroll queda en la tarjeta entera. */
-.modal-card.d-drawer-r > .modal-hd{flex:none}
 .modal-card.d-drawer-r > .modal-bd{flex:1;overflow-y:auto}
 /* PEDIDO DEL CLIENTE (unificar Índice/Glosario/Ayuda en un solo diseño,
    ronda siguiente: "todo lo que se desprenda del menú del curso debe
@@ -328,19 +325,45 @@
    diseño". `.d-wide` (Mis logros, modal centrado) suma acá junto con
    `.d-drawer-r` (Glosario/Ayuda, cajón) — mismo criterio, 2 formas de
    contenedor. */
+/* ---- Cabecera de los paneles del kit (kit-base v1.9.125, rediseño §7.74) ----
+   Una sola barra para TODO lo que abre el menú del curso: Índice,
+   Glosario, Recursos, Mis logros, Cómo recorrer el curso y el aviso de la
+   práctica. 50px, degradado vertical de marca (Methyl → Mykonos, los dos
+   del manual), título en Faible 24px que termina en ":" (va en el
+   marcado) y la ✕ como círculo translúcido a la derecha. Los pop-ups de
+   CONTENIDO de cada curso no entran acá: siguen con el color de su
+   categoría (decisión del cliente, 2026-10-07), para no chocar con el
+   arte del diseñador. */
+.d-sidenav-hd,
 .modal-card.d-drawer-r > .modal-hd,
-.modal-card.d-wide > .modal-hd{
-  background:linear-gradient(100deg,var(--brand-deep),var(--brand)); color:#fff;
-  padding:1.1rem 1.3rem;
+.modal-card.d-wide > .modal-hd,
+[data-popup="practica-intro"] .modal-hd{
+  display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:.75rem; flex:none;
+  min-height:50px; box-sizing:border-box; padding:0 8px 0 22px;   /* row explícito: `.modal-hd` es columna desde v1.9.125 */
+  background:linear-gradient(180deg,var(--brand),var(--brand-deep)); color:#fff;
 }
+/* color:#fff explícito — la regla global h1,h2,h3,h4{color:var(--brand-navy)}
+   de coto-base.css le gana al blanco heredado. */
+.d-sidenav-hd h2,
 .modal-card.d-drawer-r > .modal-hd h2,
 .modal-card.d-drawer-r > .modal-hd h3,
 .modal-card.d-wide > .modal-hd h2,
-.modal-card.d-wide > .modal-hd h3{
-  margin:0; font-family:var(--font-title); font-weight:900; font-size:1.05rem; color:#fff;
+.modal-card.d-wide > .modal-hd h3,
+[data-popup="practica-intro"] .modal-hd h2,
+[data-popup="practica-intro"] .modal-hd h3{
+  margin:0; font-family:var(--font-title); font-weight:900; font-size:1.5rem; line-height:1; color:#fff;
+}
+/* La ✕ va primero en el marcado (así la alcanza el foco al abrir); con
+   `order` queda a la derecha sin tocar el orden. */
+.d-sidenav-hd .modal-x,
+.modal-card.d-drawer-r > .modal-hd .modal-x,
+.modal-card.d-wide > .modal-hd .modal-x,
+[data-popup="practica-intro"] .modal-hd .modal-x{
+  position:static; order:2; flex:none; width:34px; height:34px; background:rgba(255,255,255,.2);
 }
 @media (max-width:560px){
-  .modal-card.d-drawer-r{width:100%;border-radius:0}
+  .modal--drawer,.modal--drawer-right{padding:0}
+  .modal-card.d-drawer-r,.modal-card.d-sidenav{width:100%;border-radius:0}
 }
 
 /* ============================================================
@@ -409,22 +432,123 @@
      </div>
    ============================================================ */
 .d-badges-intro{margin:0 0 .8rem;font-size:.86rem;color:var(--text-soft);line-height:1.4}
-/* `minmax(98px)` y no 120px desde v1.9.82: es lo que mantiene los 5
-   badges en UNA fila cuando `.modal-card` se angostó. Con 120px la
-   grilla se partía en dos filas y el pop-up de Logros crecía a lo
-   alto — terminaba ocupando MÁS pantalla que antes de achicarlo.
-   Era: minmax(120px,1fr), gap .55rem. */
-.d-badges-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(98px,1fr));gap:.45rem;align-items:stretch}
-.d-badge{text-align:center;border:1px solid var(--line);border-radius:var(--r-lg);padding:.6rem .45rem;  /* era .75rem .55rem — v1.9.82 */
-  background:var(--surface-2);opacity:.55;filter:grayscale(.6);display:flex;flex-direction:column;
-  transition:opacity .15s,filter .15s}
-.d-badge.earned{opacity:1;filter:none;background:color-mix(in srgb,var(--cat) 10%,var(--surface));border-color:var(--cat)}
-.d-badge .i{font-size:1.55rem;display:block}
-/* alto fijo (aunque el nombre entre en 1 línea) para que las tarjetas
-   midan lo mismo sin importar cuántas líneas ocupe cada título */
-.d-badge .n{display:flex;align-items:center;justify-content:center;min-height:2.1em;
-  font-family:var(--font-title);font-weight:900;font-size:.8rem;color:var(--text);margin:.28rem 0 .15rem}
-.d-badge .d{display:block;font-size:.7rem;color:var(--text-soft);margin-top:auto;line-height:1.25}
+
+/* ---- Rediseño v1.9.125 (§7.74): el panel "Mis logros:" del canvas ----
+   Más ancho que un `.d-wide` común: entran la medalla, la barra y las
+   cinco tarjetas en una fila. Colores SOLO del manual (Methyl #006EA0,
+   Mykonos #00466E, Pageant #1E2D46, Soft Chambray #96A5BE, Brilliant
+   White #EBF0FF) más el verde/rojo de estado; el dorado de la medalla
+   es la única excepción. Azul = en curso, verde = completo. */
+[data-popup="logros"] .modal-card.d-wide{width:min(1020px,94vw)}
+[data-popup="logros"] .modal-bd{padding:14px 26px 20px;gap:10px}
+
+/* La medalla, los puntos y la barra — lo arma coto-logros.js arriba de
+   las tarjetas (`.d-lg-medalla`), sin marcado nuevo en el curso. */
+.d-lg-medalla{position:relative;display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:26px;align-items:center;
+  padding:12px 26px 14px;border-radius:22px;background:var(--brand);color:#fff;overflow:hidden}
+.d-lg-med{position:relative;display:flex;align-items:center;gap:16px;min-width:0}
+.d-lg-cinta{position:relative;width:84px;height:100px;flex:none}
+.d-lg-cinta i{position:absolute;top:0;width:20px;height:38px}
+.d-lg-cinta i:first-child{left:18px;background:var(--brand-navy);transform:skewX(14deg)}
+.d-lg-cinta i:last-child{right:18px;background:var(--brand-deep);transform:skewX(-14deg)}
+.d-lg-disco{position:absolute;left:7px;top:26px;width:70px;height:70px;border-radius:50%;box-sizing:border-box;
+  border:5px solid #fff;background:var(--lg-medalla,#E9EEF8);color:var(--lg-medalla-tinta,#6B7690);display:grid;place-items:center}
+.d-lg-disco svg{width:32px;height:32px;fill:currentColor}
+.d-lg-medtxt{display:flex;flex-direction:column;gap:4px;min-width:0}
+.d-lg-medtxt small{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;font-weight:700;opacity:.9}
+.d-lg-medtxt b{font-family:var(--font-title);font-weight:900;font-size:1.875rem;line-height:1;color:#fff}
+.d-lg-medtxt span{font-size:.875rem;line-height:1.35}
+.d-lg-pts{display:flex;flex-direction:column;gap:10px;min-width:0}
+.d-lg-num{font-size:1rem}
+.d-lg-num b{font-family:var(--font-title);font-weight:900;font-size:2.75rem;line-height:1;font-variant-numeric:tabular-nums;color:#fff;margin-right:.35rem}
+/* Fondo blanco translúcido y relleno Mykonos (pedido del cliente en el canvas). */
+.d-lg-barra{position:relative;height:20px;border-radius:999px;background:rgba(255,255,255,.35);overflow:hidden}
+.d-lg-barra i{position:absolute;inset:0 auto 0 0;border-radius:999px;background:var(--brand-deep);transition:width .8s ease}
+.d-lg-hitos{position:relative;display:block;height:24px}
+.d-lg-hito{position:absolute;top:2px;transform:translateX(-50%);display:flex;align-items:center;gap:5px;white-space:nowrap;
+  padding:2px 8px 2px 3px;border-radius:999px;background:#fff;color:var(--brand-deep);font-size:.75rem;font-weight:700}
+.d-lg-hito.is-inicio{transform:none}
+.d-lg-hito i{width:14px;height:14px;border-radius:50%;background:var(--c)}
+.d-lg-hito::before{content:"";position:absolute;left:50%;top:-34px;width:3px;height:30px;border-radius:2px;background:#fff;opacity:.9}
+.d-lg-hito.is-inicio::before{display:none}
+
+/* Las tarjetas: cinco en una fila. */
+.d-badges-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;align-items:stretch}
+.d-badge{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;
+  padding:16px 12px 14px;border-radius:20px;background:#fff;border:2px solid #E9EEF8;transition:transform .2s ease,box-shadow .2s ease}
+.d-badge:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(16,58,96,.16)}
+.d-badge.earned{background:#F4F7FE;border-color:var(--brand-soft)}
+.d-badge .i{position:relative;display:grid;place-items:center;width:74px;height:74px;border-radius:50%;
+  background:#E9EEF8;color:var(--brand-soft);font-size:1.9rem;flex:none}
+.d-badge.earned .i{background:var(--brand);color:#fff}
+.d-badge .i svg{width:34px;height:34px}
+.d-badge-lock{position:absolute;right:-2px;bottom:2px;width:30px;height:30px;border-radius:50%;background:#fff;
+  border:2px solid #D7DEEC;box-sizing:border-box;display:grid;place-items:center;color:#6B7690}
+.d-badge-lock svg{width:15px;height:15px;stroke-width:2.4}
+.d-badge-plus{position:absolute;right:-4px;bottom:0;padding:3px 8px;border-radius:999px;background:#ffd25e;color:var(--warning-ink);
+  font-size:.75rem;font-weight:700;border:2px solid #fff;line-height:1.1}
+.d-badge .n{font-family:var(--font-title);font-weight:900;font-size:1.125rem;line-height:1.05;color:#6B7690;margin:0}
+.d-badge.earned .n{color:var(--brand)}
+.d-badge .d{display:block;font-size:.75rem;line-height:1.3;color:#46506A;margin:0}
+.d-badge-pie{margin-top:auto;padding-top:4px;width:100%;display:flex;flex-direction:column;gap:6px}
+.d-badge-est{display:flex;justify-content:space-between;gap:6px;font-size:.75rem;color:#46506A}
+.d-badge-est b{color:#6B7690}
+.d-badge.earned .d-badge-est b{color:var(--warning-ink)}
+.d-badge-bar{height:7px;border-radius:999px;background:#E9EEF8;overflow:hidden}
+.d-badge-bar i{display:block;height:100%;border-radius:999px;background:var(--brand)}
+.d-badge.earned .d-badge-bar i{background:var(--success)}
+.d-badge-pill{min-height:36px;display:grid;place-items:center;border-radius:999px;background:#E9EEF8;color:#6B7690;font-size:.78rem;font-weight:700}
+.d-badge.earned .d-badge-pill{background:color-mix(in srgb,var(--success) 12%,#fff);color:var(--success-ink)}
+
+/* Pantallas bajas o angostas (teléfono acostado, iPad vertical): la
+   medalla en una columna y las tarjetas sin la descripción ni la barra,
+   así las cinco siguen en UNA fila (SI A23: con 4 por fila la 5ª quedaba
+   sola y el panel scrolleaba 248px). */
+@media (max-width:760px),(max-height:520px){
+  [data-popup="logros"] .modal-bd{padding:8px 14px 12px;gap:8px}
+  [data-popup="logros"] .d-badges-intro{display:none}   /* se sigue narrando: la voz filtra `hidden`, no el estilo */
+  .d-lg-medalla{grid-template-columns:auto minmax(0,1fr);gap:14px;padding:8px 16px 4px;border-radius:16px}
+  .d-lg-med{gap:8px}
+  .d-lg-medtxt small{font-size:.62rem}
+  .d-lg-medtxt b{font-size:1.25rem}
+  .d-lg-medtxt span{font-size:.72rem}
+  .d-lg-pts{gap:6px}
+  .d-lg-num{font-size:.8rem}
+  .d-lg-barra{height:14px}
+  .d-lg-hito{font-size:.66rem}
+  .d-lg-hito::before{top:-26px;height:22px}
+  .d-lg-cinta{width:52px;height:62px}
+  .d-lg-cinta i{height:24px;width:13px}
+  .d-lg-cinta i:first-child{left:11px}
+  .d-lg-cinta i:last-child{right:11px}
+  .d-lg-disco{width:46px;height:46px;top:16px;left:3px;border-width:3px}
+  .d-lg-disco svg{width:20px;height:20px}
+  .d-lg-num b{font-size:1.6rem}
+  .d-badges-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+  .d-badge{padding:8px 4px;gap:4px;border-radius:14px}
+  .d-badge .i{width:44px;height:44px}
+  .d-badge .i svg{width:22px;height:22px}
+  .d-badge .n{font-size:.78rem;hyphens:manual}
+  .d-badge .d,.d-badge-bar,.d-badge-est{display:none}
+  .d-badge-pill{min-height:24px;font-size:.66rem;padding:0 4px}
+  .d-badge-lock{width:20px;height:20px}
+  .d-badge-lock svg{width:10px;height:10px}
+}
+/* Teléfono parado: la medalla arriba y los puntos debajo. */
+@media (max-width:560px){
+  .d-lg-medalla{grid-template-columns:1fr}
+  .d-lg-hito{font-size:.6rem;padding:1px 6px 1px 2px;gap:3px}
+  .d-lg-hito i{width:10px;height:10px}
+  .d-badge .i{width:38px;height:38px}
+  .d-badge .i svg{width:18px;height:18px}
+  .d-badge-plus{font-size:.58rem;padding:1px 4px;right:-8px;bottom:-4px}
+  .d-badge .n{font-size:.66rem;overflow-wrap:anywhere}
+  .d-badge-pill{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  .d-badge,.d-lg-barra i{transition:none}
+  .d-badge:hover{transform:none}
+}
 
 /* ============================================================
    11. RESALTADO DE UN ÍCONO DENTRO DE UNA HITBOX  ·  .d-hit-ring
@@ -529,22 +653,25 @@
    queda neutra para que el badge sea lo que se destaca.
    Los 3 rangos se listan SIEMPRE, también los no alcanzados: si no se
    ve qué faltaba, la medalla no motiva nada. */
-.d-medalla{position:relative;display:grid;grid-template-columns:auto 1fr;gap:1.1rem;align-items:center;
-  margin:0 0 1.15rem;padding:1.05rem 1.2rem;border-radius:var(--r-lg);
-  border:2px solid var(--line);background:var(--surface-2)}
-.d-medalla[data-nivel="oro"]{border-color:#d4a017}
-.d-medalla[data-nivel="plata"]{border-color:#9aa5ad}
-.d-medalla[data-nivel="bronce"]{border-color:#b1712c}
-.d-medalla-ic{position:relative;width:72px;height:72px;flex:none;
-  display:grid;place-items:center;font-size:2.1rem;line-height:1;
-  border-radius:var(--r-lg);
+/* Rediseño v1.9.125 (§7.74), del canvas: la caja azul de "Mis logros"
+   con la medalla dibujada —disco del color del rango, borde blanco y la
+   ESTRELLA (pedido del cliente: "una estrella en vez de la P")— y el
+   texto en blanco. Bronce, plata y oro son los únicos colores fuera del
+   manual, porque son los de las medallas. */
+.d-medalla{position:relative;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;text-align:left;
+  margin:0 0 12px;padding:14px 18px;border-radius:22px;border:0;background:var(--brand);color:#fff;overflow:hidden}
+.d-medalla-ic{position:relative;width:66px;height:66px;flex:none;box-sizing:border-box;
+  display:grid;place-items:center;font-size:1.9rem;line-height:1;
+  border-radius:50%;border:5px solid #fff;background:#E9EEF8;color:#6B7690;
   box-shadow:0 8px 20px color-mix(in srgb,#000 18%,transparent)}
-[data-nivel="oro"] .d-medalla-ic{background:linear-gradient(135deg,#fff3c4,#f0c244)}
-[data-nivel="plata"] .d-medalla-ic{background:linear-gradient(135deg,#eef1f4,#c3cbd3)}
-[data-nivel="bronce"] .d-medalla-ic{background:linear-gradient(135deg,#f3d3b4,#cd8e50)}
+.d-medalla-ic svg{width:30px;height:30px;fill:currentColor}
+[data-nivel="oro"] .d-medalla-ic{background:#ffd25e;color:#7a5300}
+[data-nivel="plata"] .d-medalla-ic{background:#c9d3de;color:var(--brand-deep)}
+[data-nivel="bronce"] .d-medalla-ic{background:#d38b4f;color:#fff}
 .d-medalla-tit{margin:0;font-family:var(--font-title);font-weight:900;
-  font-size:1.15rem;color:var(--brand-navy)}
-.d-medalla-sub{margin:.2rem 0 0;font-size:.86rem;color:var(--text-soft)}
+  font-size:1.6rem;line-height:1.05;color:#fff}
+.d-medalla-tit b{color:#fff}
+.d-medalla-sub{margin:.3rem 0 0;font-size:.875rem;line-height:1.35;color:#fff}
 
 /* ---- Efecto cinematográfico al revelar la medalla ----
    Quien llama a pintarMedalla() suma `.is-revealing` al `.d-medalla`
@@ -577,13 +704,12 @@
 
 .d-medalla-rangos{list-style:none;display:flex;gap:.4rem;margin:0 0 1.2rem;padding:0}
 .d-medalla-rangos li{flex:1;display:flex;flex-direction:column;align-items:center;gap:.1rem;
-  padding:.45rem .3rem;border-radius:var(--r-sm);background:var(--surface-2);
-  text-align:center;opacity:.55}
+  padding:.45rem .3rem;border-radius:16px;background:#fff;border:2px solid #E9EEF8;
+  text-align:center;opacity:.7}
 .d-medalla-rangos li span{font-size:1.15rem;line-height:1}
 .d-medalla-rangos li b{font-size:.8rem;color:var(--brand-navy)}
 .d-medalla-rangos li i{font-style:normal;font-size:.7rem;color:var(--text-soft)}
-.d-medalla-rangos li.is-logrado{opacity:1;background:var(--cat-wash);
-  box-shadow:inset 0 0 0 2px var(--cat-strong)}
+.d-medalla-rangos li.is-logrado{opacity:1;background:#F4F7FE;border-color:var(--brand-soft);box-shadow:none}
 @media (max-height:800px){
   .d-medalla{padding:.6rem .8rem;margin-bottom:.5rem}
   .d-medalla-ic{font-size:1.9rem;width:64px;height:64px}
@@ -608,13 +734,29 @@
 .d-salida{position:fixed;inset:0;z-index:200;display:grid;place-items:center;
   background:color-mix(in srgb,var(--brand-navy) 92%,transparent);padding:1.5rem}
 .d-salida[hidden]{display:none}
-.d-salida-card{background:#fff;border-radius:var(--r-lg);padding:2rem 2.2rem;
-  max-width:520px;text-align:center;box-shadow:0 24px 60px color-mix(in srgb,#000 35%,transparent)}
-.d-salida-ic{font-size:3rem;line-height:1;margin-bottom:.6rem}
-.d-salida-card h2{margin:0 0 .6rem;font-family:var(--font-title);font-weight:900;
-  color:var(--brand-navy);font-size:1.5rem}
-.d-salida-card p{margin:0 0 .7rem;color:var(--text-soft);line-height:1.5}
-.d-salida-card .btn{margin-top:.4rem}
+/* Rediseño v1.9.125 (§7.74), del canvas: tarjeta de 500px con la barra
+   azul arriba (el h2, puesto primero con `order`), un círculo verde con
+   el tilde en lugar del emoji, la nota de la evaluación en dorado y el
+   botón como pastilla con borde. Mismo marcado de siempre: los cursos
+   viejos cambian de aspecto sin tocar su HTML. */
+.d-salida-card{background:#fff;border-radius:30px;padding:0 0 26px;width:min(500px,100%);
+  display:flex;flex-direction:column;align-items:center;gap:14px;overflow:hidden;
+  text-align:center;box-shadow:0 24px 60px rgba(10,40,70,.35)}
+.d-salida-card > *{margin-inline:30px}
+.d-salida-card h2{order:-1;align-self:stretch;margin:0 0 8px;padding:0 22px;min-height:50px;
+  display:flex;align-items:center;text-align:left;
+  background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:#fff;
+  font-family:var(--font-title);font-weight:900;font-size:1.5rem;line-height:1}
+.d-salida-ic{width:74px;height:74px;flex:none;border-radius:50%;background:var(--success);
+  display:grid;place-items:center;font-size:0;line-height:0;margin-block:8px 4px}
+.d-salida-ic::before{content:"";width:38px;height:38px;background:#fff;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/contain no-repeat}
+.d-salida-card p{margin-block:0;color:#46506A;font-size:1rem;line-height:1.45}
+.d-salida-card [data-salida-volver]{margin-top:4px;padding:11px 28px;border-radius:999px;
+  border:2px solid var(--brand-soft);background:#fff;color:var(--brand);
+  font-family:var(--font-body);font-weight:700;font-size:.95rem;box-shadow:none;cursor:pointer}
+.d-salida-card [data-salida-volver]:hover{border-color:var(--brand);background:#F4F7FE}
 
 /* ============================================================
    15. BARRA DE PASOS NAVEGABLE DENTRO DE UN POP-UP  ·  .d-steps
@@ -764,18 +906,30 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
    video, un chequeo rápido). Usa los mismos verdes/rojos de acierto y
    error que `coto-quiz.css`.
    ============================================================ */
+/* Rediseño v1.9.125 (§7.74), del canvas: opciones como pastillas con su
+   número en un círculo (contador de CSS: sin marcado nuevo), la elegida
+   en verde o rojo, y la devolución en una tarjeta. Colores de estado del
+   kit (antes eran verdes y rojos sueltos, fuera de la paleta). */
 .d-pred{text-align:center}
-.d-pred-q{margin:0 0 1rem;font-weight:700;color:var(--brand-navy);line-height:1.4}
-.d-pred-opts{display:flex;flex-direction:column;gap:.5rem;margin-bottom:.9rem}
-.d-pred-opt{padding:.7rem .9rem;border-radius:var(--r-sm);border:2px solid var(--line); background:#fff;color:var(--brand-navy);font:inherit;font-weight:600;cursor:pointer; transition:border-color .15s,background .15s}
-.d-pred-opt:hover:not(:disabled){border-color:var(--cat);background:var(--cat-wash)}
-.d-pred-opt:focus-visible{outline:3px solid var(--cat-strong);outline-offset:2px}
+.d-pred-q{margin:0 0 1rem;font-weight:700;font-size:1.05rem;color:var(--brand-navy);line-height:1.4}
+.d-pred-opts{display:flex;flex-direction:column;gap:10px;margin-bottom:.9rem;counter-reset:pred}
+.d-pred-opt{counter-increment:pred;display:flex;align-items:center;gap:14px;padding:9px 16px 9px 9px;border-radius:999px;border:2px solid #D7DEEC;
+  background:#fff;color:var(--brand-navy);font:inherit;font-weight:500;text-align:left;cursor:pointer;transition:border-color .15s,background .15s}
+.d-pred-opt::before{content:counter(pred);flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  background:var(--brand-tint);color:var(--brand);font-family:var(--font-title);font-weight:900;font-size:1rem}
+.d-pred-opt:hover:not(:disabled){border-color:var(--brand-soft);background:#F4F7FE}
+.d-pred-opt:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
 .d-pred-opt:disabled{cursor:default}
-.d-pred-opt.is-ok{border-color:var(--ok,#2e7d32);background:color-mix(in srgb,#2e7d32 12%,#fff)}
-.d-pred-opt.is-no{border-color:var(--err,#c62828);background:color-mix(in srgb,#c62828 10%,#fff)}
-.d-pred-fb{margin:0 0 1rem;padding:.7rem .9rem;border-radius:var(--r-sm); font-size:.92rem;line-height:1.45;text-align:left}
-.d-pred-fb.is-ok{background:color-mix(in srgb,#2e7d32 12%,#fff);color:#1b5e20}
-.d-pred-fb.is-no{background:color-mix(in srgb,#c62828 10%,#fff);color:#8e1c1c}
+.d-pred-opt.is-ok{border-color:var(--success);background:#e7f6ee}
+.d-pred-opt.is-ok::before{content:"";background:var(--success) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cstyle%3Epath%7Bstroke-dasharray:24;stroke-dashoffset:24;animation:d .5s ease-out .05s forwards%7D@keyframes d%7Bto%7Bstroke-dashoffset:0%7D%7D@media (prefers-reduced-motion:reduce)%7Bpath%7Banimation:none;stroke-dashoffset:0%7D%7D%3C/style%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/58% no-repeat;color:#fff}  /* tilde que se dibuja (v1.9.125) */
+.d-pred-opt.is-no{border-color:var(--danger);background:#fdecec;animation:fx-sacude .45s ease both}  /* sacudida (v1.9.125; keyframe en coto-fx.css) */
+@media (prefers-reduced-motion:reduce){.d-pred-opt.is-no{animation:none}}
+.d-pred-opt.is-no::before{background:var(--danger);color:#fff}
+.d-pred-fb{margin:0 0 1rem;padding:12px 14px;border-radius:18px;border:2px solid #D7DEEC;background:var(--brand-tint);
+  font-size:.92rem;line-height:1.45;text-align:left;color:var(--brand-navy)}
+.d-pred-fb.is-ok{border-color:#9fd9bd;background:#e7f6ee}
+.d-pred-fb.is-no{border-color:#f0b3b3;background:#fff6f6}
+.d-pred [data-pred-continue]{border:0;border-radius:999px;padding:11px 22px;background:var(--success);color:#fff;font-weight:700;box-shadow:0 4px 0 var(--success-ink)}
 
 /* ============================================================
    21. GLOSARIO  ·  .d-glossary / .d-gloss
@@ -806,76 +960,102 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
 .d-gloss > div{padding:.06rem .2rem}
 .d-gloss dt{font-size:.66rem;font-weight:700;color:var(--cat-ink);font-family:var(--font-title);margin:0}
 .d-gloss dd{font-size:.61rem;line-height:1.22;color:var(--text);margin:0}
-.d-glossary-intro{margin:0 0 .2rem;font-size:.85rem;color:var(--text-soft)}
+/* Se sigue narrando (la voz filtra `hidden`, no el estilo), pero en
+   pantalla el rediseño v1.9.125 muestra "Descubriste N de M términos". */
+.d-glossary-intro{display:none}
 
 /* ---- Recursos descargables  ·  .d-recursos ----  kit-base v1.9.86
    Cajon lateral con los documentos oficiales del curso. Reusa el chasis
    del glosario (`.modal--drawer-right`, `.d-drawer-r`,
    `.d-glossary-intro`): es el mismo tipo de panel, material de consulta
    que se abre en cualquier momento. Lo unico propio es la ficha. */
-.d-recursos{ list-style:none; margin:.2rem 0 0; padding:0; display:grid; gap:.8rem; }
+.d-recursos{ list-style:none; margin:.2rem 0 0; padding:0; display:grid; gap:14px; }
+/* Rediseño v1.9.125 (§7.74), del canvas: la ficha con una MINIATURA de
+   documento (franja de color, renglones y la etiqueta del tipo), el
+   nombre en Faible, los datos y dos botones: ver en el curso (lleno) y
+   descargar (contorno). Colores del manual. Mismo marcado de siempre. */
 .d-recurso{
-  display:grid; grid-template-columns:auto 1fr; gap:.5rem .75rem;
-  padding:.9rem 1rem;
-  border:1px solid var(--line); border-radius:var(--r-lg,16px);
-  background:var(--surface,#fff); box-shadow:var(--shadow-card);
+  display:grid; grid-template-columns:66px 1fr; gap:.5rem 14px; align-items:center;
+  padding:14px; border:2px solid #D7DEEC; border-radius:22px; background:#F4F7FE;
 }
 .d-recurso-ic{
-  display:grid; place-items:center; width:2.4rem; height:2.4rem;
-  border-radius:12px; background:var(--cat-wash); color:var(--cat-ink);
+  position:relative; width:66px; height:84px; border-radius:10px; background:#fff; overflow:hidden;
+  box-shadow:0 4px 12px rgba(10,40,70,.14); align-self:start;
+  background-image:linear-gradient(var(--brand),var(--brand)),linear-gradient(#D7DEEC,#D7DEEC),linear-gradient(#D7DEEC,#D7DEEC),linear-gradient(#D7DEEC,#D7DEEC);
+  background-size:100% 22px,46px 5px,38px 5px,30px 5px;
+  background-position:0 0,10px 32px,10px 44px,10px 56px;
+  background-repeat:no-repeat;
 }
-.d-recurso-ic svg{ width:60%; height:60%; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
-.d-recurso-txt{ display:flex; flex-direction:column; gap:.2rem; min-width:0; }
-.d-recurso-txt b{ font-family:var(--font-title); font-size:.98rem; color:var(--text); }
-.d-recurso-sub{ font-size:.8rem; line-height:1.35; color:var(--text-soft); }
-.d-recurso-meta{ font-size:.72rem; font-weight:700; color:var(--cat-ink); letter-spacing:.02em; }
-/* Los botones van en una fila propia, a todo el ancho de la ficha: en un
-   cajon de ~380 px, dos botones al lado del texto lo dejan en 4 letras
-   por renglon. */
-.d-recurso-cta{ grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.2rem; }
-.d-recurso-cta .btn{ flex:1 1 8rem; justify-content:center; font-size:.82rem; padding:.5rem .8rem; }
-.d-recurso-cta a.btn{ text-decoration:none; display:inline-flex; align-items:center; gap:.35rem; }
+.d-recurso-ic svg{ display:none; }
+.d-recurso-ic::after{ content:attr(data-tipo); position:absolute; left:6px; bottom:6px; padding:1px 6px; border-radius:6px;
+  background:var(--brand); color:#fff; font-size:10px; font-weight:700; }
+.d-recurso-ic:not([data-tipo])::after{ content:"PDF"; }
+.d-recurso-txt{ display:flex; flex-direction:column; gap:.3rem; min-width:0; }
+.d-recurso-txt b{ font-family:var(--font-title); font-weight:900; font-size:1.0625rem; line-height:1.15; color:var(--brand); }
+.d-recurso-sub{ font-size:.8rem; line-height:1.35; color:#46506A; }
+.d-recurso-meta{ font-size:.78rem; font-weight:500; color:#6B7690; letter-spacing:0; }
+.d-recurso-cta{ grid-column:2; display:flex; flex-wrap:wrap; gap:8px; margin-top:0; }
+.d-recurso-cta .btn{ flex:none; justify-content:center; font-size:.8125rem; font-weight:700; padding:7px 16px; border-radius:999px; }
+.d-recurso-cta .d-recurso-ir{ background:var(--brand); color:#fff; border:0; }
+.d-recurso-cta a.btn{ text-decoration:none; display:inline-flex; align-items:center; gap:.35rem;
+  background:#fff; color:var(--brand); border:2px solid var(--brand-soft); padding:5px 14px; }
 .d-recurso-dlic{ width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; }
-/* "Ver en el curso" deshabilitado = la diapositiva todavia no se visito
-   (`initIndexJumps`, mismo criterio que el indice lateral). Se atenua y
-   se explica por su texto accesible; no desaparece, porque que el
-   recurso EXISTA es informacion util aunque todavia no se pueda ir. */
+/* El botón "Ver en el curso" se apaga (no se esconde) mientras el alumno no
+   llegó a esa diapositiva: es el mismo gate del índice. */
 .d-recurso-ir:disabled{ opacity:.45; cursor:default; }
+.d-recursos-cuenta{ margin:0 0 2px; font-size:.9375rem; font-weight:700; color:var(--brand-navy); }
 .d-recursos-pie{ margin:1rem 0 0; font-size:.78rem; line-height:1.4; color:var(--text-soft); }
-.d-glossary{margin:0;display:flex;flex-direction:column;gap:.9rem}
-/* `~` (hermano general), no `:not(:first-child)`: con initGlossarySearch
-   ocultando entradas por [hidden], el primer <dt> VISIBLE no siempre es
-   el primer <dt> del DOM — con :not(:first-child) le quedaba un borde
-   superior de más (el de un vecino oculto). Este selector solo aplica
-   el borde si existe al menos un <dt> visible ANTES en el DOM. */
-.d-glossary dt:not([hidden]) ~ dt:not([hidden]){border-top:1px solid var(--line);padding-top:.85rem}
-.d-glossary dt{font-family:var(--font-title);font-weight:900;color:var(--cat-ink);font-size:.95rem}
-.d-glossary dd{margin:.2rem 0 0;color:var(--text-soft);font-size:.88rem;line-height:1.45}
+/* ---- Rediseño v1.9.125 (§7.74): cada término es una tarjeta ----
+   El `<dt>` y su `<dd>` forman UNA tarjeta (arriba y abajo, mismo borde):
+   círculo con el ícono del glosario —azul abierto, gris bloqueado—, el
+   término en Faible y una pastilla de estado ("Consultado" en verde,
+   "Bloqueado" en gris). Sin marcado nuevo: un curso viejo lo gana al
+   actualizar el kit. */
+.d-glossary{margin:0;display:flex;flex-direction:column;gap:0}
+.d-glossary dt{position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-top:10px;padding:12px 14px 2px 66px;border:2px solid #D7DEEC;border-bottom:0;border-radius:20px 20px 0 0;
+  background:#F4F7FE;font-family:var(--font-title);font-weight:900;font-size:1.125rem;color:var(--brand)}
+.d-glossary dt:first-of-type{margin-top:0}
+.d-glossary dt[hidden] + dd{display:none}
+.d-glossary dd{position:relative;margin:0;padding:2px 14px 12px 66px;min-height:28px;border:2px solid #D7DEEC;border-top:0;
+  border-radius:0 0 20px 20px;background:#F4F7FE;color:#46506A;font-size:.84rem;line-height:1.4}
+.d-glossary dt::before{content:"";position:absolute;left:14px;top:12px;width:40px;height:40px;border-radius:50%;background:var(--brand)}
+.d-glossary dt::after{content:"";position:absolute;left:23px;top:21px;width:22px;height:22px;background:#fff;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z M5 19.5A1.5 1.5 0 0 0 6.5 21H19'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z M5 19.5A1.5 1.5 0 0 0 6.5 21H19'/%3E%3C/svg%3E") center/contain no-repeat}
+.d-glossary dt.is-locked,.d-glossary dt.is-locked + dd{background:#fff;color:var(--brand-soft)}
+.d-glossary dt.is-locked::before{background:#E9EEF8}
+.d-glossary dt.is-locked::after{background:var(--brand-soft)}
+.d-glossary dt.is-consultado,.d-glossary dt.is-consultado + dd{background:var(--brand-tint)}
+/* La pastilla de estado va en el botón del término (el `<dt>` usa sus dos
+   pseudos para el círculo y el ícono, y queda arriba del `<dd>` para que
+   el círculo no se corte). */
+.d-glossary dt{z-index:1}
+.d-glossary dt > .d-gloss-term-btn{flex:1;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.d-glossary dt > .d-gloss-term-btn::after{content:"";flex:none;font-family:var(--font-body);font-size:.6875rem;font-weight:700;
+  padding:3px 9px;border-radius:999px}
+.d-glossary dt.is-consultado > .d-gloss-term-btn::after{content:"Consultado";background:color-mix(in srgb,var(--success) 12%,#fff);color:var(--success-ink)}
+.d-glossary dt.is-locked > .d-gloss-term-btn::after{content:"Bloqueado";background:#E9EEF8;color:#6B7690}
 
 /* ---- Glosario interactivo (initGlossaryUnlock, coto-ui.js): click en
    el término navega a la diapositiva (vía data-goto, ya cableado por
-   el motor); candado + hint mientras esa diapositiva no se visitó. ---- */
-.d-glossary dt{display:flex;align-items:center;gap:.4rem}
+   el motor); el término bloqueado no navega y muestra su pista. ---- */
 .d-gloss-term-btn{
   font:inherit; color:inherit; background:none; border:0; padding:0;
   margin:0; cursor:pointer; text-align:left; border-radius:var(--r-sm);
 }
 .d-gloss-term-btn:hover{text-decoration:underline}
-.d-gloss-term-btn:focus-visible{outline:2px solid var(--cat-strong);outline-offset:2px}
-/* `link.disabled` (kit-base v1.9.42, bug real — ver el comentario en
-   initGlossaryUnlock) — mismo lenguaje visual que `.d-sidenav-item:
-   disabled` (§6.44 punto 2): cursor normal, sin el subrayado de hover
-   que sugeriría "esto hace algo". El candado + el color apagado del
-   `<dt>.is-locked` ya comunican "bloqueado"; esto solo saca la
-   afordancia de clickeable que un `<button>` trae por default. */
+.d-gloss-term-btn:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+/* `link.disabled` (kit-base v1.9.42): cursor normal, sin el subrayado de
+   hover que sugeriría "esto hace algo". */
 .d-gloss-term-btn:disabled{cursor:default}
 .d-gloss-term-btn:disabled:hover{text-decoration:none}
-.d-gloss-lock-ic{display:none; width:14px; height:14px; flex:none; color:var(--text-soft)}
-.d-glossary dt.is-locked .d-gloss-lock-ic{display:block}
-.d-glossary dt.is-locked .d-gloss-term-btn{color:var(--text-soft); font-weight:700}
+/* El candado del marcado ya no se dibuja: lo dice el círculo gris y la
+   pastilla "Bloqueado". */
+.d-gloss-lock-ic{display:none}
 .d-gloss-hint{display:none; font-style:italic; font-weight:600}
 .d-glossary dt.is-locked + dd .d-gloss-def{display:none}
 .d-glossary dt.is-locked + dd .d-gloss-hint{display:inline}
+.d-gloss-cuenta{margin:0 0 2px;font-size:.9375rem;font-weight:700;color:var(--brand-navy)}
 
 /* ---- Buscador del glosario (initGlossarySearch, coto-ui.js) ---- */
 .d-gloss-search{
@@ -883,13 +1063,13 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
 }
 .d-gloss-search input{
   width:100%; box-sizing:border-box;
-  padding:.6rem .9rem .6rem 2.3rem;
-  border:1px solid var(--line); border-radius:var(--r-pill);
-  background:var(--surface-2); color:var(--text);
+  min-height:46px; padding:.6rem .9rem .6rem 2.6rem;
+  border:2px solid #D7DEEC; border-radius:var(--r-pill);
+  background:#F4F7FE; color:var(--brand-navy);
   font-size:.9rem; font-family:inherit;
 }
 .d-gloss-search input:focus-visible{
-  outline:2px solid var(--cat-strong); outline-offset:1px;
+  outline:2px solid var(--brand); outline-offset:1px;
 }
 .d-gloss-search svg{
   position:absolute; left:.8rem; top:50%; translate:0 -50%;
@@ -937,60 +1117,62 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
    (--cat/--cat-strong/--cat-soft/--cat-grad): cambia de color de curso
    a curso solo con `data-cat` en el <body>, sin tocar nada de acá.
    ============================================================ */
-.d-instr-modal{position:relative;overflow:hidden;width:min(590px,56vw,100%)}  /* era min(620px,100%) — v1.9.82 */
-.d-instr-modal::before{content:"";position:absolute;
-  border-radius:50%;background:var(--cat-grad,var(--brand));opacity:.14;pointer-events:none}
-.d-instr-modal::before{width:220px;height:220px;top:-110px;right:-90px}
-/* BUG REAL (CLAUDE.md §6.36, y de nuevo esta vuelta): el círculo
-   decorativo de la esquina inferior izquierda pasó por 2 intentos y
-   ninguno se leyó como una esquina — alejado del borde (§6.36) quedaba
-   flotando a mitad del borde inferior, sin tocar ninguna esquina; y
-   pegado a la esquina (probado esta vuelta) el radio del círculo
-   (85px) es tan distinto al de la propia esquina redondeada de la
-   tarjeta (`--r-xl`, 32px) que las 2 curvas se cruzan en un "escalón"
-   feo en vez de fundirse en una sola curva. Un círculo flotante NUNCA
-   va a calzar perfecto contra una esquina de OTRO radio. Fix real: en
-   vez de superponer 2 formas con radios distintos, la esquina en sí
-   pasa a tener un radio grande — deja de ser "esquina redondeada +
-   círculo decorativo" y pasa a ser directamente "una esquina en punta
-   de medio círculo", que es lo que pedía el cliente. */
-.d-instr-modal{border-bottom-left-radius:70px}
-.d-instr-hd{position:relative;padding:1.4rem 1.7rem .3rem;text-align:center}  /* era 2/2.2/.4 — v1.9.82 */
-/* BUG REAL de kit (CLAUDE.md §6.60): esta píldora usaba
-   `background:var(--cat-soft); color:var(--on-cat)`. Los dos tokens
-   estaban mal elegidos: --on-cat es el color de contraste definido
-   contra --cat (el pleno), no contra --cat-soft (el Valor 5, mucho
-   más claro). En las 14 categorías donde --on-cat es blanco, eso
-   dejaba texto de 11,5px entre 1.69:1 y 3.57:1 — incluida
-   `no-alimentos`, la categoría de un curso ya entregado.
-   Pasa al par sólido que el resto del kit ya usa para lo mismo
-   (.btn-cat, .modal-hd--dark): fondo --cat-ink + blanco. Correcta en
-   las 23 y MÁS saturada que antes (4.85 a 14.41:1). */
-.d-instr-kicker{display:inline-flex;align-items:center;gap:.4rem;
-  background:var(--cat-ink);color:#fff;
-  font-size:.72rem;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
-  padding:.3rem .8rem;border-radius:var(--r-pill);margin-bottom:.7rem}
-.d-instr-hd h3{margin:0;font-family:var(--font-title);font-weight:900;
-  font-size:1.5rem;color:var(--brand-navy)}
-.d-instr-modal .modal-bd{position:relative;padding:1.3rem 2.2rem 2rem}
-.d-instr-cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem}  /* era .9rem — v1.9.82 */
-.d-instr-card{display:flex;gap:.65rem;align-items:flex-start;text-align:left;
-  background:var(--surface-2);border-radius:var(--r-lg);padding:.7rem .8rem}  /* era gap:.8rem, padding:.9rem 1rem — v1.9.82 */
-.d-instr-card-ic{flex:none;width:36px;height:36px;border-radius:var(--r);  /* era 42px — v1.9.82 */
-  background:var(--cat-grad,var(--brand));color:#fff;display:grid;place-items:center;
-  box-shadow:0 6px 14px color-mix(in srgb,var(--cat-strong) 35%,transparent)}
-.d-instr-card-ic svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;
-  stroke-linecap:round;stroke-linejoin:round}
-.d-instr-card b{display:block;font-size:.9rem;color:var(--cat-ink);margin-bottom:.15rem}
-.d-instr-card span{display:block;font-size:.8rem;line-height:1.35;color:var(--text-soft)}
-.d-instr-modal .d-instr-cta{background:linear-gradient(to top,var(--surface) 65%,transparent)}
-@media (max-width:640px){
-  .d-instr-hd{padding:1.6rem 1.4rem .3rem}
-  .d-instr-hd h3{font-size:1.25rem}
-  .d-instr-modal .modal-bd{padding:1rem 1.4rem 1.5rem}
-  .d-instr-cardgrid{grid-template-columns:1fr;gap:.6rem}
-  .d-instr-card{padding:.7rem .8rem}
+/* ---- v4: rediseño v1.9.125 (§7.74), del canvas ----
+   Barra azul de los paneles del kit (la regla está arriba, con las demás),
+   cuatro pasos con ícono sobre un camino punteado, la pastilla dorada de
+   los logros y el botón aparte, centrado. Dos arcos finos en la esquina,
+   como en el arte del diseñador. Colores del manual, no de la categoría.
+   (La v3 de acá —esquina de 70px, kicker, grilla 2x2 en --cat— quedó en
+   el historial: §6.36, §6.60.) */
+.d-instr-modal{position:relative;overflow:hidden;width:min(1000px,92vw);border-radius:32px}
+.d-instr-modal::before,.d-instr-modal::after{content:"";position:absolute;border-radius:50%;box-sizing:border-box;pointer-events:none}
+.d-instr-modal::before{right:-110px;bottom:-170px;width:360px;height:360px;border:2px solid #D7DEEC}
+.d-instr-modal::after{right:-60px;bottom:-120px;width:260px;height:260px;border:2px solid var(--brand-soft)}
+.d-instr-modal > .modal-hd{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:.75rem;min-height:50px;box-sizing:border-box;
+  padding:0 8px 0 22px;background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:#fff}
+.d-instr-modal > .modal-hd h3{margin:0;font-family:var(--font-title);font-weight:900;font-size:1.5rem;line-height:1;color:#fff}
+.d-instr-modal > .modal-hd .modal-x{position:static;order:2;flex:none;width:34px;height:34px;background:rgba(255,255,255,.2)}
+.d-instr-modal .modal-bd{position:relative;z-index:1;padding:30px 40px 30px;gap:0}
+.d-instr-pasos{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.d-instr-camino{position:absolute;left:0;top:18px;width:100%;height:120px;overflow:visible;pointer-events:none}
+.d-instr-camino path{fill:none;stroke:var(--brand-soft);stroke-width:5;stroke-dasharray:2 14;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.d-instr-paso{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+.d-instr-paso:nth-child(odd){padding-top:34px}   /* el 2º y el 4º paso (el svg es el 1º hijo) bajan, como el camino */
+.d-instr-paso-ic{width:84px;height:84px;border-radius:50%;background:var(--brand);display:grid;place-items:center;flex:none}
+.d-instr-paso-ic svg{width:40px;height:40px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.d-instr-paso b{margin-top:8px;font-family:var(--font-title);font-weight:900;font-size:1.3125rem;line-height:1.1;color:var(--brand)}
+.d-instr-paso > span:last-child{font-size:.875rem;line-height:1.45;color:#46506A;max-width:200px}
+.d-instr-logros{display:flex;align-items:center;justify-content:center;gap:12px;width:min(600px,100%);min-height:51px;box-sizing:border-box;
+  margin:26px auto 0;padding:0 20px 0 10px;border-radius:999px;background:#fff8e1;border:2px solid #ffd25e;
+  font-size:.9375rem;color:var(--warning-ink);text-align:center}
+.d-instr-logros-ic{width:34px;height:34px;flex:none;border-radius:50%;background:#ffd25e;display:grid;place-items:center}
+.d-instr-logros-ic svg{width:18px;height:18px;fill:none;stroke:var(--warning-ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.d-instr-modal .d-instr-cta{margin-top:18px;background:none;position:static}
+.d-instr-empezar{flex:none;padding:14px 30px;border-radius:999px;border:0;background:var(--brand);color:#fff;cursor:pointer;
+  font-family:var(--font-title);font-weight:900;font-size:1.1875rem;box-shadow:0 6px 0 var(--brand-deep);transition:transform .12s,box-shadow .12s}
+.d-instr-empezar:hover{filter:brightness(1.06)}
+.d-instr-empezar:active{transform:translateY(4px);box-shadow:0 2px 0 var(--brand-deep)}
+.d-instr-empezar:focus-visible{outline:3px solid var(--brand-deep);outline-offset:4px}
+/* Pantallas angostas o bajas: dos por fila, sin camino ni escalones. */
+@media (max-width:760px),(max-height:560px){
+  .d-instr-modal .modal-bd{padding:16px 20px 18px}
+  .d-instr-pasos{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .d-instr-camino{display:none}
+  .d-instr-modal::before,.d-instr-modal::after{display:none}
+  .d-instr-paso:nth-child(odd){padding-top:0}
+  .d-instr-paso-ic{width:52px;height:52px}
+  .d-instr-paso-ic svg{width:26px;height:26px}
+  .d-instr-paso b{margin-top:2px;font-size:1rem}
+  .d-instr-paso > span:last-child{font-size:.75rem;line-height:1.3}
+  .d-instr-logros{margin-top:12px;min-height:40px;font-size:.8rem}
+  .d-instr-logros-ic{width:26px;height:26px}
+  .d-instr-modal .d-instr-cta{margin-top:12px}
+  .d-instr-empezar{padding:10px 24px;font-size:1rem}
 }
+@media (max-width:560px){
+  .d-instr-pasos{grid-template-columns:1fr 1fr;row-gap:14px}
+}
+@media (prefers-reduced-motion:reduce){ .d-instr-empezar{transition:none} }
 
 /* ---- Subtítulo de sección dentro del glosario (kit v1.9.9) ----
    Un glosario que crece necesita agruparse (p.ej. "por número" +
@@ -1026,6 +1208,16 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
 
 /* Contador "Viste N de M secciones" del cajón del índice. */
 .d-sidenav-progress{ margin:0 0 .4rem; font-size:.82rem; font-weight:600; color:var(--text-soft); }
+/* Rediseño v1.9.125: el recuadro de resumen de arriba del índice (lo arma
+   `initIndexJumps` alrededor de la línea y los objetivos). */
+.d-ix-resumen{display:flex;align-items:center;gap:14px;margin:14px -8px 10px;padding:12px 14px;border-radius:20px;background:var(--brand-tint);flex:none}
+.d-ix-anillo{width:62px;height:62px;flex:none}
+.d-ix-anillo circle{fill:none;stroke:#D7DEEC;stroke-width:7}
+.d-ix-anillo circle.v{stroke:var(--brand);stroke-linecap:round;transition:stroke-dasharray .6s ease}
+.d-ix-anillo text{font:700 15px var(--font-body);fill:var(--brand)}
+.d-ix-resumen-txt{display:flex;flex-direction:column;gap:6px;min-width:0}
+.d-ix-resumen .d-sidenav-progress{margin:0;font-size:.9375rem;font-weight:700;color:var(--brand-navy)}
+.d-ix-resumen .d-obj-progress{margin:0}
 
 /* ---- Progreso por objetivo de aprendizaje  ·  .d-obj-progress ----
    kit-base v1.9.86. Va justo debajo de la linea de "N de M vistas" del
@@ -1043,14 +1235,15 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
      </div> */
 .d-obj-progress{ display:flex; align-items:center; gap:.35rem; margin:0 0 1rem; }
 .d-obj-pip{
-  display:grid; place-items:center;
-  width:1.5rem; height:1.5rem; border-radius:50%;
-  border:1.5px solid var(--line);
-  font-size:.68rem; font-weight:800; color:var(--text-soft);
+  display:grid; place-items:center; box-sizing:border-box;
+  width:26px; height:26px; border-radius:50%;
+  border:2px solid #D7DEEC;
+  font-size:.75rem; font-weight:700; color:#6B7690;
   transition:background .15s ease, border-color .15s ease, color .15s ease;
 }
-.d-obj-pip.is-done{ background:var(--cat); border-color:var(--cat); color:#fff; }
-.d-obj-progress-lbl{ font-size:.74rem; color:var(--text-soft); }
+/* Verde = completo (regla del rediseño v1.9.125), no el color de categoría. */
+.d-obj-pip.is-done{ background:var(--success); border-color:var(--success); color:#fff; }
+.d-obj-progress-lbl{ font-size:.8125rem; color:#46506A; }
 @media (prefers-reduced-motion: reduce){ .d-obj-pip{ transition:none; } }
 
 /* Aviso destacado de la pantalla de salida (típicamente: "la
@@ -1058,11 +1251,14 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
    recuadro parejo: lee como una nota al margen, no como una alerta de
    error — es información de proceso, no algo que salió mal. */
 .d-salida-eval{
-  padding:.7rem .9rem; border-radius:var(--r-sm);
-  border-left:4px solid var(--cat-strong);
-  background:var(--cat-wash); color:var(--cat-ink); font-size:.9rem;
-  text-align:left;
+  display:flex; gap:10px; align-items:center; align-self:stretch;
+  padding:10px 14px; border-radius:16px;
+  border:2px solid #ffd25e; background:#fff8e1; color:#8A5200;
+  font-size:.875rem; text-align:left;
 }
+.d-salida-card .d-salida-eval{color:#8A5200;font-size:.875rem}
+.d-salida-eval::before{content:"!"; flex:none; width:28px; height:28px; border-radius:50%;
+  background:#ffd25e; display:grid; place-items:center; font-weight:700; color:#8A5200}
 
 /* Pie pegajoso de los pop-ups largos (instructivo, reglas de un
    minijuego). El addendum ya traía SOLO el degradé de fondo dentro
