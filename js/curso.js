@@ -21,7 +21,7 @@
      6. CSS propio del curso en diapositivas.css (nunca en los .css
         del kit) + assets.css si hace falta
      7. imsmanifest.xml con la lista real de archivos
-     8. Antes de entregar: correr tools/tests/*.mjs (los 72, exit 0 en
+     8. Antes de entregar: correr tools/tests/*.mjs (los 75, exit 0 en
         todos) y tools/verify-hitboxes.mjs para inspección visual
    ============================================================ */
 (function () {
@@ -58,7 +58,7 @@
      repaso quedan vacías y no ocupan lugar en suspend_data. */
   /* `popups`, `videos`, `quiz` y `quizIntentos` (kit-base v1.9.133): lo
      que leen los gates de la receta y el resumen del cierre. */
-  var estado = { vistas: {}, repaso: {}, repasoMal: {}, popups: {}, videos: {}, quiz: null, quizIntentos: 0 };
+  var estado = { vistas: {}, repaso: {}, repasoMal: {}, popups: {}, videos: {}, zonas: {}, quiz: null, quizIntentos: 0 };
 
   /* ---------- Catálogo de logros (CONTENIDO del curso) ----------
      La única parte de los logros que es propia de cada curso: cuáles
@@ -91,6 +91,7 @@
     if (Object.keys(estado.repasoMal).length) guardar.rm = estado.repasoMal;   // { id: lo que eligió }
     if (Object.keys(estado.popups).length) guardar.pp = Object.keys(estado.popups);
     if (Object.keys(estado.videos).length) guardar.vv = Object.keys(estado.videos);
+    if (Object.keys(estado.zonas).length) guardar.zz = estado.zonas;   // { slide: { clave: true } }
     if (estado.quiz) { guardar.qz = estado.quiz; guardar.qi = estado.quizIntentos; }
     SCORM.saveState(Object.assign(guardar, Logros.serialize()));
   }
@@ -103,6 +104,7 @@
     if (s.rm && typeof s.rm === 'object') Object.keys(s.rm).forEach(function (id) { estado.repasoMal[id] = s.rm[id]; });
     (s.pp || []).forEach(function (id) { estado.popups[id] = true; });
     (s.vv || []).forEach(function (src) { estado.videos[src] = true; });
+    if (s.zz && typeof s.zz === 'object') estado.zonas = s.zz;
     if (s.qz) { estado.quiz = s.qz; estado.quizIntentos = s.qi || 1; }
     if (Logros) Logros.restore(s);
   }
@@ -228,6 +230,12 @@
     initBgVideos();
     initInlineCircleVideos(vistoOpts);
     var videoGate = initVideoGate(vistoOpts);
+    /* Zonas de `initHotspots` que hay que visitar: la diapositiva las pide
+       con `data-require-hits="<atributo de la zona>"` (v1.9.135). */
+    var zonasGate = initZonasGate({
+      seen: function (sl, k) { return !!(estado.zonas[sl] && estado.zonas[sl][k]); },
+      markSeen: function (sl, k) { (estado.zonas[sl] = estado.zonas[sl] || {})[k] = true; persistir(); }
+    });
 
     // Pestañas o estados de una lámina (`atributosShot` con `data-shot-swap`).
     initShotSwap();
@@ -323,6 +331,7 @@
        (mismo contrato `faltan(slideEl)`). */
     var gates = [
       { gate: popupGate, sel: function (id) { return '[data-popup-trigger="' + id + '"]'; }, uno: 'tarjeta', varias: 'tarjetas' },
+      { gate: zonasGate, sel: function (s) { return s; }, uno: 'zona', varias: 'zonas' },
       { gate: videoGate, sel: function (src) { return '[data-video="' + src + '"]'; },
         aviso: function () { return 'Mirá el video antes de seguir.'; } },
       { gate: repasoGate, sel: function () { return '.d-repaso'; },

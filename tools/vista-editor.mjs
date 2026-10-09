@@ -89,7 +89,10 @@ fs.writeFileSync(path.join(salida, 'pagina.html'), pagina);
 /* Lo que la página pide y el curso no trae (el curso de prueba del kit
    guarda solo sus archivos propios): de la capa del kit. */
 const faltan = [];
-for (const m of pagina.matchAll(/(?:href|src)="([^"#:?]+)"/g)) {
+/* Sin los comentarios HTML (v1.9.135, relevo SA K5): el ejemplo
+   comentado del panel de Recursos del boilerplate pide
+   "doc/(archivo).pdf" y salía como faltante. */
+for (const m of pagina.replace(/<!--[\s\S]*?-->/g, '').matchAll(/(?:href|src)="([^"#:?]+)"/g)) {
   const rel = m[1];
   if (archivos[rel] || rel.startsWith('/')) continue;
   if (fs.existsSync(path.join(KIT, rel)) && fs.statSync(path.join(KIT, rel)).isFile()) copiar(path.join(KIT, rel), rel);

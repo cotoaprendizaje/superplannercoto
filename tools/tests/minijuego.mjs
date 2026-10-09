@@ -25,6 +25,8 @@
      7. (kit-base v1.9.99) el repaso NO se abre encima de la última
         devolución hablada — el bug que reportó el cliente en
         "Seguridad alimentaria", y que el minijuego del kit también tenía.
+     9. (kit-base v1.9.135) perder nunca aprueba, aunque el curso pase
+        `aprobar` menor que el total: pasar es ganar.
 */
 import { openCourse, report, requireUrl } from './_shared.mjs';
 
@@ -81,11 +83,13 @@ if (!(await page.evaluate(() => typeof window.initMinijuego === 'function'))) {
       ],
       fb: { a: 'Sí, A.', b: 'Sí, B.', x: 'No, X.', y: 'No, Y.' },
       vidas: 2,
+      aprobar: 1,                       // v1.9.135: se ignora, pasar = ganar
       pistaMs: 0,                       // sin timers: el test no espera
       memoria,
       onAcierto: (o, primera) => log.aciertos.push(o.id + ':' + primera),
       onError: (o) => log.errores.push(o.id),
-      onFin: (res) => log.fin.push(res)
+      onFin: (res) => log.fin.push(res),
+      onEmpezar: () => { log.empezadas = (log.empezadas || 0) + 1; }
     });
 
     /* Todo se busca DENTRO de la sección inyectada (kit-base v1.9.105):
@@ -104,7 +108,7 @@ if (!(await page.evaluate(() => typeof window.initMinijuego === 'function'))) {
     btn('x').click();
     out.vidasTrasUnError = sec.querySelectorAll('[data-mj-lives] .d-mj-heart:not(.is-off)').length;
     btn('y').click();                   // segunda vida → termina
-    out.finPerdida = log.fin.length ? { gano: log.fin[0].gano, hallados: log.fin[0].hallados, total: log.fin[0].total } : null;
+    out.finPerdida = log.fin.length ? { gano: log.fin[0].gano, hallados: log.fin[0].hallados, total: log.fin[0].total, aprobado: log.fin[0].aprobado } : null;
     out.memoriaTrasPerder = Object.keys(memoria.errados || {}).sort();
 
     /* --- partida 2: se gana, y 'a' ya se había encontrado antes --- */
@@ -112,7 +116,7 @@ if (!(await page.evaluate(() => typeof window.initMinijuego === 'function'))) {
     out.remedyVisible = !sec.querySelector('[data-mj-remedy]').hidden;
     btn('a').click();
     btn('b').click();
-    out.finGanada = log.fin.length > 1 ? { gano: log.fin[1].gano, hallados: log.fin[1].hallados } : null;
+    out.finGanada = log.fin.length > 1 ? { gano: log.fin[1].gano, hallados: log.fin[1].hallados, aprobado: log.fin[1].aprobado } : null;
     out.memoriaTrasGanar = Object.keys(memoria.errados || {});
 
     /* --- 8 · ganado, volver NO lleva a la bienvenida (v1.9.123, §7.72) ---
@@ -151,6 +155,15 @@ if (!(await page.evaluate(() => typeof window.initMinijuego === 'function'))) {
   if (!r.finPerdida || r.finPerdida.gano !== false || r.finPerdida.hallados !== 1) {
     fails.push('quedarse sin vidas no terminó la partida con {gano:false, hallados:1}: ' + JSON.stringify(r.finPerdida));
   }
+  /* 9 · perder NUNCA aprueba (v1.9.135). "Seguridad alimentaria" pasaba
+     `aprobar: 4` de 6: quien perdía con 4 veía "Reintentar" y el
+     Siguiente igual se abría. El paso lo decide lo que dice la pantalla. */
+  if (r.finPerdida && r.finPerdida.aprobado !== false) {
+    fails.push('perder sin vidas devolvió `aprobado: true` (con `aprobar` menor que el total): la pantalla dice "Reintentar" ' +
+      'y el curso abre el Siguiente. Pasar es ganar (reporte del cliente en "Seguridad alimentaria").');
+  }
+  if (r.finGanada && r.finGanada.aprobado !== true) fails.push('ganar no devolvió `aprobado: true` en `onFin`.');
+  if (r.log.empezadas !== 2) fails.push(`\`onEmpezar\` tiene que llamarse al arrancar cada partida (2), se llamó ${r.log.empezadas || 0}.`);
   /* Al perder se guarda lo que hay que reforzar: las distracciones
      elegidas (x, y) MÁS el hallazgo que nunca apareció (b). */
   if (JSON.stringify(r.memoriaTrasPerder) !== JSON.stringify(['b', 'x', 'y'])) {

@@ -293,7 +293,8 @@
    -------------------------------------------------------------------- */
   function salirDelCurso(opts) {
     opts = opts || {};
-    if (global.Narrador) global.Narrador.cancel();
+    // Se va: callar sin depender de timers (v1.9.135, ver narrador.js).
+    if (global.Narrador) (global.Narrador.callarAlIrse || global.Narrador.cancel)();
     if (opts.onExit) opts.onExit();
     if (global.SCORM && global.SCORM.exitCourse) global.SCORM.exitCourse();
     var despedida = document.getElementById(opts.salidaId || 'd-salida');
@@ -378,12 +379,17 @@
     for (var i = 0; i < orden.length; i++) if (puntos >= orden[i].desde) return orden[i];
     return null;   // todavía no alcanzó ninguna
   }
-  function pintarMedalla(puntos, niveles) {
+  /* `completo` (def. true, v1.9.135): el resumen del cierre se pinta al
+     TERMINAR el curso, y terminar da bronce como mínimo (regla del
+     cliente, ver `fin` en coto-logros.js): si los puntos no llegan al
+     umbral más bajo, igual se muestra la medalla más baja. Solo quien
+     pinte la medalla ANTES del final pasa `false`. */
+  function pintarMedalla(puntos, niveles, completo) {
     var caja = document.querySelector('[data-medalla]');
     if (!caja || !niveles || !niveles.length) return;
     var orden = niveles.slice().sort(function (a, b) { return b.desde - a.desde; });
-    var m = medallaDe(puntos, niveles);
     var masBaja = orden[orden.length - 1];
+    var m = medallaDe(puntos, niveles) || (completo === false ? null : masBaja);
     caja.setAttribute('data-nivel', m ? m.id : 'ninguna');
     var ic = document.querySelector('[data-medalla-ic]');
     var nom = document.querySelector('[data-medalla-nombre]');
@@ -404,7 +410,7 @@
     if (nom) nom.textContent = (m || masBaja).nombre;
     if (sub) {
       var sig = null;
-      for (var i = orden.length - 1; i >= 0; i--) if (orden[i].desde > puntos) { sig = orden[i]; break; }
+      for (var i = orden.length - 1; i >= 0; i--) if (orden[i].desde > puntos && (!m || orden[i].desde > m.desde)) { sig = orden[i]; break; }
       /* ⚠️ "No queda medalla más arriba" NO es "sacaste el máximo"
          (kit-base v1.9.95). Acá se escribía *"N puntos · el máximo posible
          del curso"* con solo pasar el último umbral, y el cliente mandó la

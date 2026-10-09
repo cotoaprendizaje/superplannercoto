@@ -111,6 +111,11 @@
       if (cartel && opts.render) { opts.render(cartel, info.d, info.k); cartel.hidden = false; }
       if (hint) hint.hidden = true;
       if (opts.onSelect) opts.onSelect(info.k, info.d, z);
+      /* `cotozona` (v1.9.135): lo escucha `initZonasGate` (coto-ui.js),
+         el gate de `data-require-hits` que subió de "Seguridad
+         alimentaria" (relevo K14). */
+      var sl = z.closest && z.closest('[data-slide]');
+      document.dispatchEvent(new CustomEvent('cotozona', { detail: { slide: sl ? sl.getAttribute('data-slide') : null, clave: info.k, attr: opts.clave } }));
       /* Se narra SOLO lo que se acaba de revelar, nunca la diapositiva
          entera: la consigna fija ya se narró al entrar y repetirla en
          cada zona es justo lo que el cliente marcó como molesto

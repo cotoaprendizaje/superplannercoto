@@ -29,6 +29,9 @@
      - addFixes(pairs)        suma reemplazos fonéticos propios del curso
                                (pairs: [[RegExp, 'reemplazo'], ...])
      - cancel()                corta la narración actual
+     - callarAlIrse()          corta sin depender de timers (cancela, pausa
+                               y cancela) — para cuando la página se va
+                               (v1.9.135); el próximo speak la reanuda
      - isNarrating()           true si el narrador está activado (toggle)
      - setNarrating(bool)      prende/apaga, persiste en localStorage
      - pickVoice()             expuesto para el selector manual de voz
@@ -646,6 +649,10 @@
     };
     u.onerror = function () { if (gen === speakGen) hablarDesde(i + 1); }; // que un fragmento falle no debe colgar la cadena
     entregadas++;                    // ver `insistirCancel`
+    /* v1.9.135: `callarAlIrse()` deja el motor en pausa, y Chrome
+       conserva esa pausa en la pestaña: sin esto, volver a la pestaña
+       o abrir otro curso en la misma ventana quedaba MUDO. */
+    if (synth.paused) { try { synth.resume(); } catch (e) {} }
     synth.speak(u);
   }
 
@@ -852,10 +859,31 @@
      `visibilitychange` cubre la pestaña en segundo plano y el iframe
      escondido. Los dos son pasivos: si no hay nada hablando, `cancel()`
      no hace nada. */
+  /* v1.9.135 — y aun así seguía sonando "en algunas diapositivas"
+     (relevo de "Seguridad alimentaria", 2026-10-09). Por qué solo en
+     algunas: `cancel()` INSISTE con timers (60/180/400ms, ver
+     `insistirCancel`) porque Chrome a veces no obedece el primero —sobre
+     todo con las voces "Google", que se sintetizan en red—. Pero en
+     `pagehide` la página ya se está yendo y esos timers no corren nunca:
+     si el primer `cancel()` caía en la carrera, la voz quedaba sonando
+     sin dueño. Dos cambios:
+       · callar también en `beforeunload`, que llega al EMPEZAR a irse
+         (antes de que cargue la página siguiente): ahí la página todavía
+         vive y los reintentos sí llegan a correr;
+       · `callarAlIrse()` insiste SIN timers: cancela, pausa y vuelve a
+         cancelar en el mismo instante. La pausa queda puesta, y la
+         levanta el próximo `speak` (ver `hablarDesde`). */
+  function callarAlIrse() {
+    var synth = global.speechSynthesis; if (!synth) return;
+    cancel();
+    try { synth.pause(); } catch (e) {}
+    try { synth.cancel(); } catch (e) {}
+  }
   if (global.addEventListener) {
-    global.addEventListener('pagehide', function () { cancel(); });
+    global.addEventListener('beforeunload', callarAlIrse);
+    global.addEventListener('pagehide', callarAlIrse);
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'hidden') cancel();
+      if (document.visibilityState === 'hidden') callarAlIrse();
     });
   }
 
@@ -956,6 +984,7 @@
     try {
       var u = new global.SpeechSynthesisUtterance(' ');
       u.volume = 0;
+      if (synth.paused) synth.resume();
       synth.speak(u);
     } catch (e) {}
   }
@@ -1310,6 +1339,7 @@
     setNarrating: setNarrating,
     desbloquear: desbloquear,
     pickVoice: pickVoice,
+    callarAlIrse: callarAlIrse,
     setManualVoice: setManualVoice,
     setNarrateTitles: setNarrateTitles,
     setRateFactor: setRateFactor,

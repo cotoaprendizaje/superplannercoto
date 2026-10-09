@@ -82,6 +82,14 @@ const h = r1.html;
 const exige = (cond, msg) => { if (!cond) fallos.push(msg); };
 exige(/<span class="d-vol-title">Sonido:<\/span>/.test(h), 'el menú de Sonido no pasó a "Sonido:" (decía "Volumen")');
 exige(/<span class="d-narr-title">Locución:<\/span>/.test(h), 'el menú de Locución no pasó a "Locución:" (decía "Avance")');
+{
+  /* v1.9.135 (relevo SA K2): el panel de Locución viejo, sin estado ni ayuda. */
+  const narrViejo = '<div class="d-narr-pop">\n  <div class="d-narr-hd">\n    <span class="d-narr-title">Locución:</span>\n  </div>\n  <div class="d-narr-row"><input class="d-narr-range" id="d-narr-range" type="range"></div>\n  <div class="d-narr-times"><span id="d-narr-time">0:00</span><span id="d-narr-total">0:00</span></div>\n</div>';
+  const rn = migrarMarcado(narrViejo, KIT);
+  exige(/<\/div>\n  <p class="d-narr-estado" id="d-narr-estado"><\/p>\n  <div class="d-narr-row">/.test(rn.html), 'el panel de Locución viejo no ganó `#d-narr-estado` debajo de su cabecera.');
+  exige(/d-narr-total">0:00<\/span><\/div>\n  <p class="d-narr-hint">/.test(rn.html), 'el panel de Locución viejo no ganó la ayuda `.d-narr-hint` debajo de los tiempos.');
+  exige(migrarMarcado(rn.html, KIT).cambios.length === 0, 'migrar dos veces el panel de Locución vuelve a cambiar algo (tiene que ser idempotente).');
+}
 exige(migrarMarcado('<span class="d-vol-title">Volumen:</span><span class="d-narr-title">Avance:</span>', KIT).html === '<span class="d-vol-title">Sonido:</span><span class="d-narr-title">Locución:</span>', 'un curso de v1.9.125/126 ("Volumen:", "Avance:") no pasa a "Sonido:"/"Locución:"');
 exige(/<span class="d-fab-pop-title">Ajustes:<\/span>/.test(h), 'no cambió "Configuración" por "Ajustes:"');
 exige(/<span class="d-fab-pop-title">Ayuda:<\/span>/.test(h), 'no puso "Ayuda:"');

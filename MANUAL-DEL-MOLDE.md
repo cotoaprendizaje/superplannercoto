@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.134**.
+Vigente para **kit-base v1.9.135**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -275,6 +275,7 @@ repite en un segundo curso, sube al kit.
 | glosario con búsqueda y candado | `initGlossarySearch`, `initGlossaryUnlock` |
 | índice lateral con tilde y gate | `initIndexJumps` |
 | zonas tocables sobre el arte | `initHotspots` |
+| que haya que tocar TODAS las zonas para seguir | `data-require-hits="<atributo de la zona>"` + `initZonasGate` (la plantilla lo trae) |
 | cambiar la captura por variantes | `initShotSwap` |
 | revelar de a uno y que queden | `initRevelados` |
 | dos juegos de carteles sobre el mismo arte | `initTandas` |
@@ -305,6 +306,12 @@ repite en un segundo curso, sube al kit.
   un pop-up sin pasarle `goToRelated`.
 - **No escribir un listener de `slidechange` para narrar**: ya lo hace
   `initPlayer`, y quedarían dos (§7.17).
+- **Completar el curso da bronce, siempre** (regla del cliente, v1.9.135).
+  Con el plus (interacciones y logros) se llega a plata u oro. El kit lo
+  asegura solo: al llegar a la última diapositiva, `initLogros` y el
+  resumen del cierre suben a la medalla más baja si los puntos no
+  alcanzan, y nunca dicen "Todavía sin medalla" a quien terminó
+  (`bronce-al-completar`). Los puntos que se muestran son los reales.
 - **Los umbrales de la medalla se calculan**, no se eligen: bronce = el
   piso que garantiza el gate; oro = un % alto del máximo REAL. El máximo
   se mide con un recorrido, no sumando la tabla, y se descuenta lo que
@@ -336,9 +343,61 @@ repite en un segundo curso, sube al kit.
   `gamificacion` exige 2 + 3. Reintentar no suma (decisión del cliente).
   Las medallas, si el curso no las declara: plata = 85 % del máximo, oro =
   máximo + 40. `logros-kit` gana cada uno con el gesto real (§7.74, §7.76).
+- **Minijuego: pasar es GANAR** (v1.9.135). Lo que dice la pantalla final
+  ("Continuar" o "Reintentar") es lo que decide el "Siguiente".
+  `initMinijuego` ya no acepta `aprobar` menor que el total: con eso,
+  alguien que perdía con 4 de 6 veía "Reintentar" y el curso igual lo
+  dejaba avanzar.
 - **Un repaso o unos logros PROPIOS del curso no reciben lo nuevo del
   kit** (reintentar, los 5 logros, los efectos de logro): pasar a
   `initRepasoRapido` e `initLogros` del kit (§7.74).
+
+### Minijuegos tipo videojuego (en camino al kit)
+
+Hoy el kit tiene un minijuego, el "¿qué está mal?" (`initMinijuego`). Para
+los cursos que vienen hay un prototipo jugable de **4 minijuegos de
+videojuego** con el arte de "Hábitos saludables" (Servicio Médico):
+tocar a ritmo para llenar una barra, arrastrar comidas a una persona, una
+calculadora de IMC y alcohol en sangre, y atrapar lo que cae. Antes de que
+sea pieza del kit, las reglas ya están decididas:
+
+- **El juego vive DENTRO del curso y se ve como el curso.** Usa los
+  tokens del kit (marca y categoría), sus tipografías, sus pop-ups
+  (tarjeta blanca, barra azul con el título y la ✕, botón píldora) y la
+  tarjeta de logro de `coto-fx.css`. El arte manda en el escenario. Los
+  avisos no se dibujan: son los del kit.
+- **Pasar es ganar**, igual que en el "¿qué está mal?". El paso y los
+  puntos se los avisa al curso por eventos. El curso no lee adentro del
+  juego.
+- **Se juega con mouse, dedo o teclado.** Cada acción tiene su tecla:
+  barra espaciadora, Enter, flechas.
+- **El sonido arranca con el primer toque**, porque el navegador no deja
+  antes. Hay botones de música y efectos.
+- **Si el alumno cambia de pestaña, el juego con reloj se pausa.**
+- **Con "reducir movimiento" del sistema, no hay partículas ni sacudones.**
+- **Nada de datos personales**: si se piden altura o peso, quedan en el
+  navegador y se dice en pantalla.
+
+**Cómo pedirle el arte a diseño** (lo que hizo falta recortar a mano
+del PDF aplanado):
+
+1. **Un fondo limpio por pantalla**, sin los objetos que se mueven ni los
+   textos que cambian (puntos, tiempo, vidas), en la mesa de 2520×1260.
+2. **Cada objeto que se mueve, suelto**: PNG o SVG con transparencia,
+   exportado del tamaño de la mesa y en su lugar. El juego lo ubica con
+   esas mismas coordenadas, y no hace falta medir nada.
+3. **Los estados, por separado**: la persona normal y con panza, el
+   corazón lleno y vacío, la comida en color y en gris.
+4. **Los textos dinámicos, fuera del arte.** Si el diseño los muestra,
+   que sea con una tipografía del kit, para pintarlos encima igual.
+5. **Los pop-ups no se dibujan**: se usan los del kit. Solo hace falta el
+   texto.
+
+**Lo que sigue:** convertir el prototipo en un **motor de minijuegos** del
+kit. La idea es un marco común (marcador, sonido, efectos, pausa, logro,
+eventos al curso) y cada mecánica como un "cartucho" que se arma con datos:
+el arte y los textos cambian, el código no. El "¿qué está mal?" pasaría a
+ser un cartucho más.
 
 ---
 
@@ -454,6 +513,10 @@ repite en un segundo curso, sube al kit.
 - **El panel de Locución trae ▶/■** (`#d-narr-toggle`, en el header del
   kit desde v1.9.112). Un curso anterior lo gana agregando ese marcado a
   su index; sin él no pasa nada (§7.61).
+- **Al cerrar el curso, la voz se calla sola**, también con las voces
+  "Google", que a veces no obedecen el primer corte. El narrador corta
+  apenas la página empieza a irse y vuelve a cortar sin esperar. El curso
+  no tiene que hacer nada; `voz-al-cerrar` lo mide (§7.84).
 
 ---
 

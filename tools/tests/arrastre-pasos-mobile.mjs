@@ -72,6 +72,17 @@ const destino = barra.pasos - 1;
 
 await page.evaluate((id) => window.motor.gotoId(id), barra.slide);
 await page.waitForTimeout(500);
+/* Cerrar los festejos ANTES de tocar (v1.9.135, relevo SA K1): saltar a
+   la diapositiva puede pasar la mitad del curso y sacar el festejo del
+   logro "A mitad de camino", cuyo botón "Seguir con el curso" es lo único
+   de esa capa que recibe toques — y en iPhone apaisado cae justo sobre
+   un tramo. El toque iba al festejo y el test acusaba a la barra. Un
+   alumno real primero cierra el festejo: se cierra con cualquier tecla,
+   igual que el cartel de girar. */
+for (let k = 0; k < 3 && await page.$('.fx-logro'); k++) {
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(450);
+}
 console.log(`  · barra "${barra.nombre}" en "${barra.slide}", ${barra.pasos} pasos (táctil).`);
 
 const activo = () => page.evaluate((sel) => {

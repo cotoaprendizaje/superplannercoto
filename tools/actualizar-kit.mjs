@@ -44,8 +44,9 @@ const args = process.argv.slice(2);
 const destino = args.find((a) => !a.startsWith('--'));
 const APLICAR = args.includes('--aplicar');
 const FORZAR = args.includes('--forzar');
+const TODAS = args.includes('--todas');   // v1.9.135: listar TODAS las reglas que pisan al kit
 if (!destino) {
-  console.error('Uso: node tools/actualizar-kit.mjs <carpeta-del-curso> [--aplicar] [--forzar]');
+  console.error('Uso: node tools/actualizar-kit.mjs <carpeta-del-curso> [--aplicar] [--forzar] [--todas]');
   process.exit(2);
 }
 const CURSO = path.resolve(destino);
@@ -194,6 +195,44 @@ try {
         '\n  con sus opciones (`seen`, `markSeen`…) y borrar la copia; si la copia hace algo que el kit no, subirlo al kit.');
     }
   }
+  /* Un módulo del kit que el marco no carga (v1.9.135, relevo SA K3): el
+     aviso ⚠️ de arriba pide pasar a `initLogros`/`initMinijuego`, y el
+     curso que no los usaba tampoco cargaba `coto-logros.js` ni
+     `coto-minijuego.js`: arrancó con `ReferenceError: initLogros is not
+     defined` y el HUD muerto. Se cruza lo que llaman el curso y la
+     plantilla con los `<script>` del marco. */
+  {
+    const deArchivo = new Map();
+    for (const f of fs.readdirSync(path.join(KIT, 'js')).filter((x) => x.endsWith('.js') && x !== 'curso.js')) {
+      for (const m of fs.readFileSync(path.join(KIT, 'js', f), 'utf8').matchAll(/\bglobal\.(\w+)\s*=\s*\1\b/g)) if (!deArchivo.has(m[1])) deArchivo.set(m[1], 'js/' + f);
+    }
+    const marcoF = ['marco.html', 'index.html'].map((f) => path.join(CURSO, f)).find((f) => fs.existsSync(f));
+    if (marcoF) {
+      const cargados = new Set([...fs.readFileSync(marcoF, 'utf8').replace(/<!--[\s\S]*?-->/g, '').matchAll(/<script[^>]*\ssrc="([^"?#]+)/g)].map((m) => m[1]));
+      const propias = new Set([...codigo.matchAll(/\bfunction\s+(\w+)\s*\(/g)].map((m) => m[1]));
+      const llamadas = (txt) => new Set([...txt.replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '').matchAll(/(?<![\w.])(\w+)\s*\(/g)].map((m) => m[1]));
+      const delCurso = llamadas(codigo);
+      let plantilla = new Set(), txtPlantilla = '';
+      try { txtPlantilla = fs.readFileSync(path.join(KIT, 'js', 'curso.js'), 'utf8'); plantilla = llamadas(txtPlantilla); } catch (e) {}
+      /* Lo que se llama con guarda (`window.initMiniQuiz ? … : …`) no rompe
+         si el módulo falta: el curso sin práctica no tiene por qué cargarlo. */
+      const conGuarda = (n) => new RegExp('window\\.' + n + '\\b').test(codigo) || (!delCurso.has(n) && new RegExp('window\\.' + n + '\\b').test(txtPlantilla));
+      const faltan = new Map();
+      for (const n of new Set([...delCurso, ...plantilla])) {
+        const f = deArchivo.get(n);
+        if (!f || propias.has(n) || cargados.has(f) || conGuarda(n)) continue;
+        if (!faltan.has(f)) faltan.set(f, { usa: [], pide: [] });
+        (delCurso.has(n) ? faltan.get(f).usa : faltan.get(f).pide).push(n);
+      }
+      if (faltan.size) {
+        avisosMarcado.push(`${path.basename(marcoF)} no carga ${faltan.size === 1 ? 'un módulo' : faltan.size + ' módulos'} del kit que el curso usa o que la plantilla pide:` +
+          [...faltan].map(([f, x]) => `\n    · ${f} — ` + (x.usa.length ? 'el curso llama a ' + x.usa.map((n) => '`' + n + '`').join(', ') + (x.pide.length ? '; ' : '') : '') +
+            (x.pide.length ? 'la plantilla llama a ' + x.pide.map((n) => '`' + n + '`').join(', ') : '')).join('') +
+          `\n  Sumar su <script src="…"> al marco, antes de js/curso.js (en el orden de la plantilla). Sin eso, pasar a esas funciones` +
+          '\n  deja el curso con `ReferenceError` y el HUD muerto.');
+      }
+    }
+  }
   /* El aviso "Girá tu dispositivo" viejo, sin salida (v1.9.122, §7.71):
      el marcado de antes no tenía el botón `data-rotate-seguir`, y en un
      iPad vertical con el giro bloqueado el curso quedaba TAPADO. Es
@@ -253,26 +292,40 @@ try {
           const sel = ctx.pop();
           if (sel && !sel.startsWith('@') && tok.trim()) {
             const media = ctx.filter((c) => c.startsWith('@')).join(' ').replace(/\s+/g, ' ');
-            for (const x of sel.split(',')) { const n = x.trim().replace(/\s+/g, ' '); if (n && !/^(from|to|\d+%)$/.test(n)) out.push(media + '|' + n); }
+            /* La declaración, normalizada (v1.9.135, relevo SA K4): para
+               separar las reglas IDÉNTICAS a las del kit —un resto que se
+               borra sin cambiar nada— de las que de verdad lo cambian. */
+            const decl = tok.split(';').map((d) => d.trim().replace(/\s*:\s*/, ':').replace(/\s+/g, ' ')).filter(Boolean).sort().join(';');
+            for (const x of sel.split(',')) { const n = x.trim().replace(/\s+/g, ' '); if (n && !/^(from|to|\d+%)$/.test(n)) out.push({ k: media + '|' + n, decl }); }
           }
           tok = '';
         } else tok += ch;
       }
       return out;
     };
-    const delKit = new Set();
-    for (const f of fs.readdirSync(path.join(KIT, 'css')).filter((x) => x.endsWith('.css'))) reglas(fs.readFileSync(path.join(KIT, 'css', f), 'utf8')).forEach((r) => delKit.add(r));
-    const pisan = [];
+    const delKit = new Map();
+    for (const f of fs.readdirSync(path.join(KIT, 'css')).filter((x) => x.endsWith('.css'))) {
+      reglas(fs.readFileSync(path.join(KIT, 'css', f), 'utf8')).forEach((r) => { if (!delKit.has(r.k)) delKit.set(r.k, new Set()); delKit.get(r.k).add(r.decl); });
+    }
+    const pisan = [], iguales = [];
     const dirCss = path.join(CURSO, 'css');
     if (fs.existsSync(dirCss)) {
       for (const f of fs.readdirSync(dirCss).filter((x) => x.endsWith('.css') && !fs.existsSync(path.join(KIT, 'css', x)))) {
-        for (const r of new Set(reglas(fs.readFileSync(path.join(dirCss, f), 'utf8')))) if (delKit.has(r)) pisan.push(`css/${f}: ${r.replace(/^\|/, '')}`);
+        const vistas = new Set();
+        for (const r of reglas(fs.readFileSync(path.join(dirCss, f), 'utf8'))) {
+          if (!delKit.has(r.k) || vistas.has(r.k + '{' + r.decl)) continue;
+          vistas.add(r.k + '{' + r.decl);
+          (delKit.get(r.k).has(r.decl) ? iguales : pisan).push(`css/${f}: ${r.k.replace(/^\|/, '')}`);
+        }
       }
     }
-    if (pisan.length) {
-      avisosMarcado.push(`${pisan.length} regla(s) del CSS propio del curso redefinen piezas del kit y le ganan (cargan después):` +
-        pisan.slice(0, 8).map((x) => '\n    · ' + x).join('') + (pisan.length > 8 ? `\n    · … y ${pisan.length - 8} más` : '') +
-        '\n  Revisar cada una: si es un resto, sacarla; si es diseño que vale para todos los cursos, subirlo al kit (§7.79).');
+    if (pisan.length || iguales.length) {
+      const lista = (xs, n) => (TODAS ? xs : xs.slice(0, n)).map((x) => '\n    · ' + x).join('') +
+        (!TODAS && xs.length > n ? `\n    · … y ${xs.length - n} más (\`--todas\` las lista todas)` : '');
+      avisosMarcado.push(`${pisan.length + iguales.length} regla(s) del CSS propio del curso redefinen piezas del kit y le ganan (cargan después).` +
+        (iguales.length ? `\n  ${iguales.length} son IDÉNTICAS a la del kit, declaración por declaración: restos que se borran sin cambiar nada:` + lista(iguales, 5) : '') +
+        (pisan.length ? `\n  ${pisan.length} lo CAMBIAN:` + lista(pisan, 8) +
+          '\n  Revisar cada una: si es un resto, sacarla; si es diseño que vale para todos los cursos, subirlo al kit (§7.79).' : ''));
     }
   }
 } catch (e) {}
@@ -442,7 +495,15 @@ for (const f of [...reemplazar, ...plan.agregar]) {
   fs.copyFileSync(path.join(KIT, f), d);
 }
 for (const f of plan.quitar) fs.rmSync(path.join(CURSO, f));
-fs.writeFileSync(path.join(CURSO, 'kit-version.json'), JSON.stringify(registroDeVersion(KIT, CURSO), null, 2) + '\n');
+/* `partio` e `historial` (v1.9.135, relevo SA K17): el registro pasa a
+   decir la versión NUEVA, y `build-zip` encabezaba el relevo con "Kit del
+   que partió: v1.9.133" en un curso que había partido de v1.9.117. */
+{
+  const nuevo = registroDeVersion(KIT, CURSO);
+  nuevo.partio = (reg && reg.partio) || versionVieja || null;
+  nuevo.historial = [...((reg && reg.historial) || []), { de: versionVieja || null, a: nuevo.version, fecha: nuevo.actualizado }];
+  fs.writeFileSync(path.join(CURSO, 'kit-version.json'), JSON.stringify(nuevo, null, 2) + '\n');
+}
 
 /* El marcado (ver arriba), con su respaldo junto al de los archivos. */
 for (const m of migraciones) {

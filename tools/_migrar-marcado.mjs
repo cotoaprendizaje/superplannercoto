@@ -195,6 +195,38 @@ export function migrarMarcado(html, KIT) {
     cambios.push('Locución apagada: micrófono tachado');
   }
 
+  /* 4f · El paso "Sumás puntos" del instructivo (v1.9.135, relevo SA
+     K12): decía "Las prácticas dan puntos", y un curso sin mini práctica
+     (minijuego, repaso) también da puntos. Solo el texto del kit. */
+  const PRACT = 'Las prácticas dan puntos. Con un plus, ganás logros y mejor medalla.';
+  if (h.includes(PRACT)) {
+    h = h.split(PRACT).join('Las actividades dan puntos. Con un plus, ganás logros y mejor medalla.');
+    cambios.push('instructivo: "Las actividades dan puntos"');
+  }
+
+  /* 4e · Panel de Locución: el estado en palabras y la ayuda de la barra
+     (v1.9.135, relevo SA K2). Los cursos de antes no los tienen y
+     `initNarrateTimeline()` no tiene dónde decir "La locución está
+     apagada" ni "Esta diapositiva no tiene locución": el alumno ve una
+     barra gris y no sabe si está roto. Se suman en su lugar, sin tocar
+     el resto del panel. */
+  if (/class="d-narr-hd"/.test(h) && !/id="d-narr-estado"/.test(h)) {
+    const reHd = /([ \t]*)(<div class="d-narr-hd">[\s\S]*?<\/div>)/;
+    const mh = h.match(reHd);
+    if (mh) {
+      h = h.replace(reHd, `${mh[1]}${mh[2]}\n${mh[1]}<p class="d-narr-estado" id="d-narr-estado"></p>`);
+      cambios.push('Locución: estado en palabras (`#d-narr-estado`)');
+    }
+  }
+  if (/class="d-narr-times"/.test(h) && !/class="d-narr-hint"/.test(h)) {
+    const reT = /([ \t]*)(<div class="d-narr-times">[\s\S]*?<\/div>)/;
+    const mt = h.match(reT);
+    if (mt) {
+      h = h.replace(reT, `${mt[1]}${mt[2]}\n${mt[1]}<p class="d-narr-hint">Arrastrá para adelantar o volver atrás.</p>`);
+      cambios.push('Locución: ayuda de la barra (`.d-narr-hint`)');
+    }
+  }
+
   /* 5 · `#i-play`: lo usaba solo el botón del instructivo v3. Sin uso,
      sale del sprite (lo marca `iconos-indice`). */
   if (!/(?:href|xlink:href)="#i-play"/.test(h)) {

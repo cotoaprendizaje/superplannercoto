@@ -996,6 +996,52 @@
     };
   }
 
+  /* ---- initZonasGate · zonas de `initHotspots` que hay que visitar ----
+     kit-base v1.9.135, subido de "Seguridad alimentaria" (relevo K14).
+     Pedido del cliente allá: *"me deja avanzar sin tocar los 3 botones
+     que componen cada diapositiva"*. Es el contrato de
+     `data-require-popups`, pero para las zonas de `initHotspots`, que no
+     abren pop-up: muestran su ficha en un cartel de la diapositiva.
+
+       <section data-slide="x" data-require-hits="data-temp-rango"> …
+         <button data-temp-rango="frio">  <button data-temp-rango="calor"> …
+
+     El atributo dice CUÁL es la clave, y el gate exige todas las zonas
+     de la diapositiva con esa clave: si mañana el diseñador suma una
+     cuarta zona, no hay una lista escrita a mano que se desincronice.
+     Marca solo, con el evento `cotozona` de coto-hotspots.js.
+       opts.seen(slide, clave) / opts.markSeen(slide, clave) — el estado
+       del curso (va al suspend_data); sin ellos, en memoria. */
+  function initZonasGate(opts) {
+    opts = opts || {};
+    var vistas = {};
+    var seen = opts.seen || function (sl, k) { return !!(vistas[sl] && vistas[sl][k]); };
+    var mark = opts.markSeen || function (sl, k) { (vistas[sl] = vistas[sl] || {})[k] = true; };
+    document.addEventListener('cotozona', function (e) {
+      var d = e.detail || {};
+      if (!d.slide || d.clave == null || seen(d.slide, d.clave)) return;
+      mark(d.slide, String(d.clave));
+      if (opts.onChange) opts.onChange(d.slide, d.clave);
+      if (global.motor && global.motor.refrescarGate) global.motor.refrescarGate();
+    });
+    return {
+      /* Devuelve SELECTORES (`[data-temp-rango="frio"]`): el atributo
+         cambia por diapositiva, y así `initGateHints` pulsa la zona con
+         `sel: function (x) { return x; }`. */
+      faltan: function (slideEl) {
+        var attr = slideEl && slideEl.getAttribute && slideEl.getAttribute('data-require-hits');
+        if (!attr) return [];
+        var sl = slideEl.getAttribute('data-slide'), out = [];
+        Array.prototype.forEach.call(slideEl.querySelectorAll('[' + attr + ']'), function (z) {
+          var k = z.getAttribute(attr);
+          var s = '[' + attr + '="' + k + '"]';
+          if (!seen(sl, k) && out.indexOf(s) < 0) out.push(s);
+        });
+        return out;
+      }
+    };
+  }
+
   /* Feedback al intentar avanzar con el gate puesto. Escucha
      `advanceblocked` (lo emite el motor) y hace las 3 cosas que los
      cursos hacían a mano:
@@ -1775,6 +1821,7 @@
   }
   global.initEntradaGenerica = initEntradaGenerica;
   global.initPopupGate = initPopupGate;
+  global.initZonasGate = initZonasGate;
   global.initGateHints = initGateHints;
   global.initGlossarySearch = initGlossarySearch;
   global.initGlossaryUnlock = initGlossaryUnlock;

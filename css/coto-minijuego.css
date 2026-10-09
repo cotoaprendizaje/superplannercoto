@@ -353,8 +353,10 @@
 .d-mj-rules-ic{ width:1.5rem; height:1.5rem; margin:0 auto; filter:drop-shadow(0 1px 1px rgba(20,60,140,.25)); }
 .d-mj-rules-ic svg{ width:100%; height:100%; color:#2e4b96; }
 
-/* Corazones "pixel art" (SVG desde curso.js), no el glifo ❤ liso:
-   el arte del PDF los dibuja 8-bit. `is-off` apaga al marrón oscuro
+/* Corazones: los arma `hud()` de coto-minijuego.js (v1.9.135, relevo SA
+   K8: este comentario decía "pixel art, SVG desde curso.js", que era el
+   del curso de origen). Un curso que quiera los 8-bit de su arte los pinta
+   con su propio SVG adentro de `.d-mj-heart`. `is-off` apaga al marrón oscuro
    del propio arte, así se sigue viendo cuántas vidas había en total. */
 .d-mj-lives{ display:flex; gap:.2rem; justify-content:center; }
 .d-mj-heart{ width:1.3rem; height:1.15rem; color:#ec7a3e; }

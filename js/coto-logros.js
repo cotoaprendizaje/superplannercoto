@@ -168,6 +168,19 @@
        actual, gl = términos consultados (por posición), pi = la primera
        práctica o el primer minijuego ya terminados. */
     var lg = { pr: [], pm: 0, rs: 0, gl: [], pi: 0, ex: [] };
+    /* ---- Completar el curso da bronce, como mínimo (v1.9.135) ----
+       Regla del cliente: *"con llegar al final del curso el mínimo debería
+       ser medalla de bronce; con el plus en interacciones y logros se
+       llega a plata u oro, pero la base, siempre que se completa el
+       curso, es bronce"*. En "Seguridad alimentaria" el cierre decía
+       "Todavía sin medalla": su bronce arrancaba en un piso calculado a
+       mano (260) que un recorrido real no siempre juntaba. Ningún umbral
+       puede volver a dejar sin medalla a quien terminó: `fin` se prende
+       al llegar a la última diapositiva (o con `completar()`), viaja en
+       el estado (`lgf`) y sube la medalla más baja si los puntos no
+       alcanzan. Los puntos no se tocan: se muestran los reales. */
+    var fin = false;
+    function piso(ms, m) { return m || (fin && ms && ms.length ? ms[0] : null); }
     var tiene = {};
     BADGES.forEach(function (b) { if (b.generico) tiene[b.id] = true; });
     var hayGenericos = Object.keys(tiene).length > 0;
@@ -185,8 +198,13 @@
     function deLosDatos() {
       try { var d = global.datosDelCurso && global.datosDelCurso('medallas', null); return d && d.length ? d : null; } catch (e) { return null; }
     }
+    /* `medallas` también puede ser una FUNCIÓN (v1.9.135, relevo de
+       "Seguridad alimentaria" K9): ahí los umbrales dependen de si el
+       video existe, y el curso reasignaba `opts.medallas` antes de cada
+       premio, apoyándose en que el kit lo relee (no era contrato). */
     function medallas() {
-      var m = opts.medallas && opts.medallas.length ? opts.medallas : (deLosDatos() || medallasPorDefecto(maximoDeclarado()));
+      var om = typeof opts.medallas === 'function' ? opts.medallas() : opts.medallas;
+      var m = om && om.length ? om : (deLosDatos() || medallasPorDefecto(maximoDeclarado()));
       return m ? m.slice().sort(function (a, b) { return a.desde - b.desde; }) : null;
     }
 
@@ -330,13 +348,17 @@
       }
       var tope = Math.max((maximoDeclarado() || ms[ms.length - 1].desde) + bonoTotal(), puntos, 1);
       var m = null, sig = null;
-      ms.forEach(function (x) { if (puntos >= x.desde) m = x; else if (!sig) sig = x; });
+      ms.forEach(function (x) { if (puntos >= x.desde) m = x; });
+      m = piso(ms, m);
+      ms.forEach(function (x) { if (!sig && x.desde > puntos && (!m || x.desde > m.desde)) sig = x; });
       var id = m ? m.id : 'ninguna';
       box.setAttribute('data-nivel', id);
       box.style.setProperty('--lg-medalla', COLOR_MEDALLA[id] || '#E9EEF8');
       box.style.setProperty('--lg-medalla-tinta', TINTA_MEDALLA[id] || '#6B7690');
       var cap = function (t) { return t ? t.charAt(0).toUpperCase() + t.slice(1) : ''; };
-      box.querySelector('[data-lg-nombre]').textContent = m ? cap(m.nombre) : 'Todavía sin medalla';
+      /* "Sin medalla", corto: "Todavía sin medalla" partía el título en
+         dos renglones y agrandaba la caja (relevo SA K10). */
+      box.querySelector('[data-lg-nombre]').textContent = m ? cap(m.nombre) : 'Sin medalla';
       box.querySelector('[data-lg-falta]').textContent = sig
         ? 'Te faltan ' + (sig.desde - puntos) + ' puntos para ' + cap(sig.nombre) + '.'
         : '¡Llegaste al oro! Excelente recorrido.';
@@ -366,6 +388,7 @@
     function nivelMedalla() {
       var ms = medallas(), id = null;
       if (ms) ms.forEach(function (x) { if (puntos >= x.desde) id = x.id; });
+      if (!id && fin && ms && ms.length) id = ms[0].id;
       return id;
     }
     function avisarMedalla(antes) {
@@ -376,6 +399,22 @@
         document.dispatchEvent(new CustomEvent('medallasube', { detail: { de: antes, a: ahora, nombre: nom } }));
       }
     }
+
+    function completar() {
+      if (fin) return;
+      var antes = nivelMedalla();
+      fin = true;
+      updateHud();   // la medalla del panel se repinta desde acá, no desde render()
+      render();
+      avisarMedalla(antes);
+      if (opts.onChange) opts.onChange();
+    }
+    document.addEventListener('slidechange', function () {
+      var m = global.motor;
+      if (!m || !m.slides || !m.current) return;
+      var n = m.slides.length;
+      if (n > 1 && m.slides.indexOf(m.current()) === n - 1) completar();
+    });
 
     function award(n, motivo) {
       var antes = nivelMedalla();
@@ -498,6 +537,10 @@
 
     function serialize() {
       var s = { p: puntos, b: Object.keys(obtenidos) };
+      /* `lgf`, no `f`: el suspend_data es UNO para el kit y el curso, y
+         cardio ya usaba `f` (sus factores explorados): al recargar los
+         perdía y los volvía a pagar (lo agarró `puntaje-maximo`). */
+      if (fin) s.lgf = 1;
       if (hayGenericos && (lg.pr.length || lg.pm || lg.rs || lg.gl.length || lg.pi || lg.ex.length)) s.lg = lg;
       return s;
     }
@@ -507,6 +550,7 @@
     function restore(s) {
       if (!s) return;
       puntos = s.p || 0;
+      fin = !!s.lgf;
       /* ⚠️ VALIDA CONTRA EL CATÁLOGO, igual que `unlock()` (kit-base
          v1.9.95): un id de un build anterior servido desde la misma ruta
          inflaba el chip ("7/6 logros", reportado por el cliente). Un logro
@@ -547,6 +591,9 @@
       catalogo: function () { return BADGES.slice(); },
       medallas: medallas,
       practicaHecha: function () { return !!lg.pi; },
+      completar: completar,
+      completo: function () { return fin; },
+      medalla: function () { var id = nivelMedalla(), r = null; (medallas() || []).forEach(function (x) { if (x.id === id) r = x; }); return r; },
       render: render,
       updateHud: updateHud,
       serialize: serialize,

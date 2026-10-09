@@ -16617,3 +16617,117 @@ Tests: `check-pdf-laminas` (test:kit; arma un PDF de 8 páginas, corre la
 herramienta y exige proporciones, la ficha aparte, el orden de la receta,
 los íconos y las preguntas; con la página estirada a 2:1 da 4 fallos) y
 `check-receta` exige el plan (5 fallos con el actualizador anterior).
+
+## 7.84 Relevo de "Seguridad alimentaria": pasar es ganar, bronce al completar y la voz que seguía (kit-base v1.9.135)
+
+Del relevo del curso (2026-10-09, 17 puntos) y de lo que el cliente vio
+probándolo. Los tres reportes del cliente se reprodujeron sobre el curso
+reconstruido (zip publicado + kit v1.9.133 + sus archivos propios).
+
+**El minijuego perdido abría el "Siguiente".** El curso pasaba
+`aprobar: 4` de 6. Quien perdía con 4 hallazgos veía "Reintentar" y el
+gate se abría igual, porque `onFin` daba `aprobado: hallados >= APROBAR`.
+Medido: 0 aciertos → cerrado, 4 → abierto, 6 → abierto. Ahora
+`aprobado === gano`: lo que dice el panel final decide el paso.
+`opts.aprobar` menor que el total se ignora y avisa en consola. El
+`minijuego` suma `aprobar: 1` a su partida perdida y exige
+`aprobado: false` (rojo con el código anterior). También del relevo
+(K8): `opts.onEmpezar()` al arrancar cada partida (el curso escuchaba
+los clics en captura para volver a 0 su marcador), el subtítulo del
+repaso "qué estaba mal en la imagen" y el comentario de los corazones
+de `coto-minijuego.css`, que hablaba del curso de origen.
+
+**"En algunas diapos, al cerrar el curso la locución seguía".** En
+headless no se reproduce: con un motor falso, las 26 diapositivas se
+callan en `pagehide`. Por qué solo "algunas": `cancel()` INSISTE con
+timers (60/180/400 ms) porque Chrome a veces no obedece el primero
+(frecuente con las voces "Google", que el kit prefiere y que se
+sintetizan en red). Al irse la página esos timers no corren. Si el
+primer corte caía en la carrera, la voz quedaba sin dueño. Dos cambios
+en `narrador.js`:
+- calla también en `beforeunload`, que llega al empezar a irse, con la
+  página viva y los reintentos todavía corriendo;
+- `callarAlIrse()` insiste sin timers (cancela, pausa y vuelve a
+  cancelar), en `beforeunload`, `pagehide`, en `visibilitychange` cuando
+  la pestaña queda oculta, y en `salirDelCurso`.
+
+La pausa que queda la levanta el próximo `speak`, y también
+`desbloquear()`: Chrome la conserva en la pestaña, y sin eso el curso
+siguiente quedaba mudo. `voz-al-cerrar` usa un motor TERCO (ignora el
+primer `cancel()`) y mira en el mismo instante del evento: 2 fallos con
+el narrador anterior. `locucion-control`, `una-sola-voz`,
+`locucion-segundos`, `audio-estado` y `volumen-locucion` siguen en verde
+sobre el curso.
+
+**Completar el curso da bronce, como mínimo.** Regla del cliente:
+*"con llegar al final del curso el mínimo debería ser medalla de bronce;
+con el plus llego a plata u oro"*. El cierre del curso decía "Todavía
+sin medalla": su bronce arrancaba en un piso calculado a mano (260) que
+un recorrido real no siempre juntaba. Ahora:
+- `initLogros` prende `fin` al llegar a la última diapositiva (o con
+  `completar()`). Viaja en el estado (`lgf`; `f` chocaba con una clave de cardio), sube la medalla más baja si
+  los puntos no alcanzan y avisa `medallasube` para el festejo.
+- `pintarMedalla(puntos, niveles, completo)` (def. `true`: el resumen se
+  pinta al terminar) hace lo mismo. "Te faltaron N" cuenta para la
+  medalla de ARRIBA, no para el bronce que ya tiene.
+- Los puntos que se muestran son los reales.
+
+API nueva: `Logros.completar()`, `completo()` y `medalla()`.
+`opts.medallas` puede ser una función (K9: los umbrales de ese curso
+dependen de si el video existe). El panel dice "Sin medalla", corto
+(K10). `bronce-al-completar` (umbrales inalcanzables a propósito) da 8
+fallos con el kit anterior.
+
+**Gate de zonas (K14).** `initZonasGate` (coto-ui.js) subió del
+`initGates()` del curso. `data-require-hits="<atributo>"` en la
+diapositiva exige todas las zonas de `initHotspots` con esa clave.
+Marca solo con el evento nuevo `cotozona` de coto-hotspots.js, y
+`faltan()` devuelve selectores para que `initGateHints` pulse la zona.
+La plantilla lo cablea, con el estado en `zz`. Test: `zonas-gate`.
+
+**Herramientas:**
+- `actualizar-kit` avisa los módulos del kit que el curso usa (o que la
+  plantilla pide sin guarda) y el marco no carga (K3: `ReferenceError:
+  initLogros is not defined`).
+- Separa las reglas CSS que pisan al kit en IDÉNTICAS (restos que se
+  borran sin cambiar nada) y las que lo cambian, y con `--todas` lista
+  todas (K4).
+- Guarda `partio` e `historial` en `kit-version.json`, y `build-zip`
+  encabeza el relevo con "partió de vX y está actualizado a vY" (K17;
+  sin historial, lo saca del respaldo `.kit-anterior/`).
+- La migración del marcado suma al panel de Locución `#d-narr-estado` y
+  `.d-narr-hint` (K2).
+- El paso del instructivo dice "Las actividades dan puntos" (K12; un
+  curso sin mini práctica también da puntos).
+- `vista-editor` no cuenta lo que está en un comentario HTML (K5:
+  "doc/(archivo).pdf" del ejemplo de Recursos).
+- `arrastre-pasos-mobile` cierra los festejos de logro antes de tocar
+  (K1: el botón "Seguir con el curso" del logro "A mitad de camino" caía
+  sobre el tramo en iPhone apaisado; rojo con el test anterior sobre el
+  curso, verde ahora).
+
+**Quedan del lado del curso o como decisión:**
+- K6, K7 y K13: el arte y las medidas del curso.
+- K11: perder los logros viejos al pasar a los del kit, a confirmar con
+  el cliente.
+- K15: el `aria-label` del buscador del glosario del kit ya equivale a
+  su `<label>`.
+- K16: los tests propios van en el relevo.
+- K2, la parte de `modal-hd--dark`: el boilerplate del kit usa la
+  cabecera clara en Glosario y Mis logros. La oscura era de cardio.
+
+**Minijuegos tipo videojuego.** El MANUAL (§4) suma sus reglas:
+- se ven como el curso: tokens, pop-ups y tarjeta de logro del kit;
+- pasar es ganar;
+- se juegan con mouse, dedo y teclado;
+- el sonido arranca con el primer toque;
+- la pausa al ocultar la pestaña;
+- respetan "reducir movimiento";
+- no guardan datos personales.
+
+También suma la guía para pedirle el arte a diseño (fondos limpios,
+objetos sueltos con transparencia en su lugar de la mesa, estados por
+separado, textos dinámicos fuera del arte, los pop-ups no se dibujan) y
+el camino al motor de minijuegos: un marco común y cartuchos por datos.
+El prototipo de "Hábitos saludables" ya usa los pop-ups del kit (pedido
+del cliente en el artefacto).

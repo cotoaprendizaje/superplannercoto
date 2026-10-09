@@ -338,14 +338,32 @@ def armar_relevo(raiz, salida, texto):
             reg = json.load(fh)
         version = reg.get('version') or reg.get('kit') or '?'
         del_kit = set((reg.get('archivos') or {}).keys())
+        historial = reg.get('historial') or []
     except Exception:
-        pass
+        historial = []
+    # v1.9.135 (relevo SA K17): `kit-version.json` dice la versión NUEVA
+    # después de `actualizar-kit`; de qué versión se partió sale del
+    # historial, o del respaldo `.kit-anterior/<fecha>-v<versión>/`.
+    partio = None
+    if historial:
+        partio = historial[0].get('de')
+    else:
+        try:
+            respaldos = sorted(os.listdir(os.path.join(raiz, '.kit-anterior')))
+            if respaldos:
+                partio = respaldos[0].split('-v', 1)[1] if '-v' in respaldos[0] else None
+        except Exception:
+            pass
+    if partio and partio != version and partio != 'desconocida':
+        linea_kit = '- Kit: partió de v%s y está actualizado a v%s (`kit-version.json`, adentro).\n' % (partio, version)
+    else:
+        linea_kit = '- Kit del que partió: v%s (`kit-version.json`, adentro).\n' % version
     encabezado = ('# Relevo al kit — "%s", %s\n\n'
-                  '- Kit del que partió: v%s (`kit-version.json`, adentro).\n'
+                  '%s'
                   '- Zip del curso que acompaña: `%s`.\n'
                   '- Adentro: este relevo, la salida de `revisar-curso` y de `check-comentarios-funciones`,\n'
                   '  y los archivos PROPIOS del curso (para portar por partes, nunca para copiar encima).\n\n'
-                  % (nombre, hoy, version, os.path.basename(salida)))
+                  % (nombre, hoy, linea_kit, os.path.basename(salida)))
     propios = []
     for base in ('js', 'css', 'tools'):
         d = os.path.join(raiz, base)

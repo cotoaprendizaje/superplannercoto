@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.134 · Área Aprendizaje (COTO)
+kit-base v1.9.135 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 72 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 75 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -97,6 +97,19 @@ legible o en capa).
 En v1.9.134, `tools/check-pdf-laminas.mjs` en `test:kit` (el PDF pasa a
 láminas a su proporción real, la ficha aparte y el recorrido de la receta
 armado) y `check-receta` exige el "Plan para este curso" de `actualizar-kit`.
+En v1.9.135, del relevo de "Seguridad alimentaria", salieron tres:
+- `voz-al-cerrar.mjs`: un motor de voz terco, que ignora el primer
+  `cancel()` como Chrome en la carrera. El test exige callar en
+  `beforeunload` y en el mismo instante de `pagehide`, y que lo siguiente
+  vuelva a sonar.
+- `bronce-al-completar.mjs`: terminar el curso da bronce como mínimo, en
+  el resumen y en "Mis logros", y sigue así al retomar.
+- `zonas-gate.mjs`: `data-require-hits` con las zonas de `initHotspots`.
+
+Además, `minijuego` exige que perder nunca apruebe y que se llame
+`onEmpezar`, `arrastre-pasos-mobile` cierra los festejos antes de tocar,
+y `check-receta`, `check-migracion` y `check-vista-editor` suman sus
+casos.
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

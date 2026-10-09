@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.134** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.135** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -96,7 +96,7 @@ kit-base/
 │   │                           no es liso (v1.9.105)
 │   ├── check-keyframes.mjs   — toda `animation` con su `@keyframes` (v1.9.108)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 72 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 75 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -170,7 +170,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 72, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 75, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -431,6 +431,30 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.135 — pasar es ganar, bronce al completar y la voz que seguía al cerrar
+
+Ver CLAUDE.md §7.84. Del relevo de "Seguridad alimentaria".
+
+- **Minijuego: pasar es ganar.** Perder con 4 de 6 mostraba "Reintentar"
+  y abría el "Siguiente". Ahora `aprobado` es `gano`, y `aprobar` se
+  ignora. Nuevo: `opts.onEmpezar`.
+- **Completar el curso da bronce, como mínimo**, en el panel "Mis logros"
+  y en el resumen del cierre. Con el plus se llega a plata u oro. Nuevo:
+  `Logros.completar()` / `completo()` / `medalla()`, y `medallas` puede
+  ser una función.
+- **La locución se calla al cerrar el curso**, también cuando Chrome no
+  obedece el primer corte (`beforeunload` + `callarAlIrse()`).
+- **`initZonasGate`**: `data-require-hits` exige todas las zonas de
+  `initHotspots`. La plantilla lo trae.
+- `actualizar-kit` avisa los módulos que el marco no carga y separa las
+  reglas CSS idénticas al kit de las que lo cambian (`--todas`). Además
+  registra de qué versión partió el curso, y `build-zip` lo muestra.
+- La migración completa el panel de Locución. El instructivo dice "Las
+  actividades dan puntos".
+- Tests nuevos: `voz-al-cerrar`, `bronce-al-completar`, `zonas-gate`
+  (75 en total).
+- MANUAL: minijuegos tipo videojuego (reglas y cómo pedir el arte).
 
 ### v1.9.134 — el plan de cada curso lo arma el kit, y el PDF pasa solo a láminas
 

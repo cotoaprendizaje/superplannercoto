@@ -73,7 +73,13 @@
                       opción. Sin esto, fluyen solas.
        opts.slide     id de la diapositiva (def. 'minijuego')
        opts.vidas     def. 3
-       opts.aprobar   cuántos hallazgos alcanzan (def. todas las `ok`)
+       opts.aprobar   YA NO SE USA (v1.9.135). Pasar = GANAR: encontrar
+                      todas las `ok` antes de quedarse sin vidas. Con
+                      `aprobar` menor que el total, perder con 4 de 6
+                      mostraba "Reintentar" y a la vez abría el Siguiente
+                      (reporte del cliente en "Seguridad alimentaria"):
+                      la pantalla y el paso decían cosas distintas. Si
+                      el curso lo pasa, se ignora y avisa en consola.
        opts.pistaMs   inactividad antes de la pista (def. 20000; 0 la
                       apaga)
        opts.artes     { exito, reintentar } — src de la imagen final
@@ -88,6 +94,7 @@
                       mismos puntos cada vuelta (bug real del curso de
                       origen).
        opts.onError   fn(opcion)
+       opts.onEmpezar fn() — al empezar cada partida (v1.9.135)
        opts.onFin     fn({ gano, hallados, total, errores, orden })
        opts.textoFin  fn({ gano, hallados, total }) -> texto a narrar
        opts.yaGanado  fn() -> { hallados } | null — si el alumno ya ganó en
@@ -114,7 +121,10 @@
     var POS = opts.pos || null;
     var VIDAS = opts.vidas == null ? 3 : opts.vidas;
     var TOTAL = OPCIONES.filter(function (o) { return o.ok; }).length;
-    var APROBAR = opts.aprobar == null ? TOTAL : opts.aprobar;
+    if (opts.aprobar != null && opts.aprobar < TOTAL && global.console) {
+      console.warn('initMinijuego: `aprobar` ya no abre el paso sin ganar (kit-base v1.9.135). ' +
+        'El minijuego se aprueba encontrando las ' + TOTAL + '; sacá `aprobar` del curso.');
+    }
     var PISTA_MS = opts.pistaMs == null ? 20000 : opts.pistaMs;
     var memoria = opts.memoria || {};
     if (!memoria.aciertos) memoria.aciertos = {};
@@ -311,7 +321,11 @@
 
       if (opts.onFin) {
         opts.onFin({ gano: gano, hallados: hallados, total: TOTAL,
-                     aprobado: hallados >= APROBAR, errores: mj.errores,
+                     /* `aprobado` = `gano`, siempre (v1.9.135): lo que
+                        dice el panel final ("Continuar" o "Reintentar")
+                        es lo que decide el paso. Queda el campo para los
+                        cursos que ya lo leen. */
+                     aprobado: !!gano, errores: mj.errores,
                      orden: mj.orden.slice() });
       }
 
@@ -395,7 +409,7 @@
       var items;
       if (gano) {
         if (repasoTitleEl) repasoTitleEl.textContent = '¡Encontraste las ' + TOTAL + '!';
-        if (repasoSubEl) repasoSubEl.textContent = 'Antes de ver tu resultado final, repasemos qué estaba mal y por qué.';
+        if (repasoSubEl) repasoSubEl.textContent = 'Antes de ver tu resultado final, repasemos qué estaba mal en la imagen y por qué.';
         items = OPCIONES.filter(function (o) { return o.ok; })
           .map(function (o) { return { id: o.id, ok: true, txt: o.txt }; });
       } else {
@@ -427,7 +441,12 @@
       }
     }
 
+    /* `opts.onEmpezar()` (v1.9.135, relevo SA K8): al arrancar CADA
+       partida, para que el curso vuelva a 0 su marcador del intento. Antes
+       el curso lo hacía escuchando el clic de [data-mj-start]/[data-mj-retry]
+       en captura, atado al marcado. */
     function empezar() {
+      if (typeof opts.onEmpezar === 'function') { try { opts.onEmpezar(); } catch (e) {} }
       mj.vidas = VIDAS; mj.hallados = {}; mj.errados = {};
       mj.orden = []; mj.activo = true; mj.errores = 0;
       resetBotones();

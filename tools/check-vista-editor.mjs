@@ -49,7 +49,13 @@ const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'vista-editor-'));
 const salida = path.join(tmp, 'vista');
 try {
   const antes = foto(CURSO);
-  execFileSync(process.execPath, [path.join(KIT, 'tools/vista-editor.mjs'), CURSO, salida], { stdio: 'pipe' });
+  const salidaTxt = String(execFileSync(process.execPath, [path.join(KIT, 'tools/vista-editor.mjs'), CURSO, salida], { stdio: 'pipe' }));
+  /* v1.9.135 (relevo SA K5): lo que está adentro de un comentario HTML no
+     es un archivo que la página pida. */
+  const faltanTxt = (salidaTxt.match(/no están ni en el curso ni en el kit: ([^\n]*)/) || [, ''])[1];
+  const comentado = faltanTxt.split(/,\s*/).filter((r) => r && fs.existsSync(path.join(CURSO, 'index.html')) &&
+    !fs.readFileSync(path.join(CURSO, 'index.html'), 'utf8').replace(/<!--[\s\S]*?-->/g, '').includes(r.replace(/…$/, '')));
+  exige(!comentado.length, `vista-editor avisa como faltantes archivos que solo aparecen en un comentario: ${comentado.join(', ')}.`);
   exige(foto(CURSO) === antes, 'armar la vista CAMBIÓ la fuente del curso: tiene que escribir solo en la salida.');
 
   const pag = fs.readFileSync(path.join(salida, 'pagina.html'), 'utf8');

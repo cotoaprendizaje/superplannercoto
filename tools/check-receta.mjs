@@ -75,12 +75,16 @@ try {
   fs.mkdirSync(path.join(tmp, 'js'));
   fs.mkdirSync(path.join(tmp, 'css'));
   fs.writeFileSync(path.join(tmp, 'index.html'), '<!doctype html><html><head><title>x</title></head><body><script src="js/curso.js"></script></body></html>\n');
-  fs.writeFileSync(path.join(tmp, 'js', 'curso.js'), '(function () {\n  function initRepasoRapido() { return 1; }\n  initRepasoRapido();\n})();\n');
+  fs.writeFileSync(path.join(tmp, 'js', 'curso.js'), '(function () {\n  function initRepasoRapido() { return 1; }\n  initRepasoRapido();\n  initLogros({});\n})();\n');
   let salida = '';
   try { salida = execFileSync(process.execPath, [path.join(KIT, 'tools', 'actualizar-kit.mjs'), tmp], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }); }
   catch (e) { salida = (e.stdout || '') + (e.stderr || ''); }
   exige(/propia copia/.test(salida) && /initRepasoRapido/.test(salida),
     'actualizar-kit no avisa que js/curso.js tiene su propia copia de `initRepasoRapido` (la copia tapa la del kit).');
+  /* 4b · …y un módulo del kit que el curso usa y el marco no carga
+     (v1.9.135, relevo SA K3: `ReferenceError: initLogros is not defined`). */
+  exige(/no carga/.test(salida) && /js\/coto-logros\.js — el curso llama a `initLogros`/.test(salida),
+    'actualizar-kit no avisa que el marco no carga js/coto-logros.js aunque el curso llama a `initLogros`.');
   /* 5 · El plan del curso (v1.9.134): lo arma actualizar-kit, no una
      ficha escrita a mano que se desactualiza o se confunde de curso. */
   const tests = fs.readdirSync(path.join(KIT, 'tools', 'tests')).filter((f) => f.endsWith('.mjs') && !f.startsWith('_')).length;
