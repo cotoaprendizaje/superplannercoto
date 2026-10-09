@@ -319,7 +319,52 @@ for (const f of desdeDatos ? ['marco.html', 'curso.json', ...(indexDesviado ? ['
 }
 
 /* ---- informe ---- */
+/* Se cuentan los avisos ⚠️ que salen, para el plan del final. */
+let avisosImpresos = 0;
+const logOriginal = console.log;
+console.log = (...xs) => { if (/^\s*⚠️/.test(String(xs[0]))) avisosImpresos++; logOriginal(...xs); };
 const L = (t, xs) => { if (xs.length) console.log(`\n${t} (${xs.length}):\n  ` + xs.join('\n  ')); };
+
+/* ---- El plan para este curso (kit-base v1.9.134, §7.83) ----
+   Hasta v1.9.133 el plan de cada curso se escribía a mano en su ficha, y
+   se desactualizaba o se confundía: un chat recibió el mensaje de OTRO
+   curso, y todas las fichas pedían "68 tests" cuando eran 72. Lo arma el
+   kit: qué cambió desde la versión del curso (los títulos del historial
+   del README del kit), cuántos avisos hay que resolver y los pasos hasta
+   entregar, con los comandos escritos para ESTE curso. */
+function planDelCurso(yaAplicado) {
+  const num = (v) => (v || '0.0.0').split('.').map(Number);
+  const mayor = (a, b) => { const x = num(a), y = num(b); for (let i = 0; i < 3; i++) if (x[i] !== y[i]) return x[i] > y[i]; return false; };
+  let versiones = [];
+  try {
+    versiones = [...fs.readFileSync(path.join(KIT, 'README.md'), 'utf8').matchAll(/^### v(\d+\.\d+\.\d+) — (.+)$/gm)]
+      .map((m) => ({ v: m[1], t: m[2].trim() }))
+      .filter((x) => !versionVieja || mayor(x.v, versionVieja))
+      .sort((x, y) => (mayor(x.v, y.v) ? 1 : mayor(y.v, x.v) ? -1 : 0));
+  } catch (e) { versiones = []; }
+  const rel = (p) => { const r = path.relative(process.cwd(), p); return r.startsWith('..' + path.sep + '..') ? p : (r || '.'); };
+  const kit = rel(KIT), curso = rel(CURSO);
+  const tests = fs.readdirSync(path.join(KIT, 'tools', 'tests')).filter((f) => f.endsWith('.mjs') && !f.startsWith('_')).length;
+  logOriginal(`\n══ Plan para este curso: v${versionVieja || '(sin registro)'} → v${versionNueva} ══`);
+  if (versiones.length) {
+    const mostrar = versiones.length > 15 ? versiones.slice(-15) : versiones;
+    logOriginal(`Qué trae el kit desde la versión del curso (${versiones.length} versión(es); el detalle, en ${kit}/README.md):` +
+      (versiones.length > mostrar.length ? `\n  … ${versiones.length - mostrar.length} anteriores` : '') +
+      mostrar.map((x) => `\n  v${x.v} — ${x.t}`).join(''));
+  } else logOriginal('El curso ya está en la versión del kit: no hay cambios del kit que traer.');
+  const pasos = [];
+  if (!yaAplicado) pasos.push(`Aplicar: node ${kit}/tools/actualizar-kit.mjs ${curso} --aplicar` +
+    (plan.editados.length + plan.sinRegistro.length ? ' --forzar (respalda lo editado o sin registro)' : ''));
+  pasos.push(avisosImpresos
+    ? `Resolver los ${avisosImpresos} aviso(s) ⚠️ de arriba: lo del js/curso.js y el CSS propio del curso lo cambia el curso; lo que sirva a todos, al relevo.`
+    : 'No hay avisos ⚠️ que resolver.');
+  pasos.push(`Suite completa con el curso servido: node ${kit}/tools/run-tests.mjs http://localhost:<puerto>/index.html (${tests} tests, todos en verde).`);
+  pasos.push(`Editor en vivo: node ${kit}/tools/vista-editor.mjs ${curso} <carpeta-temporal>/vista, publicarla y recorrer el curso entero` +
+    ` comparándolo con cardio (${kit}/curso-prueba, la receta del MANUAL-DEL-MOLDE.md).`);
+  pasos.push(`Relevo y entrega: node ${kit}/tools/revisar-curso.mjs ${curso}, completar "Relevo al kit" en README-CURSO.md y` +
+    ' armar los zips con build-zip.py: devolver los DOS (el del curso y el del relevo).');
+  logOriginal('Pasos:' + pasos.map((x, i) => `\n  ${i + 1}. ${x}`).join(''));
+}
 console.log(`Curso: ${CURSO}`);
 console.log(`Kit del curso: ${versionVieja ? 'v' + versionVieja : 'SIN REGISTRO (curso anterior a v1.9.102)'}  →  kit nuevo: v${versionNueva}`);
 console.log(`Sin cambios: ${plan.igual.length} archivo(s).`);
@@ -372,6 +417,7 @@ const bloqueantes = plan.editados.length + plan.sinRegistro.length;
 if (!APLICAR) {
   console.log('\nNo se tocó nada. Para aplicarlo: agregar --aplicar' +
     (bloqueantes ? ' --forzar (hay archivos editados o sin registro; se respaldan igual)' : '') + '.');
+  planDelCurso(false);
   process.exit(0);
 }
 if (bloqueantes && !FORZAR) {
@@ -487,4 +533,4 @@ if (fs.existsSync(readmeCurso) && !/^#{1,6}\s+.*relevo al kit/im.test(fs.readFil
 
 console.log(`\n✓ Curso llevado a v${versionNueva}: ${reemplazar.length} reemplazado(s), ${plan.agregar.length} agregado(s), ${plan.quitar.length} sacado(s).`);
 if (respaldar.length || migraciones.length) console.log(`  Respaldo de lo reemplazado o sacado: ${path.relative(CURSO, dirRespaldo)}/`);
-console.log('  Siguiente: correr la suite del curso (npm test) antes de empaquetar.');
+planDelCurso(true);

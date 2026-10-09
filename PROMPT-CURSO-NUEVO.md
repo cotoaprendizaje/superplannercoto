@@ -17,7 +17,7 @@ entre `<>` y adjuntar el zip de `kit-base/` + el PDF del diseñador.
 ## ✂️ Copiar desde acá
 
 Vas a armar un curso SCORM del molde "Área Aprendizaje (COTO)" usando el
-kit adjunto (`kit-base/`, v1.9.133). Antes de escribir una línea, leé del
+kit adjunto (`kit-base/`, v1.9.134). Antes de escribir una línea, leé del
 kit:
 
 - **`MANUAL-DEL-MOLDE.md`, entero.** Son las reglas vigentes, cortas y
@@ -114,6 +114,17 @@ diapositiva y cómo se escribe en `curso.json` está en el manual, sección 3,
 
 Regla corta: del curso de referencia se mira **cómo se ve**; del kit se
 saca **cómo se hace**.
+
+**Del PDF a las láminas, de una** (kit-base v1.9.134): después de
+`new-course`, `node kit-base/tools/pdf-a-laminas.mjs <curso> <archivo.pdf>
+--armar` pasa cada página a `img/pdf/pagina-NN.webp` a su proporción real,
+saca su texto (`img/pdf/paginas.json`, título y borrador de la narración),
+separa las páginas que no son 2:1 (casi siempre fichas) y escribe el
+recorrido de la receta en `curso.json`: portada, introducción, índice, un
+tema por página, la práctica, consejos y cierre, con el índice de cardio.
+Lo que sigue es ajustar con la receta (video de fondo en portada y
+unidades, zonas, fichas, el ícono de cada tema, la narración final).
+Sin `--armar` solo renderiza y extrae, para decidir a mano.
 
 ### Paso 2 — decidir, diapositiva por diapositiva
 

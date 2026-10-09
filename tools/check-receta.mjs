@@ -19,7 +19,8 @@
        `practica-intro`, y que sembrar dos veces no duplique nada;
      · exige que `new-course` emita `coto-quiz.js` y su CSS sin comentar;
      · arma un curso mínimo con `function initRepasoRapido()` propia y
-       exige que `actualizar-kit` avise la copia. */
+       exige que `actualizar-kit` avise la copia y cierre con el plan del
+       curso (v1.9.134): qué trae el kit, los avisos y los 5 pasos. */
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -80,6 +81,15 @@ try {
   catch (e) { salida = (e.stdout || '') + (e.stderr || ''); }
   exige(/propia copia/.test(salida) && /initRepasoRapido/.test(salida),
     'actualizar-kit no avisa que js/curso.js tiene su propia copia de `initRepasoRapido` (la copia tapa la del kit).');
+  /* 5 · El plan del curso (v1.9.134): lo arma actualizar-kit, no una
+     ficha escrita a mano que se desactualiza o se confunde de curso. */
+  const tests = fs.readdirSync(path.join(KIT, 'tools', 'tests')).filter((f) => f.endsWith('.mjs') && !f.startsWith('_')).length;
+  const planCurso = salida.slice(salida.indexOf('══ Plan para este curso'));
+  exige(salida.includes('══ Plan para este curso'), 'actualizar-kit no imprime el "Plan para este curso" al final del informe.');
+  exige(/Qué trae el kit desde la versión del curso/.test(planCurso), 'el plan no dice qué trae el kit desde la versión del curso.');
+  exige((planCurso.match(/^\s+\d\. /gm) || []).length === 5, 'el plan no trae los 5 pasos (aplicar, avisos, suite, editor en vivo, relevo).');
+  exige(planCurso.includes(`(${tests} tests,`), `el plan no pide la cantidad real de tests (${tests}).`);
+  exige(/Resolver los \d+ aviso/.test(planCurso), 'el plan no cuenta los avisos ⚠️ que hay que resolver.');
 } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 
 if (fallos.length) {

@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.133** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.134** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -431,6 +431,21 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.134 — el plan de cada curso lo arma el kit, y el PDF pasa solo a láminas
+
+Ver CLAUDE.md §7.83.
+
+- **`actualizar-kit` cierra con el "Plan para este curso":** qué trae el kit
+  desde su versión, cuántos avisos ⚠️ hay que resolver y los 5 pasos hasta
+  entregar, con los comandos escritos para ese curso. Reemplaza a los
+  mensajes escritos a mano en las fichas.
+- **`pdf-a-laminas.mjs`:** cada página del PDF a `img/pdf/pagina-NN.webp`
+  a su proporción real, el texto de cada una en `paginas.json`, las que no
+  son 2:1 aparte (fichas), y con `--armar` el recorrido de la receta en
+  `curso.json`. `new-course` lo sugiere como siguiente paso.
+- Chequeos nuevos en `test:kit`: `check-pdf-laminas`, y `check-receta` mira
+  el plan.
 
 ### v1.9.133 — un curso nuevo sale andando, como cardio
 

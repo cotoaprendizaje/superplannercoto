@@ -16,7 +16,7 @@ falta viaja en los dos zips.
 
 Vamos a retomar el curso **`<NOMBRE DEL CURSO>`**, del molde "Área
 Aprendizaje (COTO)". Te adjunto el zip del curso y el del kit-base
-(v1.9.133). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
+(v1.9.134). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
 
 ### Paso 1 — antes de tocar nada, poner el curso al día con el kit
 
@@ -32,6 +32,13 @@ kit no puede hacer solo, y si no se hacen el curso queda peor que antes
 Si marca archivos del kit **editados a mano**, NO los pises sin
 mirarlos: anotá qué tenían, porque suelen ser arreglos que tienen que
 subir al kit.
+
+El informe termina con el **"Plan para este curso"** (kit-base v1.9.134):
+qué trae el kit desde la versión del curso, cuántos avisos ⚠️ hay que
+resolver y los 5 pasos hasta entregar (aplicar, avisos, suite, editor en
+vivo, relevo), con los comandos ya escritos para este curso. Ese plan es
+la guía; el mensaje con el que se abrió el chat solo agrega lo que el kit
+no puede saber (una decisión del cliente, un parche ya probado).
 
 Si el curso tiene `curso.json` + `marco.html` (está en datos), el
 contenido se edita ahí y el index se arma con

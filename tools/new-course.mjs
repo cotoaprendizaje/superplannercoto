@@ -615,7 +615,9 @@ if (comoDatos) {
   console.log('  El curso está como DATOS: el contenido se edita en curso.json (el resto del index en marco.html)');
   console.log('  y el index se arma con `node tools/armar-curso.mjs .`. No editar index.html a mano.');
 }
-console.log('  Siguiente: CLAUDE.md §7 pasos 1-2 (PDF → decidir captura vs. HTML real por');
+if (comoDatos) console.log(`  Siguiente: node tools/pdf-a-laminas.mjs ${path.relative(process.cwd(), destinoAbs) || '.'} <archivo.pdf> --armar` +
+  ' (las páginas del PDF como láminas, en el recorrido de la receta).');
+console.log('  Después: CLAUDE.md §7 pasos 1-2 (PDF → decidir captura vs. HTML real por');
 console.log(comoDatos
   ? '  diapositiva), después llenar las diapositivas en curso.json y escribir js/curso.js.'
   : '  diapositiva), después llenar las <section data-slide> y escribir js/curso.js.');

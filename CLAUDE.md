@@ -16574,3 +16574,46 @@ activa, la siembra de la práctica, `coto-quiz` sin comentar, el aviso de
 copias; 14 fallos con el kit anterior) y un caso nuevo en `tira-suelta`
 (teléfono vertical con la tira de una pregunta: legible o en capa; 3,7px con
 el kit anterior).
+
+## 7.83 El plan de cada curso lo arma el kit, y el PDF pasa solo a láminas (kit-base v1.9.134)
+
+Dos propuestas para hacer más rápidos los cursos, aprobadas por el cliente
+("dale"), después de ver cómo se actualizaba el primer curso publicado.
+
+**El plan del curso, en `actualizar-kit`.** Hasta acá cada curso se
+actualizaba con un mensaje escrito a mano en su ficha, y en la primera
+pasada se vieron los dos problemas de ese método: un chat recibió el
+mensaje de OTRO curso (se copió la ficha equivocada) y las cinco fichas
+pedían "68 tests" cuando el kit ya tenía 72. Ahora el informe termina con
+"Plan para este curso": las versiones del kit que el curso no tiene (los
+títulos del historial del README, ordenados por número), cuántos avisos ⚠️
+salieron arriba (se cuentan al imprimirlos) y los 5 pasos —aplicar,
+avisos, suite con la cantidad real de tests, editor en vivo y relevo— con
+los comandos escritos para ese curso (ruta relativa si está cerca, absoluta
+si no). Aplicado, el plan sigue desde el paso 2. El mensaje de la ficha se
+reduce a lo que el kit no puede saber.
+
+**`tools/pdf-a-laminas.mjs`.** El paso más lento de un curso nuevo:
+renderiza cada página con PyMuPDF a 2520px de ancho **a su proporción
+real** (la trampa de §6.32: un PDF mezcla tamaños, y forzar 2520×1260 estira
+las fichas), webp calidad 82 (el peso de las de cardio), y extrae el texto
+de cada página a `img/pdf/paginas.json` (primer renglón = título, el resto
+= borrador de la narración). Las páginas que no son 2:1 (±0,06) se avisan
+como posibles fichas. Con `--armar` escribe el recorrido de la receta en
+`curso.json`: las 3 primeras láminas son portada, introducción y objetivos
+(`data-entrada`) e índice (`popupAntes: instrucciones`); las del medio, un
+tema cada una; la práctica sembrada; la anteúltima, últimos consejos; la
+última, el cierre con los datos de la línea (candado, saludo, 4 números,
+nota, repaso a completar). El índice se rehace con los 3 grupos de cardio y
+un `i-tema-N` numerado por tema (la regla de `iconos-indice`: un ícono
+distinto por contenido; el real lo elige el curso), se sacan del sprite los
+íconos de tipo que ya nadie usa, y las preguntas de ejemplo pasan a apuntar
+a los temas reales. Probado sobre un PDF hecho con láminas de cardio y una
+ficha a 1,8:1: 5 segundos, y `iconos-indice`, `markup-sanity`,
+`narracion-titulos`, `gamificacion`, `contrato-cableado`, `practica-gate`,
+`escala-lamina` y `scroll-audit` en verde sin tocar nada.
+
+Tests: `check-pdf-laminas` (test:kit; arma un PDF de 8 páginas, corre la
+herramienta y exige proporciones, la ficha aparte, el orden de la receta,
+los íconos y las preguntas; con la página estirada a 2:1 da 4 fallos) y
+`check-receta` exige el plan (5 fallos con el actualizador anterior).

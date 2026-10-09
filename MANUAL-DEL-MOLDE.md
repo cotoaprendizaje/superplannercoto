@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.133**.
+Vigente para **kit-base v1.9.134**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -135,6 +135,13 @@ funciones dentro del contenido. El modelo es **"Prevención cardiovascular"**
 uno de estos tipos y se escribe en `curso.json` como en cardio. Lo que no
 entra en ningún tipo es una **pieza a medida** (último punto), y antes de
 escribirla se busca si el kit ya la tiene.
+
+**El primer paso es automático** (v1.9.134): `node tools/pdf-a-laminas.mjs
+<curso> <archivo.pdf> --armar` pasa cada página del PDF a lámina (a su
+proporción real; las que no son 2:1 quedan aparte como posibles fichas),
+guarda el texto de cada una como borrador de la narración y arma el
+recorrido de abajo en `curso.json`. Lo que sigue es elegir el tipo fino
+de cada diapositiva con esta receta.
 
 **El recorrido de un curso**, en este orden:
 
