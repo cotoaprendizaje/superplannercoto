@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.131**.
+Vigente para **kit-base v1.9.132**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -126,6 +126,87 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 - **Si un asset se corrige por segunda vez, cambiarle el nombre**
   (sufijo de versión): el cliente puede estar viendo la copia cacheada
   (§7.3 #20).
+
+### La receta: cada tipo de diapositiva, como en cardio (v1.9.132)
+
+Todos los cursos siguen la misma línea; cambian el contenido y algunas
+funciones dentro del contenido. El modelo es **"Prevención cardiovascular"**
+(`curso-prueba`, el simulador del kit): para cada página del PDF se elige
+uno de estos tipos y se escribe en `curso.json` como en cardio. Lo que no
+entra en ningún tipo es una **pieza a medida** (último punto), y antes de
+escribirla se busca si el kit ya la tiene.
+
+**El recorrido de un curso**, en este orden:
+
+| # | Diapositiva | Tipo | En cardio |
+|---|---|---|---|
+| 1 | Portada | video de fondo | `portada` |
+| 2 | Introducción y objetivos | lámina | `objetivos` |
+| 3 | Índice de contenidos (abre el instructivo) | lámina | `indice` |
+| 4 | Presentación de cada unidad | video de fondo, avanza solo | `unidad1`, `unidad2` |
+| 5 | Contenido de la unidad | lámina con zonas (ver abajo) | `que-son-ent` … `tabaquismo-detalle` |
+| 6 | Mini práctica | práctica | `evaluacion` |
+| 7 | Últimos consejos | lámina | `consejos` |
+| 8 | Cierre: felicitación y resumen | cierre | `cierre` |
+
+**Los tipos, uno por uno:**
+
+- **Video de fondo** (`"tipo": "video-fondo"`, `video`, `poster`): portada y
+  presentación de unidad. La de unidad lleva `"avanceSolo": true` (pasa
+  sola al terminar el video). Sin zonas.
+- **Lámina** (`"tipo": "lamina"`, `imagen`, `narracion`): la página del PDF
+  como imagen entera, con la locución en `narracion` (una entrada por
+  frase). Es el tipo de casi todo el curso; lo interactivo va encima, en
+  `zonas` (coordenadas en % de la lámina: `l`, `t`, `w`, `h`).
+- **Índice que abre el instructivo**: lámina con
+  `"requisitos": {"popupAntes": "instrucciones"}`: al tocar "Siguiente" se
+  abre primero el instructivo.
+- **Lámina con fichas** (`que-son-ent`): zonas `"tipo": "popup"` con
+  `abre` (el id de la ficha) y `texto` (lo que lee el lector de pantalla);
+  `"requisitos": {"popups": [...]}` traba "Siguiente" hasta abrirlas todas
+  (el kit avisa "Te faltan N…" y "¡Listo! Ya podés seguir"). Las fichas van
+  en `fichas` de `curso.json`, con `icono` y `entendido` (el círculo arriba
+  y el botón "Entendido", §7.76).
+- **Lámina con video**: zona `"tipo": "video"` (tarjeta rectangular; el play
+  ya está dibujado en el arte y el kit no le pone recuadro) o
+  `"tipo": "video-circulo"` (video que se reproduce en su lugar, con `play`
+  y `encuadre`); `"requisitos": {"visto": ["video/…mp4"]}` traba hasta
+  verlo.
+- **Lámina con pestañas o estados** (`factores-riesgo`): `atributosShot` con
+  `data-shot-swap` y la lista de imágenes, y zonas que cambian la imagen
+  (`data-shot-swap-go`). Si las pestañas tienen que recorrerse todas, es
+  una pieza a medida (cardio: `faltanFactores` en su `curso.js`).
+- **Zonas que dibujan su propio realce** (un círculo del arte, una etapa,
+  una torta): llevan `d-shot-hit--sin-aro` en `clase`. Regla del cliente:
+  se remarca la forma, nunca el rectángulo.
+- **Tira de repaso**: una pregunta Verdadero/Falso sobre la lámina, colocada
+  con `data-place` donde no tape el dibujo. De UNA pregunta, `d-repaso
+  d-repaso--fila` (la de los factores de cardio); de dos, `d-repaso`
+  común. `data-require-repaso` en la diapositiva traba hasta contestarla.
+  (Cardio la arma desde su `curso.js` para las 6 láminas de factores; un
+  curso nuevo la escribe en una zona `html`.)
+- **Mini práctica** (`"tipo": "practica"`, `antetitulo`, `titulo`,
+  `bajada`, `aviso`): las preguntas van en `practica` de `curso.json`
+  (`banco`, `porIntento: 3`, tres opciones cada una, con `why` y la
+  diapositiva para repasar). Antes de empezar, el aviso "Esto no es la
+  evaluación". El resultado y el cierre los resuelve el kit.
+- **Cierre** (`"tipo": "cierre"`): `imagen` (la lámina de felicitación),
+  `capas` (texto real sobre la lámina, `d-cierre-arte-txt`, si el arte
+  traía texto dibujado), `bloqueo` (el aviso si falta la práctica),
+  `saludo`, `numeros` (los cuatro del resumen), `nota` (la evaluación es
+  aparte) y `repaso` (el repaso de todo el curso). El resumen, las
+  medallas y "Curso finalizado" los arma el kit.
+
+**Lo que va en todo el curso** (también en `curso.json`): `indice` (grupos
+"Inicio" y "Unidad N — Nombre", cada ítem con su ícono de tipo), `glosario`
+(`termino`, `diapo` donde se explica, `def`), `logros` (2 de recorrido + 3
+de plus, §7.76) y `medallas`.
+
+**Pieza a medida** (cardio: las barras de las Américas, la torta, las
+etapas de la aterosclerosis, el progreso de la unidad 2): zonas
+`"tipo": "boton"` con `datos` (atributos `data-…`) o `"tipo": "html"`, y
+el comportamiento en el `curso.js` del curso. Si una pieza a medida se
+repite en un segundo curso, sube al kit.
 
 ---
 
@@ -446,7 +527,12 @@ python3 tools/build-zip.py <curso> <salida.zip>            # DOS zips: el del LM
 - El zip no lleva `README.md` del kit junto al `README-CURSO.md`
   (`build-zip.py` lo resuelve) (§7.3 #10).
 
-### Revisarlo con el equipo: el simulador del editor (§7.75)
+### Revisarlo con el equipo: el editor en vivo (§7.75)
+
+**Nombre:** "editor en vivo" (en conversaciones anteriores, "el simulador";
+se cambió en v1.9.132 para no confundirlo con los cursos tipo
+`--tipo simulador`). El de referencia es el de cardio, el curso modelo:
+todo lo del kit se revisa ahí, y cada curso tiene el suyo.
 
 Antes de entregar —o en cualquier momento después de `new-course`— el curso
 se puede publicar como artefacto de claude.ai para que el equipo lo recorra y

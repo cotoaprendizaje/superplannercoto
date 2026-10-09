@@ -289,14 +289,30 @@ const catStrong = (() => {
    que el test sepa que repetirlo es correcto.
    Sin `tipo` = diapositiva de CONTENIDO: ícono propio del tema, que el
    curso reemplaza, y nunca repetido adentro del curso. */
+/* El recorrido es el del curso MODELO, "Prevención cardiovascular"
+   (kit-base v1.9.132, §7.81; ver "La receta" en el manual, sección 3): cada
+   sección dice en `receta` qué tipo de diapositiva le toca cuando llegue
+   el arte del PDF. Arrancan como texto para que el curso funcione desde
+   el primer minuto, sin imágenes ni videos. */
 const SECCIONES = [
-  { id: 'portada', label: 'Portada', tipo: 'portada', grupo: 'Inicio' },
-  { id: 'introduccion', label: 'Introducción', tipo: 'introduccion', entrada: true },
-  { id: 'objetivos', label: 'Objetivos de aprendizaje', tipo: 'objetivos', entrada: true },
-  { id: 'tema-1', label: 'Tema 1', icono: 'i-tema-1', grupo: 'Contenido' },
-  { id: 'tema-2', label: 'Tema 2', icono: 'i-tema-2' },
-  { id: 'repaso', label: 'Repaso', tipo: 'resumen', grupo: 'Cierre' },
-  { id: 'cierre', label: 'Cierre', tipo: 'cierre' }
+  { id: 'portada', label: 'Portada', tipo: 'portada', grupo: 'Inicio',
+    receta: 'video de fondo ("tipo": "video-fondo", video + poster)' },
+  { id: 'objetivos', label: 'Introducción y objetivos', tipo: 'objetivos', entrada: true,
+    receta: 'lámina ("tipo": "lamina", imagen + narracion)' },
+  { id: 'indice', label: 'Índice de contenidos', tipo: 'indice',
+    receta: 'lámina con "requisitos": {"popupAntes": "instrucciones"} (abre el instructivo)' },
+  { id: 'unidad1', label: 'Unidad 1 — (Nombre de la unidad)', tipo: 'unidad', grupo: 'Unidad 1 — (Nombre de la unidad)',
+    receta: 'video de fondo con "avanceSolo": true' },
+  { id: 'tema-1', label: 'Tema 1', icono: 'i-tema-1',
+    receta: 'lámina con zonas: fichas (popup), video, pestañas o tira de repaso' },
+  { id: 'tema-2', label: 'Tema 2', icono: 'i-tema-2',
+    receta: 'lámina con zonas: fichas (popup), video, pestañas o tira de repaso' },
+  { id: 'evaluacion', label: 'Mini práctica', tipo: 'evaluacion', grupo: 'Práctica y cierre',
+    receta: 'práctica ("tipo": "practica"; las preguntas en "practica" de curso.json)' },
+  { id: 'consejos', label: 'Últimos consejos', tipo: 'consejos',
+    receta: 'lámina' },
+  { id: 'cierre', label: 'Cierre', tipo: 'cierre',
+    receta: 'cierre ("tipo": "cierre": imagen, capas, numeros, nota, repaso)' }
 ];
 /* Resuelve el ícono de cada sección: del catálogo si es de tipo, propio
    si es de contenido. */
@@ -400,8 +416,7 @@ const slides = SECCIONES.map((s, i) => {
        con ella. */
     `    <p>${escHtml(s.label)}. Texto de esta diapositiva: reemplazar por el ` +
     `contenido real, dejando el nombre de la diapositiva al principio.</p>\n` +
-    `    <!-- Contenido de esta diapositiva. Decidir primero (CLAUDE.md §7\n` +
-    `         paso 2): captura íntegra (.d-shot-slide) vs. piezas HTML reales. -->\n` +
+    `    <!-- Receta (manual §3, "La receta"; modelo: curso-prueba): ${escHtml(s.receta || 'lámina')}. -->\n` +
     confeti +
     `  </section>`;
 }).join('\n\n');

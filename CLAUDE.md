@@ -16459,3 +16459,36 @@ El sistema de gates del `curso.js` de cardio reimplementa el del kit
 (pop-ups, videos, avisos de "te faltan…"). Funciona igual y no cambia lo
 que se ve; los cursos nuevos salen con el del kit desde la plantilla. Se
 pasa cuando se retome cardio.
+
+## 7.81 La receta del PDF al curso y el editor en vivo como paso fijo (kit-base v1.9.132)
+
+Pedido del cliente: *"que todos los cursos salgan igual al de cardio que
+definimos en el simulador"*, *"documentar cómo funciona cada diapo"*, y el
+editor en vivo como la herramienta para seguir haciendo cursos *"cada vez
+más fáciles y más rápidos"*. Con §7.79 y §7.80 cardio quedó como kit +
+contenido; esto le da a cada curso nuevo el camino para salir igual.
+
+- **"La receta"** (manual, sección 3): el recorrido de un curso en el orden
+  de cardio (portada, introducción y objetivos, índice que abre el
+  instructivo, presentación de unidad, contenido, mini práctica, últimos
+  consejos, cierre) y cada tipo de diapositiva con cómo se escribe en
+  `curso.json` y su ejemplo en cardio: video de fondo, lámina, lámina con
+  fichas, con video, con pestañas, zonas con realce propio (`--sin-aro`),
+  tira de repaso (`--fila` o de dos preguntas), práctica y cierre. Lo que
+  no entra es una pieza a medida en el `curso.js` del curso, y sube al kit
+  cuando se repite en un segundo curso.
+- **`new-course` arranca con ese recorrido:** 9 diapositivas (antes 7:
+  portada, introducción, objetivos, tema 1, tema 2, repaso, cierre) con el
+  índice agrupado como cardio ("Inicio", "Unidad 1 — (Nombre)", "Práctica
+  y cierre"). Siguen siendo de texto —el curso funciona sin imágenes ni
+  videos desde el primer minuto, y es el curso de las suites—, y cada una
+  trae en sus notas el tipo de la receta que le toca cuando llegue el
+  arte.
+- **Editor en vivo**: el nombre de la herramienta de §7.75 (antes "el
+  simulador", que chocaba con los cursos `--tipo simulador`). Los dos
+  PROMPT (curso nuevo y retomar curso) lo piden antes de entregar, y
+  nombran a cardio como el modelo y a "La receta" como la guía.
+
+Pendiente, para cuando se retome cardio: su sistema de gates en `curso.js`
+(§7.80) y su tira de factores, que la arma su `curso.js` y en un curso
+nuevo se escribe en una zona `html`.

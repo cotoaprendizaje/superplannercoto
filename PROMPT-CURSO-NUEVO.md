@@ -17,7 +17,7 @@ entre `<>` y adjuntar el zip de `kit-base/` + el PDF del diseñador.
 ## ✂️ Copiar desde acá
 
 Vas a armar un curso SCORM del molde "Área Aprendizaje (COTO)" usando el
-kit adjunto (`kit-base/`, v1.9.131). Antes de escribir una línea, leé del
+kit adjunto (`kit-base/`, v1.9.132). Antes de escribir una línea, leé del
 kit:
 
 - **`MANUAL-DEL-MOLDE.md`, entero.** Son las reglas vigentes, cortas y
@@ -104,12 +104,23 @@ es cómo un curso nuevo termina ARRANCANDO PEOR que el anterior — ya
 pasó una vez, un curso perdió el conteo animado, el pulso del chip y el
 envío a xAPI por copiar de otro en vez de mirar el kit.
 
+**El MODELO de todos los cursos es "Prevención cardiovascular"**
+(`kit-base/curso-prueba`, kit-base v1.9.132): es solo kit + contenido, así
+que todo lo que muestra sale del kit. Para cada página del PDF, el tipo de
+diapositiva y cómo se escribe en `curso.json` está en el manual, sección 3,
+**"La receta"**, con el ejemplo de cardio. El esqueleto que arma
+`new-course` ya sigue su recorrido (portada, introducción y objetivos,
+índice, unidad, contenido, práctica, últimos consejos y cierre).
+
 Regla corta: del curso de referencia se mira **cómo se ve**; del kit se
 saca **cómo se hace**.
 
 ### Paso 2 — decidir, diapositiva por diapositiva
 
-Por cada página del PDF, una decisión que condiciona todo lo demás:
+Por cada página del PDF, primero **qué tipo de diapositiva es** según
+"La receta" del manual (sección 3): video de fondo, lámina con fichas, con
+video, con pestañas, tira de repaso, práctica o cierre. Después, una
+decisión que condiciona todo lo demás:
 
 - **Captura íntegra** (`.d-shot-slide`) — la página entra como imagen y
   las zonas interactivas van encima como hitboxes medidas en píxeles.
@@ -201,6 +212,16 @@ derivan del máximo realmente alcanzable, descontando lo que todavía sea
 placeholder, y ese máximo se verifica con un recorrido instrumentado —
 la tabla de puntos es una intención, el contador es el hecho (§7.3
 punto 19).
+
+**Antes de entregar, el curso se revisa en el EDITOR EN VIVO** (kit-base
+v1.9.132; no confundir con un curso tipo "simulador"): es el curso publicado
+como página de claude.ai, con la pestaña "Editor" para comentar sobre la
+diapositiva, "Ver como" PC, iPad y teléfono, y "Recorrido libre".
+`node kit-base/tools/vista-editor.mjs . <carpeta-temporal>/vista` lo arma;
+se publica `pagina.html` con los archivos de `archivos.json` y la capacidad
+de comentarios, y se republica en el MISMO link después de cada cambio. El
+de referencia es el de cardio. Los cambios van a la fuente (`curso.json`,
+marco, CSS propio) o al relevo si son del kit; nunca a la vista.
 
 **La entrega son DOS zips, siempre** (kit-base v1.9.122):
 `python3 tools/build-zip.py <carpeta-del-curso> <salida.zip>` arma el del curso

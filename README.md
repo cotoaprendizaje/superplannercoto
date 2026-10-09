@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.131** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.132** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -430,6 +430,17 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.132 — la receta y el editor en vivo
+
+Ver CLAUDE.md §7.81.
+
+- **"La receta"** en el manual: cada tipo de diapositiva, cómo se escribe en
+  `curso.json` y su ejemplo en cardio, el curso modelo.
+- **`new-course` arranca con el recorrido de cardio** (9 diapositivas, el
+  índice agrupado igual, la receta en las notas de cada una).
+- **"Editor en vivo"**: el nombre de la herramienta de revisión (antes "el
+  simulador"); los PROMPT lo piden antes de entregar.
 
 ### v1.9.131 — las piezas del modelo, al kit
 

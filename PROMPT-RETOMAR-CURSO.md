@@ -16,7 +16,7 @@ falta viaja en los dos zips.
 
 Vamos a retomar el curso **`<NOMBRE DEL CURSO>`**, del molde "Área
 Aprendizaje (COTO)". Te adjunto el zip del curso y el del kit-base
-(v1.9.131). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
+(v1.9.132). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
 
 ### Paso 1 — antes de tocar nada, poner el curso al día con el kit
 
@@ -69,6 +69,14 @@ arregla acá. Lo del kit se anota para relevar (paso 5).
   dos.** El mensaje final de este chat nombra los dos zips; si entregás uno
   solo, la entrega está incompleta.
 
+- **Revisarlo en el EDITOR EN VIVO** (kit-base v1.9.132; no confundir con un
+  curso tipo "simulador"): `node kit-base/tools/vista-editor.mjs .
+  <carpeta-temporal>/vista` arma el curso como página de claude.ai con la
+  pestaña "Editor" (comentar, "Ver como" PC/iPad/teléfono, "Recorrido
+  libre"); se publica y se republica en el mismo link. El modelo es el de
+  cardio (`kit-base/curso-prueba`): lo que este curso tenga distinto en una
+  pieza del kit es un resto o va al relevo. `actualizar-kit` lista las
+  reglas del CSS propio que pisan al kit (§7.79).
 - **Probar que un alumno a mitad de camino retoma donde estaba:** abrir el
   curso viejo, avanzar hasta la mitad, y abrir el nuevo con ese mismo
   progreso guardado.
