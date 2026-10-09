@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.128** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.129** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -96,7 +96,7 @@ kit-base/
 │   │                           no es liso (v1.9.105)
 │   ├── check-keyframes.mjs   — toda `animation` con su `@keyframes` (v1.9.108)
 │   ├── build-zip.py          — arma el zip de entrega con flag UTF-8 verificado (v1.9.39)
-│   └── tests/                — suite pass/fail genérica, 70 tests (ver tools/tests/README.md)
+│   └── tests/                — suite pass/fail genérica, 71 tests (ver tools/tests/README.md)
 ├── package.json           — dependencias de tools/ (playwright-core, pixelmatch,
 │                            pngjs — las 3 se instalan con `npm install`) + scripts npm
 └── spec-motor-slides.md   — contrato formal HTML↔JS del motor
@@ -169,7 +169,7 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
-4. Antes de entregar: correr `tools/tests/*.mjs` (los 70, exit 0 en
+4. Antes de entregar: correr `tools/tests/*.mjs` (los 71, exit 0 en
    todos — `node tools/run-tests.mjs <url>` los corre a todos),
    `tools/verify-hitboxes.mjs` para inspeccionar visualmente
    cualquier diapositiva con hitboxes nueva o recalculada,
@@ -430,6 +430,16 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.129 — sin scroll en teléfono
+
+Ver CLAUDE.md §7.78.
+
+- **Resultado de la mini práctica en teléfono:** queda la nota con sus
+  botones; "Ver tus respuestas" abre la lista en una capa.
+- **Resumen del cierre en teléfono e iPad vertical:** "Ver el repaso del
+  curso" abre el repaso en una capa; en teléfono acostado, dos columnas.
+- `CotoUI.abrirEnCapa()` nueva. Test nuevo `sin-scroll-telefono` (71).
 
 ### v1.9.128 — el resto de los tableros del canvas
 

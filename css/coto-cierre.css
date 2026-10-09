@@ -301,3 +301,38 @@
 .d-cierre-results .d-cert-note::before{content:"!";position:absolute;left:14px;top:50%;margin-top:-14px;display:grid;place-items:center;width:28px;height:28px;border-radius:50%;
   background:#ffd25e;color:#8A5200;font-weight:700}
 .d-cierre-results .d-cert-note b,.d-cierre-results .d-cert-note strong{color:inherit}
+
+/* ---- Resumen que no entra (kit-base v1.9.129, §7.78) ----
+   Dos escalones que pone coto-cierre.js midiendo. `.is-resumen-corto`:
+   el repaso del curso se abre con "Ver el repaso del curso" en una capa
+   (iPad vertical). `.is-resumen-mini`, si todavía no entra: se van los
+   rangos y la nota (la repite "Curso finalizado") y la medalla se achica
+   (teléfono). Fuera de esos casos el botón no se ve. */
+.d-cierre-ver-repaso{display:none}
+.is-resumen-corto .d-cierre-ver-repaso{display:flex}
+.is-resumen-corto .d-cierre-recap{display:none}
+.is-resumen-corto .d-cierre-results .cta{flex-direction:row;flex-wrap:wrap}
+/* Los botones bajan de fila en vez de pisarse el texto. */
+.is-resumen-corto .d-cierre-results .cta .btn{flex:1 1 auto;min-width:max-content}
+.is-resumen-mini .d-medalla-rangos,
+.is-resumen-mini .d-cert-note{display:none}
+.is-resumen-mini .d-cierre-results .d-medalla{padding:8px 14px}
+.is-resumen-mini .d-cierre-results .d-medalla .d-medalla-ic{margin-top:14px}
+.d-capa-suelta .d-cierre-recap{flex:none;margin:0}
+/* En el teléfono acostado los botones flotantes (Ayuda, Ajustes) caen
+   sobre el resumen: se le deja su canaleta, como a la diapositiva de
+   repaso. Y apilado no entra (201 a 296px de alto): la medalla y los
+   cuatro números lado a lado, los botones en una fila abajo. */
+@media (max-height:480px){
+  .is-resumen-mini{padding-right:var(--d-fab-canal,74px)}
+  .is-resumen-mini .d-cierre-results{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    column-gap:12px;row-gap:8px;align-content:start;padding:0 12px 10px}
+  .is-resumen-mini .d-cierre-results::before{grid-column:1/-1;min-height:34px;margin:0 -12px;font-size:1rem}
+  .is-resumen-mini .d-cierre-results .d-medalla{grid-column:1;grid-row:2;margin:0}
+  .is-resumen-mini .d-cierre-results .d-cert-stats{grid-column:2;grid-row:2;align-self:center;margin:0}
+  /* Los botones, en UNA fila a todo el ancho: en la columna se partían en
+     dos renglones con textos largos (Seguridad alimentaria, 92px). */
+  .is-resumen-mini .d-cierre-results .cta{grid-column:1/-1;grid-row:3;margin:0;padding-top:0;gap:6px;display:flex;flex-direction:row;flex-wrap:nowrap}
+  .is-resumen-mini .d-cierre-results .cta .btn{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    padding:.35rem .45rem;font-size:.72rem}
+}

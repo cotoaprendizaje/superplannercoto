@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.128**.
+Vigente para **kit-base v1.9.129**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -331,6 +331,10 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 
 ## 8 · Mobile, tablet y accesibilidad
 
+- **Lo que no entra en un teléfono va a una capa, no a un scroll**
+  (v1.9.129): el resultado de la práctica ("Ver tus respuestas") y el
+  resumen del cierre ("Ver el repaso del curso") lo hacen solos midiendo.
+  Para una pieza propia del curso: `CotoUI.abrirEnCapa(nodo)` (§7.78).
 - **Sin scroll, nunca: tampoco la tira de repaso.** Decisión del cliente
   (§7.70). En teléfono, donde la tira no entra ni en su banda ni en una
   franja libre, el kit la convierte en un botón que la abre entera en una

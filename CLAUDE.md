@@ -16303,3 +16303,53 @@ documentos no hay botón ni panel vacío) y Ayuda.
 
 70 tests de navegador (+1, `nota-en-linea`). Cambiaron `repaso-navegacion`,
 `mini-practica` y `aviso-listo` (arriba).
+
+## 7.78 Sin scroll en teléfono: el resultado de la práctica y el resumen (kit-base v1.9.129)
+
+Los dos pendientes de §7.75/§7.76 contra la regla del cliente (sin scroll
+dentro de la diapositiva, nunca), medidos en cardio:
+
+| pantalla | medida | contenido / lugar |
+|---|---|---|
+| resultado de la mini práctica | teléfono vertical 390×844 | 1191 / 661 px |
+| resumen del cierre | teléfono acostado 844×390 | 990 / 296 px |
+| resumen del cierre | teléfono acostado chico 667×375 | 1137 / 201 px |
+| resumen del cierre | iPad vertical 820×1180 | no entraba (las columnas se apilan bajo 900px) |
+
+Achicar letra no alcanza para eso. Se tomó el patrón que el kit ya usa en
+teléfono para la tira de repaso (§7.70): lo secundario pasa a un botón que
+lo abre en una capa.
+
+- **`CotoUI.abrirEnCapa(nodo, { etiqueta })`** (coto-ui.js), genérica: saca
+  la pieza de su lugar (deja una marca), la muestra en la capa de la tira
+  (`.d-repaso-capa.d-capa-suelta`) y la devuelve al cerrar ("Listo", Esc,
+  tocar afuera, cambiar de diapositiva). Adentro de la capa sí puede haber
+  scroll: es una ventana, no la diapositiva.
+- **Mini práctica** (coto-quiz.js `ajustarResultado`): si la diapositiva del
+  resultado scrollea, `.is-resultado-corto` deja la nota y sus botones,
+  esconde el aviso propio del curso (ya se leyó al empezar) y "Repasemos
+  tus respuestas" pasa al botón **"Ver tus respuestas"**. En teléfono
+  acostado la nota va en horizontal (anillo a la izquierda).
+- **Resumen** (coto-cierre.js `ajustarResumen`), dos escalones, midiendo de
+  a uno: `.is-resumen-corto` pasa el repaso del curso al botón **"Ver el
+  repaso del curso"** (alcanza en iPad y teléfono vertical);
+  `.is-resumen-mini`, si todavía no entra, saca los rangos y la nota (la
+  repite "Curso finalizado") y achica la medalla; en teléfono acostado,
+  la medalla y los cuatro números lado a lado, los botones en UNA fila a
+  todo el ancho abajo, y la canaleta de los botones flotantes. Primero los
+  botones iban en la columna de la medalla: con los textos de Seguridad
+  alimentaria se partían en dos renglones y sobraban 45px (lo encontró su
+  suite); además ese curso pone `.slide-cierre .cta{display:grid}`, por eso
+  la regla del kit fija `display:flex`.
+- **Se mide, no se adivina por ancho**: en escritorio y iPad apaisado
+  (1366×768, 1280×760, 1024×768, 1180×820) no cambia nada y los botones
+  nuevos no se ven. Se vuelve a medir al cambiar el tamaño de la ventana.
+
+### Tests
+
+71 (+1): **`sin-scroll-telefono`** contesta la práctica y muestra el resumen
+en 390×844 y 667×375 táctiles, exige cero scroll y que cada botón abra su
+capa y "Listo" devuelva la pieza a su lugar. Rojo con coto-quiz/coto-cierre
+(js y css) de v1.9.128: 4 fallos (los dos casos en las dos medidas).
+Verde en cardio y en Seguridad alimentaria.
+`mini-practica` sigue verde en sus medidas.

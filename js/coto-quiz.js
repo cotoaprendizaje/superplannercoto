@@ -347,6 +347,20 @@
         largo.toFixed(1) + ' ' + circ.toFixed(1) + '"/><text x="50" y="55">' + c + '/' + t + '</text><text class="sub" x="50" y="70">bien</text></svg>';
     }
 
+    /* Resultado que no entra (kit-base v1.9.129, §7.78): en un teléfono
+       vertical las dos columnas apiladas medían 1191px para 661 de
+       pantalla. Si la diapositiva scrollea, `.is-resultado-corto` deja la
+       nota y sus botones, esconde el aviso del curso y "Repasemos tus
+       respuestas" pasa a un botón que la abre en una capa
+       (`CotoUI.abrirEnCapa`). Se mide, no se adivina por ancho: en una
+       pantalla donde entra, queda como siempre. */
+    function ajustarResultado() {
+      if (!slideDelQuiz || !slideDelQuiz.classList.contains('is-quiz-resultado')) return;
+      slideDelQuiz.classList.remove('is-resultado-corto');
+      if (slideDelQuiz.scrollHeight > slideDelQuiz.clientHeight + 2) slideDelQuiz.classList.add('is-resultado-corto');
+    }
+    global.addEventListener('resize', ajustarResultado);
+
     function finish() {
       registrar();
       host.classList.remove('is-devolucion');
@@ -373,7 +387,8 @@
         (opts.resultNote || '') +
         '<div class="d-quiz-actions">' +
         '<button type="button" class="btn btn-cat-ghost" data-retry><span aria-hidden="true">↺</span> Reintentar</button>' +
-        '<button type="button" class="btn btn-cat" data-go-next>' + rotuloSeguir + '</button></div></div>' +
+        '<button type="button" class="btn btn-cat" data-go-next>' + rotuloSeguir + '</button></div>' +
+        '<button type="button" class="btn btn-cat-ghost d-quiz-ver-resp" data-ver-respuestas>Ver tus respuestas</button></div>' +
         reviewHtml + '</div>';
       body.querySelector('[data-retry]').addEventListener('click', resetQuiz);
       var goBtn = body.querySelector('[data-go-next]');
@@ -388,6 +403,12 @@
          estado más alto; en pantallas bajas la intro se va igual que
          mientras se responde (coto-quiz.css). */
       if (slideDelQuiz) { slideDelQuiz.classList.add('is-quiz-resultado'); slideDelQuiz.classList.remove('is-quiz-running'); }
+      var verResp = body.querySelector('[data-ver-respuestas]');
+      if (verResp) verResp.addEventListener('click', function () {
+        var rv = body.querySelector('.d-quiz-review');
+        if (rv && global.CotoUI && global.CotoUI.abrirEnCapa) global.CotoUI.abrirEnCapa(rv, { etiqueta: 'Tus respuestas' });
+      });
+      ajustarResultado();
       onResult(body.querySelector('.d-quiz-result'), aciertos(), QUIZ.length);
     }
 
@@ -408,7 +429,7 @@
          la narración y `locucion-control` lo marcó). Completa, se saca. */
     function respondiendo(si, reintento, mantenerMarca) {
       if (slideDelQuiz && !mantenerMarca) slideDelQuiz.classList.toggle('is-quiz-running', !!si);
-      if (slideDelQuiz && si) slideDelQuiz.classList.remove('is-quiz-resultado');
+      if (slideDelQuiz && si) slideDelQuiz.classList.remove('is-quiz-resultado', 'is-resultado-corto');
       if (slideDelQuiz && opts.introPopup) {
         if (completa()) slideDelQuiz.removeAttribute('data-intro-popup');
         else slideDelQuiz.setAttribute('data-intro-popup', opts.introPopup);

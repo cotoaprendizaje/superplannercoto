@@ -1,8 +1,8 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.128 · Área Aprendizaje (COTO)
+kit-base v1.9.129 · Área Aprendizaje (COTO)
 
-Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 70 tests**
+Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 71 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
 sube sin que haya que anotarlo en ningún lado— y son genéricos de
 verdad: solo leen atributos `data-*` y estructura de
@@ -83,6 +83,9 @@ con coma) y `tools/check-fichas.mjs` en `test:kit` (el círculo del ícono y
 el pie "Entendido" de las fichas, con ida y vuelta por `extraer-curso`).
 En v1.9.128, `nota-en-linea.mjs` (las notas amarillas con "!" del resumen y
 de "Curso finalizado" no parten la frase en columnas).
+En v1.9.129, `sin-scroll-telefono.mjs` (el resultado de la práctica y el
+resumen del cierre sin scroll en teléfono vertical y acostado, con sus
+botones que abren lo secundario en una capa).
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

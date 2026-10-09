@@ -1142,6 +1142,53 @@
      480px): en escritorio la tira que no entra es un problema de
      contenido, no de pantalla. */
   function esTelefono() { return Math.min(global.innerWidth, global.innerHeight) <= 480; }
+
+  /* ---- abrirEnCapa(nodo, { etiqueta }) — kit-base v1.9.129 (§7.78) ----
+     La misma capa que la tira de repaso en teléfono, para CUALQUIER pieza
+     que no entra en la pantalla: la saca de su lugar (deja una marca), la
+     muestra entera encima del curso y la devuelve al cerrar ("Listo", Esc,
+     tocar afuera o cambiar de diapositiva). Adentro de la capa sí puede
+     haber scroll: es una ventana, no la diapositiva. La usan el resultado
+     de la mini práctica ("Ver tus respuestas") y el resumen del cierre
+     ("Ver el repaso del curso") cuando no entran. Devuelve `cerrar`. */
+  var capaSuelta = null;
+  function cerrarCapaSuelta() {
+    var c = capaSuelta;
+    if (!c) return;
+    capaSuelta = null;
+    if (c.marca.parentNode) c.marca.parentNode.replaceChild(c.nodo, c.marca);
+    c.capa.remove();
+    if (c.volver) { try { c.volver.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function abrirEnCapa(nodo, opts) {
+    opts = opts || {};
+    cerrarCapaSuelta();
+    if (!nodo || !nodo.parentNode) return cerrarCapaSuelta;
+    var marca = document.createComment('capa');
+    nodo.parentNode.replaceChild(marca, nodo);
+    var capa = document.createElement('div');
+    capa.className = 'd-repaso-capa d-capa-suelta';
+    capa.setAttribute('role', 'dialog');
+    capa.setAttribute('aria-modal', 'true');
+    capa.setAttribute('aria-label', opts.etiqueta || 'Detalle');
+    var caja = document.createElement('div');
+    caja.className = 'd-repaso-capa-caja';
+    var listo = document.createElement('button');
+    listo.type = 'button';
+    listo.className = 'd-repaso-capa-listo';
+    listo.textContent = 'Listo';
+    caja.appendChild(nodo);
+    caja.appendChild(listo);
+    capa.appendChild(caja);
+    document.body.appendChild(capa);
+    capaSuelta = { capa: capa, nodo: nodo, marca: marca, volver: document.activeElement };
+    listo.addEventListener('click', cerrarCapaSuelta);
+    capa.addEventListener('click', function (e) { if (e.target === capa) cerrarCapaSuelta(); });
+    try { listo.focus({ preventScroll: true }); } catch (e) {}
+    return cerrarCapaSuelta;
+  }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && capaSuelta) cerrarCapaSuelta(); });
+  document.addEventListener('slidechange', cerrarCapaSuelta);
   var capaAbierta = null;
   function cerrarCapa() {
     var c = capaAbierta;
@@ -1570,6 +1617,7 @@
   }
 
   global.CotoUI = {
+    abrirEnCapa: abrirEnCapa,
     initTiempoActivo: initTiempoActivo,
     tiempoActivoMs: tiempoActivoMs,
     initPopupNarration: initPopupNarration,

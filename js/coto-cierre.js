@@ -216,6 +216,39 @@
     }
     var ctaOriginal = null;
 
+    /* Resumen que no entra (kit-base v1.9.129, §7.78): en un teléfono
+       acostado las dos columnas medían 990px para 296 de pantalla. Si el
+       resumen scrollea, `.is-resumen-corto` pasa el repaso de todo el
+       curso a un botón que lo abre en una capa (`CotoUI.abrirEnCapa`), y
+       si todavía no entra `.is-resumen-mini` deja solo la medalla, los
+       números y los botones (la nota la repite "Curso finalizado"). Se MIDE: donde entra,
+       queda como siempre. */
+    function ajustarResumen() {
+      var summary = document.querySelector('[data-cierre-step="summary"]');
+      if (!summary || summary.hidden) return;
+      var recap = summary.querySelector('.d-cierre-recap');
+      var cta = summary.querySelector('.d-cierre-results .cta');
+      if (recap && cta && !cta.querySelector('[data-ver-repaso]')) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn btn-cat-ghost d-cierre-ver-repaso';
+        b.setAttribute('data-ver-repaso', '');
+        b.textContent = 'Ver el repaso del curso';
+        b.addEventListener('click', function () {
+          if (global.CotoUI && global.CotoUI.abrirEnCapa) global.CotoUI.abrirEnCapa(recap, { etiqueta: 'Repaso del curso' });
+        });
+        cta.appendChild(b);
+      }
+      /* Dos escalones, de a uno y midiendo: primero solo el repaso pasa al
+         botón (iPad vertical); si todavía no entra, se van también los
+         rangos y la nota y la medalla se achica (teléfono). */
+      summary.classList.remove('is-resumen-corto', 'is-resumen-mini');
+      var sobra = function () { return summary.scrollHeight > summary.clientHeight + 2; };
+      if (sobra()) summary.classList.add('is-resumen-corto');
+      if (sobra()) summary.classList.add('is-resumen-mini');
+    }
+    global.addEventListener('resize', ajustarResumen);
+
     function mostrarResumen() {
       /* La voz de la felicitación se corta acá (kit-base v1.9.123, §7.72):
          es un cambio de PASO dentro de la misma diapositiva, sin
@@ -229,6 +262,7 @@
       setTimeout(animateCertStats, 260);
       setTimeout(shineCertStats, 1300);
       setTimeout(revealMedalla, 150);
+      ajustarResumen(); setTimeout(ajustarResumen, 400);
       onFinish();
       /* El botón del pie NO se apaga: pasa a "Salir del curso". Antes se
          le sacaba data-nav-cta y quedaba como un "Fin" muerto — el

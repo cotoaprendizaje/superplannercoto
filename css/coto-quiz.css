@@ -346,3 +346,27 @@
   .d-slide-quiz > h2,
   .d-slide-quiz > p { display: none; }
 }
+
+/* ---- Resultado que no entra (kit-base v1.9.129, §7.78) ----
+   `.is-resultado-corto` lo pone coto-quiz.js cuando la diapositiva del
+   resultado scrollea (teléfono vertical): queda la nota con sus botones,
+   el aviso propio del curso se va (ya se leyó antes de empezar) y
+   "Repasemos tus respuestas" se abre con un botón en una capa. Fuera de
+   ese caso el botón no se ve. */
+.d-quiz-ver-resp{display:none}
+.is-resultado-corto .d-quiz-ver-resp{display:flex;align-self:stretch;justify-content:center}
+.is-resultado-corto .d-quiz-result > .d-quiz-review,
+.is-resultado-corto .d-aviso-practica{display:none}
+/* Adentro de la capa la lista sí puede scrollear: es una ventana. */
+.d-capa-suelta .d-repaso-capa-caja{overflow:auto}
+.d-capa-suelta .d-quiz-review{flex:none}
+/* Teléfono acostado (~200px de escenario): la nota en horizontal, el
+   anillo a la izquierda y los botones a la derecha. */
+@media (max-height:480px){
+  .is-resultado-corto .d-quiz-nota{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:12px;row-gap:6px;align-items:center;text-align:left}
+  .is-resultado-corto .d-quiz-result .d-quiz-nota-hd{grid-column:1/-1}
+  .is-resultado-corto .d-quiz-nota > .d-quiz-anillo{grid-column:1;grid-row:2/span 3;width:72px;height:72px}
+  .is-resultado-corto .d-quiz-nota > :not(.d-quiz-anillo):not(.d-quiz-nota-hd){grid-column:2}
+  .is-resultado-corto .d-quiz-nota > strong{display:none}
+  .is-resultado-corto .d-quiz-nota .d-quiz-actions{margin:0}
+}
