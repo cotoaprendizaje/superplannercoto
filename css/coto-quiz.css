@@ -342,9 +342,19 @@
 
      En pantalla baja la diapositiva de práctica ES la práctica: el
      enunciado ya dice de qué se trata, y el título sigue en la barra de
-     arriba del curso. En pantallas normales no cambia nada. */
+     arriba del curso. En pantallas normales no cambia nada.
+     Y la del tipo `practica` de curso.json (v1.9.133), que va toda
+     adentro de `.slide-inner` —antetítulo, título, bajada y el aviso de
+     "no es la evaluación"—: la tenía solo cardio en su CSS, y un curso
+     nuevo dejaba "Responder" 9px afuera a 844×390. El aviso no se pierde:
+     en esta pantalla lo da el pop-up `practica-intro`, al entrar. */
   .d-slide-quiz > h2,
-  .d-slide-quiz > p { display: none; }
+  .d-slide-quiz > p,
+  .d-slide-quiz > .slide-inner > .slide-eyebrow,
+  .d-slide-quiz > .slide-inner > h2,
+  .d-slide-quiz > .slide-inner > .slide-lead,
+  .d-slide-quiz > .slide-inner > .d-aviso-practica { display: none; }
+  .d-slide-quiz > .slide-inner { max-height: 100%; min-height: 0; }
 }
 
 /* ---- Resultado que no entra (kit-base v1.9.129, §7.78) ----

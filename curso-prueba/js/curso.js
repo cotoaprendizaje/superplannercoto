@@ -86,7 +86,6 @@
   var Cierre = null;
   var refrescarIndice = function () {};
   var refrescarRecursos = function () {};   // el gate del panel de Recursos
-  var refrescarRepaso = function () {};     // muestra la tira de repaso ya ganada
   var refrescarGlosario = function () {};
 
   function toast(t) { if (Player) Player.toast(t); }
@@ -327,127 +326,50 @@
      mismo registro que persiste el curso (`estado.videosVistos`). */
   var VideoGate = null;
 
-  function faltanVideos(slideEl) {
-    return VideoGate ? VideoGate.faltan(slideEl) : [];
-  }
-  function faltanPopups(slideEl) {
-    var req = slideEl && slideEl.getAttribute('data-require-popups');
-    if (!req) return [];
-    return req.split(/\s+/).filter(Boolean).filter(function (id) { return !estado.popupsVistos[id]; });
-  }
   function faltanFactores() {
     return TOTAL_FACTORES.filter(function (id) { return !estado.factoresExplorados[id]; });
   }
-  /* ---- Gate por REPASO RÁPIDO ----
-     Corrección del cliente: *"se puede avanzar con «Siguiente» sin haber
-     respondido el repaso. El botón «Siguiente» debe habilitarse recién
-     cuando se responde"*.
-     Cambia una decisión de producto anterior —el repaso estaba pensado
-     como refuerzo que no trababa— y se aplica solo a las 6 diapositivas
-     de factor, que son las que tienen tira.
-     Cuenta como respondida tanto la acertada como la fallada: el gate
-     pide PARTICIPAR, no acertar. Si pidiera acertar, una respuesta mala
-     dejaría el curso trabado para siempre.
-     Va DESPUÉS del gate de video a propósito: la tira recién aparece
-     cuando el video está visto, así que primero se pide el video y
-     después el repaso, que es el orden en que se ven en pantalla. */
-  function faltaRepaso(slideEl) {
-    var id = slideEl && slideEl.getAttribute('data-slide');
-    if (!id) return false;
-    var esFactor = U2.some(function (f) { return f.id === id; });
-    if (!esFactor) return false;
-    if (faltanVideos(slideEl).length) return false;   // primero el video
-    return !estado.predicciones[id] && !estado.prediccionesMal[id];
-  }
 
-  /* ---- Gate por MINI PRÁCTICA ----
-     BUG REAL, el segundo camino al mismo cartel, y éste estaba desde
-     antes: la diapositiva de la mini práctica NO trababa. Se pulsaba
-     "Siguiente" sin contestar ninguna pregunta, se caminaba hasta el
-     final y el cierre aparecía BLOQUEADO — "🔒 Hacé la mini práctica
-     para desbloquear el cierre del curso" — con el botón del footer en
-     "Fin" y sin ninguna forma de seguir. Un callejón sin salida: la
-     única salida era volver atrás, y el cartel no lo dice.
-     Reportado por el cliente con una foto de ese cartel: *"esto está
-     apareciendo al final del curso, lo cual no debería ser así"*.
-     REPRODUCIDO: `evaluacion → consejos` sin contestar nada, y el
-     cierre con `unlocked` ausente y el candado a la vista.
-
-     El cierre ya exigía la práctica; lo que faltaba era pedirla EN su
-     diapositiva, que es donde el alumno puede hacer algo al respecto.
-     Con esto el cartel del candado queda, en la práctica, inalcanzable
-     navegando — sigue puesto para el reingreso con el progreso a medias,
-     que es su caso legítimo.
-
-     Se exige COMPLETARLA, no acertar: `estado.quiz.done` lo marca
-     `registrar()` (coto-quiz) al contestar la última, sin mirar el
-     puntaje. */
-  function faltaPractica(slideEl) {
-    if (!slideEl || !slideEl.querySelector('[data-quiz]')) return false;
-    return !(estado.quiz && estado.quiz.done);
-  }
-
-  function bloqueada(slideEl) {
-    if (!slideEl) return false;
-    if (faltanPopups(slideEl).length) return true;
-    if (slideEl.getAttribute('data-slide') === 'factores-riesgo' && faltanFactores().length) return true;
-    if (faltanVideos(slideEl).length > 0) return true;
-    if (faltaRepaso(slideEl)) return true;
-    return faltaPractica(slideEl);
-  }
-
-  function nudge(el) {
-    if (!el) return;
-    el.classList.remove('d-nudge'); void el.offsetWidth; el.classList.add('d-nudge');
-  }
-
+  /* ---- Los gates, a la forma del kit (kit-base v1.9.133) ----
+     Hasta v1.9.132 este curso tenía su propio `bloqueada()` + un
+     `advanceblocked` escrito a mano con un `if` por caso. Ahora son los
+     gates del kit con el mismo contrato `faltan(slideEl)` —el de la
+     plantilla de curso.js, la receta de todo curso nuevo— y lo único
+     propio es el de los 7 factores. El orden del array es la prioridad
+     del aviso, el mismo de antes y el de la pantalla: primero las
+     fichas, después los factores, el video, el repaso y la práctica.
+     · Repaso: pide CONTESTAR, no acertar (una errada no traba para
+       siempre). Pedido del cliente: *"el botón «Siguiente» debe
+       habilitarse recién cuando se responde"*. Lo marca
+       `data-require-repaso` en las 6 diapositivas de factor (curso.json).
+     · Práctica: BUG REAL que este gate cerró (v1.9.119): sin él,
+       "Siguiente" pasaba de largo y el cierre aparecía con el candado y
+       sin salida (*"esto está apareciendo al final del curso, lo cual no
+       debería ser así"*). La da `initMiniQuiz`, que se crea más abajo. */
+  var repasoGate = null, practicaGate = null;
   function initGates() {
-    window.motor.canAdvance = function (slideEl) { return !bloqueada(slideEl); };
-
-    document.addEventListener('popupopen', function (e) {
-      if (estado.popupsVistos[e.detail.id]) return;
-      estado.popupsVistos[e.detail.id] = true;
-      persistir();
+    var popupGate = initPopupGate({
+      seen: function (id) { return !!estado.popupsVistos[id]; },
+      markSeen: function (id) { estado.popupsVistos[id] = true; persistir(); }
     });
-
-    /* Pulso que guía la mirada al elemento que falta tocar: el alumno
-       ve temblar "Siguiente" y además CUÁL es la interacción pendiente. */
-    document.addEventListener('advanceblocked', function (e) {
-      var slideEl = document.querySelector('[data-slide="' + e.detail.id + '"]');
-      var btn = document.querySelector('[data-nav="next"]');
-      if (btn) { btn.classList.remove('d-shake'); void btn.offsetWidth; btn.classList.add('d-shake'); }
-
-      if (e.detail.id === 'factores-riesgo') {
-        var faltan = faltanFactores();
-        faltan.forEach(function (id) {
-          nudge(slideEl && slideEl.querySelector('[data-hit][data-factor="' + id + '"]'));
-        });
-        toast('Te ' + (faltan.length === 1 ? 'queda 1 factor' : 'quedan ' + faltan.length + ' factores') + ' por ver antes de seguir.');
-        return;
-      }
-      var pops = faltanPopups(slideEl);
-      if (pops.length) {
-        pops.forEach(function (id) {
-          nudge(slideEl && slideEl.querySelector('[data-popup-trigger="' + id + '"]'));
-        });
-        toast('Te ' + (pops.length === 1 ? 'queda 1 tarjeta' : 'quedan ' + pops.length + ' tarjetas') + ' por ver antes de seguir.');
-        return;
-      }
-      if (faltanVideos(slideEl).length) {
-        toast('Mirá el video antes de seguir.');
-        nudge(slideEl && slideEl.querySelector('[data-hit][data-video]'));
-        return;
-      }
-      if (faltaRepaso(slideEl)) {
-        toast('Respondé el repaso rápido antes de seguir.');
-        nudge(slideEl && slideEl.querySelector('.d-repaso'));
-        return;
-      }
-      if (faltaPractica(slideEl)) {
-        toast('Completá la mini práctica antes de seguir.');
-        nudge(slideEl && slideEl.querySelector('[data-quiz]'));
-      }
-    });
+    var factoresGate = { faltan: function (s) {
+      return s && s.getAttribute('data-slide') === 'factores-riesgo' ? faltanFactores() : [];
+    } };
+    var sinGate = { faltan: function () { return []; } };
+    var gates = [
+      { gate: popupGate, sel: function (id) { return '[data-popup-trigger="' + id + '"]'; }, uno: 'tarjeta', varias: 'tarjetas' },
+      { gate: factoresGate, sel: function (id) { return '[data-hit][data-factor="' + id + '"]'; }, uno: 'factor', varias: 'factores' },
+      { gate: VideoGate || sinGate, sel: function (src) { return '[data-video="' + src + '"]'; },
+        aviso: function () { return 'Mirá el video antes de seguir.'; } },
+      { gate: { faltan: function (s) { return repasoGate ? repasoGate.faltan(s) : []; } }, sel: function () { return '.d-repaso'; },
+        aviso: function () { return 'Respondé el repaso rápido antes de seguir.'; } },
+      { gate: { faltan: function (s) { return practicaGate ? practicaGate.faltan(s) : []; } }, sel: function () { return '[data-quiz]'; },
+        aviso: function () { return 'Completá la mini práctica antes de seguir.'; } }
+    ];
+    window.motor.canAdvance = function (slideEl) {
+      return !slideEl || gates.every(function (g) { return !g.gate.faltan(slideEl).length; });
+    };
+    initGateHints({ gates: gates });
   }
 
   /* ============================================================
@@ -594,7 +516,6 @@
       marco.setAttribute('data-t', '67.91');
       marco.setAttribute('data-h', '22.00');
       marco.setAttribute('data-narrate-last', '');
-      marco.hidden = true;
       var tira = document.createElement('div');
       tira.className = 'd-repaso d-repaso--fila';   // variante del kit (coto-repaso.css, v1.9.131)
       tira.setAttribute('data-repaso', f.id);
@@ -608,11 +529,13 @@
            izquierda, las respuestas como pastillas compactas a la derecha
            (y abajo, si no entran). */
         '<b class="d-repaso-title">Repaso rápido:</b>' +
-        '<div class="d-repaso-item is-current" data-repaso-item data-repaso-ok="' + f.ok + '">' +
+        '<div class="d-repaso-item" data-repaso-item data-repaso-id="' + f.id + '" data-repaso-ok="true">' +
           '<p class="d-repaso-q">' + f.q + '</p>' +
           '<div class="d-repaso-btns">' +
             f.opts.map(function (o, n) {
-              return '<button type="button" data-repaso-ans="' + n + '">' + o + '</button>';
+              /* Convención del kit para opción múltiple: la correcta
+                 dice "true" y las demás "false" (v1.9.133). */
+              return '<button type="button" data-repaso-ans="' + (n === f.ok) + '">' + o + '</button>';
             }).join('') +
           '</div>' +
           /* `data-narrate-skip` en la devolución: se narra UNA vez, al
@@ -708,185 +631,31 @@
      la pregunta fallada y devolvía la chance de los puntos, o sea que
      equivocarse no costaba nada. */
   function initRepasoFactor() {
-    /* (Hasta 2026-10-08 la tira aparecía cuando el video de ESE factor ya
-       había sido visto; ahora está siempre. Queda la función porque se
-       llama desde `markSeen` (boot) y en cada `slidechange`, no una sola
-       vez al montar: el alumno puede ver el video y quedarse en la misma
-       diapositiva, y ahí no hay ningún cambio de diapo que refresque
-       nada. */
-    function refrescar() {
-      U2.forEach(function (f) {
-        var tira = document.querySelector('[data-repaso="' + f.id + '"]');
-        if (!tira || !tira.parentElement) return;
-        // El `hidden` va en el MARCO, que es el que ocupa lugar en la
-        // lámina (y el que el narrador mira para saltearse el bloque).
-        /* Visible DESDE EL INICIO de la diapositiva (pedido del cliente en
-           el simulador del editor, 2026-10-08): antes aparecía recién con
-           el video visto. Para avanzar sigue haciendo falta contestarla
-           (`faltaRepaso`) y ver el video (`faltanVideos`). */
-        tira.parentElement.hidden = false;
-      });
-    }
-    refrescarRepaso = refrescar;
-
-    U2.forEach(function (f) {
-      var tira = document.querySelector('[data-repaso="' + f.id + '"]');
-      var item = tira && tira.querySelector('[data-repaso-item]');
-      if (!item) return;
-      var btns = Array.prototype.slice.call(item.querySelectorAll('[data-repaso-ans]'));
-      var fb = item.querySelector('[data-repaso-fb]');
-
-      function resolver(acerto) {
-        item.classList.add('is-answered', acerto ? 'is-correct' : 'is-wrong');
-        if (fb) fb.hidden = false;
-        btns.forEach(function (b) { b.disabled = true; });
-        /* Señalar CUÁL era la correcta al errar: el kit ya trae la regla
-           `.es-la-correcta` (con su "← esta era") en coto-repaso.css, y
-           sin esto el alumno que se equivoca queda sabiendo que falló
-           pero no qué opción era — el texto lo cuenta en prosa, pero no
-           señala el botón. */
-        if (!acerto && btns[f.ok]) btns[f.ok].classList.add('es-la-correcta');
-        tira.classList.add('is-complete');
+    /* El repaso del KIT (kit-base v1.9.133): hasta v1.9.132 este curso
+       tenía su propia copia de la tira (contestar, restaurar, la marca de
+       "← esta era") y de su acomodo (`acomodarTiras`, que la sacaba a la
+       franja libre en vertical). Las dos subieron al kit
+       (`initRepasoRapido` y su `acomodarTirasSueltas`), que además suma
+       "↺ Reintentar" y el modo botón + capa en teléfono. Lo guardado no
+       cambia: las mismas claves `predicciones`/`prediccionesMal`, con el
+       id del factor, así que un alumno a mitad de curso no pierde nada. */
+    var porId = {};
+    U2.forEach(function (f) { porId[f.id] = f; });
+    repasoGate = initRepasoRapido({
+      seen: function (id) { return !!estado.predicciones[id]; },
+      markSeen: function (id) { estado.predicciones[id] = true; persistir(); },
+      seenMal: function (id) { return estado.prediccionesMal[id] || null; },
+      markMal: function (id) { estado.prediccionesMal[id] = true; persistir(); },
+      onCorrect: function (id) { Logros.award(5, 'repaso de ' + (porId[id] ? porId[id].nombre : id)); },
+      onAnswer: function (id, acerto) {
+        var f = porId[id];
+        var elegido = document.querySelector('[data-repaso-id="' + id + '"] [data-repaso-ans][data-chosen]');
+        if (window.XAPI && f) XAPI.answered('repaso-' + id, f.q, acerto, elegido ? elegido.textContent : '');
+        if (window.motor) window.motor._syncNav();
       }
-
-      // Quien ya contestó en una sesión anterior la encuentra resuelta.
-      if (estado.predicciones[f.id] || estado.prediccionesMal[f.id]) {
-        var acertoAntes = !!estado.predicciones[f.id];
-        if (acertoAntes && btns[f.ok]) btns[f.ok].setAttribute('data-chosen', '');
-        resolver(acertoAntes);
-        return;
-      }
-
-      btns.forEach(function (btn, n) {
-        btn.addEventListener('click', function () {
-          if (item.classList.contains('is-answered')) return;
-          var acerto = n === f.ok;
-          btn.setAttribute('data-chosen', '');
-          resolver(acerto);
-          if (window.XAPI) XAPI.answered('repaso-' + f.id, f.q, acerto, f.opts[n]);
-          if (window.Narrador && Narrador.isNarrating() && fb) {
-            Narrador.speak(fb.textContent, 'other');
-          }
-          if (acerto && !estado.predicciones[f.id]) {
-            estado.predicciones[f.id] = true;
-            Logros.award(5, 'repaso de ' + f.nombre);
-          } else if (!acerto) {
-            estado.prediccionesMal[f.id] = true;
-          }
-          persistir();
-          /* El repaso traba el avance (`faltaRepaso`), así que al
-             contestarlo hay que avisarle a la nav: sin esto "Siguiente"
-             queda deshabilitado hasta el próximo `slidechange`, que es
-             justo lo que el gate acaba de impedir. */
-          if (window.motor) window.motor._syncNav();
-        });
-      });
     });
-
-    document.addEventListener('slidechange', function () {
-      pintarProgresoU2();
-      refrescar();
-      acomodarTiras();
-      /* Y otra vez cuando la diapositiva ya se dibujó: en el mismo
-         `slidechange` las medidas todavía no son las finales, y con la
-         tira visible desde el inicio (2026-10-08) un píxel decidía si
-         salía a la franja libre o quedaba sobre el dibujo. */
-      setTimeout(acomodarTiras, 250);
-    });
-    refrescar();
+    document.addEventListener('slidechange', pintarProgresoU2);
     pintarProgresoU2();
-    acomodarTiras();
-    window.addEventListener('resize', acomodarTiras);
-  }
-
-  /* ---- La tira se va al espacio libre cuando la lámina no la aguanta ----
-     Corrección del cliente, probada en iPad vertical: *"el recuadro del
-     repaso se ve con scroll, tapa parte de la ilustración y las opciones
-     de respuesta quedan cortadas (la última no se llega a ver).
-     Ubicarlo más abajo para que se vea completo, sin scroll y sin tapar
-     el dibujo"*.
-
-     No es un problema de ubicación: la banda mide un % del lienzo pero el
-     texto de la tarjeta tiene un piso en píxeles, así que cuanto más
-     chica la pantalla menos banda hay y más alta es la tarjeta. MEDIDO,
-     la misma tarjeta: 176px de banda contra 163 de tarjeta en escritorio,
-     y 89 contra 156 en iPad vertical. Se cruzan.
-
-     Y un lienzo 2:1 en una pantalla vertical no la llena: deja franjas
-     vacías. MEDIDO: 262px abajo en iPad vertical, 143 en iPhone vertical.
-     Ahí se va la tira, a todo el ancho — donde además necesita MENOS
-     alto, porque el texto deja de envolverse: 112px contra 156.
-
-     En apaisado no hay franja libre y la tira se queda sobre la lámina,
-     que es como se aprobó. Para que entre ahí se acortaron a un renglón
-     las dos preguntas que entraban en dos (diabetes y sedentarismo): con
-     eso las seis necesitan 143px en los 150 del notebook y 130 en los 145
-     del iPad apaisado.
-
-     LÍMITE CONOCIDO, y no tiene arreglo por geometría: en TELÉFONO
-     APAISADO el escenario mide 170px de alto, la lámina lo llena entero
-     y no queda franja libre, mientras la tarjeta necesita 213. Ahí sigue
-     el modo compacto con scroll que ya trae el kit
-     (`@media (max-height: 480px)` en coto-repaso.css). */
-  function acomodarTiras() {
-    U2.forEach(function (f) {
-      var slide = document.querySelector('[data-slide="' + f.id + '"]');
-      if (!slide) return;
-      var marco = slide.querySelector('.d-repaso-marco');
-      var tira = marco && marco.querySelector('.d-repaso');
-      var shot = slide.querySelector('[data-shot]');
-      var img = slide.querySelector('.d-shot-img');
-      if (!marco || !tira || !shot || !img) return;
-      var ir = img.getBoundingClientRect();
-      var sr = slide.getBoundingClientRect();
-      if (!ir.height || !sr.height) return;
-
-      /* `scrollHeight` y no `clientHeight`: lo que importa es lo que la
-         tarjeta NECESITA, que en la banda chica es justamente lo que no
-         entra. Los 20px son el aire mínimo contra la lámina y el pie (eran 24; con la pregunta en la barra azul, tabaquismo en iPhone vertical quedaba 1px corto y se quedaba sobre el dibujo, 2026-10-08). */
-      var libre = sr.bottom - ir.bottom;
-      var yaAfuera = marco.classList.contains('d-repaso-marco--suelto');
-      /* Se mide EN la franja libre, no sobre la lámina: ahí la tarjeta es
-         más ancha y por lo tanto más BAJA. Medida sobre la lámina, una
-         pregunta de tres renglones "no entraba" afuera y se quedaba
-         tapando el dibujo (tabaquismo en teléfono vertical, 2026-10-08,
-         al mostrarse la tira desde el inicio: antes se medía oculta y
-         daba 0). Se prueba afuera y se vuelve si no entra. */
-      if (!yaAfuera) {
-        var padre = marco.parentElement, sig = marco.nextSibling, estilo = marco.getAttribute('style');
-        marco.classList.add('d-repaso-marco--suelto');
-        marco.removeAttribute('style');
-        slide.appendChild(marco);
-        var necesita = tira.scrollHeight + 20;
-        marco.classList.remove('d-repaso-marco--suelto');
-        if (estilo != null) marco.setAttribute('style', estilo);
-        padre.insertBefore(marco, sig);
-      }
-      var afuera = libre >= (yaAfuera ? tira.scrollHeight + 20 : necesita);
-      if (afuera === yaAfuera) {
-        if (afuera) marco.style.setProperty('--tira-arriba', Math.round(ir.bottom - sr.top) + 'px');
-        return;
-      }
-      if (afuera) {
-        /* Sale del `.d-shot` porque el `.d-shot` tiene `overflow:hidden`:
-           desde adentro no hay forma de dibujar nada por debajo del
-           borde del arte. Y se le saca `data-place` para que
-           `_initShots()` no lo vuelva a contar — aunque eso NO alcanza
-           para frenar a `place()`, que escribe desde closures ya
-           capturados; de eso se encarga el `!important` de la clase. */
-        marco.removeAttribute('data-place');
-        marco.removeAttribute('style');
-        marco.classList.add('d-repaso-marco--suelto');
-        if (marco.parentElement === shot) slide.appendChild(marco);
-        marco.style.setProperty('--tira-arriba', Math.round(ir.bottom - sr.top) + 'px');
-      } else {
-        marco.classList.remove('d-repaso-marco--suelto');
-        marco.removeAttribute('style');
-        if (marco.parentElement !== shot) shot.appendChild(marco);
-        marco.setAttribute('data-place', '');
-        if (window.motor && motor._initShots) motor._initShots();
-      }
-    });
   }
 
   /* ============================================================
@@ -1051,10 +820,6 @@
         estado.videosVistos[src] = true;
         Logros.award(5, 'video visto');
         pintarProgresoU2();
-        /* La tira de repaso de ese factor se destapa acá mismo: el
-           alumno cierra el video y se queda en la misma diapositiva, así
-           que no hay ningún `slidechange` que la muestre. */
-        refrescarRepaso();
         persistir();
         if (window.motor) window.motor._syncNav();
       }
@@ -1198,7 +963,7 @@
     });
 
     /* ---- Mini práctica (coto-quiz.js) ---- */
-    initMiniQuiz({
+    practicaGate = initMiniQuiz({
       bank: PRACTICA.banco || [],
       size: PRACTICA.porIntento,
       happyMessages: (PRACTICA.mensajes || {}).bien,
@@ -1218,7 +983,7 @@
         Logros.award(20, 'práctica completada');
       },
       /* `_syncNav()` acá también: la diapositiva de la práctica traba el
-         avance (`faltaPractica`), así que al completarla hay que
+         avance (el gate de la práctica), así que al completarla hay que
          refrescar la nav en el mismo momento. */
       onFinish: function () {
         Cierre.unlockCierre();

@@ -386,8 +386,15 @@
    lados: sin eso la tarjeta queda por debajo del engranaje y de la
    ayuda. */
 .d-repaso-marco--suelto > .d-repaso{
-  width: min(calc(100% - 190px), 720px);
+  width: min(calc(100% - 140px), 720px);
   pointer-events: auto;
+  /* Suelta, la tarjeta ya no está sobre la lámina: su letra no sigue la
+     escala del arte (`--d-escala-lamina`) sino una fija (kit-base
+     v1.9.133). Con la escala, la tira de una pregunta (`--fila`, todo en
+     `em`) salía a 4,3px en un teléfono vertical (cardio, factores). El
+     ancho deja libre solo la columna de Ayuda y Ajustes (70px por lado,
+     centrada): con 190 quedaba en 200px y las respuestas no entraban. */
+  font-size: .9rem;
   /* TOPE a la franja libre, no `none`. BUG REAL que encontró medir los
      píxeles en vertical: en iPhone vertical la franja libre mide 143px y
      la tarjeta CONTESTADA necesita 180, así que centrada se desbordaba
@@ -553,6 +560,9 @@
 .d-repaso--fila .d-repaso-fb{ font-size: .82em; }
 .d-repaso--fila .d-repaso-item.is-answered .d-repaso-q{ display: none; }
 .d-repaso--fila .d-repaso-item.is-answered .d-repaso-fb{ order: -1; flex: 1 1 13em; margin-top: 0; }
+/* Suelta en un teléfono vertical (v1.9.133) la tarjeta mide ~200px: las
+   respuestas bajan de renglón en vez de cortarse contra el borde. */
+.d-repaso-marco--suelto .d-repaso--fila .d-repaso-btns{ flex: 1 1 100%; flex-wrap: wrap; }
 /* Teléfono acostado: la tira sobre la lámina con el alto del kit (65px)
    recortaba una pregunta de dos renglones (clip-audit): ahí crece con su
    contenido. */

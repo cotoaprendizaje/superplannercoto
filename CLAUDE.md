@@ -16498,3 +16498,79 @@ de marca placeholder). El piso sube a 300 en los dos; cardio tiene 1929.
 Pendiente, para cuando se retome cardio: su sistema de gates en `curso.js`
 (§7.80) y su tira de factores, que la arma su `curso.js` y en un curso
 nuevo se escribe en una zona `html`.
+
+## 7.82 Un curso nuevo hecho con la receta sale andando (kit-base v1.9.133)
+
+Se armó un curso desde cero (`new-course` + 3 láminas con arte de cardio:
+fichas, video y tira de repaso) siguiendo SOLO "La receta" del manual, para
+encontrar los huecos antes que un curso real. Los que aparecieron:
+
+- **La plantilla de `js/curso.js` traía la receta comentada.** Los gates de
+  fichas y video, el repaso, la práctica y el cierre había que descomentarlos
+  y cablearlos a mano (~150 líneas, copiadas de cardio); sin eso el curso no
+  trababa nada, no tenía práctica y el cierre quedaba en blanco. Ahora vienen
+  activos y degradan solos si el curso no tiene esa pieza: `initPopupGate`,
+  `initVideoGate` (con los 3 patrones de video sobre el mismo registro),
+  `initShotSwap`, `initRepasoRapido`, `initMiniQuiz` (con `introPopup` si
+  está el pop-up), `initCierreCelebration` (llena los 4 números del
+  resumen), `motor.canAdvance` sobre todos los gates e `initGateHints`. Se
+  guardan `pp`, `vv`, `qz` y `qi` en suspend_data. Un curso sin práctica
+  arranca con el cierre abierto (`practicaGate.completa()`), y uno `--tipo
+  simulador`, que no carga `coto-quiz.js`, tiene un gate vacío.
+- **La locución no arrancaba por el título** (`narracion-titulos` en rojo
+  en 7 diapositivas): cardio lo resolvía con `Narrador.setNarrateTitles(true)`
+  en su `curso.js`. Va en la plantilla: es la línea.
+- **`coto-quiz.js` y su CSS venían comentados en el marco** y la práctica
+  nacía como texto: `new-course` los carga y siembra la práctica entera
+  (`sembrarPractica`, en `curso-datos.mjs`): la diapositiva `"tipo":
+  "practica"` con el aviso, la ficha `practica-intro` y 3 preguntas de
+  ejemplo.
+- **Reglas que todo curso necesita y vivían en el CSS de cardio:** la que
+  esconde la intro de la práctica a ≤560px de alto (con el tipo `practica`
+  todo va dentro de `.slide-inner` y la del kit no lo alcanzaba: "Responder"
+  9px afuera a 844×390) y el aviso del candado del cierre (`.slide-cierre
+  .locked`, que se veía al lado del resumen). Subieron a coto-quiz.css y
+  coto-cierre.css; las 81 fotos de cardio no cambian.
+- **La tira de repaso del manual** decía `data-place` en la tira: va en un
+  marco (`d-repaso-marco d-repaso-marco--abajo`) dentro del margen del iPad.
+  El manual trae ahora el marcado entero. Y que el ícono del área es un
+  placeholder de 1×1.
+
+**Teléfono vertical (las fotos de cardio a 390×844):** la tira de factores
+salía a la franja libre con la letra a la escala de la lámina, 4,3px. Suelta
+usa letra fija (.9rem) y un ancho que solo deja libre la columna de Ayuda y
+Ajustes; las respuestas bajan de renglón. El kit mide si entra afuera
+probándola AFUERA (lo hacía cardio en su `acomodarTiras`; medida adentro iba
+y venía), con 20px de aire, y en un teléfono vertical, si no entra, pasa a
+botón + capa (acostado no: ahí la tira sobre la lámina es lo aprobado). El
+resto de las láminas en vertical se ven chicas por ser 2:1; es el caso "Ver
+igual, en vertical" y no tiene arreglo sin rediseñar el arte.
+
+**Cardio, a la forma del kit** (lo pendiente de §7.81): sus gates son los del
+kit con un gate propio para los 7 factores (antes `bloqueada()` y un
+`advanceblocked` a mano) y su tira usa `initRepasoRapido` y el acomodo del
+kit (antes `initRepasoFactor` y `acomodarTiras` propios), con las mismas
+claves guardadas. La tira sigue armándose desde su `curso.js` (seis láminas
+con la misma geometría), con el marcado del kit: opciones `"true"`/`"false"`
+y `data-repaso-id`; `data-require-repaso` va en `curso.json`. Gana el
+"↺ Reintentar" de todo repaso. `initGateHints` acepta `aviso(n)` por gate
+para decir qué hacer ("Mirá el video antes de seguir"), como decía cardio.
+
+**Seguridad alimentaria (`repaso-reintentar`, rojo desde v1.9.125):** su
+`curso.js` tenía su propia copia de `initRepasoRapido`, que tapaba la del kit
+—la había conservado porque al kit le faltaban dos arreglos de locución y
+guardar las erradas, y el kit los tiene desde v1.9.118 y v1.9.124—. Pasada a
+la del kit en la copia de prueba (`rp`/`rm` sin cambios), la suite da 72/72;
+el cambio queda en su ficha para su chat. Para que no vuelva a pasar,
+`actualizar-kit` avisa cuando `js/curso.js` declara una función con el
+nombre de una pública del kit (`global.X = X`). En los cursos: SA
+(`initRepasoRapido`, `initMinijuego`), NOA (las mismas, copia del 1/10),
+Seguridad de la información (`initRevelados`, `initTandas`,
+`initDocEnDiapo`, `initPasosRepaso`, `initSalidaRepaso`). Las reglas de CSS
+que pisan al kit, por curso y agrupadas por pieza, están en las fichas.
+
+Tests: `check-receta` (test:kit, sin navegador: la plantilla con la receta
+activa, la siembra de la práctica, `coto-quiz` sin comentar, el aviso de
+copias; 14 fallos con el kit anterior) y un caso nuevo en `tira-suelta`
+(teléfono vertical con la tira de una pregunta: legible o en capa; 3,7px con
+el kit anterior).

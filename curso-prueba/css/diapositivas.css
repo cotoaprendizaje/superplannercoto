@@ -139,10 +139,8 @@
    kit desde v1.9.125 (rediseño, §7.74). La grilla que había acá era del
    diseño anterior y descolocaba las filas nuevas (ícono + texto). */
 
-/* ---- Cierre: bloqueado hasta terminar la mini práctica ---- */
-.slide-cierre .locked{text-align:center;color:var(--text-soft);font-style:italic;border:1px dashed var(--line);
-  border-radius:var(--r-lg);padding:1.2rem 1.6rem;max-width:52ch}
-.slide-cierre.unlocked .locked{display:none}
+/* Cierre bloqueado hasta terminar la mini práctica: `.locked` es del kit
+   (coto-cierre.css, v1.9.133). */
 /* El paso 1 (captura) mantiene padding:0 como cualquier diapo-captura (lo
    da la regla :not(.d-shot-slide) de más arriba, que no matchea acá). El
    paso 2 es HTML real de alto variable — mismo resguardo que el resto de
@@ -750,26 +748,8 @@
    contenido. Con eso alcanza compactando, sin apretar la tipografía
    por debajo de lo legible.
    ============================================================ */
-@media (max-height: 560px) {
-  /* La intro se esconde SIEMPRE, no solo mientras se responde. Al
-     terminar, `syncQuizRunning()` saca `.is-quiz-running` y la intro
-     vuelve —eyebrow, título, bajada y el aviso destacado, ~200px— justo
-     cuando la diapositiva pasa a su estado MÁS ALTO (la nota + la lista
-     de repaso). Medido: el botón "Continuar" terminaba 53px fuera de la
-     diapositiva.
-     El aviso de "esto no es la evaluación" no se pierde por esconderlo
-     acá: en esta pantalla lo da el pop-up `practica-intro`, que se abre
-     al entrar, y vuelve a aparecer en el resultado. */
-  .slide[data-slide="evaluacion"] .slide-eyebrow,
-  .slide[data-slide="evaluacion"] h2,
-  .slide[data-slide="evaluacion"] .slide-lead,
-  .slide[data-slide="evaluacion"] .d-aviso-practica { display: none; }
-  .slide[data-slide="evaluacion"] .slide-inner { max-height: 100%; min-height: 0; }
-  /* El tamaño de la pregunta y del resultado en pantallas bajas lo pone
-     el kit desde v1.9.125 (rediseño, §7.74): los ajustes propios que
-     había acá eran del diseño anterior y, con el nuevo, lo agrandaban
-     ("Responder" 6px afuera a 844×390). Se sacaron. */
-}
+/* La intro de la práctica en pantalla baja (≤560) la esconde el kit desde
+   v1.9.133 (coto-quiz.css): era esta regla, que todo curso necesita. */
 
 /* ---- El aviso previo a la práctica, en teléfono acostado ----
    A 844×390 la tarjeta del pop-up entra en 328px y su contenido mide

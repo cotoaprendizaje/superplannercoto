@@ -424,3 +424,60 @@ export function huellaDom(raiz) {
 export function mismaHuella(a, b) {
   return a.texto === b.texto && a.filas.length === b.filas.length && a.filas.every((f, i) => f === b.filas[i]);
 }
+
+/* ---- La mini práctica, sembrada como en cardio (kit-base v1.9.133) ----
+   Es la misma en todos los cursos de la línea —cambian las preguntas—,
+   así que nace hecha: la diapositiva `"tipo": "practica"` con el aviso
+   "esto no es la evaluación", el pop-up previo `practica-intro` (en
+   `fichas`) y un banco de 3 preguntas de ejemplo para reemplazar. Hasta
+   v1.9.132 la diapositiva nacía como texto y un curso armado con la
+   receta no tenía práctica hasta copiar las tres piezas de cardio. */
+export function sembrarPractica(datos) {
+  const ev = (datos.diapositivas || []).find((d) => d.id === 'evaluacion');
+  if (!ev || ev.tipo === 'practica') return;
+  delete ev.parrafos;
+  Object.assign(ev, {
+    tipo: 'practica',
+    antetitulo: 'Mini práctica',
+    titulo: 'Poné a prueba lo que aprendiste',
+    bajada: 'Son 3 preguntas para repasar, cada una con su explicación.',
+    aviso: '<div class="d-aviso-practica" role="note" data-narrate-skip>\n' +
+      '  <span class="d-aviso-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg></span>\n' +
+      '  <div>\n' +
+      '    <p><b>Esto no es la evaluación del curso.</b> Es una práctica para vos: seguís dentro del contenido, no se guarda ninguna nota y podés repetirla las veces que quieras.</p>\n' +
+      '    <p>La <b>evaluación final</b> es un <b>cuestionario aparte</b>, que vas a encontrar en la plataforma <b>cuando termines de ver todo el contenido</b> del curso.</p>\n' +
+      '  </div>\n' +
+      '</div>'
+  });
+  if (!datos.practica) {
+    datos.practica = {
+      porIntento: 3,
+      banco: [1, 2, 3].map((n) => ({
+        q: `(Pregunta ${n}: reemplazar por una pregunta sobre el contenido.)`,
+        opts: ['(La respuesta correcta.)', '(Una respuesta incorrecta.)', '(Otra respuesta incorrecta.)'],
+        ok: 0,
+        why: '(La explicación de la respuesta correcta.)',
+        related: n === 2 ? 'tema-2' : 'tema-1',
+        relatedLabel: n === 2 ? 'Tema 2' : 'Tema 1'
+      }))
+    };
+  }
+  datos.fichas = datos.fichas || [];
+  if (!datos.fichas.some((f) => f.id === 'practica-intro')) {
+    datos.fichas.push({
+      id: 'practica-intro',
+      etiqueta: 'Antes de empezar la mini práctica',
+      titulo: 'Mini práctica · antes de empezar:',
+      clase: 'd-pracintro',
+      claseTarjeta: 'd-pracintro-card',
+      cuerpo: '<p class="d-pracintro-lead"><b>Esto no es la evaluación del curso.</b></p>\n' +
+        '<ul>\n' +
+        '  <li><span class="d-pracintro-n" aria-hidden="true">3</span><span>preguntas cortas de lo que viste, cada una con su explicación</span></li>\n' +
+        '  <li><span class="d-pracintro-n" aria-hidden="true">↺</span><span>podés reintentarla las veces que quieras; no se guarda ninguna nota</span></li>\n' +
+        '  <li><span class="d-pracintro-n" aria-hidden="true">+</span><span>cada respuesta bien suma puntos en el primer intento</span></li>\n' +
+        '</ul>\n' +
+        '<p class="d-pracintro-eval">La <b>evaluación final</b> es un <b>cuestionario aparte</b>, en la plataforma.</p>\n' +
+        '<button class="btn btn-cat d-pracintro-go" type="button" data-pracintro-go>Empezar la práctica</button>'
+    });
+  }
+}

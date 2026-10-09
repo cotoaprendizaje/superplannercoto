@@ -174,6 +174,26 @@ try {
     avisosMarcado.push(`${sinModo} tira(s) de repaso con \`class="d-repaso-btns"\` a secas: el kit pide \`d-repaso-btns--vf\`` +
       '\n  (Verdadero/Falso, con su ✓/✕) o `d-repaso-btns--col` (opción múltiple). Sin el modificador se pierden los íconos.');
   }
+  /* Una copia propia de una función del kit (kit-base v1.9.133): el
+     `curso.js` declara `function initRepasoRapido()` adentro de su IIFE y
+     esa copia TAPA la del kit, así que el curso se queda con la versión
+     de cuando se copió y nunca recibe lo que el kit le suma después.
+     Seguridad alimentaria tenía su `initRepasoRapido` y por eso no tenía
+     "↺ Reintentar" (`repaso-reintentar` en rojo desde v1.9.125). Se
+     listan las públicas del kit (`global.X = X`) con el mismo nombre. */
+  {
+    const delKit = new Set();
+    for (const f of fs.readdirSync(path.join(KIT, 'js')).filter((x) => x.endsWith('.js') && x !== 'curso.js')) {
+      for (const m of fs.readFileSync(path.join(KIT, 'js', f), 'utf8').matchAll(/\bglobal\.(\w+)\s*=\s*\1\b/g)) delKit.add(m[1]);
+    }
+    const copias = [...new Set([...codigo.matchAll(/\bfunction\s+(\w+)\s*\(/g)].map((m) => m[1]).filter((n) => delKit.has(n)))];
+    if (copias.length) {
+      avisosMarcado.push(`js/curso.js tiene su propia copia de ${copias.length === 1 ? 'una función' : copias.length + ' funciones'} del kit: ` +
+        copias.map((n) => '`' + n + '`').join(', ') + '.' +
+        '\n  La copia tapa a la del kit y el curso no recibe lo que el kit le sume después. Pasar a la del kit' +
+        '\n  con sus opciones (`seen`, `markSeen`…) y borrar la copia; si la copia hace algo que el kit no, subirlo al kit.');
+    }
+  }
   /* El aviso "Girá tu dispositivo" viejo, sin salida (v1.9.122, §7.71):
      el marcado de antes no tenía el botón `data-rotate-seguir`, y en un
      iPad vertical con el giro bloqueado el curso quedaba TAPADO. Es

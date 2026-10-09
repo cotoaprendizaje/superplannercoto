@@ -1074,7 +1074,11 @@
         if (opts.toast !== false && global.Player && global.Player.toast) {
           var n = faltan.length;
           var qué = n === 1 ? (g.uno || 'elemento') : (g.varias || 'elementos');
-          global.Player.toast('Te ' + (n === 1 ? 'queda 1 ' : 'quedan ' + n + ' ') + qué + ' por ver antes de seguir.');
+          /* `aviso` (kit-base v1.9.133): el texto propio de ese gate. "Te
+             queda 1 práctica por ver" no dice lo que hay que hacer; cardio
+             decía "Completá la mini práctica antes de seguir". */
+          global.Player.toast(typeof g.aviso === 'function' ? g.aviso(n, faltan)
+            : 'Te ' + (n === 1 ? 'queda 1 ' : 'quedan ' + n + ' ') + qué + ' por ver antes de seguir.');
         }
         return;
       }
@@ -1259,8 +1263,26 @@
         if (esTelefono()) return;                     // sigue de botón; la tira está escondida o en la capa
         ponerPop(marco, false);
       }
-      var afuera = sr.bottom - ir.bottom >= tira.scrollHeight + 24;
       var yaAfuera = marco.classList.contains('d-repaso-marco--suelto');
+      /* Se mide AFUERA, donde iría (kit-base v1.9.133, de cardio): suelta,
+         la tarjeta usa letra fija y otro ancho (coto-repaso.css), así que
+         su alto sobre la lámina no dice si entra en la franja. Medida
+         adentro, entraba, salía más alta, no entraba y volvía a la lámina
+         tapando el dibujo (`bloque-no-tapa-arte`). Se prueba afuera y se
+         vuelve. 20px de aire contra la lámina y el pie (con 24, tabaquismo
+         de cardio quedaba 1px corto en un iPhone vertical). */
+      var altoAfuera = tira.scrollHeight;
+      if (!yaAfuera) {
+        var padre = marco.parentElement, sig = marco.nextSibling, estilo = marco.getAttribute('style');
+        marco.classList.add('d-repaso-marco--suelto');
+        marco.removeAttribute('style');
+        slide.appendChild(marco);
+        altoAfuera = tira.scrollHeight;
+        marco.classList.remove('d-repaso-marco--suelto');
+        if (estilo != null) marco.setAttribute('style', estilo);
+        padre.insertBefore(marco, sig);
+      }
+      var afuera = sr.bottom - ir.bottom >= altoAfuera + 20;
       if (afuera) {
         if (!yaAfuera) {
           /* Se le saca `data-place` para que `_initShots()` no lo cuente;
@@ -1279,8 +1301,13 @@
         marco.setAttribute('data-place', '');
         if (global.motor && global.motor._initShots) global.motor._initShots();
       }
-      /* Ni en su banda ni afuera: en teléfono, botón + capa. */
-      if (!afuera && esTelefono() && tira.scrollHeight > marco.clientHeight + 2) ponerPop(marco, true);
+      /* Ni en su banda ni afuera: en teléfono, botón + capa. También en
+         un teléfono VERTICAL si no salió (v1.9.133): ahí la lámina mide
+         ~195px de alto y la tira escala con ella a ~4px; entraba "en su
+         banda" y no se podía leer. Acostado no: la tira sobre la lámina
+         es como la aprobó el cliente en cardio. */
+      var vertical = global.innerHeight > global.innerWidth;
+      if (!afuera && esTelefono() && (tira.scrollHeight > marco.clientHeight + 2 || vertical)) ponerPop(marco, true);
     });
   }
   var tirasEnganchadas = false;

@@ -91,6 +91,13 @@
    Verificado de 1024x640 a 2560x1440.
    ============================================================ */
 .slide-cierre .d-cierre-shot,.slide-cierre .d-cierre-summary{display:none}
+/* El aviso del candado (`bloqueo` en curso.json → `<p class="locked">`,
+   lo emite `curso-datos.mjs`): se ve mientras falte la práctica y se va
+   al desbloquear (kit-base v1.9.133). Vivía en el CSS de cardio, así que
+   un curso nuevo lo mostraba también al lado del resumen. */
+.slide-cierre .locked{text-align:center;color:var(--text-soft);font-style:italic;border:1px dashed var(--line);
+  border-radius:var(--r-lg);padding:1.2rem 1.6rem;max-width:52ch}
+.slide-cierre.unlocked .locked{display:none}
 .slide-cierre.unlocked .d-cierre-shot:not([hidden]){display:flex}
 /* Ancho del resumen: 1680px/96% (no 1400px/100%). Fix real que ya vivía en
    "Uso de Sucursales 3 - NOA" y nunca había vuelto al kit (CLAUDE.md §6.22

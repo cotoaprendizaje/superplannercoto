@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.132**.
+Vigente para **kit-base v1.9.133**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -179,23 +179,58 @@ escribirla se busca si el kit ya la tiene.
 - **Zonas que dibujan su propio realce** (un círculo del arte, una etapa,
   una torta): llevan `d-shot-hit--sin-aro` en `clase`. Regla del cliente:
   se remarca la forma, nunca el rectángulo.
-- **Tira de repaso**: una pregunta Verdadero/Falso sobre la lámina, colocada
-  con `data-place` donde no tape el dibujo. De UNA pregunta, `d-repaso
-  d-repaso--fila` (la de los factores de cardio); de dos, `d-repaso`
-  común. `data-require-repaso` en la diapositiva traba hasta contestarla.
-  (Cardio la arma desde su `curso.js` para las 6 láminas de factores; un
-  curso nuevo la escribe en una zona `html`.)
+- **Tira de repaso**: una pregunta Verdadero/Falso sobre la lámina. Va en
+  una zona `"tipo": "html"` y se coloca con un MARCO (`d-repaso-marco
+  d-repaso-marco--abajo` con `data-place` y `data-l/t/w/h`): el marco
+  declara el lugar disponible y la tarjeta crece hacia arriba al
+  contestar. De UNA pregunta, la tarjeta es `d-repaso d-repaso--fila`
+  (la de los factores de cardio); de dos, `d-repaso` común.
+  `"atributos": {"data-require-repaso": ""}` en la diapositiva traba
+  hasta contestarla (bien o mal). El marco va dentro del margen seguro
+  del iPad: `data-l` ≥ 12.22 y `data-l + data-w` ≤ 87.78 (si no,
+  `armar-curso` avisa). Así, en un curso nuevo:
+
+  ```html
+  <div class="d-repaso-marco d-repaso-marco--abajo" data-place data-l="12.22" data-t="70" data-w="75.56" data-h="22">
+    <div class="d-repaso d-repaso--fila" data-repaso data-no-tapa-arte>
+      <b class="d-repaso-title">Repaso rápido:</b>
+      <div class="d-repaso-item" data-repaso-item data-repaso-id="(id-unico)" data-repaso-ok="true">
+        <p class="d-repaso-q" data-narrate-prefix="Verdadero o falso">(La afirmación.)</p>
+        <div class="d-repaso-btns"><button type="button" data-repaso-ans="true">Verdadero</button><button type="button" data-repaso-ans="false">Falso</button></div>
+        <p class="d-repaso-fb" data-repaso-fb data-narrate-skip hidden>(Verdadero/Falso: la explicación.)</p>
+      </div>
+    </div>
+  </div>
+  ```
+
+  (Cardio arma las suyas desde su `curso.js` para las 6 láminas de
+  factores; el marcado es el mismo.) Donde la lámina no la aguanta (un
+  iPad o un teléfono en vertical) el kit la saca solo a la franja libre de
+  abajo, con letra legible, o la convierte en un botón que la abre en una
+  capa (v1.9.133).
 - **Mini práctica** (`"tipo": "practica"`, `antetitulo`, `titulo`,
   `bajada`, `aviso`): las preguntas van en `practica` de `curso.json`
   (`banco`, `porIntento: 3`, tres opciones cada una, con `why` y la
   diapositiva para repasar). Antes de empezar, el aviso "Esto no es la
-  evaluación". El resultado y el cierre los resuelve el kit.
+  evaluación" (la ficha `practica-intro`). El resultado y el cierre los
+  resuelve el kit. Desde v1.9.133 `new-course` la siembra entera: la
+  diapositiva, el aviso, el pop-up previo y 3 preguntas de ejemplo; el
+  curso solo reemplaza las preguntas.
 - **Cierre** (`"tipo": "cierre"`): `imagen` (la lámina de felicitación),
   `capas` (texto real sobre la lámina, `d-cierre-arte-txt`, si el arte
   traía texto dibujado), `bloqueo` (el aviso si falta la práctica),
   `saludo`, `numeros` (los cuatro del resumen), `nota` (la evaluación es
   aparte) y `repaso` (el repaso de todo el curso). El resumen, las
   medallas y "Curso finalizado" los arma el kit.
+
+**El `curso.js` ya viene cableado** (v1.9.133): todo lo de arriba
+funciona sin escribir JavaScript —las fichas y los videos que traban, la
+tira de repaso, la práctica con su gate y el cierre con sus números—.
+El `curso.js` de un curso nuevo solo suma lo propio: una pieza a medida,
+un logro de unidad, el vocabulario de la locución.
+
+**El ícono del área** va en `img/icono-<área>.webp`: `new-course` deja
+un cuadrado blanco de 1×1 que hay que reemplazar por el ícono real.
 
 **Lo que va en todo el curso** (también en `curso.json`): `indice` (grupos
 "Inicio" y "Unidad N — Nombre", cada ítem con su ícono de tipo), `glosario`
@@ -246,7 +281,8 @@ repite en un segundo curso, sube al kit.
 | tiempo activo, resumen imprimible | `initTiempoActivo`, `initSummaryPrint` |
 | simulador | `initSimulador` + `js/escenario.js` |
 
-- La plantilla de `curso.js` ya trae todo esto comentado y en orden.
+- La plantilla de `curso.js` ya trae todo esto en orden; lo de la receta
+  (gates, videos, repaso, práctica, cierre) viene ACTIVO desde v1.9.133.
 - **Si escribís el marcado de una pieza y no llamás su `init`,
   `contrato-cableado` te lo dice con la consecuencia.** Es la falla más
   cara que tuvo el molde: la pieza está y el cable no (§7.17).

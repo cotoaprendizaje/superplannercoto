@@ -27,7 +27,14 @@ const CASOS = [
   /* Teléfono apaisado (v1.9.121, §7.70): ni banda ni franja libre. Por
      decisión del cliente, sin scroll: la tira pasa a ser un botón y se
      abre entera en una capa. */
-  { nombre: 'iPhone apaisado 844×390', ctx: { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, pop: true }
+  { nombre: 'iPhone apaisado 844×390', ctx: { viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true }, pop: true },
+  /* Teléfono vertical con la tira de UNA pregunta (`--fila`, toda en
+     `em`), v1.9.133: la de los factores de cardio. Suelta, salía con la
+     letra a la escala de la lámina (4,3px); y si no entraba afuera,
+     volvía sobre la lámina igual de ilegible. Tiene que salir legible o
+     pasar a botón + capa. 390×664 es el iPhone 12 sin las barras del
+     navegador, el peor caso de `bloque-no-tapa-arte`. */
+  { nombre: 'iPhone vertical 390×664, tira de una pregunta', ctx: { viewport: { width: 390, height: 664 }, hasTouch: true, isMobile: true }, fila: true, legible: true }
 ];
 
 for (const c of CASOS) {
@@ -39,7 +46,7 @@ for (const c of CASOS) {
   await page.waitForTimeout(700);
   await page.keyboard.press('Escape').catch(() => {});
 
-  const id = await page.evaluate(() => {
+  const id = await page.evaluate((fila) => {
     if (typeof window.initRepasoRapido !== 'function') return { no: 'el curso no carga `initRepasoRapido` (coto-ui.js)' };
     const slides = [...document.querySelectorAll('[data-slide]')];
     const comun = slides.filter((s, i) => i > 0 && !s.matches('.d-shot-slide, .slide-cierre') && !s.querySelector('[data-shot]'));
@@ -50,18 +57,26 @@ for (const c of CASOS) {
       '<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="720"><rect width="1440" height="720" fill="#eef"/></svg>');
     const shot = document.createElement('div');
     shot.className = 'd-shot'; shot.setAttribute('data-shot', '');
+    const tira = fila
+      ? '<div class="d-repaso d-repaso--fila" data-repaso><b class="d-repaso-title">Repaso rápido:</b>' +
+        '<div class="d-repaso-item" data-repaso-item data-repaso-id="zz-suelta" data-repaso-ok="true">' +
+        '<p class="d-repaso-q">¿Qué parte de los adultos no llega al mínimo de actividad física?</p>' +
+        '<div class="d-repaso-btns"><button data-repaso-ans="true">64,9%</button><button data-repaso-ans="false">24,9%</button>' +
+        '<button data-repaso-ans="false">44,9%</button></div>' +
+        '<p class="d-repaso-fb" data-repaso-fb hidden>Casi 2 de cada 3.</p></div></div>'
+      : '<div class="d-repaso" data-repaso>' +
+        '<b class="d-repaso-title">Repaso rápido<span class="d-repaso-nav"><button class="d-repaso-arrow" data-repaso-prev>‹</button>' +
+        '<span class="d-repaso-count" data-repaso-count>0 de 1</span><button class="d-repaso-arrow" data-repaso-nextq>›</button></span></b>' +
+        '<div class="d-repaso-item" data-repaso-item data-repaso-n="1" data-repaso-id="zz-suelta" data-repaso-ok="true">' +
+        '<p class="d-repaso-q">¿Cuál de estos es un factor de riesgo que se puede modificar con hábitos diarios?</p>' +
+        '<div class="d-repaso-btns d-repaso-btns--col">' +
+        '<button data-repaso-ans="false">La edad, que avanza para todos por igual</button>' +
+        '<button data-repaso-ans="true">El sedentarismo y la falta de actividad física</button>' +
+        '<button data-repaso-ans="false">Los antecedentes familiares directos</button></div>' +
+        '<p class="d-repaso-fb" data-repaso-fb hidden>El sedentarismo se puede cambiar.</p></div></div>';
     shot.innerHTML = '<img class="d-shot-img" src="' + arte + '" alt="">' +
-      '<div class="d-repaso-marco" id="zz-marco" data-place data-l="54" data-t="62" data-w="42" data-h="30">' +
-      '<div class="d-repaso" data-repaso>' +
-      '<b class="d-repaso-title">Repaso rápido<span class="d-repaso-nav"><button class="d-repaso-arrow" data-repaso-prev>‹</button>' +
-      '<span class="d-repaso-count" data-repaso-count>0 de 1</span><button class="d-repaso-arrow" data-repaso-nextq>›</button></span></b>' +
-      '<div class="d-repaso-item" data-repaso-item data-repaso-n="1" data-repaso-id="zz-suelta" data-repaso-ok="true">' +
-      '<p class="d-repaso-q">¿Cuál de estos es un factor de riesgo que se puede modificar con hábitos diarios?</p>' +
-      '<div class="d-repaso-btns d-repaso-btns--col">' +
-      '<button data-repaso-ans="false">La edad, que avanza para todos por igual</button>' +
-      '<button data-repaso-ans="true">El sedentarismo y la falta de actividad física</button>' +
-      '<button data-repaso-ans="false">Los antecedentes familiares directos</button></div>' +
-      '<p class="d-repaso-fb" data-repaso-fb hidden>El sedentarismo se puede cambiar.</p></div></div></div>';
+      '<div class="d-repaso-marco' + (fila ? ' d-repaso-marco--abajo' : '') + '" id="zz-marco" data-place data-l="54" data-t="62" data-w="42" data-h="30">' +
+      tira + '</div>';
     /* La lámina de prueba tiene que ser LA diapositiva, como una real:
        se esconde lo que la diapositiva ya traía. MEDIDO en cardio: la
        elegida era la de la práctica, y su contenido le dejaba a la lámina
@@ -74,7 +89,7 @@ for (const c of CASOS) {
     if (window.motor && window.motor._initShots) window.motor._initShots();
     window.initRepasoRapido({});
     return sl.getAttribute('data-slide');
-  });
+  }, !!c.fila);
   if (id && id.no) { fallos.push(`${c.nombre}: ${id.no}`); await context.close(); continue; }
   if (id && id.salta) {
     /* Todas sus diapositivas ya tienen lámina (alimentaria): no hay dónde
@@ -111,10 +126,21 @@ for (const c of CASOS) {
     const m = document.getElementById('zz-marco');
     const t = m.querySelector('.d-repaso');
     const q = t.getBoundingClientRect();
+    const pq = t.querySelector('.d-repaso-q');
     return { suelta: m.classList.contains('d-repaso-marco--suelto'), enLinea: m.style.left || m.style.width,
-      scroll: t.scrollHeight - t.clientHeight, abajo: Math.round(q.bottom - innerHeight) };
+      scroll: t.scrollHeight - t.clientHeight, abajo: Math.round(q.bottom - innerHeight),
+      pop: m.classList.contains('d-repaso-marco--pop'),
+      letra: pq ? Math.round(parseFloat(getComputedStyle(pq).fontSize) * 10) / 10 : null };
   });
-  if (c.pop) {
+  if (c.legible) {
+    if (r.pop) { /* botón + capa: la capa se mide en el caso apaisado */ }
+    else if (!r.suelta) fallos.push(`${c.nombre}: la tira quedó sobre la lámina con la letra a ${r.letra}px: ni salió a la franja libre ni pasó a botón + capa.`);
+    else {
+      if (r.letra < 12) fallos.push(`${c.nombre}: la tira salió a la franja libre con la letra a ${r.letra}px (la escala de la lámina): suelta tiene que leerse (≥ 12px).`);
+      if (r.scroll > 3) fallos.push(`${c.nombre}: la tira suelta tiene ${r.scroll}px de scroll.`);
+      if (r.abajo > 0) fallos.push(`${c.nombre}: la tira suelta se pasa ${r.abajo}px por debajo de la pantalla.`);
+    }
+  } else if (c.pop) {
     const p = await page.evaluate(async () => {
       const m = document.getElementById('zz-marco');
       const b = m.querySelector('.d-repaso-abrir');

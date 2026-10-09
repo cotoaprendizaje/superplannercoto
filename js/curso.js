@@ -40,6 +40,13 @@
     ]);
   }
 
+  /* La locución arranca por el TÍTULO de la diapositiva (la línea de
+     cardio, kit-base v1.9.133): sin esto, quien escucha entra a mitad de
+     una explicación sin saber de qué le hablan (`narracion-titulos`). El
+     kit no lo hace por default por un cliente anterior que pidió "solo el
+     contenido explícito"; un curso así lo apaga acá. */
+  if (window.Narrador && Narrador.setNarrateTitles) Narrador.setNarrateTitles(true);
+
   /* ---------- Estado propio del curso (si aplica) ----------
      Ej.: banco de preguntas del quiz, situaciones del minijuego, qué
      fichas se abrieron — solo si el curso tiene ese contenido.
@@ -49,7 +56,9 @@
      del repaso rápido, ACERTADAS y ERRADAS. Las dos se guardan —ver el
      bloque de `initRepasoRapido` más abajo—. Si el curso no tiene
      repaso quedan vacías y no ocupan lugar en suspend_data. */
-  var estado = { vistas: {}, repaso: {}, repasoMal: {} };
+  /* `popups`, `videos`, `quiz` y `quizIntentos` (kit-base v1.9.133): lo
+     que leen los gates de la receta y el resumen del cierre. */
+  var estado = { vistas: {}, repaso: {}, repasoMal: {}, popups: {}, videos: {}, quiz: null, quizIntentos: 0 };
 
   /* ---------- Catálogo de logros (CONTENIDO del curso) ----------
      La única parte de los logros que es propia de cada curso: cuáles
@@ -80,6 +89,9 @@
     var guardar = { vs: Object.keys(estado.vistas) };
     if (Object.keys(estado.repaso).length) guardar.rp = Object.keys(estado.repaso);
     if (Object.keys(estado.repasoMal).length) guardar.rm = estado.repasoMal;   // { id: lo que eligió }
+    if (Object.keys(estado.popups).length) guardar.pp = Object.keys(estado.popups);
+    if (Object.keys(estado.videos).length) guardar.vv = Object.keys(estado.videos);
+    if (estado.quiz) { guardar.qz = estado.quiz; guardar.qi = estado.quizIntentos; }
     SCORM.saveState(Object.assign(guardar, Logros.serialize()));
   }
   function restaurar() {
@@ -89,6 +101,9 @@
     (s.vs || []).forEach(function (id) { estado.vistas[id] = true; });
     (s.rp || []).forEach(function (id) { estado.repaso[id] = true; });
     if (s.rm && typeof s.rm === 'object') Object.keys(s.rm).forEach(function (id) { estado.repasoMal[id] = s.rm[id]; });
+    (s.pp || []).forEach(function (id) { estado.popups[id] = true; });
+    (s.vv || []).forEach(function (src) { estado.videos[src] = true; });
+    if (s.qz) { estado.quiz = s.qz; estado.quizIntentos = s.qi || 1; }
     if (Logros) Logros.restore(s);
   }
 
@@ -171,66 +186,154 @@
     initPrediccion();      // pregunta suelta antes de un video (`[data-pred]`, coto-ui.js);
                             // sin ese marcado no hace nada
 
-    /* Gates de contenido (kit-base v1.9.63, §7.11). Los dos tienen el
-       mismo contrato `faltan(slideEl)`; el curso solo decide la regla
-       en `canAdvance`. Descomentar lo que use este curso:
-         · `data-require-popups="id1 id2"` en la diapositiva → hay que
-           abrir esas fichas antes de avanzar.
-         · `data-require-seen="video/a.mp4"` → hay que mirar el video,
-           y `initVideoGate` exime solo el que no se pueda reproducir
-           (placeholder de 0 bytes), así el curso nunca queda trabado.
-       `initGateHints` es lo que hace que el gate no sea mudo: al
-       intentar avanzar, "Siguiente" tiembla, pulsa lo que falta tocar
-       y un toast dice cuántos quedan.
-         · la mini práctica (`[data-quiz]`, kit-base v1.9.119): su
-           diapositiva traba hasta completarla. SI EL CURSO TIENE
-           PRÁCTICA ESTE GATE NO ES OPCIONAL — sin él, "Siguiente" pasa
-           de largo y el alumno llega a un cierre con candado y sin
-           salida (lo reportó el cliente en "Prevención cardiovascular").
-           `practica-gate.mjs` lo prueba. `initMiniQuiz` devuelve el gate;
-           se la llama acá abajo, en "mini-quiz", y el `canAdvance` lo
-           lee recién al navegar, cuando ya existe. */
-    // var popupGate = initPopupGate({ onChange: persistir });
-    // var videoGate = initVideoGate({});
-    // var practicaGate;   // = initMiniQuiz({ … }), más abajo
-    // motor.canAdvance = function (slideEl) {
-    //   return popupGate.faltan(slideEl).length === 0 &&
-    //          videoGate.faltan(slideEl).length === 0 &&
-    //          (!practicaGate || practicaGate.faltan(slideEl).length === 0);
-    // };
-    // initGateHints({ gates: [
-    //   { gate: popupGate, sel: function (id) { return '[data-popup-trigger="' + id + '"]'; },
-    //     uno: 'tarjeta', varias: 'tarjetas' },
-    //   { gate: videoGate, sel: function (src) { return '[data-video="' + src + '"]'; },
-    //     uno: 'video', varias: 'videos' },
-    //   { gate: { faltan: function (s) { return practicaGate ? practicaGate.faltan(s) : []; } },
-    //     sel: function () { return '[data-quiz]'; }, uno: 'práctica', varias: 'prácticas' }
-    // ] });
+    /* ---------- La receta, cableada de fábrica (kit-base v1.9.133) ----------
+       Lo que `curso.json` declara con la receta del manual (§3, "La
+       receta") ya funciona sin escribir nada acá: fichas que traban
+       (`requisitos.popups`), videos que traban (`requisitos.visto`), la
+       tira de repaso (`data-require-repaso`), la mini práctica
+       (`"tipo": "practica"` + `practica` en curso.json) y el cierre
+       (`"tipo": "cierre"`). Hasta v1.9.132 todo esto venía COMENTADO: un
+       curso nuevo armado como cardio no trababa nada, la práctica no
+       aparecía y el cierre quedaba en blanco hasta escribir ~150 líneas
+       copiadas de `curso-prueba/js/curso.js`. Cada pieza degrada sola si
+       el curso no la usa (sin `[data-quiz]`, sin `[data-require-seen]`,
+       sin `.d-repaso`, no hace nada).
+       Lo PROPIO del curso (una pieza a medida, un logro de unidad) se
+       suma abajo; `motor.canAdvance` y los avisos se extienden, no se
+       reescriben. */
 
-    /* Repaso rápido (coto-repaso.css + coto-ui.js, kit-base v1.9.64):
-       2 preguntas V/F por unidad, una por vez, sin nota ni gate — es
-       refuerzo, no evaluación. El marcado va en index.html (contrato
-       en el encabezado de coto-repaso.css); acá solo el estado. */
-    /* Devuelve un gate (v1.9.121): si una diapositiva tiene
-       `data-require-repaso`, "Siguiente" espera a que se contesten sus
-       preguntas (bien o mal). Sumarlo a `canAdvance` si se usa:
-         motor.canAdvance = function (s) { return !repasoGate.faltan(s).length && … }; */
-    /* Las ERRADAS también se guardan (`seenMal`/`markMal`, kit-base
-       v1.9.124, §7.73; relevo de "Seguridad de la información",
-       2026-10-07). Cada pregunta se contesta UNA vez, y `markSeen` corre
-       solo al acertar: sin `markMal`, una errada no queda en ningún lado,
-       al retomar la pregunta vuelve en blanco, y un logro que pida "el
-       repaso de la unidad" queda imposible en esa sesión. Pasó: el
-       cliente terminó un curso con 1/4 logros. Regla para los logros: que
-       pidan las preguntas CONTESTADAS (`repaso[id] || repasoMal[id]`),
-       nunca ACERTADAS; acertar suma puntos, no decide un logro. */
-    // var repasoGate = initRepasoRapido({
-    //   seen: function (id) { return !!estado.repaso[id]; },
-    //   markSeen: function (id) { estado.repaso[id] = true; persistir(); },
-    //   seenMal: function (id) { return estado.repasoMal[id] || null; },
-    //   markMal: function (id, eligio) { estado.repasoMal[id] = eligio; persistir(); },
-    //   onCorrect: function () { Logros.award(5, 'Repaso'); }
-    // });
+    // Fichas: `data-require-popups` (lo escribe `requisitos.popups`).
+    var popupGate = initPopupGate({
+      seen: function (id) { return !!estado.popups[id]; },
+      markSeen: function (id) { estado.popups[id] = true; persistir(); }
+    });
+
+    // Videos: los tres patrones (pop-up, de fondo, en círculo) marcan el
+    // MISMO registro que lee el gate (`data-require-seen`, `requisitos.visto`).
+    var vistoOpts = {
+      seen: function (src) { return !!estado.videos[src]; },
+      markSeen: function (src) {
+        if (estado.videos[src]) return;
+        estado.videos[src] = true;
+        Logros.award(5, 'video visto');
+        persistir();
+        if (window.motor) window.motor._syncNav();
+      }
+    };
+    /* El reproductor del pop-up de video (`#d-video-player`) viene en el
+       chrome de TODO curso, así que se inicializa siempre (kit-base
+       v1.9.116): sin esto, `montarControles()` nunca corre y
+       `reproductor-video` lo marca en rojo. */
+    initVideoPlayer(vistoOpts);
+    initBgVideos();
+    initInlineCircleVideos(vistoOpts);
+    var videoGate = initVideoGate(vistoOpts);
+
+    // Pestañas o estados de una lámina (`atributosShot` con `data-shot-swap`).
+    initShotSwap();
+
+    /* Repaso rápido (coto-repaso.css + coto-ui.js): refuerzo, no
+       evaluación. Traba solo si la diapositiva lleva
+       `data-require-repaso`, y pide CONTESTAR, no acertar. Las ERRADAS
+       también se guardan (`seenMal`/`markMal`, §7.73): sin eso, al
+       retomar la pregunta vuelve en blanco y un logro que pida "el repaso
+       de la unidad" queda imposible. */
+    var repasoGate = initRepasoRapido({
+      seen: function (id) { return !!estado.repaso[id]; },
+      markSeen: function (id) { estado.repaso[id] = true; persistir(); },
+      seenMal: function (id) { return estado.repasoMal[id] || null; },
+      markMal: function (id, eligio) { estado.repasoMal[id] = eligio; persistir(); },
+      onCorrect: function () { Logros.award(5, 'Repaso'); }
+    });
+
+    /* Cierre (coto-cierre.js): el resumen, la medalla y los cuatro
+       números de `numeros` en curso.json. Se crea ANTES que la práctica
+       porque terminarla es lo que lo desbloquea. */
+    function llenarResumen() {
+      if (window.pintarMedalla) pintarMedalla(Logros.puntos(), window.datosDelCurso ? datosDelCurso('medallas', null) : null);
+      var nombre = window.SCORM && SCORM.getFirstName && SCORM.getFirstName();
+      var hueco = document.getElementById('d-cert-name');
+      if (hueco && nombre) { hueco.textContent = nombre; hueco.parentElement.hidden = false; }
+      var poner = function (id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; };
+      poner('d-cert-score', estado.quiz ? (estado.quiz.best + '/' + (estado.quiz.total || 3)) : '–');
+      poner('d-cert-points', String(Logros.puntos()));
+      poner('d-cert-badges', Logros.obtenidos() + '/' + BADGES.length);
+      poner('d-cert-tries', String(estado.quizIntentos || 1));
+    }
+    var Cierre = initCierreCelebration({
+      statIds: ['d-cert-score', 'd-cert-points', 'd-cert-badges', 'd-cert-tries'],
+      onUnlock: llenarResumen,
+      onFinish: function () {
+        llenarResumen();
+        if (window.XAPI) XAPI.completed(COURSE_SLUG, COURSE_NAME);
+        if (window.SCORM) SCORM.markCompleted();
+      },
+      onExit: function () { if (window.XAPI) XAPI.completed(COURSE_SLUG, COURSE_NAME); },
+      stagger: function (el) { if (window.staggerReveal) staggerReveal(null, el); }
+    });
+
+    /* Mini práctica (coto-quiz.js): el banco va en curso.json →
+       `practica` (banco, porIntento, mensajes). Devuelve su gate: SI EL
+       CURSO TIENE PRÁCTICA ESTE GATE NO ES OPCIONAL — sin él, "Siguiente"
+       pasa de largo y el alumno llega a un cierre con candado y sin
+       salida (lo reportó el cliente en cardio; `practica-gate.mjs`).
+       "Repasar en …" va solo a la diapositiva o al pop-up de `related`.
+       `introPopup` abre el aviso "esto no es la evaluación" al entrar,
+       mientras no esté hecha (lo emite `"tipo": "practica"`). */
+    var PRACTICA = window.datosDelCurso ? datosDelCurso('practica', {}) : {};
+    /* Sin `coto-quiz.js` en la página (un curso `--tipo simulador`, que
+       no tiene práctica) el gate queda vacío y el cierre, abierto. */
+    var practicaGate = !window.initMiniQuiz
+      ? { faltan: function () { return []; }, completa: function () { return true; } }
+      : initMiniQuiz({
+        bank: PRACTICA.banco || [],
+        size: PRACTICA.porIntento,
+        happyMessages: (PRACTICA.mensajes || {}).bien,
+        hotMessages: (PRACTICA.mensajes || {}).racha,
+        oopsMessages: (PRACTICA.mensajes || {}).error,
+        introPopup: document.querySelector('[data-popup="practica-intro"]') ? 'practica-intro' : null,
+        getState: function () { return estado.quiz || null; },
+        setState: function (q, intentos) { estado.quiz = q; estado.quizIntentos = intentos; persistir(); },
+        onAnswer: function (correcta, racha) {
+          if (!window.CotoUI) return;
+          if (correcta) {
+            if (CotoUI.sCorrect) CotoUI.sCorrect();
+            if (racha >= 3) { Logros.award(10, 'racha x' + racha); if (CotoUI.sStreak) CotoUI.sStreak(); }
+          } else if (CotoUI.sWrong) CotoUI.sWrong();
+        },
+        onFirstFinish: function () { Logros.award(20, 'práctica completada'); },
+        onFinish: function () {
+          Cierre.unlockCierre();
+          if (window.motor) window.motor._syncNav();
+        },
+        narrate: function (el) { Narrador.speak(Narrador.textOf(el), 'slide'); },
+        track: function (id, pregunta, correcta, respuesta) {
+          if (window.XAPI) XAPI.answered(id, pregunta, correcta, respuesta);
+        },
+        stagger: function (el) { if (window.staggerReveal) staggerReveal(null, el); }
+      });
+    /* Práctica hecha (de otra sesión) o curso SIN práctica: el cierre
+       arranca abierto. `completa()` da true cuando no hay `[data-quiz]`. */
+    if (practicaGate.completa()) Cierre.unlockCierre();
+
+    /* Los gates, en el orden en que se ven en pantalla: primero las
+       fichas, después el video, el repaso y la práctica. `initGateHints`
+       hace que no sean mudos: "Siguiente" tiembla, pulsa lo que falta y
+       un toast dice cuántos quedan. Un gate propio del curso se suma acá
+       (mismo contrato `faltan(slideEl)`). */
+    var gates = [
+      { gate: popupGate, sel: function (id) { return '[data-popup-trigger="' + id + '"]'; }, uno: 'tarjeta', varias: 'tarjetas' },
+      { gate: videoGate, sel: function (src) { return '[data-video="' + src + '"]'; },
+        aviso: function () { return 'Mirá el video antes de seguir.'; } },
+      { gate: repasoGate, sel: function () { return '.d-repaso'; },
+        aviso: function () { return 'Respondé el repaso rápido antes de seguir.'; } },
+      { gate: practicaGate, sel: function () { return '[data-quiz]'; },
+        aviso: function () { return 'Completá la mini práctica antes de seguir.'; } }
+    ];
+    motor.canAdvance = function (slideEl) {
+      return gates.every(function (g) { return !g.gate.faltan(slideEl).length; });
+    };
+    initGateHints({ gates: gates });
 
     /* ⚠️ Los DOS de acá abajo DEVUELVEN una función `refresh` y hay que
        GUARDARLA (kit-base v1.9.72, §7.18 K5). Corren una vez al crearse
@@ -371,15 +474,6 @@
     //   onPerder: function (porque) { if (window.XAPI) XAPI.failed(COURSE_SLUG, porque); }
     // });
 
-    /* El reproductor del pop-up de video (`#d-video-player`) viene en el
-       chrome de TODO curso, así que se inicializa siempre (kit-base
-       v1.9.116). Estuvo comentado hasta acá: un curso recién generado al
-       que se le sumaba su primer video tenía el reproductor sin controles
-       propios —`montarControles()` nunca corría— y `reproductor-video` lo
-       marcaba en rojo. El curso del arnés no lo mostraba porque su script
-       de armado agregaba la llamada a mano. Pasarle `{ seen, markSeen }`
-       si el curso exige ver los videos para avanzar. */
-    initVideoPlayer({});
     // Video de una capa [data-layers]:
     // initLayerVideos({ … });
     // Precarga del contenido de un pop-up antes de abrirlo:
@@ -388,25 +482,8 @@
     // Zonas interactivas sobre el arte (hotspots), una llamada por grupo:
     // initHotspots({ zonas: '.d-shot-hit--mi-grupo', cartel: '#mi-cartel' });
 
-    // Carrusel / tabs / pasos que cambian el src de una imagen completa:
-    // initShotSwap();
-
-    // Solo si el curso tiene video:
-    // initBgVideos();
+    // Video adentro de un pop-up propio (no el reproductor del chrome):
     // initPopupVideos({ onFirstPlay: function (src, popupId) { /* sumar puntos/logro */ } });
-    // initInlineCircleVideos({ … });
-
-    // Solo si el curso tiene mini-quiz/minijuego (coto-quiz.js):
-    // El banco va en curso.json → practica (banco, porIntento, mensajes):
-    // var PRACTICA = datosDelCurso('practica', {});
-    // var practicaGate = initMiniQuiz({ bank: PRACTICA.banco, size: PRACTICA.porIntento, onFirstFinish: function (score) { … } });
-    //   ↑ guardar lo que devuelve: es el gate de la práctica (ver "Gates de contenido" arriba).
-    //   "Repasar en …" ya va a una diapositiva o a un pop-up sin pasarle `goToRelated`.
-    //   Con `introPopup: 'practica-intro'` abre el aviso "esto no es la evaluación" al entrar,
-    //   mientras no esté hecha (marcado en index-boilerplate.html; v1.9.121).
-
-    // Cierre (coto-cierre.js):
-    // initCierreCelebration({ … });
 
     /* Techo de "hasta dónde llegó" para la barra arrastrable.
        NO está comentado a propósito (kit-base v1.9.71, §7.17): estuvo

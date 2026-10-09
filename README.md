@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.132** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.133** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -161,11 +161,12 @@ se escribe aparte, siguiendo el flujo del `CLAUDE.md` §3.
    // si hay barra de progreso arrastrable + gate de contenido:
    motor.restoreMaxVisited(estado.vistas);
    ```
-   `initTiempoActivo()` e `initVideoSafetyNet()` son las dos únicas
-   llamadas de esta lista que van SIN comentar en la plantilla real —
-   no dependen de ningún markup del curso, así que no hay motivo para
-   dejarlas opt-in (a diferencia del resto: si el curso no tiene esa
-   pieza, esa llamada no aplica).
+   En la plantilla real van SIN comentar todas las que no dependen de
+   una pieza opcional: las de arriba más, desde v1.9.133, las de la
+   receta (gates de fichas y video, repaso, práctica, cierre, videos y
+   `initShotSwap`), que no hacen nada si el curso no tiene esa pieza.
+   Quedan comentadas solo las piezas a medida (`initHotspots`, visor,
+   revelados, simulador).
 3. Seguir el checklist de `CLAUDE.md` §7 (PDF → render → decidir
    captura íntegra vs. piezas separadas → HTML → hitboxes → `curso.js`
    → CSS propios → `imsmanifest.xml`).
@@ -430,6 +431,25 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.133 — un curso nuevo sale andando, como cardio
+
+Ver CLAUDE.md §7.82. Salió de armar un curso desde cero con la receta.
+
+- **La plantilla de `curso.js` trae la receta cableada:** fichas y videos
+  que traban, tira de repaso, práctica con su gate, cierre con sus números
+  y la locución que arranca por el título. Antes venía todo comentado.
+- **`new-course` siembra la mini práctica** (diapositiva, aviso, pop-up
+  previo y 3 preguntas de ejemplo) y carga `coto-quiz`.
+- **Subieron de cardio:** la intro de la práctica en pantalla baja, el aviso
+  del candado del cierre, el acomodo de la tira (medir afuera) y los avisos
+  propios de cada gate (`aviso`).
+- **Tira suelta legible en teléfono vertical** (antes, letra de 4px) y, si
+  no entra, botón + capa.
+- **Cardio usa los gates y el repaso del kit** (sin cambios a la vista
+  salvo la tira en vertical); Seguridad alimentaria, probado en la copia.
+- **`actualizar-kit` avisa las copias propias de funciones del kit.**
+- Chequeo nuevo `check-receta` (test:kit); caso nuevo en `tira-suelta`.
 
 ### v1.9.132 — la receta y el editor en vivo
 

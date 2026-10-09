@@ -1,6 +1,6 @@
 # tools/tests/ — suite mínima genérica
 
-kit-base v1.9.132 · Área Aprendizaje (COTO)
+kit-base v1.9.133 · Área Aprendizaje (COTO)
 
 Copiar esta carpeta tal cual a cada curso nuevo. **Hoy son 72 tests**
 —`npm test` los descubre solos leyendo la carpeta, así que el número
@@ -89,6 +89,11 @@ botones que abren lo secundario en una capa).
 En v1.9.131, `piezas-del-modelo.mjs` (las piezas que subieron de cardio,
 el curso modelo: video sin recuadro, tira en fila, texto sobre la lámina
 del cierre, lienzo lleno en pantallas más anchas que 2:1).
+En v1.9.133, `tools/check-receta.mjs` en `test:kit` (un curso nuevo sale
+con la receta cableada: gates, repaso, práctica sembrada, cierre; y
+`actualizar-kit` avisa las copias propias de funciones del kit) y un caso
+nuevo en `tira-suelta.mjs` (teléfono vertical con la tira de una pregunta:
+legible o en capa).
 
 **Regla para todo test que inyecta marcado** (salió de auditar los dos
 cursos modelo, v1.9.105): se busca DENTRO de lo inyectado, nunca en todo

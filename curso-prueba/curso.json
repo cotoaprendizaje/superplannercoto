@@ -459,6 +459,9 @@
           "video/colesterol-alto.mp4"
         ]
       },
+      "atributos": {
+        "data-require-repaso": ""
+      },
       "narracion": [
         {
           "texto": "Qué es: el colesterol alto ocurre cuando hay demasiada grasa en la sangre, lo que puede dañar las arterias con el tiempo. Cómo se detecta: mediante un análisis de sangre de rutina. Cómo se trata: con una alimentación saludable, baja en grasas, actividad física regular y, si el médico lo indica, tratamiento farmacológico. Valores ideales: se calculan según el perfil de riesgo cardiovascular de cada persona."
@@ -491,6 +494,9 @@
         "visto": [
           "video/hipertension-arterial.mp4"
         ]
+      },
+      "atributos": {
+        "data-require-repaso": ""
       },
       "narracion": [
         {
@@ -525,6 +531,9 @@
           "video/diabetes.mp4"
         ]
       },
+      "atributos": {
+        "data-require-repaso": ""
+      },
       "narracion": [
         {
           "texto": "Qué es: la diabetes es el factor de riesgo más relevante en las enfermedades cardiovasculares. Se caracteriza por niveles elevados de glucosa, azúcar, en sangre que, con el tiempo, puede causar daños severos en el corazón, vasos sanguíneos, ojos, riñones y nervios. Cómo se detecta: mediante un análisis de sangre. Cómo se trata: con alimentación saludable, actividad física regular y, de ser necesario, medicación oral o inyectable, insulina."
@@ -557,6 +566,9 @@
         "visto": [
           "video/obesidad.mp4"
         ]
+      },
+      "atributos": {
+        "data-require-repaso": ""
       },
       "narracion": [
         {
@@ -591,6 +603,9 @@
           "video/sedentarismo.mp4"
         ]
       },
+      "atributos": {
+        "data-require-repaso": ""
+      },
       "narracion": [
         {
           "texto": "Qué es: la falta de actividad física regular es un factor de riesgo clave que favorece la aparición de enfermedades cardiovasculares y metabólicas. Recomendación semanal de la OMS: al menos 150 minutos de actividad física moderada o 75 minutos de actividad intensa. Fortalecimiento: se recomienda sumar ejercicios de fuerza muscular como mínimo 2 días a la semana."
@@ -623,6 +638,9 @@
         "visto": [
           "video/tabaquismo.mp4"
         ]
+      },
+      "atributos": {
+        "data-require-repaso": ""
       },
       "narracion": [
         {

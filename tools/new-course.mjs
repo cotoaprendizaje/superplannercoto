@@ -42,6 +42,7 @@ import { fileURLToPath } from 'node:url';
    comparar y solo podía verificar que no hubiera choques (kit v1.9.87). */
 import { ICONOS_TIPO, TRAZOS_TIPO, spriteTipos } from './iconos-tipo.mjs';
 import { archivosDelKit, registroDeVersion } from './_kit-archivos.mjs';
+import { sembrarPractica } from './curso-datos.mjs';
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const KIT_ROOT = path.join(AQUI, '..');
@@ -465,7 +466,11 @@ const indexHtml = fs.readFileSync(path.join(KIT_ROOT, 'index-boilerplate.html'),
       '     `diapositivas.css` pueda ajustar lo suyo encima. -->\n' +
       '<link rel="stylesheet" href="css/coto-simulador.css">\n' +
       '<!-- <link rel="stylesheet" href="css/coto-gescom.css"> si se simula GESCOM -->'
-    : '<!-- <link rel="stylesheet" href="css/coto-quiz.css"> si el curso tiene quiz -->\n' +
+    /* La mini práctica es parte del recorrido de TODO curso (la receta,
+       manual §3), así que su CSS y su JS vienen puestos (kit-base
+       v1.9.133). Comentados, el `curso.js` de la plantilla —que ya la
+       cablea— no la encontraba y el curso nuevo no tenía práctica. */
+    : '<link rel="stylesheet" href="css/coto-quiz.css">\n' +
       '<!-- <link rel="stylesheet" href="css/coto-minijuego.css"> si tiene minijuego -->')
   .replace(/\{\{SPRITE\}\}/g, sprite)
   .replace(/\{\{HEADER_BOILERPLATE\}\}/g, header.trimEnd())
@@ -477,7 +482,7 @@ const indexHtml = fs.readFileSync(path.join(KIT_ROOT, 'index-boilerplate.html'),
       '     ANTES de curso.js, que es quien llama a initSimulador(). -->\n' +
       '<script src="js/coto-simulador.js"></script>\n' +
       '<script src="js/escenario.js"></script>'
-    : '<!-- <script src="js/coto-quiz.js"></script> si el curso tiene quiz -->');
+    : '<script src="js/coto-quiz.js"></script>');
 
 /* Un token sin rellenar es un `{{ALGO}}` literal en pantalla, en el
    curso entregado. Barato de atrapar acá y carísimo de descubrir en el
@@ -584,8 +589,9 @@ if (!args.sinDatos) {
     const datosCurso = JSON.parse(fs.readFileSync(fCurso, 'utf8'));
     if (datosCurso.logros === undefined) {
       datosCurso.logros = ['mitad', 'completo', 'impecable', 'racha', 'explorador'];
-      fs.writeFileSync(fCurso, JSON.stringify(datosCurso, null, 2) + '\n');
     }
+    if (!esSimulador) sembrarPractica(datosCurso);
+    fs.writeFileSync(fCurso, JSON.stringify(datosCurso, null, 2) + '\n');
   }
   if (comoDatos) {
     const a = spawnSync(process.execPath, [path.join(AQUI, 'armar-curso.mjs'), destinoAbs], { encoding: 'utf8' });
