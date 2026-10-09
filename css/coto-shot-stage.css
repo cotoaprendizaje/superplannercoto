@@ -978,3 +978,37 @@
   to { opacity: 1; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) { .d-generic-enter { animation: none; } }
+
+/* ============================================================
+   LIENZO EN PANTALLAS MÁS ANCHAS QUE 2:1  (kit-base v1.9.131, §7.80)
+   ------------------------------------------------------------
+   Subió de "Prevención cardiovascular", el curso modelo: lo resolvía en
+   su pulido.css ("candidato a kit"). El caso tablet de arriba (1.5–1.9)
+   llena recortando los COSTADOS; éste es el simétrico y más frecuente:
+   una ventana MÁS ANCHA que 2:1 dejaba franjas laterales (1366×768 →
+   35px por lado; una ventana de 1600×800 → 120px).
+   Para llenarla se recorta ARRIBA y ABAJO, donde el PDF trae 8% de margen
+   vacío por lado. Recorte total = 1 − 2/A, con A la proporción del
+   escenario; el presupuesto (16%) alcanza mientras A ≤ 2.38:
+     · 1366×768 (A 2.11) → 2.6% por lado · 1600×800 (A 2.35) → 7.4%
+     · ultrawide (A 2.61) → se pasaría: queda afuera, lienzo con franjas.
+   El piso es 1.9 (donde termina el rango tablet) para no dejar hueco; en
+   1.9 exacto aplican los dos con las mismas declaraciones.
+   Un arte SIN margen (`html[data-arte-sin-margen]`, el mismo atributo del
+   caso tablet) vuelve al lienzo fijo. */
+@container (min-aspect-ratio: 1.9/1) and (max-aspect-ratio: 2.38/1) {
+  .d-shot-slide--bg-layered > .d-shot,
+  .d-shot-slide--bg-video > .d-shot,
+  .slide-cierre .d-cierre-shot .d-shot {
+    aspect-ratio: auto;
+    width: 100cqw;
+    height: 100cqh;
+  }
+  html[data-arte-sin-margen] .d-shot-slide--bg-layered > .d-shot,
+  html[data-arte-sin-margen] .d-shot-slide--bg-video > .d-shot,
+  html[data-arte-sin-margen] .slide-cierre .d-cierre-shot .d-shot {
+    aspect-ratio: 2 / 1;
+    width: min(100cqw, 100cqh * 2);
+    height: min(100cqh, 100cqw / 2);
+  }
+}

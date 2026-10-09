@@ -677,43 +677,9 @@
    curso es el de abajo (sin globito numerado). */
 
 
-/* La tira de cada factor tiene UNA sola pregunta, así que el globito
-   numerado de `.d-repaso-item::before` no cuenta nada: en alimentaria
-   dice "pregunta 1 / pregunta 2" de un repaso de dos, acá saldría un
-   "5" que el alumno no puede relacionar con nada (medido: mostraba el
-   número del factor). Sin globito, la pregunta arranca pegada al borde
-   como cualquier párrafo. */
-.d-repaso--factor .d-repaso-item{ padding-left: 0; }
-.d-repaso--factor .d-repaso-item::before{ content: none; display: none; }
-/* Rediseño de la tira de factor (kit v1.9.127, pedido del cliente en el
-   simulador: "los círculos de respuestas están demasiado alargados", "le
-   falta el título de repaso rápido", "que entre bien dentro de la diapo"):
-   la barra azul con "Repaso rápido:" y, abajo, UNA fila con la pregunta a
-   la izquierda y las respuestas como pastillas de su ancho (no estiradas)
-   a la derecha. Si no entran al lado, bajan. */
-.d-repaso--factor{ overflow: hidden; padding-bottom: .55em; }
-.d-repaso--factor .d-repaso-title{ flex: none; min-height: 0; margin: 0 -1em .3em; padding: .2em 1em; font-size: 1.05em; }   /* em: escala con la lámina, como el resto de la tarjeta */
-.d-repaso--factor .d-repaso-item.is-current{ flex-direction: row; flex-wrap: wrap; align-items: center; gap: .35em .8em; }   /* el kit la pone en columna */
-.d-repaso--factor .d-repaso-q{ flex: 1 1 13em; margin: 0; padding: 0; background: none; color: var(--brand-navy);
-  font-weight: 700; font-size: .88em; line-height: 1.25; }
-.d-repaso--factor .d-repaso-btns{ flex: 0 0 auto; gap: .4em; }
-.d-repaso--factor .d-repaso-btns button{ flex: 0 0 auto; min-width: 3.8em; padding: .22em .8em; font-size: .88em; }
-/* Contestada, la devolución ocupa el LUGAR de la pregunta (a la izquierda
-   de las pastillas), no un renglón más: la tarjeta crecía hacia arriba y
-   tapaba el dibujo (bloque-no-tapa-arte, 25 casos). */
-.d-repaso--factor .d-repaso-fb{ font-size: .82em; }   /* em: los tamaños del kit van en rem y en teléfono quedaban enormes */
-.d-repaso--factor .d-repaso-item.is-answered .d-repaso-q{ display: none; }
-.d-repaso--factor .d-repaso-item.is-answered .d-repaso-fb{ order: -1; flex: 1 1 13em; margin-top: 0; }
-/* Teléfono acostado: la tira va SOBRE la lámina con el alto que le da el kit
-   (`data-h`, 65px) y una pregunta de dos renglones pide 91: con el
-   `overflow:hidden` de arriba, los botones quedaban recortados (lo marcó
-   clip-audit en diabetes y tabaquismo, kit v1.9.126). Ahí la tira crece con
-   su contenido. */
-@media (max-height: 560px){ .d-repaso-marco:has(.d-repaso--factor){ height: auto !important; } }
-@media (max-width: 560px){
-  .d-repaso--factor .d-repaso-title{ padding: .15em 1em; margin-bottom: .25em; }
-  .d-repaso--factor .d-repaso-btns button{ padding-block: .15em; }
-}
+/* La tira de cada factor es la variante `.d-repaso--fila` del kit
+   (coto-repaso.css): una pregunta en una fila, sin globito numerado. Se
+   diseñó acá, en el simulador, y subió al kit en v1.9.131 (§7.80). */
 
 /* ============================================================
    Acá vivía el pop-up de PREDICCIÓN (.modal--reto / .d-reto*)
@@ -819,86 +785,14 @@
     background: var(--surface); box-shadow: 0 -10px 12px -10px rgba(20,30,60,.35); }
 }
 
-/* ============================================================
-   REALCE DE LAS ZONAS SOBRE EL ARTE · solo la forma, nunca el rectángulo
-   ============================================================
-   Pedido del cliente, textual: *"si solo remarcamos el círculo está
-   bien, ya que el rectángulo no queda bien"* — y lo mismo en las etapas
-   de la aterosclerosis y en la torta.
+/* ---- Realce de las zonas: solo la forma, nunca el rectángulo ----
+   Pedido del cliente: *"si solo remarcamos el círculo está bien, ya que
+   el rectángulo no queda bien"*. Las zonas de ENT, factores, etapas y la
+   torta dibujan su propio realce (o su respuesta ya se ve en el arte):
+   llevan `d-shot-hit--sin-aro` del kit en su marcado (curso.json). Las
+   tarjetas de video no llevan recuadro por regla del kit (coto-media.css,
+   v1.9.131). Antes eran reglas propias de este curso (§7.80). */
 
-   Qué pasaba. El kit le pone a TODA `.d-shot-hit` un realce genérico al
-   pasar el mouse (coto-shot-stage.css): aro rectangular de 2px + sombra
-   proyectada + 1px de levante. Es un buen default para una zona que sin
-   él no se distingue del fondo. Pero estas zonas YA dibujan su propio
-   realce —un aro que sigue el círculo del arte, medido en píxeles contra
-   la ilustración— así que se veían las dos cosas a la vez: el círculo
-   bien resaltado y, alrededor de todo el bloque (ícono + etiqueta de
-   texto), un rectángulo que no corresponde a ninguna forma dibujada.
-   Las reglas de cada zona ya ponían `background:transparent` para matar
-   el TINTE del kit, pero el tinte no era el problema: el aro y la sombra
-   sí, y esos seguían.
-
-   `.d-shot-hit--pie` entra en la misma lista por otro motivo: no dibuja
-   aro propio porque su respuesta ya se ve en el arte (el gajo se
-   destaca y aparece el cartel con el dato). Es el caso que el kit
-   documenta como `--sin-aro`.
-
-   ⚠️ El `:focus-visible` NO se apaga acá. En `--ent`, `--factor` y
-   `--etapa` esas reglas ya lo resuelven con el mismo aro circular; en
-   `--pie` y en las tarjetas de video sigue valiendo el del kit. Un foco
-   de teclado invisible sería peor que el rectángulo. */
-.d-shot-hit--ent:hover,
-.d-shot-hit--factor:hover,
-.d-shot-hit--etapa:hover,
-.d-shot-hit--pie:hover,
-[data-video-play]:hover {
-  outline: none;
-  box-shadow: none;
-  transform: none;
-}
-
-/* ---- Tarjetas de video rectangulares · sin recuadro ----
-   Pedido del cliente: *"no usar recuadro en contenedores de video
-   rectangulares porque queda mal, solo usar botón de play al pasar el
-   mouse por encima"*.
-
-   Lo que se saca: el aro rectangular + la sombra + el levante del
-   `:hover` genérico del kit (arriba, en la lista de zonas), y el aro
-   animado infinito que este curso le agregaba en assets.css. Eran dos
-   bordes redondeados, uno encima del otro, sobre un arte que YA dibuja
-   el marco del reproductor.
-
-   Lo que NO se pone, y conviene que quede escrito: un botón de play
-   propio encima. El play de estas 7 tarjetas está HORNEADO en la
-   captura —el diseñador entrega el mockup del reproductor completo:
-   marco, barra de controles y disco de play—, así que superponerle el
-   botón del kit da dos plays corridos entre sí, que es exactamente el
-   defecto que se reportó en el video circular. Se probó y se midió: el
-   disco dibujado cae en (50,5%, 41,7%) en "Riesgo cardiovascular" y en
-   otro punto en las 6 de la Unidad 2, con diámetros distintos; no hay
-   una posición que sirva para las siete, y errarle por 10px se ve peor
-   que no ponerlo.
-
-   O sea que el affordance de estas tarjetas ES el play dibujado, que
-   está siempre a la vista y se lee como tal, más `cursor:pointer`. Es
-   el caso que el kit documenta como `.d-shot-hit--sin-aro`: si la zona
-   ya comunica sola, el realce genérico sobra.
-
-   Si algún día el play tiene que REACCIONAR al mouse, la forma limpia
-   es pedirle al diseñador la tarjeta SIN el play dibujado: ahí el kit
-   dibuja el suyo (`.d-shot-hit-play`, centrado y con su hover) y no hay
-   nada que alinear a mano.
-
-   El `:focus-visible` del kit queda intacto: es el único indicador del
-   recorrido por teclado. */
-
-/* ---- El texto final de la lámina de cierre (kit v1.9.127) ----
-   "Recordá que ya estás habilitado…" venía DIBUJADO en img/cierre.webp,
-   en blanco fino sobre turquesa: no se leía (comentario del cliente en el
-   simulador). Se borró de la imagen y va como texto real, en una capa del
-   cierre (`capas` en curso.json, posicionada con data-place), en azul
-   oscuro. `cqw`: escala con la lámina, como el resto del arte. */
-   /* cqw = ancho de la LÁMINA, no de la pantalla */
-.d-cierre-arte-txt{ position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; text-align: center;
-  color: var(--brand-navy); font-size: 1.6cqw; line-height: 1.3; font-weight: 500; text-wrap: balance; pointer-events: none; }
-.d-cierre-arte-txt b{ display: block; font-weight: 800; }
+/* El texto final de la lámina de cierre es `.d-cierre-arte-txt` del kit
+   (coto-cierre.css, v1.9.131): va en una capa del cierre (`capas` en
+   curso.json) porque dibujado en el arte no se leía. */

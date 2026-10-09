@@ -338,3 +338,13 @@
   .is-resumen-mini .d-cierre-results .cta .btn{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     padding:.35rem .45rem;font-size:.72rem}
 }
+
+/* ---- Texto real sobre la lámina del cierre (kit-base v1.9.131, §7.80) ----
+   Un texto que el diseñador dibujó en el arte del cierre ("Recordá que ya
+   estás habilitado…") no se lee y no se puede corregir: va como texto, en
+   una capa del cierre (`capas` en curso.json, colocada con `data-place`).
+   `cqw`: escala con la lámina (la lámina es contenedor, ver
+   coto-shot-stage.css). Subió de cardio, el curso modelo. */
+.d-cierre-arte-txt{ position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; text-align: center;
+  color: var(--brand-navy); font-size: 1.6cqw; line-height: 1.3; font-weight: 500; text-wrap: balance; pointer-events: none; }
+.d-cierre-arte-txt b{ display: block; font-weight: 800; }

@@ -391,6 +391,13 @@ html.d-ios.d-fullscreen .modal-card--video.d-vp-ampliado .modal-x--video { top: 
    acompaña pero nunca crece más allá de lo razonable. */
 .d-shot-hit--video { cursor: pointer; background: transparent; }
 .d-shot-hit--video:hover { background: transparent; }
+/* Las zonas de VIDEO no llevan el aro ni la sombra del realce genérico
+   (kit-base v1.9.131, regla del cliente: *"no usar recuadro en
+   contenedores de video rectangulares porque queda mal"*). El arte ya
+   dibuja el reproductor; el aro era un segundo marco encima. Subió de
+   cardio, el curso modelo. El `:focus-visible` sigue: es la única señal
+   del recorrido por teclado. */
+.d-shot-hit[data-video-play]:hover { outline: none; box-shadow: none; transform: none; }
 /* BUG REAL ("Prevención cardiovascular"): este patrón siempre lleva
    TAMBIÉN la clase `.d-shot-hit--circle` (coto-shot-stage.css), y
    `.d-shot-hit--circle:hover` trae su propio tinte de color — misma

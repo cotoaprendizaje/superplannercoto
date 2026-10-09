@@ -596,7 +596,7 @@
       marco.setAttribute('data-narrate-last', '');
       marco.hidden = true;
       var tira = document.createElement('div');
-      tira.className = 'd-repaso d-repaso--factor';
+      tira.className = 'd-repaso d-repaso--fila';   // variante del kit (coto-repaso.css, v1.9.131)
       tira.setAttribute('data-repaso', f.id);
       tira.setAttribute('data-no-tapa-arte', '');
       tira.innerHTML =

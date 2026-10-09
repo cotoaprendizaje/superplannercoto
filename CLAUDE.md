@@ -16417,3 +16417,45 @@ El CSS propio de cardio pasó de 1081 a 1029 líneas.
   misma línea.
 - El simulador como paso fijo de los PROMPT, con un nombre que no se
   confunda con el tipo de curso "simulador".
+
+## 7.80 Las piezas de cardio que eran solo suyas, al kit (kit-base v1.9.131)
+
+Segundo paso de §7.79: los patrones que el modelo resolvía en su propio CSS
+y que cualquier curso necesita. Ahora son del kit y cardio los usa como
+cualquier curso. Las 81 fotos del modelo, idénticas antes y después; el
+CSS propio de cardio pasó de 1029 a 884 líneas.
+
+- **Zonas de video sin recuadro** (regla del cliente: *"no usar recuadro
+  en contenedores de video rectangulares porque queda mal"*):
+  `.d-shot-hit[data-video-play]:hover` sin aro, sombra ni levante
+  (coto-media.css). El `:focus-visible` sigue.
+- **Realce solo con la forma del dibujo:** el kit ya tenía el mecanismo
+  (`d-shot-hit--sin-aro`); cardio lo reimplementaba con una regla para sus
+  clases. Ahora sus zonas de ENT, factores, etapas y la torta llevan
+  `--sin-aro` en el marcado (curso.json) y la regla se fue.
+- **Lienzo en pantallas más anchas que 2:1** (coto-shot-stage.css): llena
+  recortando arriba y abajo hasta una proporción de 2.38, donde se agota
+  el 8% de margen del PDF. El caso tablet del kit ya cubría hasta 2.2;
+  esto cubre 2.2–2.38 (una ventana de 1600×800 dejaba 240px de franjas).
+  `html[data-arte-sin-margen]` lo apaga, igual que al caso tablet.
+- **`.d-cierre-arte-txt`** (coto-cierre.css): texto real sobre la lámina
+  del cierre, en una capa (`capas` en curso.json), en `cqw`.
+- **`.d-repaso--fila`** (coto-repaso.css): la tira de UNA pregunta en una
+  fila (la barra "Repaso rápido:", la pregunta a la izquierda y las
+  pastillas a la derecha; contestada, la devolución toma el lugar de la
+  pregunta). Era `.d-repaso--factor` de cardio; el nombre ahora dice qué
+  es, no dónde se usó.
+
+### Tests
+
+72 (+1): **`piezas-del-modelo`** inyecta su marcado y mide las cuatro
+piezas (sin realce en video, la fila contestada, el texto absoluto que
+escala, el lienzo lleno a 1600×800). Rojo con el CSS de v1.9.130 en los 7
+puntos; verde con el nuevo.
+
+### Pendiente
+
+El sistema de gates del `curso.js` de cardio reimplementa el del kit
+(pop-ups, videos, avisos de "te faltan…"). Funciona igual y no cambia lo
+que se ve; los cursos nuevos salen con el del kit desde la plantilla. Se
+pasa cuando se retome cardio.

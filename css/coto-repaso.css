@@ -531,3 +531,33 @@
   .d-repaso-diapo-titulo{ font-size: 1.1rem; }
   .d-repaso-diapo-ideas{ display: none; }
 }
+
+/* ---- `.d-repaso--fila`: la tira de UNA pregunta, en una fila (kit-base v1.9.131, §7.80) ----
+   Subió de cardio (su repaso de cada factor, rediseñado en el simulador:
+   "los círculos de respuestas están demasiado alargados", "le falta el
+   título de repaso rápido", "que entre bien dentro de la diapo"). La barra
+   "Repaso rápido:" y abajo UNA fila: la pregunta a la izquierda y las
+   respuestas como pastillas de su ancho a la derecha; si no entran, bajan.
+   Contestada, la devolución ocupa el LUGAR de la pregunta (no suma un
+   renglón: la tarjeta crecía y tapaba el dibujo). Sin el globito numerado:
+   con una sola pregunta no cuenta nada. Todo en `em`: escala con la lámina. */
+.d-repaso--fila .d-repaso-item{ padding-left: 0; }
+.d-repaso--fila .d-repaso-item::before{ content: none; display: none; }
+.d-repaso--fila{ overflow: hidden; padding-bottom: .55em; }
+.d-repaso--fila .d-repaso-title{ flex: none; min-height: 0; margin: 0 -1em .3em; padding: .2em 1em; font-size: 1.05em; }
+.d-repaso--fila .d-repaso-item.is-current{ flex-direction: row; flex-wrap: wrap; align-items: center; gap: .35em .8em; }
+.d-repaso--fila .d-repaso-q{ flex: 1 1 13em; margin: 0; padding: 0; background: none; color: var(--brand-navy);
+  font-weight: 700; font-size: .88em; line-height: 1.25; }
+.d-repaso--fila .d-repaso-btns{ flex: 0 0 auto; gap: .4em; }
+.d-repaso--fila .d-repaso-btns button{ flex: 0 0 auto; min-width: 3.8em; padding: .22em .8em; font-size: .88em; }
+.d-repaso--fila .d-repaso-fb{ font-size: .82em; }
+.d-repaso--fila .d-repaso-item.is-answered .d-repaso-q{ display: none; }
+.d-repaso--fila .d-repaso-item.is-answered .d-repaso-fb{ order: -1; flex: 1 1 13em; margin-top: 0; }
+/* Teléfono acostado: la tira sobre la lámina con el alto del kit (65px)
+   recortaba una pregunta de dos renglones (clip-audit): ahí crece con su
+   contenido. */
+@media (max-height: 560px){ .d-repaso-marco:has(.d-repaso--fila){ height: auto !important; } }
+@media (max-width: 560px){
+  .d-repaso--fila .d-repaso-title{ padding: .15em 1em; margin-bottom: .25em; }
+  .d-repaso--fila .d-repaso-btns button{ padding-block: .15em; }
+}
