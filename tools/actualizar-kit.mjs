@@ -216,6 +216,45 @@ try {
       }
     }
   }
+  /* Reglas del CSS propio del curso que redefinen un selector del kit
+     (kit-base v1.9.130, §7.79). Cargan después del kit, así que le ganan:
+     la pieza queda con el aspecto de cuando se copió, no con el del kit.
+     Cardio tenía 50 (los avisos flotantes salían todos azul oscuro, la
+     impresión del resumen entera duplicada). Se listan para revisar: si es
+     un resto, se saca; si es diseño que vale para todos, sube al kit. */
+  {
+    const reglas = (css) => {
+      const out = [];
+      const t = css.replace(/\/\*[\s\S]*?\*\//g, '');
+      let ctx = [], tok = '';
+      for (const ch of t) {
+        if (ch === '{') { ctx.push(tok.trim()); tok = ''; }
+        else if (ch === '}') {
+          const sel = ctx.pop();
+          if (sel && !sel.startsWith('@') && tok.trim()) {
+            const media = ctx.filter((c) => c.startsWith('@')).join(' ').replace(/\s+/g, ' ');
+            for (const x of sel.split(',')) { const n = x.trim().replace(/\s+/g, ' '); if (n && !/^(from|to|\d+%)$/.test(n)) out.push(media + '|' + n); }
+          }
+          tok = '';
+        } else tok += ch;
+      }
+      return out;
+    };
+    const delKit = new Set();
+    for (const f of fs.readdirSync(path.join(KIT, 'css')).filter((x) => x.endsWith('.css'))) reglas(fs.readFileSync(path.join(KIT, 'css', f), 'utf8')).forEach((r) => delKit.add(r));
+    const pisan = [];
+    const dirCss = path.join(CURSO, 'css');
+    if (fs.existsSync(dirCss)) {
+      for (const f of fs.readdirSync(dirCss).filter((x) => x.endsWith('.css') && !fs.existsSync(path.join(KIT, 'css', x)))) {
+        for (const r of new Set(reglas(fs.readFileSync(path.join(dirCss, f), 'utf8')))) if (delKit.has(r)) pisan.push(`css/${f}: ${r.replace(/^\|/, '')}`);
+      }
+    }
+    if (pisan.length) {
+      avisosMarcado.push(`${pisan.length} regla(s) del CSS propio del curso redefinen piezas del kit y le ganan (cargan después):` +
+        pisan.slice(0, 8).map((x) => '\n    · ' + x).join('') + (pisan.length > 8 ? `\n    · … y ${pisan.length - 8} más` : '') +
+        '\n  Revisar cada una: si es un resto, sacarla; si es diseño que vale para todos los cursos, subirlo al kit (§7.79).');
+    }
+  }
 } catch (e) {}
 const testsPropios = plan.sinRegistro.filter((f) => /^tools\/tests\/[^_][^/]*\.mjs$/.test(f));
 

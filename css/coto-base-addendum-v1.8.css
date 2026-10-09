@@ -838,7 +838,7 @@
   margin:0 0 1.1rem;padding:.85rem 1rem;border-radius:var(--r-sm);
   background:var(--cat-wash);border-left:4px solid var(--cat-strong);text-align:left}
 .d-aviso-ic{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;
-  background:var(--cat-ink);flex:none}
+  background:var(--cat-strong);flex:none}
 .d-aviso-ic svg{width:19px;height:19px;fill:none;stroke:#fff;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 .d-aviso p{margin:0;font-size:.9rem;line-height:1.45;color:var(--brand-navy)}
@@ -987,9 +987,9 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
    pedido nuevo a implementar aparte, con los breakpoints que
    corresponda. */
 .d-gloss{margin:0;display:flex;flex-direction:column;gap:.05rem}
-.d-gloss > div{padding:.06rem .2rem}
-.d-gloss dt{font-size:.66rem;font-weight:700;color:var(--cat-ink);font-family:var(--font-title);margin:0}
-.d-gloss dd{font-size:.61rem;line-height:1.22;color:var(--text);margin:0}
+.d-gloss > div{padding:.2rem .2rem}
+.d-gloss dt{font-size:.85rem;font-weight:700;color:var(--cat-ink);font-family:var(--font-title);margin:0}
+.d-gloss dd{font-size:.76rem;line-height:1.32;color:var(--text);margin:0}
 /* Se sigue narrando (la voz filtra `hidden`, no el estilo), pero en
    pantalla el rediseño v1.9.125 muestra "Descubriste N de M términos". */
 .d-glossary-intro{display:none}
@@ -1334,16 +1334,15 @@ body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
    `center` centra el bloque (etiqueta arriba, tildes abajo) dentro de
    su propia caja. */
 .d-u2-prog{
-  position:absolute; display:flex; flex-direction:column; align-items:center; gap:.3rem;
-  pointer-events:none;
-}
-.d-u2-prog-lbl{ font-weight:700; color:var(--text-soft); font-size:clamp(.62rem, 1.1cqw, .82rem); }
-.d-u2-dots{ display:flex; align-items:center; gap:clamp(4px, .6cqw, 9px); }
+  position:absolute; display:flex; flex-direction:column; align-items:center; gap:.6rem;
+  pointer-events:none;justify-content:flex-end}
+.d-u2-prog-lbl{ font-weight:700; color:var(--text-soft); font-size:clamp(.5rem,.95cqw,.82rem);white-space:nowrap}
+.d-u2-dots{ display:flex; align-items:center; gap:clamp(4px,.5cqw,9px); }
 .d-u2-tick{
   display:grid; place-items:center;
-  width:clamp(20px, 2.3cqw, 32px); height:clamp(20px, 2.3cqw, 32px);
+  width:clamp(14px,1.5cqw,24px); height:clamp(14px,1.5cqw,24px);
   border-radius:50%; border:2px solid var(--line); background:#fff;
-  transition:background .2s ease, border-color .2s ease;
+  transition:background .2s ease,border-color .2s ease,transform .2s ease;
 }
 .d-u2-tick svg{
   width:70%; height:70%; fill:none; stroke:#c9d3dd; stroke-width:3.2;

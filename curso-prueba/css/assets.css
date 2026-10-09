@@ -40,9 +40,5 @@
    estilos propia para sus efectos; ya está corregido en el kit. */
 
 /* Toast de puntos/logros (gamificación liviana, ver curso.js) */
-.d-award-toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%) translateY(12px);
-  background:var(--brand-navy);color:#fff;padding:.65rem 1.2rem;border-radius:var(--r-pill);
-  font-family:var(--font-body);font-weight:700;font-size:.85rem;box-shadow:var(--shadow-pop);
-  opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;z-index:95;
-  display:flex;align-items:center;gap:.5rem}
-.d-award-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+

@@ -30,8 +30,7 @@
    tablets del kit queda anulado y vuelve el letterbox que justamente venía a
    resolver. En desktop da lo mismo (imagen y lienzo son 2:1 exactos, recorte
    matemáticamente 0, ver §2.8). */
-.d-shot-img{width:100%;height:100%;object-fit:cover;object-position:50% 50%;
-  display:block;background:#fff}
+
 
 /* ---- Fondos en video con sonido (portada, unidad1, unidad2) ----
    El cliente va a subir portada.mp4/unidad1.mp4/unidad2.mp4 a mano en
@@ -40,8 +39,7 @@
    captura .webp de siempre), así que el curso funciona igual sin ellos.
    Calcado 1 a 1 de "Surtido sin venta" (portada/unidad-1 con audio):
    ver initBgVideos() en curso.js. */
-.d-shot-slide--bg-video .d-shot-video{position:absolute;inset:0;width:100%;height:100%;
-  max-width:none;max-height:none;object-fit:cover;object-position:center;display:block}
+
 /* Los botones de video-en-tarjeta (rectangular, tipo "Riesgo cardiovascular")
    se dibujan sobre una tarjeta blanca con esquinas MUY redondeadas en el
    arte. El radio genérico de `.d-shot-hit` (--r-sm, 8px) es demasiado
@@ -61,7 +59,7 @@
    en curso.js. El resto de los videos (rectangulares, tipo tarjeta) sigue
    abriendo el pop-up grande — acá no aplica, el círculo es demasiado chico
    para controles nativos legibles. */
-.d-shot-hit--video{cursor:pointer;background:transparent}
+
 /* BUG REAL: el círculo chico usa 2 clases (`--circle` Y `--video`), y
    `.d-shot-hit--circle:hover` (más abajo en el archivo) traía un tinte de
    color que le ganaba a esta regla por orden de cascada — misma
@@ -69,15 +67,14 @@
    de más, superpuesto al botón de play (reporte real del cliente: "queda
    raro, como superpuesto"). Selector combinado = más especificidad,
    gana siempre sin importar el orden. */
-.d-shot-hit--circle.d-shot-hit--video:hover{background:transparent}
+
 /* opacity:0 salvo mientras reproduce (BUG REAL corregido: al terminar el
    video, `ended` sacaba `.is-playing` pero el <video> seguía encima
    mostrando su último cuadro — que en estos clips queda en negro — en
    vez de la imagen original del círculo (la cara del especialista
    horneada en la captura). Ocultar el <video> fuera de reproducción deja
    ver siempre esa imagen de base, tanto en reposo como al terminar. */
-.d-shot-hit-video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;
-  opacity:0;transition:opacity .15s ease}
+
 /* El botón de play del círculo lo dibuja EL KIT y no se pisa acá
    (coto-media.css): `width:44%; height:auto; aspect-ratio:1;
    max-width:64px`, o sea un círculo perfecto centrado con `margin:auto`.
@@ -124,7 +121,7 @@
    --danger/--surface/--line/--text/--focus) — candidato directo a
    coto-base-addendum-v1.2.css del próximo kit (ver README).
    ============================================================ */
-.d-quiz-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+
 /* (acá estaba `.d-q-num{background:var(--cat-strong)}`: con el rediseño el número va
    en un círculo blanco sobre la caja azul de la pregunta, y el turquesa lo volvía ilegible) */
 
@@ -151,14 +148,13 @@
    paso 2 es HTML real de alto variable — mismo resguardo que el resto de
    las diapos HTML: si en una ventana angosta el resumen no entra en el
    lienzo 2:1, scrollea DENTRO de la diapositiva, nunca la página. */
-.slide-cierre.unlocked .d-cierre-summary:not([hidden]){display:block;width:min(1400px,100%);
-  max-height:100%;overflow-y:auto;overflow-x:hidden}
+
 /* La tarjeta "Tu resultado" es la del kit desde v1.9.125 (barra azul con
    el título). La de este curso (degradado y 1.8rem de aire arriba y abajo)
    era del diseño anterior: además de pisar el nuevo, le sumaba alto y el
    resumen scrolleaba a 1366×768 (comentario del cliente, kit v1.9.127). */
-.d-cierre-summary .who{margin:0 0 .8rem}
-.d-cierre-summary p{margin:0 0 1.1rem}
+
+
 /* 5 tarjetas en una sola FILA, no en 2 columnas: en 2 columnas eran 3
    filas de ~100px (314px en total) y la columna izquierda del resumen
    medía 818px contra 648 disponibles a 1366x768 — o sea, se cortaba.
@@ -177,19 +173,15 @@
    diseño anterior y le ganaba al kit. Se sacó. */
 /* "Conceptos clave" del mismo tamaño que las otras columnas del resumen
    (v1.9.127): más grande, a 1024×768 hacía scrollear la diapositiva. */
-.d-gloss > div{padding:.2rem .2rem}
-.d-gloss dt{font-size:.85rem}
-.d-gloss dd{font-size:.76rem;line-height:1.32}
+
+
+
 
 /* ---- Barra "Retomá donde dejaste" (initResume en curso.js) ----
    Descartable y con autoocultado — nunca navega sola, ver README (era
    una diferencia real con "Surtido sin venta": la 1ª versión de este
    curso saltaba de entrada sin preguntar). */
-.d-resume{position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:70;
-  display:flex;align-items:center;gap:.8rem;background:var(--surface);
-  border:1px solid color-mix(in srgb,var(--cat) 45%,var(--line));border-radius:var(--r-pill);
-  padding:.5rem .5rem .5rem 1.1rem;box-shadow:var(--shadow-pop);
-  animation:d-resume-in .35s cubic-bezier(.2,.7,.2,1)}
+
 @media (max-width:560px){.d-resume-txt{display:none}}
 
 /* ---- Pop-up de estadística ("Control de factores de riesgo", 50%) ----
@@ -202,13 +194,13 @@
 /* padding-top generoso: el ícono es un círculo de 84px y con .3rem
    quedaba casi tocando el borde del encabezado (reporte del cliente).
    overflow:hidden se mantiene por las partículas decorativas. */
-.d-stat-pop{position:relative;text-align:center;overflow:hidden;padding-top:1.5rem}
+
 /* .btn-ic gana por especificidad (ver más abajo): este curso no carga el
    addendum v1.8 del kit, así que `.d-stat-pop .btn{width:100%}` sin ese
    contrapeso dejaba "Continuar" a lo ancho completo de la tarjeta —
    distinto del resto de los botones de pop-up, ya corregidos a ancho de
    su texto. */
-.d-stat-pop .btn{width:100%;justify-content:center}
+
 .d-stat-pop .btn-ic{width:auto}
 @media (prefers-reduced-motion:reduce){.d-stat-pop-num{transition:none}}
 
@@ -224,14 +216,13 @@
    un triángulo enorme adentro. Se copia acá la definición real del kit
    (sin tocar el kit — ES la misma regla) hasta que este curso migre de
    verdad al addendum v1.8. */
-.btn-ic{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
-  width:auto;max-width:100%}
+
 
 /* ---- Confeti (celebrate() en curso.js) ---- */
-#d-confetti{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden}
+
 
 /* Cierre: mismo patrón, envuelto en .d-cierre-shot para el selector de coto-shot-stage.css */
-.d-cierre-shot{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+
 
 /* Tabs de "Factores de riesgo cardiovascular": los botones y paneles viven
    dentro del propio .d-shot (posicionados como cualquier [data-hit]); los
@@ -249,7 +240,7 @@
    y las marcas de sección leyendo esta estructura (spec-motor-slides.md),
    así que es genérico — no reescribirlo acá. Lo único propio de ESTE
    curso es el resumen de progreso arriba de la lista. */
-.d-sidenav-progress{margin:0 0 .4rem;font-size:.82rem;font-weight:600;color:var(--text-soft)}
+
 /* Con 16 términos la lista pasa a ser larga: se le da scroll propio y una
    línea divisoria entre entradas para que no se lea como un bloque. El
    .modal-card ya tiene max-height:88vh, así que sin esto el pop-up entero
@@ -279,7 +270,7 @@
    El ancho ya NO se declara acá: es del kit, y es el mismo para todos
    los cursos. Lo que sí queda de este bloque es el resto del pedido
    (sin barra de título, cierre flotante), más abajo. */
-.modal-card--video{padding:0;overflow:hidden}
+
 /* BUG REAL (reportado en iPad, pero no es un bug de tablet): sin
    `aspect-ratio`, un <video> con `width:100%;height:auto` y SIN
    metadata cargada (los placeholders de este curso son archivos de 0
@@ -290,7 +281,7 @@
    carga un video real con su propia relación de aspecto, el navegador
    usa esa (la intrínseca) por sobre este valor de CSS — no hace falta
    sacarlo cuando el cliente suba los videos finales. */
-#d-video-player{aspect-ratio:16/9;background:#000;object-fit:contain}
+
 
 /* ============================================================
    Los 4 tipos de ENT: círculos del arte convertidos en botones
@@ -527,11 +518,9 @@
    ============================================================ */
 
 /* Fila de avance de la unidad 2 (etiqueta + tildes). */
-.d-u2-prog{position:absolute;display:flex;align-items:center;justify-content:flex-end;
-  gap:.6rem;pointer-events:none}
-.d-u2-prog-lbl{
-  font-size:clamp(.5rem,.95cqw,.82rem);white-space:nowrap}
-.d-u2-dots{gap:clamp(4px,.5cqw,9px)}
+
+
+
 
 /* Avance de la unidad: 6 TILDES, no botones (decisión del cliente).
    Pendiente = tilde gris apenas visible dentro de un aro; completada =
@@ -539,10 +528,7 @@
    porque acá "completado" es un estado de logro, no un elemento de
    marca — y es el mismo verde de acierto que ya usa el resto del curso.
    Sin cursor:pointer ni hover: no hay nada que clickear. */
-.d-u2-tick{display:grid;place-items:center;
-  width:clamp(14px,1.5cqw,24px);height:clamp(14px,1.5cqw,24px);
-  border-radius:50%;border:2px solid var(--line);background:#fff;
-  transition:background .2s ease,border-color .2s ease,transform .2s ease}
+
 /* El factor en el que estás parado se agranda apenas, para ubicarse en
    la serie sin sugerir que se puede tocar. */
 .d-u2-tick.is-here{transform:scale(1.25);border-color:var(--cat-strong)}
@@ -593,13 +579,10 @@
    no con el de advertencia: no es un error ni un peligro, es una
    aclaración. Pedido del cliente para que nadie confunda esta práctica
    con la evaluación final del curso. */
-.d-aviso-practica{display:grid;grid-template-columns:auto 1fr;gap:.8rem;align-items:start;
-  margin:0 0 1.1rem;padding:.85rem 1rem;border-radius:var(--r-sm);
-  background:var(--cat-soft);border-left:4px solid var(--cat-strong);text-align:left}
-.d-aviso-ic{
-  background:var(--cat-strong)}
-.d-aviso-practica p{margin:0;font-size:.9rem;line-height:1.45;color:var(--brand-navy)}
-.d-aviso-practica p + p{margin-top:.4rem;color:var(--text-soft)}
+
+
+
+
 /* El aviso suma ~90px a una diapositiva que ya venía justa: sin esto se
    recortaba el botón "Responder" a 1280x720 y 1366x768 (lo detectó el
    chequeo de recorte de scroll-audit). Se compacta el bloque de intro
@@ -636,7 +619,7 @@
    la caja (`.d-medalla`) queda neutra para que el badge sea lo que se
    destaca. De paso, más "aire": gaps y paddings más generosos entre
    secciones de toda la columna izquierda. */
-.d-cierre-results{gap:0}
+
 
 /* ---- Efecto cinematográfico al revelar la medalla ----
    `mostrarResumenCierre()` en curso.js suma `.is-revealing` al llegar al
@@ -645,9 +628,7 @@
    "cayendo" en su lugar) y un destello radial detrás se expande y se
    apaga. Es una sola vez, no un loop — un brillo permanente se lee
    como una animación rota, no como un logro. */
-.d-medalla-ic::after{content:"";position:absolute;inset:-45%;z-index:-1;
-  border-radius:50%;pointer-events:none;opacity:0;
-  background:radial-gradient(circle,color-mix(in srgb,#fff 75%,transparent) 0%,transparent 70%)}
+
 
 /* Los 3 rangos siempre visibles: el que se alcanzó, destacado. */
 
@@ -657,8 +638,7 @@
    cliente en el simulador del editor, 2026-10-08). Se sacó. */
 
 /* ---- Pantalla de salida del curso ---- */
-.d-salida{position:fixed;inset:0;z-index:200;display:grid;place-items:center;
-  background:color-mix(in srgb,var(--brand-navy) 92%,transparent);padding:1.5rem}
+
 /* El aviso de la evaluación es la caja amarilla del kit (canvas, v1.9.127):
    acá había un fondo de la categoría que la pisaba. Se sacó. */
 
@@ -668,16 +648,16 @@
    la columna izquierda; el repaso se comprime acá. No se saca contenido:
    el cliente pidió expresamente que el resumen fuera MÁS completo. */
 @media (max-height:860px){
-  .d-medalla-ic{font-size:1.7rem;width:56px;height:56px}
+
 }
 /* Pantallas bajas de verdad (720p y menos): un escalón más de compresión.
    El contenido no se recorta — se achica. */
 @media (max-height:740px){
-  .d-medalla-ic{font-size:1.4rem;width:46px;height:46px}
+
 }
 /* Netbooks de sucursal (1024x640): último escalón. */
 @media (max-height:660px){
-  .d-medalla-ic{font-size:1.15rem;width:38px;height:38px}
+
 }
 /* El resumen mantiene 3 columnas mientras haya ancho: apilarlas lo hace
    crecer a lo alto justo cuando menos alto hay. */
@@ -918,7 +898,7 @@
    simulador). Se borró de la imagen y va como texto real, en una capa del
    cierre (`capas` en curso.json, posicionada con data-place), en azul
    oscuro. `cqw`: escala con la lámina, como el resto del arte. */
-.slide-cierre .d-cierre-shot .d-shot{ container-type: inline-size; }   /* cqw = ancho de la LÁMINA, no de la pantalla */
+   /* cqw = ancho de la LÁMINA, no de la pantalla */
 .d-cierre-arte-txt{ position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; text-align: center;
   color: var(--brand-navy); font-size: 1.6cqw; line-height: 1.3; font-weight: 500; text-wrap: balance; pointer-events: none; }
 .d-cierre-arte-txt b{ display: block; font-weight: 800; }

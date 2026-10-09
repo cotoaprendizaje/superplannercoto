@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.129** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.130** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -430,6 +430,17 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.130 — cardio, kit + contenido
+
+Ver CLAUDE.md §7.79.
+
+- **Cardio, el modelo, ya no pisa al kit:** 31 copias exactas fuera; lo que
+  era diseño del modelo subió al kit (cabecera de la práctica, progreso de
+  la unidad, resumen a todo el ancho, glosario del resumen, medalla). Las
+  81 fotos del modelo, idénticas.
+- Los avisos flotantes de cardio vuelven a los colores del canvas.
+- **`actualizar-kit` lista las reglas propias que pisan al kit.**
 
 ### v1.9.129 — sin scroll en teléfono
 

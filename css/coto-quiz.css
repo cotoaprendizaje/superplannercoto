@@ -20,7 +20,7 @@
    la elegida mal), la devolución en una tarjeta y los botones azules con
    relieve. Colores del manual y de estado; ya no de la categoría. Mismo
    marcado que arma coto-quiz.js: solo cambia cómo se ve. */
-.d-quiz-head{display:flex;align-items:center;justify-content:flex-end;gap:.6rem;margin-bottom:.8rem;flex-wrap:wrap}
+.d-quiz-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
 .d-quiz-count{order:2;font-size:.8125rem;font-weight:700;color:#6B7690}
 .d-quiz-count b{font-weight:700;color:inherit}
 .d-quiz-streak{display:inline-flex;align-items:center;gap:.3rem;font-size:.85rem;font-weight:700;
@@ -259,7 +259,7 @@
      Lo que se gana, medido: 17.6 del padding de la tarjeta, 33.6 de los
      tres paddings de opción, 8 de los dos huecos entre opciones, 8 del
      margen del enunciado, 8 del de las acciones y 8.8 del encabezado. */
-  .d-quiz-head{ margin-bottom: .3rem; }   /* .45 → .3 y padding 8 → 6 (v1.9.125): "Responder" quedaba 6px afuera a 844×390 en cardio */
+  .d-quiz-head{ margin-bottom: 1rem; }   /* El del modelo (cardio, v1.9.130): su regla propia le ganaba a la compacta de v1.9.125 y "Responder" entra igual a 844×390 (mini-practica) */
   .d-q{ padding: 6px; border-radius: 20px; }
   .d-q-title{ margin-bottom: 6px; padding: 7px 12px; gap: 10px; font-size: 1.05rem; border-radius: 16px; }
   .d-q-num{ width: 30px; height: 30px; font-size: 1rem; }

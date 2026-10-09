@@ -75,35 +75,7 @@
    píxeles de diferencia, y los del kit son los correctos, porque el
    94vw es justo el aire que la ✕ flotante necesita para no quedar
    pegada al borde. Ver el bloque ESTÁNDAR en coto-media.css. */
-@media (max-width:600px){
-}
 
-/* ============================================================
-   RESUMEN IMPRIMIBLE ("Imprimir resumen" en el cierre)
-   ------------------------------------------------------------
-   .d-summary vive oculto (display:none) fuera de impresión — solo se
-   muestra bajo body.printing-summary (togglada por initSummaryPrint en
-   curso.js justo antes de window.print()). BUG REAL evitado acá: sin
-   esto, "Imprimir resumen" imprimía la app en vivo tal cual —
-   .d-app es position:fixed y casi todas las diapositivas están
-   [hidden] — resultado: una página en blanco o cortada, nunca un
-   resumen legible. Mismo patrón que "Surtido sin venta".
-   ============================================================ */
-.d-summary{display:none}
-@media print{
-  body.printing-summary .d-app,
-  body.printing-summary #d-confetti,
-  body.printing-summary .modal{display:none!important}
-  body.printing-summary{background:#fff}
-  body.printing-summary .d-summary{display:block!important;max-width:720px;margin:0 auto;color:#000}
-  body.printing-summary .d-summary-hd{border-bottom:3px solid var(--cat);padding-bottom:.6rem;margin-bottom:1.2rem}
-  body.printing-summary .d-summary-hd h1{font-family:var(--font-title);font-weight:900;color:var(--cat-ink);margin:0 0 .2rem}
-  body.printing-summary .d-summary-hd p{margin:0;color:var(--text-soft);font-weight:700}
-  body.printing-summary .d-summary h2{font-family:var(--font-title);font-size:1.1rem;color:var(--brand-navy);margin:1.3rem 0 .5rem}
-  body.printing-summary .d-summary-gloss{display:grid;gap:.1rem;margin:0}
-  body.printing-summary .d-summary-gloss > div{display:grid;grid-template-columns:170px 1fr;gap:.8rem;padding:.35rem 0;border-bottom:1px solid var(--line)}
-  body.printing-summary .d-summary-gloss dt{font-weight:900;color:var(--cat-ink)}
-  body.printing-summary .d-summary-gloss dd{margin:0}
-  body.printing-summary .d-summary ul{margin:.3rem 0 0;padding-left:1.2rem}
-  body.printing-summary .d-summary li{margin:.25rem 0;line-height:1.5}
-}
+/* La impresión del resumen ("Imprimir resumen") es la del kit
+   (coto-cierre.css, @media print). Acá había una copia entera; se sacó
+   en kit-base v1.9.130 (§7.79). */

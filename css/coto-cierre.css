@@ -96,17 +96,17 @@
    "Uso de Sucursales 3 - NOA" y nunca había vuelto al kit (CLAUDE.md §6.22
    punto 6): a 1400px el repaso de cierre desperdicia pantallas grandes, y el
    100% sin margen deja el bloque pegado a los bordes. */
-.slide-cierre.unlocked .d-cierre-summary:not([hidden]){display:block;width:min(1680px,96%); max-height:100%;overflow-y:auto;overflow-x:hidden}
+.slide-cierre.unlocked .d-cierre-summary:not([hidden]){display:block;width:min(1400px,100%); max-height:100%;overflow-y:auto;overflow-x:hidden}
 .d-cierre-cols{display:grid;grid-template-columns:minmax(260px,320px) 1fr;gap:1.4rem;align-items:stretch}
 /* Rediseño v1.9.125 (§7.74): las dos columnas del cierre son tarjetas
    con la barra azul de los paneles del kit. La de resultados trae su
    título desde el CSS ("Tu resultado:"), así ningún curso tiene que
    cambiar su marcado. */
-.d-cierre-results{position:relative;overflow:hidden;text-align:center;padding:0 14px 14px; display:flex;flex-direction:column;border-radius:28px;background:var(--surface); border:0;box-shadow:0 10px 34px rgba(10,40,70,.14)}
+.d-cierre-results{position:relative;overflow:hidden;text-align:center;padding:0 14px 14px; display:flex;flex-direction:column;border-radius:28px;background:var(--surface); border:0;box-shadow:0 10px 34px rgba(10,40,70,.14);gap:0}
 .d-cierre-results::before{content:"Tu resultado:";display:flex;align-items:center;min-height:50px;margin:0 -14px 12px;padding:0 22px;flex:none;
   background:linear-gradient(180deg,var(--brand),var(--brand-deep));color:#fff;font-family:var(--font-title);font-weight:900;font-size:1.5rem;text-align:left}
-.d-cierre-summary .who{font-weight:800;font-size:1.1rem;color:var(--cat-ink);margin:0 0 .5rem;font-family:var(--font-title)}
-.d-cierre-summary p{color:var(--text);margin:0 0 .9rem;font-size:.92rem}
+.d-cierre-summary .who{font-weight:800;font-size:1.1rem;color:var(--cat-ink);margin:0 0 .8rem;font-family:var(--font-title)}
+.d-cierre-summary p{color:var(--text);margin:0 0 1.1rem;font-size:.92rem}
 .d-cierre-results .cta{margin:auto 0 0;padding-top:.9rem;display:flex;flex-direction:row;gap:.55rem}
 .d-cierre-results .cta .btn{flex:1;width:100%;justify-content:center;font-size:.8rem;padding:.65rem .4rem;border-radius:999px;white-space:nowrap;min-width:0}
 .d-cierre-results .cta .btn-cat{background:var(--brand);color:#fff;border:0}
@@ -145,7 +145,7 @@
 
 @media (max-height:860px){
   .d-medalla{padding:.5rem .7rem;margin-bottom:.45rem}
-  .d-medalla-ic{font-size:1.8rem}
+  .d-medalla-ic{font-size:1.7rem;width:56px;height:56px}
   .d-medalla .d-medalla-tit{font-size:1rem}
   .d-medalla .d-medalla-sub{font-size:.76rem}
   .d-medalla-rangos{margin-bottom:.5rem}
@@ -163,14 +163,16 @@
   .d-cierre-recap-col h4:not(:first-child){margin-top:.5rem}
   .d-cierre-recap-col li{font-size:.74rem;line-height:1.28;margin:.16rem 0}
   .d-cierre-recap-grid{gap:.6rem 1.4rem}
-  .d-gloss > div{padding:.16rem .2rem}
-  .d-gloss dt{font-size:.79rem}
-  .d-gloss dd{font-size:.73rem;line-height:1.28}
+  /* Del modelo (cardio, v1.9.130): hasta 860px de alto el glosario del
+     resumen se lee al tamaño de siempre; achica recién desde 740. */
+  .d-gloss > div{padding:.2rem .2rem}
+  .d-gloss dt{font-size:.85rem}
+  .d-gloss dd{font-size:.76rem;line-height:1.32}
 }
 
 @media (max-height:740px){
   .d-medalla{padding:.4rem .6rem;margin-bottom:.35rem}
-  .d-medalla-ic{font-size:1.5rem}
+  .d-medalla-ic{font-size:1.4rem;width:46px;height:46px}
   .d-medalla .d-medalla-tit{font-size:.9rem}
   .d-medalla .d-medalla-sub{font-size:.7rem}
   .d-medalla-rangos li i{font-size:.58rem}
@@ -189,7 +191,7 @@
 
 @media (max-height:660px){
   .d-medalla{padding:.3rem .5rem;margin-bottom:.3rem;gap:.6rem}
-  .d-medalla-ic{font-size:1.25rem}
+  .d-medalla-ic{font-size:1.15rem;width:38px;height:38px}
   .d-medalla .d-medalla-tit{font-size:.82rem}
   .d-medalla .d-medalla-sub{font-size:.64rem}
   .d-medalla-rangos{margin-bottom:.35rem}

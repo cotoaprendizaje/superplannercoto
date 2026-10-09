@@ -175,6 +175,7 @@
      ventana, no en el borde del propio lienzo. */
   overflow: hidden;
 }
+.slide-cierre .d-cierre-shot .d-shot{container-type:inline-size}
 
 /* ---- Ken Burns sutil en diapositivas-captura ÍNTEGRAS (kit-base v1.9.43) ----
    Pedido del cliente: "aparecen de golpe sin animación" + dinamismo

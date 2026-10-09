@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.129**.
+Vigente para **kit-base v1.9.130**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -237,10 +237,14 @@ node tools/new-course.mjs ../<carpeta> --titulo "<Nombre>" --cat <categoría> --
 - **Actualizar un curso migra también su marcado del kit** (títulos,
   instructivo, aviso de la práctica): `actualizar-kit` lo lista sin
   `--aplicar` y conserva lo propio del curso (§7.74).
-- **No copiar piezas del kit al CSS del curso** (la tira de repaso, el
+- **No copiar ni redefinir piezas del kit en el CSS del curso** (la tira de repaso, el
   instructivo): la copia le gana al kit y se queda con el diseño viejo.
   `actualizar-kit` avisa las que encuentra; se saca el bloque y se vuelve
   a medir lo que dependía de él (el `data-h` de la tira, §7.77).
+- **El modelo es cardio (`curso-prueba`)**, y es solo kit + contenido
+  (v1.9.130): si un curso necesita que una pieza del kit se vea distinto,
+  el cambio va al kit para todos. `actualizar-kit` lista las reglas
+  propias que pisan al kit (§7.79).
 - **Lo que vive sobre la lámina se mide en `em` de
   `--d-escala-lamina` o en `cqh`, nunca en `rem`**: la caja escala con
   la lámina y el texto en `rem` no (§7.38).

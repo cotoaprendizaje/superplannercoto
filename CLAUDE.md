@@ -16353,3 +16353,67 @@ capa y "Listo" devuelva la pieza a su lugar. Rojo con coto-quiz/coto-cierre
 (js y css) de v1.9.128: 4 fallos (los dos casos en las dos medidas).
 Verde en cardio y en Seguridad alimentaria.
 `mini-practica` sigue verde en sus medidas.
+
+## 7.79 Cardio pasa a ser kit + contenido: lo que pisaba al kit se fue o subió (kit-base v1.9.130)
+
+Decisión del cliente: el simulador de cardio (§7.75) es el MODELO. Todo
+curso nuevo, hecho desde el arte de su PDF, tiene que salir como cardio, y
+para eso cardio tiene que ser solo kit + su contenido: si tiene diseño
+propio, el próximo curso no lo hereda (sale de la plantilla, no de cardio).
+
+### Método
+
+1. **Foto del modelo antes de tocar:** 81 capturas de la vista del
+   simulador (todas las diapositivas en 1366×768, 844×390 y 390×844, más
+   un pop-up, el glosario, "Mis logros", el índice, el instructivo, el
+   resultado de la práctica y el resumen), con `Math.random` fijo y
+   "reducir movimiento". Dos tandas sin tocar nada dieron 0 diferencias:
+   cualquier cambio después es real.
+2. **Cada regla de cardio con el mismo selector (y la misma media) que
+   una del kit**, comparada propiedad por propiedad.
+3. **Copias exactas (31):** fuera. 0 píxeles distintos en las 81 fotos.
+   Entre ellas, la impresión del resumen entera (`pulido.css`).
+4. **Las que cambiaban valores (19):** se sacaron todas a prueba y las
+   fotos dijeron cuáles eran diseño del modelo. Esas SUBEN al kit (se
+   editó la regla del kit en su lugar) y después se sacan de cardio:
+   - cabecera de la práctica (la barrita de avance debajo del título,
+     "Pregunta 1 de 3" a la derecha), también en teléfono acostado;
+   - progreso de la unidad ("Factor 1 de 6": círculos más chicos, el
+     rótulo al lado);
+   - resumen del cierre a todo el ancho (`min(1400px,100%)`), márgenes y
+     el glosario del resumen a su tamaño hasta 860px de alto;
+   - la medalla del cierre en pantallas bajas; el ícono del aviso de la
+     práctica en `--cat-strong`; `container-type` de la lámina del
+     cierre (para el texto sobre el arte, §7.76).
+   Resultado: las 81 fotos IDÉNTICAS al modelo, y cardio sin ninguna
+   regla que pise al kit.
+5. **Dos que no subieron, a propósito:** los avisos flotantes de cardio
+   (todos azul oscuro y más abajo; el kit los tiene con los tonos del
+   canvas y el simulador no los mostraba así — era el resto, no el
+   modelo) y el confeti por encima de todo (`z-index:200`; el del kit, 35,
+   lo deja debajo de las ventanas). No se ven en las fotos.
+
+El CSS propio de cardio pasó de 1081 a 1029 líneas.
+
+### En el kit
+
+- Los valores de arriba, en `coto-quiz.css`, `coto-cierre.css`,
+  `coto-base-addendum-v1.8.css` y `coto-shot-stage.css`. Cambian el
+  aspecto de TODOS los cursos en esas piezas, que es el punto: van a
+  quedar como cardio.
+- **`actualizar-kit` lista las reglas del CSS propio que redefinen piezas
+  del kit** (mismo selector y media), con las primeras 8. En cardio da 0;
+  en Seguridad alimentaria, 73: es su próximo trabajo, en su chat.
+
+### Lo que sigue (pedido del cliente)
+
+- Subir al kit los patrones de cardio que todavía son solo suyos:
+  tarjetas de video sin recuadro, realce de zonas con la forma del dibujo,
+  lienzo para pantallas más anchas que 2:1, el texto sobre la lámina del
+  cierre y el repaso en fila de los factores. Y su sistema de gates en
+  `curso.js`, que reimplementa el del kit.
+- La receta del PDF al curso: cada tipo de diapositiva de cardio, qué
+  pieza del kit usa y cómo se arma, para que todos los cursos sigan la
+  misma línea.
+- El simulador como paso fijo de los PROMPT, con un nombre que no se
+  confunda con el tipo de curso "simulador".
