@@ -28,7 +28,10 @@
 */
 import { openCourse, report, requireUrl, irASlide } from './_shared.mjs';
 
-const PISO_PALABRAS = 150;
+/* 300 desde v1.9.132: el esqueleto de `new-course` pasó a 9 diapositivas
+   (el recorrido de cardio, §7.81) y su texto de relleno suma ~180
+   palabras. Un curso real tiene muchas más (cardio, casi 2000). */
+const PISO_PALABRAS = 300;
 
 const url = requireUrl();
 const { browser, page, errors } = await openCourse(url);

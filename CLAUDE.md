@@ -16489,6 +16489,12 @@ contenido; esto le da a cada curso nuevo el camino para salir igual.
   PROMPT (curso nuevo y retomar curso) lo piden antes de entregar, y
   nombran a cardio como el modelo y a "La receta" como la guía.
 
+**Lo encontró la suite del curso nuevo:** `gamificacion` y `markup-sanity`
+deciden si un curso "todavía es esqueleto" contando palabras, con un piso de
+150; el esqueleto nuevo suma 199 (9 diapositivas con su texto de relleno) y
+pasó a contar como curso con contenido (glosario vacío, sin práctica, ícono
+de marca placeholder). El piso sube a 300 en los dos; cardio tiene 1929.
+
 Pendiente, para cuando se retome cardio: su sistema de gates en `curso.js`
 (§7.80) y su tira de factores, que la arma su `curso.js` y en un curso
 nuevo se escribe en una zona `html`.

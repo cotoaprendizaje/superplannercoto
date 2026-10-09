@@ -193,7 +193,7 @@ if (marca && marca.ancho <= 1) {
   const msg = `el ícono de marca ("${marca.src}") mide ${marca.ancho}px: sigue siendo el ` +
     'placeholder de 1×1 que deja `new-course.mjs`, así que la pastilla del header se ve VACÍA. ' +
     'No da error ni 404 — por eso hace falta mirarlo.';
-  if (marca.palabras >= 150) fails.push(msg);
+  if (marca.palabras >= 300) fails.push(msg);   // el mismo piso que gamificacion (300 desde v1.9.132)
   else console.log('  · ' + msg + ' (aviso: el curso todavía está en construcción)');
 }
 
