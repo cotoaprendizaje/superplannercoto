@@ -89,7 +89,7 @@ if (!(await page.evaluate(() => typeof window.initMinijuego === 'function'))) {
       onAcierto: (o, primera) => log.aciertos.push(o.id + ':' + primera),
       onError: (o) => log.errores.push(o.id),
       onFin: (res) => log.fin.push(res),
-      onEmpezar: () => { log.empezadas = (log.empezadas || 0) + 1; }
+      onEmpezar: () => { log.empezadas = (log.empezadas || 0) + 1; (log.halladosAlEmpezar = log.halladosAlEmpezar || []).push(Object.keys(api.estado.hallados).length); }
     });
 
     /* Todo se busca DENTRO de la sección inyectada (kit-base v1.9.105):
@@ -163,6 +163,7 @@ if (!(await page.evaluate(() => typeof window.initMinijuego === 'function'))) {
       'y el curso abre el Siguiente. Pasar es ganar (reporte del cliente en "Seguridad alimentaria").');
   }
   if (r.finGanada && r.finGanada.aprobado !== true) fails.push('ganar no devolvió `aprobado: true` en `onFin`.');
+  if ((r.log.halladosAlEmpezar || []).some((n) => n !== 0)) fails.push(`\`onEmpezar\` corre ANTES de reiniciar la partida: el curso ve los hallazgos de la anterior (${JSON.stringify(r.log.halladosAlEmpezar)}). Relevo SA L1: "Reintentar" arrancaba el marcador en 120.`);
   if (r.log.empezadas !== 2) fails.push(`\`onEmpezar\` tiene que llamarse al arrancar cada partida (2), se llamó ${r.log.empezadas || 0}.`);
   /* Al perder se guarda lo que hay que reforzar: las distracciones
      elegidas (x, y) MÁS el hallazgo que nunca apareció (b). */

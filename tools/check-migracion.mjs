@@ -103,7 +103,7 @@ exige(/d-instr-pasos/.test(h) && !/d-instr-cardgrid/.test(h), 'no pasó el instr
 exige(/<b>Es interactivo<\/b>\s*<span>Tocá las tarjetas y jugá el mini juego\.<\/span>/.test(h), 'perdió el texto PROPIO del curso en el paso "Es interactivo"');
 exige(!/Para avanzar necesitás completar cada interacción/.test(h), 'dejó el texto VIEJO del kit en "Hay que ver todo" (tenía que ir el nuevo)');
 exige(/d-pracintro-n" aria-hidden="true">5</.test(h), 'el aviso de la práctica no conservó "5 preguntas"');
-exige(/Con lo obligatorio llegás a <strong>bronce o plata<\/strong>/.test(h), 'no actualizó el texto de "Mis logros"');
+exige(/Terminar el curso te asegura la <strong>medalla de bronce<\/strong>/.test(h), 'no actualizó el texto de "Mis logros"');
 exige(!/id="i-play"/.test(h), 'dejó el símbolo #i-play sin uso en el sprite');
 exige(/<div class="d-top-group d-top-group--indice"[^>]*>\s*<button class="d-iconbtn d-iconbtn--labeled"[^>]*data-popup-trigger="sidenav"/.test(h), 'no metió el botón "Índice" suelto en su cápsula .d-top-group--indice');
 exige(/id="i-check"/.test(h), 'se llevó otro símbolo del sprite (#i-check)');
@@ -112,10 +112,11 @@ exige(!/<svg class="ic-on"[^>]*>(?:(?!<\/svg>)[\s\S])*ic-tachado/.test(h), 'tach
 
 /* Textos de logros que la regla 2 + 3 (v1.9.127) volvió falsos. */
 for (const [nombre, viejo] of [
+  ['el de v1.9.127', 'Con lo obligatorio llegás a <strong>bronce o plata</strong>. El <strong>oro</strong> es para quien hace un poco más: los <strong>3 logros de plus</strong> suman <strong>+20 puntos</strong> cada uno y no se ganan con lo mínimo.'],
   ['el de v1.9.125', 'Con lo obligatorio llegás a <strong>bronce o plata</strong>. El <strong>oro</strong> es para quien hace un poco más: cada logro suma <strong>+20 puntos</strong> y ninguno se gana con lo mínimo.'],
   ['una variante del v3 (cardio)', 'Vas sumando <strong>✦ puntos</strong> a medida que avanzás (ver un video, responder bien) y ganás un <strong>🏆 logro</strong> al completar del todo cada actividad.']]) {
   const r = migrarMarcado(`<p class="d-badges-intro">${viejo}</p>`, KIT).html;
-  exige(/3 logros de plus/.test(r), `el texto de "Mis logros" (${nombre}) no pasó al de la regla 2 de recorrido + 3 de plus`);
+  exige(/medalla de bronce<\/strong>\. Para/.test(r), `el texto de "Mis logros" (${nombre}) no pasó al de la regla 2 de recorrido + 3 de plus`);
 }
 const pill = migrarMarcado('<span><b>Hay 5 logros escondidos.</b> Cada uno suma +20 y te acerca a la medalla de oro.</span>', KIT).html;
 exige(/Los 3 de plus suman \+20/.test(pill), 'la pastilla de logros del instructivo sigue diciendo "cada uno suma +20"');

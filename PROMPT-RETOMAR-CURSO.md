@@ -16,7 +16,7 @@ falta viaja en los dos zips.
 
 Vamos a retomar el curso **`<NOMBRE DEL CURSO>`**, del molde "Área
 Aprendizaje (COTO)". Te adjunto el zip del curso y el del kit-base
-(v1.9.135). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
+(v1.9.136). Lo que hay que hacer: `<lo que pidió el cliente, o "ponerlo al día con el kit">`.
 
 ### Paso 1 — antes de tocar nada, poner el curso al día con el kit
 

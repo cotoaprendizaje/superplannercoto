@@ -1,6 +1,6 @@
 # Manual del molde — cursos e-learning COTO (Área Aprendizaje)
 
-Vigente para **kit-base v1.9.135**.
+Vigente para **kit-base v1.9.136**.
 
 **Qué es esto.** Las reglas que valen HOY para armar un curso con este
 kit, en un solo lugar y cortas. No cuenta cómo se llegó a cada una: eso
@@ -271,7 +271,7 @@ repite en un segundo curso, sube al kit.
 | el margen seguro de tablet (12,22% a los costados, 4,55% arriba y abajo) | `--d-margen-seguro` y `--d-margen-seguro-v` (leerlos con `getComputedStyle`, no copiar el número) |
 | que la tira de repaso salga a la franja libre en vertical | ya lo hace `initRepasoRapido` (`acomodarTirasSueltas`) |
 | pasos al costado de VARIOS repasos | `initPasosRepaso` toma todas las listas de la página |
-| avisar qué le falta tocar | `initGateHints` |
+| avisar qué le falta tocar | `initGateHints` (el temblor de "Siguiente" sale en TODO bloqueo; el toast, solo en sus `gates`: un gate propio puede llevar su propio aviso al lado) |
 | glosario con búsqueda y candado | `initGlossarySearch`, `initGlossaryUnlock` |
 | índice lateral con tilde y gate | `initIndexJumps` |
 | zonas tocables sobre el arte | `initHotspots` |
@@ -312,6 +312,8 @@ repite en un segundo curso, sube al kit.
   resumen del cierre suben a la medalla más baja si los puntos no
   alcanzan, y nunca dicen "Todavía sin medalla" a quien terminó
   (`bronce-al-completar`). Los puntos que se muestran son los reales.
+  El texto de "Mis logros" lo dice así: bronce al terminar, plata y oro
+  sumando más (con el piso calculado, lo obligatorio da justo bronce).
 - **Los umbrales de la medalla se calculan**, no se eligen: bronce = el
   piso que garantiza el gate; oro = un % alto del máximo REAL. El máximo
   se mide con un recorrido, no sumando la tabla, y se descuenta lo que

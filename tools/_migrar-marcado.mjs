@@ -156,10 +156,14 @@ export function migrarMarcado(html, KIT) {
      cierto. */
   const lg = h.match(/<p class="d-badges-intro"[^>]*>[\s\S]*?<\/p>/);
   const introVieja = lg && (texto(lg[0]) === LOGROS_V3 || /^Vas sumando ✦ puntos a medida que avanzás/.test(texto(lg[0])) ||
-    /ninguno se gana con lo mínimo\.$/.test(texto(lg[0])));
+    /ninguno se gana con lo mínimo\.$/.test(texto(lg[0])) ||
+    /* v1.9.136 (relevo SA L4): "Con lo obligatorio llegás a bronce o plata"
+       dejó de ser cierto con "pasar es ganar" y el bronce al completar: en
+       un curso con el piso calculado, lo obligatorio da justo bronce. */
+    /^Con lo obligatorio llegás a bronce o plata\. El oro es para quien hace un poco más: los 3 logros de plus/.test(texto(lg[0])));
   if (lg && T.logrosIntro && introVieja && texto(lg[0]) !== texto(T.logrosIntro)) {
     h = h.replace(lg[0], T.logrosIntro);
-    cambios.push('texto de "Mis logros" (bronce/plata con lo obligatorio, oro con los logros)');
+    cambios.push('texto de "Mis logros" (bronce al terminar; plata y oro con lo que se suma)');
   }
 
   /* 4d · La pastilla de logros del instructivo (v1.9.127): "cada uno suma

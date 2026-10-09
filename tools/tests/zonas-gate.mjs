@@ -72,10 +72,18 @@ else {
   if (r.sinPedido.length) fails.push('una diapositiva sin `data-require-hits` pide zonas: ' + JSON.stringify(r.sinPedido) + '.');
 }
 
-const KIT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const plantilla = fs.readFileSync(path.join(KIT, 'js', 'curso.js'), 'utf8');
-if (!/initZonasGate\(/.test(plantilla) || !/gate:\s*zonasGate/.test(plantilla)) {
-  fails.push('la plantilla js/curso.js no cablea `initZonasGate` en sus gates: un curso nuevo con zonas obligatorias se saltearía.');
+/* 5 · Solo en el KIT (relevo SA L2): adentro de un curso, `js/curso.js`
+   es el del curso, no la plantilla, y cada curso cablea sus gates como
+   quiere. Se reconoce el curso por su `kit-version.json`, que no lista
+   `js/curso.js` como archivo del kit. */
+const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+let esCurso = false;
+try { esCurso = !JSON.parse(fs.readFileSync(path.join(RAIZ, 'kit-version.json'), 'utf8')).archivos['js/curso.js']; } catch (e) {}
+if (!esCurso) {
+  const plantilla = fs.readFileSync(path.join(RAIZ, 'js', 'curso.js'), 'utf8');
+  if (!/initZonasGate\(/.test(plantilla) || !/gate:\s*zonasGate/.test(plantilla)) {
+    fails.push('la plantilla js/curso.js del kit no cablea `initZonasGate` en sus gates: un curso nuevo con zonas obligatorias se saltearía.');
+  }
 }
 
 await browser.close();

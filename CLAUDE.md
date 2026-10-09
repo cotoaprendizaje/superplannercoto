@@ -16731,3 +16731,34 @@ separado, textos dinámicos fuera del arte, los pop-ups no se dibujan) y
 el camino al motor de minijuegos: un marco común y cartuchos por datos.
 El prototipo de "Hábitos saludables" ya usa los pop-ups del kit (pedido
 del cliente en el artefacto).
+
+## 7.85 Segunda vuelta de "Seguridad alimentaria" (kit-base v1.9.136)
+
+El curso tomó v1.9.135 (87/87 con sus 12 tests propios) y confirmó K1–K17.
+Cuatro puntos nuevos:
+
+**L1 · `onEmpezar` corría antes de reiniciar la partida.** Un curso que
+repinta su marcador desde los hallazgos lo pintaba con los de la partida
+anterior: perder con 4 y "Reintentar" arrancaba en 120. Ahora corre
+después de `mj.hallados = {}`. `minijuego` guarda cuántos hallazgos ve
+`onEmpezar` y exige 0 (con el orden anterior da `[0,1]`).
+
+**L2 · `zonas-gate` acusaba a "la plantilla" adentro de un curso.** El
+paso que mira la plantilla leía el `js/curso.js` de la carpeta donde
+corre, que en un curso es el del curso. Ahora ese paso se saltea cuando
+`kit-version.json` no lista `js/curso.js` como archivo del kit. Rojo con
+el test anterior dentro del curso, verde ahora.
+
+**L3 · `initGateHints` a medias es contrato.** El temblor de "Siguiente"
+sale en todo `advanceblocked`, y el toast solo en los `gates` que se le
+pasan. Un gate propio puede conservar su aviso al lado. Va escrito en el
+MANUAL (§4).
+
+**L4 · El texto de "Mis logros".** "Con lo obligatorio llegás a bronce o
+plata" dejó de ser cierto con "pasar es ganar": en un curso con piso
+calculado, lo obligatorio da justo bronce. El texto nuevo dice "Terminar
+el curso te asegura la medalla de bronce. Para plata y oro sumá más…".
+La migración lo reemplaza si el curso tenía el texto del kit.
+
+**L5 (sin cambio):** quien aprobó con 4 antes de v1.9.135 conserva el
+paso (`jok`). Es a propósito: no se le traba el curso a quien ya pasó.

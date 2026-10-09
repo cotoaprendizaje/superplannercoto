@@ -446,9 +446,12 @@
        el curso lo hacía escuchando el clic de [data-mj-start]/[data-mj-retry]
        en captura, atado al marcado. */
     function empezar() {
-      if (typeof opts.onEmpezar === 'function') { try { opts.onEmpezar(); } catch (e) {} }
       mj.vidas = VIDAS; mj.hallados = {}; mj.errados = {};
       mj.orden = []; mj.activo = true; mj.errores = 0;
+      /* DESPUÉS de reiniciar (relevo SA L1): un curso que repinta su
+         marcador desde `estado.hallados` lo pintaba con los de la partida
+         anterior (perder con 4 y "Reintentar" arrancaba en 120). */
+      if (typeof opts.onEmpezar === 'function') { try { opts.onEmpezar(); } catch (e) {} }
       resetBotones();
       slide.querySelectorAll('[data-mj-hotspot].is-on').forEach(function (s) { s.classList.remove('is-on'); });
       if (fbEl) { fbEl.textContent = ''; fbEl.className = 'd-mj-fb'; }

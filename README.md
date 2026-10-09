@@ -1,6 +1,6 @@
 # kit-base — Área Aprendizaje (COTO)
 
-**Versión: 1.9.135** · construido a partir de "Surtido sin venta" (curso de
+**Versión: 1.9.136** · construido a partir de "Surtido sin venta" (curso de
 referencia original) y "Prevención cardiovascular" (2º curso real,
 fuente de todo lo agregado en v1.4-v1.8), validado contra el Manual de
 Diseño + Manual de Contenido oficiales del cliente (ver `CLAUDE.md` §6.5).
@@ -431,6 +431,16 @@ final de §7.43: K4–K8, K13–K24 y K26.
 
 ⚠️ **Dos cosas cambian de aspecto** si un curso viejo se recompila con
 este kit: el escalonado apagado y el corte de la barra en 959px.
+
+### v1.9.136 — segunda vuelta de alimentaria
+
+Ver CLAUDE.md §7.85.
+
+- `onEmpezar` del minijuego corre DESPUÉS de reiniciar la partida.
+- `zonas-gate` ya no mira la plantilla cuando corre adentro de un curso.
+- "Mis logros" dice "Terminar el curso te asegura la medalla de bronce";
+  la migración lo actualiza.
+- MANUAL: cómo conviven `initGateHints` y un aviso propio.
 
 ### v1.9.135 — pasar es ganar, bronce al completar y la voz que seguía al cerrar
 
