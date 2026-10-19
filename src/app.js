@@ -3913,6 +3913,7 @@ function docSnapshotTecnico() {
   return {
     tecnico: state.tecnico,
     deletedTecnico: state.deletedTecnico,
+    moodle: state.moodle || null,
   };
 }
 function docSnapshotEduArchivo() {
@@ -4227,6 +4228,9 @@ const state = {
   cotofrase: { day: "", v: 0, porUsuario: {} },
   deleted: {},
   tecnico: [],
+  // Resumen del último Excel de Moodle (ver moodleAplicar): fecha, cuántos
+  // e-learning y los presenciales, que solo cuentan en Reportes.
+  moodle: null,
   deletedTecnico: {},
   eduArchivo: [],
   // Fotos de portada, por id de tarjeta. Viven en su propia fila del backend.
@@ -6590,6 +6594,9 @@ function tecBarraHTML(sub) {
     '<span class="tbar-g">' +
     tecCategoriaFiltroHTML() +
     (sub === "grilla" ? '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' : "") +
+    '<button class="btn btn-ghost btn-sm" data-action="moodle:abrir" title="' +
+    esc(state.moodle ? "Último Excel: " + new Date(state.moodle.fecha).toLocaleDateString("es-AR") : "Todavía no se cargó ningún Excel de Moodle") +
+    '">⤓ Actualizar desde Moodle</button>' +
     tecColsPopHTML() +
     "</span>" +
     '<span class="tbar-g"><span class="tbar-lbl">Ordenar</span>' +
@@ -6772,22 +6779,533 @@ function tecCategoriasUsadas() {
   state.tecnico.forEach((f) => f.categoria && set.add(f.categoria));
   return [...set].sort((a, b) => a.localeCompare(b));
 }
-// Las categorías de Técnico y los sectores del Mapa son dos listas que casi
-// coinciden pero no del todo (Seguridad e Higiene, Pañol y Centro de
-// Distribución existen de un lado y no del otro). Ofrecer los dos conjuntos en
-// el mismo desplegable no fuerza nada, pero hace que escribir una variante
-// nueva sea lo raro y no lo cómodo.
+// Primero las categorías de Moodle (la lista oficial, ver MOODLE_SECTOR) y
+// después cualquier otra que ya se use y no sea un nombre viejo de una de
+// ellas. Escribir una variante nueva tiene que ser lo raro, no lo cómodo.
 function tecCategoriasDatalistHTML() {
-  const usadas = tecCategoriasUsadas(),
-    vistas = new Set(usadas.map((c) => c.toLowerCase())),
-    sectores = Object.values(SECTORES)
-      .map((x) => x.nombre)
-      .filter((n) => !vistas.has(n.toLowerCase()));
+  const oficiales = Object.keys(MOODLE_SECTOR),
+    vistas = new Set(oficiales.map(normCat)),
+    otras = tecCategoriasUsadas().filter((c) => !vistas.has(normCat(c)) && !categoriaMoodle(c));
   return (
     '<datalist id="tecCategoriasList">' +
-    usadas.concat(sectores).map((c) => '<option value="' + esc(c) + '">').join("") +
+    oficiales.concat(otras).map((c) => '<option value="' + esc(c) + '">').join("") +
     "</datalist>"
   );
+}
+// ===== Moodle: la lista oficial de categorías =====
+// Técnico tenía «categorías» y el Mapa «sectores»: dos listas que casi
+// coincidían (Frescos 1 / Frescos I, Zona E! / Zona E, Seguridad e Higiene /
+// Higiene y Seguridad…) y que había que mantener a mano. Ahora la categoría
+// de un curso es la de Moodle, tal cual la exporta el Excel del área, y esta
+// tabla dice en qué sector del Mapa cae cada una. Una categoría que no tiene
+// sector propio (los centros de distribución) queda en vacío: se ve en
+// Técnico, pero no inventa un sector en el Mapa.
+const MOODLE_SECTOR = {
+    Administración: "administracion",
+    // En Moodle lo de TCI vive en Administración y Finanzas; en el Mapa sigue
+    // siendo su propio sector.
+    "Administración y Finanzas": "tci",
+    "Area Frescos - Centro de Distribución": "",
+    "Area No Alimentos - Centro de Distribución": "",
+    "Area Secos - Centro de Distribución": "",
+    "Atención al Cliente": "atencion-al-cliente",
+    Cajas: "cajas",
+    "Control de Calidad": "control-de-calidad",
+    "Coto Digital": "coto-digital",
+    Elaborados: "elaborados",
+    "Flota Propia": "flota-propia",
+    "Frescos I": "frescos-1",
+    "Frescos II": "frescos-2",
+    "Gestión Comercial": "gestion-comercial",
+    "Higiene y Seguridad": "seguridad-higiene",
+    Mantenimiento: "mantenimiento",
+    "No Alimentos": "no-alimentos",
+    "Recursos Humanos - Administración de Personal": "recursos-humanos",
+    Salón: "salon",
+    Seguridad: "seguridad",
+    "Seguridad de la Información": "sistemas",
+    "Servicio Médico": "servicio-medico",
+    "Zona E": "zona-e",
+  },
+  // Cómo se llamaban en Técnico antes de seguir a Moodle. Sirve para que una
+  // fila vieja siga cayendo en su sector, y para corregir al vuelo a quien
+  // escriba el nombre de antes.
+  CATEGORIA_VIEJA = {
+    "frescos 1": "Frescos I",
+    "frescos 2": "Frescos II",
+    "recursos humanos": "Recursos Humanos - Administración de Personal",
+    "zona e!": "Zona E",
+    "seguridad e higiene": "Higiene y Seguridad",
+    tci: "Administración y Finanzas",
+  },
+  // Los presenciales no son filas de Técnico (no tienen SCORM, ni portada, ni
+  // diseño): se cuentan aparte, solo en Reportes. Testing es Moodle probándose
+  // a sí mismo y no se cuenta en ningún lado.
+  MOODLE_PRESENCIAL = "Presenciales",
+  MOODLE_IGNORADAS = ["Testing"];
+function normCat(txt) {
+  return String(txt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+// El nombre de Moodle para lo que se haya escrito, si lo hay: igual salvo
+// mayúsculas/acentos/espacios, o uno de los nombres viejos de Técnico.
+function categoriaMoodle(txt) {
+  const k = normCat(txt);
+  if (!k) return "";
+  const exacta = Object.keys(MOODLE_SECTOR).find((c) => normCat(c) === k);
+  return exacta || CATEGORIA_VIEJA[k] || (k === normCat(MOODLE_PRESENCIAL) ? MOODLE_PRESENCIAL : "");
+}
+// El sector del Mapa que le toca a una categoría de Técnico. Antes esto era
+// toSector(), que solo acertaba si la categoría se escribía igual que la clave
+// interna del sector: «Frescos 1» no encontraba a «frescos-1».
+function sectorDeCategoria(txt) {
+  const moodle = categoriaMoodle(txt);
+  if (moodle) return MOODLE_SECTOR[moodle] || null;
+  const k = normCat(txt),
+    porNombre =
+      Object.keys(SECTORES).find((s) => normCat(SECTORES[s].nombre) === k) ||
+      // Pañol no es categoría de Moodle; en el Mapa es «Pañol y Base 12».
+      (k === "panol" && SECTORES["panol-base-12"] ? "panol-base-12" : null);
+  if (porNombre) return porNombre;
+  const s = toSector(txt);
+  return s && SECTORES[s] ? s : null;
+}
+
+// --- Leer el Excel ---------------------------------------------------------
+// La página no puede cargar librerías de afuera (lo prohíbe su política de
+// seguridad), así que el .xlsx se abre a mano: es un zip con XML adentro. Se
+// lee el índice del zip, se descomprime lo que haga falta con lo que ya trae
+// el navegador, y de la primera hoja sale una tabla de filas y columnas.
+async function zipEntradas(buf) {
+  const dv = new DataView(buf),
+    u8 = new Uint8Array(buf);
+  let fin = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--)
+    if (dv.getUint32(i, true) === 0x06054b50) {
+      fin = i;
+      break;
+    }
+  if (fin < 0) throw new Error("No parece un archivo de Excel (.xlsx).");
+  const total = dv.getUint16(fin + 10, true),
+    entradas = {};
+  let p = dv.getUint32(fin + 16, true);
+  for (let n = 0; n < total; n++) {
+    const metodo = dv.getUint16(p + 10, true),
+      tam = dv.getUint32(p + 20, true),
+      largoNombre = dv.getUint16(p + 28, true),
+      largoExtra = dv.getUint16(p + 30, true),
+      largoComent = dv.getUint16(p + 32, true),
+      local = dv.getUint32(p + 42, true),
+      nombre = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + largoNombre));
+    entradas[nombre] = { metodo, tam, local };
+    p += 46 + largoNombre + largoExtra + largoComent;
+  }
+  return {
+    nombres: Object.keys(entradas),
+    async texto(nombre) {
+      const e = entradas[nombre];
+      if (!e) return null;
+      const ini = e.local + 30 + dv.getUint16(e.local + 26, true) + dv.getUint16(e.local + 28, true),
+        datos = u8.slice(ini, ini + e.tam);
+      if (e.metodo === 0) return new TextDecoder().decode(datos);
+      if (e.metodo !== 8) throw new Error("El Excel viene comprimido de una forma que no sé abrir.");
+      const flujo = new Blob([datos]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return await new Response(flujo).text();
+    },
+  };
+}
+function xmlDe(texto) {
+  return new DOMParser().parseFromString(texto, "application/xml");
+}
+async function leerXlsx(buf) {
+  const zip = await zipEntradas(buf),
+    compartidos = [],
+    ss = await zip.texto("xl/sharedStrings.xml");
+  if (ss)
+    xmlDe(ss)
+      .querySelectorAll("si")
+      .forEach((si) => compartidos.push([...si.querySelectorAll("t")].map((t) => t.textContent).join("")));
+  const hoja =
+    zip.nombres.find((n) => n === "xl/worksheets/sheet1.xml") ||
+    zip.nombres.filter((n) => /^xl\/worksheets\/[^/]+\.xml$/.test(n)).sort()[0];
+  if (!hoja) throw new Error("El Excel no tiene ninguna hoja.");
+  const filas = [];
+  xmlDe(await zip.texto(hoja))
+    .querySelectorAll("sheetData > row")
+    .forEach((row) => {
+      const fila = [];
+      row.querySelectorAll("c").forEach((c) => {
+        const ref = c.getAttribute("r") || "",
+          letras = (ref.match(/^[A-Z]+/) || [""])[0];
+        let col = 0;
+        for (const l of letras) col = col * 26 + (l.charCodeAt(0) - 64);
+        const t = c.getAttribute("t"),
+          v = c.querySelector("v"),
+          val =
+            t === "s"
+              ? compartidos[+((v && v.textContent) || 0)] || ""
+              : t === "inlineStr"
+                ? [...c.querySelectorAll("t")].map((x) => x.textContent).join("")
+                : t === "str" || t === "b"
+                  ? (v && v.textContent) || ""
+                  : v && v.textContent !== ""
+                    ? Number(v.textContent)
+                    : "";
+        fila[(col || fila.length + 1) - 1] = val;
+      });
+      filas.push(fila);
+    });
+  return filas;
+}
+// Por si alguien lo guarda como CSV desde Excel (que en castellano separa con
+// punto y coma).
+function leerCsv(texto) {
+  const primera = texto.split(/\r?\n/)[0] || "",
+    sep = (primera.match(/;/g) || []).length > (primera.match(/,/g) || []).length ? ";" : ",",
+    filas = [];
+  let fila = [],
+    campo = "",
+    comillas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const ch = texto[i];
+    if (comillas) {
+      if (ch === '"' && texto[i + 1] === '"') ((campo += '"'), i++);
+      else if (ch === '"') comillas = false;
+      else campo += ch;
+    } else if (ch === '"') comillas = true;
+    else if (ch === sep) (fila.push(campo), (campo = ""));
+    else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && texto[i + 1] === "\n") i++;
+      (fila.push(campo), filas.push(fila), (fila = []), (campo = ""));
+    } else campo += ch;
+  }
+  if (campo || fila.length) (fila.push(campo), filas.push(fila));
+  return filas.filter((f) => f.some((x) => String(x).trim()));
+}
+// Excel guarda las fechas como días desde el 30/12/1899; el CSV, como texto
+// (2025-07-24 12:50 o 24/07/2025). Todo sale como AAAA-MM-DD.
+function fechaMoodle(v) {
+  if (typeof v === "number" && isFinite(v) && v > 1)
+    return new Date(Math.round((v - 25569) * 86400000)).toISOString().slice(0, 10);
+  const s = String(v || "").trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[1] + "-" + m[2] + "-" + m[3];
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0");
+  return "";
+}
+// De la tabla cruda a cursos. Las columnas se buscan por su encabezado, no
+// por su posición, para que reordenarlas en el Excel no cambie nada.
+function cursosDeMoodle(tabla) {
+  const cab = (tabla[0] || []).map((c) => normCat(c).replace(/[^a-z]/g, "")),
+    col = (...nombres) => cab.findIndex((c) => nombres.includes(c)),
+    ix = {
+      id: col("id"),
+      creado: col("fecreacion", "fechacreacion", "fechadecreacion"),
+      categoria: col("categoria"),
+      nombre: col("nombre", "nombrecompleto"),
+      visible: col("visible"),
+      scorm: col("femodifscorm", "fechamodifscorm", "scorm"),
+    };
+  if (ix.nombre < 0 || ix.categoria < 0)
+    throw new Error("No encontré las columnas «Nombre» y «Categoría» en la primera fila.");
+  const celda = (fila, i) => (i < 0 ? "" : fila[i] === undefined ? "" : fila[i]);
+  return tabla
+    .slice(1)
+    .map((f) => ({
+      id: String(celda(f, ix.id)).trim(),
+      nombre: String(celda(f, ix.nombre)).trim(),
+      categoria: String(celda(f, ix.categoria)).trim(),
+      creado: fechaMoodle(celda(f, ix.creado)),
+      scorm: fechaMoodle(celda(f, ix.scorm)),
+      visible: ix.visible < 0 ? true : !/^(0|no|false)$/i.test(String(celda(f, ix.visible)).trim()),
+    }))
+    .filter((c) => c.nombre);
+}
+
+// --- Cruzar con Técnico ----------------------------------------------------
+// Cada curso de Moodle busca su fila: primero por el número de Moodle (si ya
+// se importó alguna vez), después por el nombre igual, después por un nombre
+// parecido. Lo muy parecido se toma solo; lo dudoso lo decide una persona.
+function moodleCruce(cursos) {
+  const libres = new Set(state.tecnico.map((f) => f.id)),
+    porId = new Map(state.tecnico.filter((f) => f.moodleId).map((f) => [String(f.moodleId), f])),
+    res = { pares: [], dudosos: [], nuevos: [], presenciales: [], ignorados: 0, soloTec: [] },
+    tomar = (fila) => libres.delete(fila.id);
+  const elearning = [];
+  cursos.forEach((c) => {
+    if (MOODLE_IGNORADAS.some((x) => normCat(x) === normCat(c.categoria))) return void res.ignorados++;
+    if (normCat(c.categoria) === normCat(MOODLE_PRESENCIAL)) return void res.presenciales.push(c);
+    elearning.push(c);
+  });
+  const sinPar = [];
+  elearning.forEach((c) => {
+    const fila = (c.id && porId.get(c.id)) || null;
+    if (fila && libres.has(fila.id)) (tomar(fila), res.pares.push({ curso: c, fila }));
+    else sinPar.push(c);
+  });
+  const quedan = [];
+  sinPar.forEach((c) => {
+    const n = tecNormTitulo(c.nombre),
+      fila = state.tecnico.find((f) => libres.has(f.id) && tecNormTitulo(f.curso) === n);
+    if (fila) (tomar(fila), res.pares.push({ curso: c, fila }));
+    else quedan.push(c);
+  });
+  // Los parecidos se reparten de mejor a peor, para que dos cursos de Moodle
+  // no se peleen la misma fila.
+  const candidatos = [];
+  quedan.forEach((c) =>
+    state.tecnico.forEach((f) => {
+      if (!libres.has(f.id) || !tecNormTitulo(f.curso)) return;
+      const score = tecParecido(c.nombre, f.curso);
+      if (score >= PAR_UMBRAL) candidatos.push({ curso: c, fila: f, score });
+    }),
+  );
+  const usados = new Set();
+  candidatos
+    .sort((a, b) => b.score - a.score)
+    .forEach((x) => {
+      if (usados.has(x.curso) || !libres.has(x.fila.id)) return;
+      (usados.add(x.curso), tomar(x.fila));
+      (x.score >= PAR_SEGURO ? res.pares : res.dudosos).push(x);
+    });
+  quedan.filter((c) => !usados.has(c)).forEach((c) => res.nuevos.push(c));
+  res.soloTec = state.tecnico.filter((f) => libres.has(f.id) && tecNormTitulo(f.curso));
+  return res;
+}
+// Qué le cambiaría a una fila. Solo se completa lo que Moodle sabe mejor:
+// la categoría, si sigue visible, y la última subida del SCORM (si es más
+// nueva que la anotada). La fecha de publicación se llena solo si estaba
+// vacía: esa la carga el equipo y no se pisa.
+function moodleCambios(fila, c) {
+  const cambios = {},
+    cat = c.categoria;
+  if (cat && cat !== fila.categoria) cambios.categoria = [fila.categoria || "", cat];
+  if (c.scorm && (!fila.scorm || tecFechaMala(fila.scorm) || c.scorm > fila.scorm))
+    cambios.scorm = [fila.scorm || "", c.scorm];
+  if (c.creado && !fila.publicacion) cambios.publicacion = ["", c.creado];
+  if (tecFilaActiva(fila) !== c.visible) cambios.baja = [!tecFilaActiva(fila), !c.visible];
+  if (c.id && String(fila.moodleId || "") !== c.id) cambios.moodleId = [fila.moodleId || "", c.id];
+  return cambios;
+}
+let moodlePendiente = null;
+function moodleImportarModal() {
+  ((moodlePendiente = null),
+    openModal(
+      '<h2>Actualizar desde Moodle</h2><div class="sub-t">Elegí el Excel de cursos que exporta Moodle. Antes de tocar nada te muestro qué cambiaría.</div>' +
+        '<div class="fld"><label>Excel de cursos (.xlsx o .csv)</label><input type="file" id="moodleFile" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"></div>' +
+        '<div id="moodlePrevia"></div>' +
+        '<div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="moodle:aplicar" id="moodleAplicar" disabled>Aplicar cambios</button></div>',
+      "modal-ancho",
+    ));
+  const el = $("#moodleFile");
+  if (el)
+    el.addEventListener("change", async () => {
+      const archivo = el.files && el.files[0];
+      if (!archivo) return;
+      try {
+        const buf = await archivo.arrayBuffer(),
+          tabla = /\.csv$/i.test(archivo.name) ? leerCsv(new TextDecoder().decode(buf)) : await leerXlsx(buf),
+          cursos = cursosDeMoodle(tabla);
+        if (!cursos.length) throw new Error("El archivo no trae ningún curso.");
+        moodlePendiente = { archivo: archivo.name, cursos, cruce: moodleCruce(cursos) };
+        ($("#moodlePrevia").innerHTML = moodlePreviaHTML(moodlePendiente)), ($("#moodleAplicar").disabled = false);
+      } catch (err) {
+        ((moodlePendiente = null),
+          ($("#moodlePrevia").innerHTML = '<div class="note warn">' + esc(err.message || String(err)) + "</div>"),
+          ($("#moodleAplicar").disabled = true));
+      }
+    });
+}
+const MOODLE_CAMPO = { categoria: "Categoría", scorm: "SCORM", publicacion: "Publicación", baja: "Estado", moodleId: "N.º Moodle" };
+function moodleCambioTxt(k, par) {
+  if (k === "baja") return par[1] ? "pasa a dado de baja (oculto en Moodle)" : "vuelve a vigente (visible en Moodle)";
+  if (k === "moodleId") return "";
+  const fmt = (v) => (k === "categoria" ? v || "sin categoría" : v ? v.split("-").reverse().join("/") : "vacía");
+  return MOODLE_CAMPO[k] + ": " + esc(fmt(par[0])) + " → <b>" + esc(fmt(par[1])) + "</b>";
+}
+function moodlePreviaHTML(p) {
+  const x = p.cruce,
+    conCambios = x.pares
+      .map((par) => ({ par, cambios: moodleCambios(par.fila, par.curso) }))
+      .filter((o) => Object.keys(o.cambios).some((k) => k !== "moodleId")),
+    soloId = x.pares.length - conCambios.length,
+    porCampo = ["categoria", "scorm", "publicacion", "baja"]
+      .map((k) => [k, conCambios.filter((o) => o.cambios[k]).length])
+      .filter((par) => par[1])
+      .map((par) => ({ categoria: "categoría", scorm: "SCORM", publicacion: "publicación", baja: "estado" })[par[0]] + ": " + par[1])
+      .join(" · "),
+    presVis = x.presenciales.filter((c) => c.visible).length,
+    lista = (items) => '<ul class="mdl-lista">' + items.join("") + "</ul>",
+    bloque = (titulo, cuerpo, abierto) =>
+      '<details class="mdl-bloque"' + (abierto ? " open" : "") + "><summary>" + titulo + "</summary>" + cuerpo + "</details>";
+  return (
+    '<div class="mdl-resumen"><b>' +
+    p.cursos.length +
+    "</b> cursos en el Excel: " +
+    x.pares.length +
+    " ya están en Técnico, " +
+    x.dudosos.length +
+    " para confirmar, " +
+    x.nuevos.length +
+    " nuevos, " +
+    x.presenciales.length +
+    " presenciales" +
+    (x.ignorados ? " y " + x.ignorados + " de prueba (no se cuentan)" : "") +
+    ".</div>" +
+    (conCambios.length
+      ? bloque(
+          "Se actualizan " + conCambios.length + " curso" + (conCambios.length === 1 ? "" : "s") + ' <span class="mdl-pct">(' + porCampo + ")</span>",
+          lista(
+            conCambios.map(
+              (o) =>
+                "<li><b>" +
+                esc(o.par.fila.curso) +
+                "</b>" +
+                Object.keys(o.cambios)
+                  .map((k) => moodleCambioTxt(k, o.cambios[k]))
+                  .filter(Boolean)
+                  .map((t) => '<span class="mdl-cambio">' + t + "</span>")
+                  .join("") +
+                "</li>",
+            ),
+          ),
+          conCambios.length <= 12,
+        )
+      : '<div class="mdl-ok">Los ' + x.pares.length + " cursos que ya estaban coinciden con Moodle: no hay nada que cambiarles.</div>") +
+    (soloId && conCambios.length
+      ? '<div class="mdl-nota">Los otros ' + soloId + " ya coinciden con Moodle.</div>"
+      : "") +
+    (x.dudosos.length
+      ? bloque(
+          "¿Son el mismo curso? (" + x.dudosos.length + ")",
+          '<p class="mdl-nota">Se parecen pero no son iguales. Tildá los que sí son el mismo: esos se actualizan como los de arriba. Los que no tildes no se tocan (para no duplicarlos); si después resulta que eran otro curso, se agregan a mano.</p>' +
+            lista(
+              x.dudosos.map(
+                (d, i) =>
+                  '<li><label class="mdl-chk"><input type="checkbox" data-moodle-dudoso="' +
+                  i +
+                  '"> <span>Moodle: <b>' +
+                  esc(d.curso.nombre) +
+                  "</b><br>Técnico: <b>" +
+                  esc(d.fila.curso) +
+                  '</b> <span class="mdl-pct">' +
+                  Math.round(d.score * 100) +
+                  "% parecido</span></span></label></li>",
+              ),
+            ),
+          true,
+        )
+      : "") +
+    (x.nuevos.length
+      ? bloque(
+          "Cursos de Moodle que no están en Técnico (" + x.nuevos.length + ")",
+          '<p class="mdl-nota">Los tildados se agregan como filas nuevas, con su categoría y sus fechas.</p>' +
+            lista(
+              x.nuevos.map(
+                (c, i) =>
+                  '<li><label class="mdl-chk"><input type="checkbox" data-moodle-nuevo="' +
+                  i +
+                  '" checked> <span><b>' +
+                  esc(c.nombre) +
+                  "</b> · " +
+                  esc(c.categoria) +
+                  (c.visible ? "" : " · oculto en Moodle") +
+                  "</span></label></li>",
+              ),
+            ),
+          true,
+        )
+      : "") +
+    (x.presenciales.length
+      ? '<div class="mdl-nota">🏫 <b>' +
+        x.presenciales.length +
+        " presenciales</b> (" +
+        presVis +
+        " visibles): no se agregan a Técnico, se cuentan aparte en Reportes.</div>"
+      : "") +
+    (x.soloTec.length
+      ? bloque(
+          "Están en Técnico pero no en Moodle (" + x.soloTec.length + ")",
+          '<p class="mdl-nota">No se tocan. Si alguno se dio de baja, marcalo a mano.</p>' +
+            lista(x.soloTec.map((f) => "<li>" + esc(f.curso) + (f.categoria ? " · " + esc(f.categoria) : "") + "</li>")),
+          false,
+        )
+      : "")
+  );
+}
+function moodleAplicarCambios(fila, cambios) {
+  Object.keys(cambios).forEach((k) => (fila[k] = cambios[k][1]));
+}
+function moodleAplicar() {
+  const p = moodlePendiente;
+  if (!p) return;
+  const x = p.cruce,
+    tildado = (attr, i) => {
+      const el = document.querySelector("[" + attr + '="' + i + '"]');
+      return !!(el && el.checked);
+    };
+  let actualizadas = 0,
+    agregadas = 0;
+  const pares = x.pares.concat(x.dudosos.filter((d, i) => tildado("data-moodle-dudoso", i))),
+    nuevos = x.nuevos.filter((c, i) => tildado("data-moodle-nuevo", i));
+  pares.forEach((par) => {
+    const cambios = moodleCambios(par.fila, par.curso);
+    if (!Object.keys(cambios).length) return;
+    (moodleAplicarCambios(par.fila, cambios), Object.keys(cambios).some((k) => k !== "moodleId") && actualizadas++);
+  });
+  nuevos.forEach((c) => {
+    (state.tecnico.push({
+      id: uid(),
+      categoria: c.categoria,
+      curso: c.nombre,
+      publicacion: c.creado,
+      scorm: c.scorm,
+      mail: "",
+      portada: false,
+      mosaico: false,
+      evaluacion: false,
+      textos: false,
+      diseno: "",
+      estado: "",
+      baja: !c.visible,
+      moodleId: c.id,
+      cardId: null,
+      updatedAt: Date.now(),
+    }),
+      agregadas++);
+  });
+  state.moodle = {
+    fecha: Date.now(),
+    archivo: p.archivo,
+    elearning: x.pares.length + x.dudosos.length + x.nuevos.length,
+    elearningVisibles: p.cursos.filter(
+      (c) => normCat(c.categoria) !== normCat(MOODLE_PRESENCIAL) && !MOODLE_IGNORADAS.some((i) => normCat(i) === normCat(c.categoria)) && c.visible,
+    ).length,
+    presenciales: x.presenciales.map((c) => ({ id: c.id, nombre: c.nombre, visible: c.visible, creado: c.creado })),
+  };
+  ((moodlePendiente = null), parInvalidar(), touchTecnico(), closeModal(), render());
+  flash(
+    "Moodle al día: " +
+      actualizadas +
+      " curso" +
+      (actualizadas === 1 ? "" : "s") +
+      " actualizado" +
+      (actualizadas === 1 ? "" : "s") +
+      (agregadas ? ", " + agregadas + " nuevo" + (agregadas === 1 ? "" : "s") : "") +
+      ".",
+  );
+}
+// El resumen de la última importación viaja con Técnico. Si dos pantallas
+// importan, gana la más reciente: es una foto del Excel, no algo que se edita.
+function moodleMasNuevo(a, b) {
+  if (!a || !a.fecha) return b || null;
+  if (!b || !b.fecha) return a;
+  return b.fecha > a.fecha ? b : a;
 }
 // Reemplaza los dos prompt() nativos que se usaban para crear una fila: acá
 // mismo se puede corregir la categoría (o dejarla vacía) antes de crear.
@@ -8318,8 +8836,7 @@ function filaTieneNombre(fila) {
   return !!tecNormTitulo(fila.curso);
 }
 function cardNuevaParaFila(fila) {
-  const s = toSector(fila.categoria),
-    sector = s && SECTORES[s] ? s : null,
+  const sector = sectorDeCategoria(fila.categoria),
     tarjeta = newCard("curso", (fila.curso || "").trim() || "Curso sin título", {
       publicado: true,
       estado: "finalizado",
@@ -9752,6 +10269,30 @@ function repBajasHTML() {
     "</div>"
   );
 }
+// Lo que Moodle tiene publicado, según el último Excel cargado. Los
+// presenciales van solo acá: no son filas de Técnico (no tienen SCORM ni
+// piezas), pero son cursos que el área da y que el número total tiene que ver.
+function repMoodleHTML() {
+  const m = state.moodle;
+  if (!m || !m.fecha)
+    return '<div class="rep-empty">Todavía no se cargó el Excel de Moodle. Se carga desde Técnico → <b>⤓ Actualizar desde Moodle</b>.</div>';
+  const pres = m.presenciales || [],
+    presVis = pres.filter((c) => c.visible).length,
+    fila = (n, txt, sub) =>
+      '<div class="rep-mdl-fila"><b>' + n + "</b><span>" + txt + (sub ? "<i>" + sub + "</i>" : "") + "</span></div>";
+  return (
+    '<div class="rep-mdl">' +
+    fila(m.elearning || 0, "e-learning", (m.elearningVisibles || 0) + " visibles en Moodle") +
+    fila(pres.length, "presenciales", presVis + " visibles en Moodle") +
+    fila((m.elearning || 0) + pres.length, "en total", "") +
+    "</div>" +
+    '<div class="rep-nota">Según el Excel «' +
+    esc(m.archivo || "") +
+    "», cargado el " +
+    new Date(m.fecha).toLocaleDateString("es-AR") +
+    ". Los presenciales no están en Técnico: solo se cuentan acá.</div>"
+  );
+}
 function renderReportes() {
   // Antes era una pila: cuatro cajas, gráfico, gráfico, lista, lista — todo
   // del mismo ancho y del mismo peso, más de 2.500 px de scroll. Ahora hay
@@ -9793,7 +10334,10 @@ function renderReportes() {
     repSeccion("Catálogo por diseño", "Lo que está en HTML es lo que hay que rediseñar", repDisenoHTML()) +
     repSeccion("Antigüedad de lo publicado", "Cuándo salió lo que hoy sigue vigente", repAntiguedadHTML()) +
     "</div>" +
+    '<div class="rep-cols">' +
     repSeccion("Vigentes y dados de baja", "Sobre las " + state.tecnico.length + " filas de Seguimiento técnico", repBajasHTML()) +
+    repSeccion("Lo que hay en Moodle", "E-learning y presenciales, del último Excel", repMoodleHTML()) +
+    "</div>" +
     repFuenteHTML()
   );
 }
@@ -11907,7 +12451,9 @@ async function guardarTecnicoAhora() {
       const remote = await Store.remote(TEC_FILA);
       if (remote && Array.isArray(remote.tecnico)) {
         const merged = mergeCards(state.tecnico, remote.tecnico, state.deletedTecnico, remote.deletedTecnico || {});
-        ((state.tecnico = merged.cards), (state.deletedTecnico = merged.deleted));
+        ((state.tecnico = merged.cards),
+          (state.deletedTecnico = merged.deleted),
+          (state.moodle = moodleMasNuevo(state.moodle, remote.moodle)));
       }
     } catch (e) {}
   }
@@ -11926,7 +12472,9 @@ async function refreshTecnicoFromRemote() {
     const remote = await Store.remote(TEC_FILA);
     if (remote && Array.isArray(remote.tecnico)) {
       const merged = mergeCards(state.tecnico, remote.tecnico, state.deletedTecnico, remote.deletedTecnico || {});
-      ((state.tecnico = merged.cards), (state.deletedTecnico = merged.deleted));
+      ((state.tecnico = merged.cards),
+        (state.deletedTecnico = merged.deleted),
+        (state.moodle = moodleMasNuevo(state.moodle, remote.moodle)));
       if (state.view === "tecnico") renderTecList();
     }
   } catch (e) {}
@@ -12328,6 +12876,12 @@ document.addEventListener("click", (ev) => {
       break;
     case "data:import":
       ((importCifrado = null), doImport());
+      break;
+    case "moodle:abrir":
+      moodleImportarModal();
+      break;
+    case "moodle:aplicar":
+      moodleAplicar();
       break;
     case "data:import-run":
       if (importCifrado && !$("#importText").value.trim()) runImportCifrado();
@@ -13499,9 +14053,14 @@ document.addEventListener("click", (ev) => {
       // mayúsculas/espacios, se pisa por la versión canónica — evita terminar
       // con "Cajas" y "cajas " como si fueran dos categorías distintas.
       if (ev.target && ev.target.dataset && ev.target.dataset.tecField === "categoria") {
+        // Primero contra Moodle (que también entiende los nombres viejos:
+        // «Frescos 1» pasa a «Frescos I»), después contra las ya usadas.
         const escrito = ev.target.value.trim(),
           clave = escrito.toLowerCase(),
-          canonica = clave && tecCategoriasUsadas().find((c) => c.toLowerCase() === clave && c !== escrito);
+          moodle = categoriaMoodle(escrito),
+          canonica =
+            (moodle && moodle !== escrito && moodle) ||
+            (clave && !moodle && tecCategoriasUsadas().find((c) => c.toLowerCase() === clave && c !== escrito));
         if (canonica) {
           const fila = state.tecnico.find((f) => f.id === ev.target.dataset.tecId);
           if (fila) ((ev.target.value = canonica), (fila.categoria = canonica), touchTecnico());
@@ -16114,6 +16673,7 @@ function exportJSON() {
         fotos: state.fotos,
         tecnico: state.tecnico,
         eduArchivo: state.eduArchivo,
+        moodle: state.moodle,
       },
       null,
       2,
@@ -16262,6 +16822,7 @@ function runImport() {
         (state.cards = tarjeta.cards),
         (state.customTpl = tarjeta.templates || {}));
     }
+    if (tarjeta.moodle && tarjeta.moodle.fecha) state.moodle = moodleMasNuevo(state.moodle, tarjeta.moodle);
     if (tarjeta.fotos && typeof tarjeta.fotos === "object")
       ((state.fotos = Object.assign({}, state.fotos, tarjeta.fotos)), (fotosPendientes = true));
     // Seguimiento técnico y Archivos Edu Point viven en filas propias del
@@ -16487,6 +17048,7 @@ async function arrancarApp() {
   try {
     const tecDoc = await Store.load(TEC_FILA);
     if (tecDoc && Array.isArray(tecDoc.tecnico)) state.tecnico = tecDoc.tecnico;
+    if (tecDoc && tecDoc.moodle) state.moodle = tecDoc.moodle;
     if (tecDoc && tecDoc.deletedTecnico && typeof tecDoc.deletedTecnico === "object")
       state.deletedTecnico = pruneTombstones(tecDoc.deletedTecnico);
   } catch (errTec) {

@@ -101,6 +101,7 @@ async function main() {
     fotos: (fotos && fotos.fotos) || {},
     tecnico: (tec && tec.tecnico) || [],
     eduArchivo: (edu && edu.eduArchivo) || [],
+    moodle: (tec && tec.moodle) || null,
   };
   const texto = JSON.stringify(doc),
     dia = doc.exportado.slice(0, 10);

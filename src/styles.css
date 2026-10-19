@@ -10224,3 +10224,102 @@ button.mat-ct:hover {
     padding: 3px;
   }
 }
+
+/* ===== Moodle =====
+   El importador del Excel de cursos (Técnico → Actualizar desde Moodle) y su
+   resumen en Reportes. */
+.modal.modal-ancho {
+  width: 720px;
+}
+.mdl-resumen {
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 10px 14px;
+  border-radius: var(--r-s);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  margin: 4px 0 12px;
+}
+.mdl-bloque {
+  border-top: 1px solid var(--line-soft);
+  padding: 8px 0;
+}
+.mdl-bloque summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 4px 0;
+}
+.mdl-lista {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  max-height: 300px;
+  overflow: auto;
+}
+.mdl-lista li {
+  font-size: 13px;
+  line-height: 1.45;
+  padding: 6px 10px;
+  border-radius: var(--r-s);
+  background: var(--surface-2);
+}
+.mdl-cambio {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 12.5px;
+}
+.mdl-chk {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.mdl-chk input {
+  margin-top: 3px;
+  flex: none;
+}
+.mdl-pct {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.mdl-nota,
+.mdl-ok {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 6px 0;
+  line-height: 1.5;
+}
+.rep-mdl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.rep-mdl-fila {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: var(--r-s);
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+}
+.rep-mdl-fila b {
+  font-family: var(--titulo);
+  font-size: 26px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.rep-mdl-fila span {
+  font-size: 13px;
+  font-weight: 600;
+}
+.rep-mdl-fila i {
+  display: block;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}

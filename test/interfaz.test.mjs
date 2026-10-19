@@ -16,6 +16,10 @@
 import { chromium } from "playwright";
 import { rutaChromium } from "./navegador.mjs";
 import { startFakeBackend } from "./fake-backend.mjs";
+import { xlsxDePrueba } from "./xlsx-de-prueba.mjs";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const CLAVE = "Cotonetes2026";
 const resultados = [];
@@ -1543,9 +1547,95 @@ check(
   salto,
 );
 
+// ── Moodle: el Excel del área es la lista oficial de categorías ──
+// Un Excel armado acá mismo (el real no puede ir a un repo público) con un
+// caso de cada cosa: un curso que ya está, uno oculto, uno nuevo, un
+// presencial y uno de Testing.
+console.log("\nimportar el Excel de Moodle");
+await page.evaluate(() => {
+  ((state.view = "tecnico"), (state.tecSubView = "grilla"), (state.moodle = null));
+  state.tecnico.push(
+    { id: "zz-alfa", curso: "ZZ Curso Alfa", categoria: "Frescos 1", publicacion: "2020-01-01", scorm: "", portada: true, mosaico: false, evaluacion: false, textos: false, diseno: "", estado: "", cardId: null, updatedAt: Date.now() },
+    { id: "zz-beta", curso: "ZZ Curso Beta de Cajas", categoria: "Cajas", publicacion: "2019-05-05", scorm: "2026-01-01", portada: false, mosaico: false, evaluacion: false, textos: false, diseno: "", estado: "", cardId: null, updatedAt: Date.now() },
+  );
+  render();
+});
+const SCORM_ALFA = 45900.5,
+  esperadoScorm = new Date(Math.round((SCORM_ALFA - 25569) * 86400000)).toISOString().slice(0, 10),
+  dirX = mkdtempSync(join(tmpdir(), "moodle-")),
+  rutaX = join(dirX, "cursos-moodle.xlsx");
+writeFileSync(
+  rutaX,
+  xlsxDePrueba([
+    ["ID", "Fe.Creación", "Categoría", "Nombre", "Nombre corto", "Visible", "Fe.Modif.SCORM"],
+    [9001, 45000, "Frescos I", "ZZ Curso Alfa", "ZZA", 1, SCORM_ALFA],
+    [9002, 43000, "Cajas", "ZZ Curso Beta de Cajas", "ZZB", 0, 45000],
+    [9006, 46000.25, "Coto Digital", "ZZ Curso Nuevo Delta", "ZZD", 1, 46001],
+    [9004, 45500, "Presenciales", "ZZ Taller presencial", "ZZP", 1, ""],
+    [9005, 45500, "Testing", "ZZ Prueba de Moodle", "ZZT", 0, ""],
+  ]),
+);
+await page.click('[data-action="moodle:abrir"]');
+await page.waitForTimeout(300);
+await page.setInputFiles("#moodleFile", rutaX);
+await page.waitForFunction(() => !document.querySelector("#moodleAplicar").disabled, { timeout: 5000 }).catch(() => {});
+const mdlPrevia = await page.evaluate(() => ({
+  resumen: (document.querySelector(".mdl-resumen") || {}).textContent || "",
+  intacto: state.tecnico.find((f) => f.id === "zz-alfa").categoria,
+}));
+check("el Excel se lee y la vista previa cuenta cada caso", /5 cursos en el Excel: 2 ya están en Técnico, 0 para confirmar, 1 nuevos, 1 presenciales y 1 de prueba/.test(mdlPrevia.resumen), mdlPrevia);
+check("la vista previa no toca nada todavía", mdlPrevia.intacto === "Frescos 1", mdlPrevia);
+await page.click("#moodleAplicar");
+await page.waitForTimeout(500);
+const mdlTras = await page.evaluate(() => {
+  const alfa = state.tecnico.find((f) => f.id === "zz-alfa"),
+    beta = state.tecnico.find((f) => f.id === "zz-beta"),
+    delta = state.tecnico.find((f) => f.curso === "ZZ Curso Nuevo Delta");
+  return {
+    alfa: { cat: alfa.categoria, scorm: alfa.scorm, pub: alfa.publicacion, id: alfa.moodleId },
+    beta: { activa: tecFilaActiva(beta), scorm: beta.scorm },
+    delta: delta && { cat: delta.categoria, id: delta.moodleId, pub: delta.publicacion, activa: tecFilaActiva(delta) },
+    presencialEnTec: state.tecnico.some((f) => /presencial|Prueba de Moodle/.test(f.curso)),
+    moodle: state.moodle && { pres: state.moodle.presenciales.length, el: state.moodle.elearning },
+  };
+});
+check("la categoría pasa a la de Moodle", mdlTras.alfa.cat === "Frescos I", mdlTras.alfa);
+check("el SCORM se completa con la fecha de Moodle", mdlTras.alfa.scorm === esperadoScorm, { mdlTras: mdlTras.alfa, esperadoScorm });
+check("la fecha de publicación cargada a mano no se pisa", mdlTras.alfa.pub === "2020-01-01", mdlTras.alfa);
+check("queda anotado el número de Moodle", mdlTras.alfa.id === "9001", mdlTras.alfa);
+check("oculto en Moodle pasa a dado de baja", mdlTras.beta.activa === false, mdlTras.beta);
+check("un SCORM más nuevo que el de Moodle no se pisa con uno viejo", mdlTras.beta.scorm === "2026-01-01", mdlTras.beta);
+check("el curso nuevo entra con su categoría y su número", !!mdlTras.delta && mdlTras.delta.cat === "Coto Digital" && mdlTras.delta.id === "9006" && mdlTras.delta.activa, mdlTras.delta);
+check("presenciales y Testing no entran a Técnico", !mdlTras.presencialEnTec, mdlTras);
+check("los presenciales quedan contados aparte", !!mdlTras.moodle && mdlTras.moodle.pres === 1 && mdlTras.moodle.el === 3, mdlTras.moodle);
+const mdlSectores = await page.evaluate(() =>
+  ["Frescos I", "Frescos 1", "TCI", "Administración y Finanzas", "Higiene y Seguridad", "Recursos Humanos", "Pañol", "Area Secos - Centro de Distribución"].map(
+    (c) => sectorDeCategoria(c),
+  ),
+);
+check(
+  "cada categoría (la de Moodle o la vieja) cae en su sector del Mapa",
+  JSON.stringify(mdlSectores) === JSON.stringify(["frescos-1", "frescos-1", "tci", "tci", "seguridad-higiene", "recursos-humanos", "panol-base-12", null]),
+  mdlSectores,
+);
+// Volver a cargar el mismo Excel no cambia nada: ya se reconocen por número.
+await page.click('[data-action="moodle:abrir"]');
+await page.waitForTimeout(300);
+await page.setInputFiles("#moodleFile", rutaX);
+await page.waitForTimeout(800);
+const mdlOtraVez = await page.evaluate(() => (document.querySelector("#moodlePrevia") || {}).textContent || "");
+check("el mismo Excel dos veces no propone cambios", /coinciden con Moodle/.test(mdlOtraVez) && !/Se actualizan/.test(mdlOtraVez), mdlOtraVez.slice(0, 200));
+await page.evaluate(() => closeModal());
+await page.evaluate(() => ((state.view = "reportes"), render()));
+await page.waitForTimeout(300);
+const mdlRepM = await page.evaluate(() => (document.querySelector(".rep-mdl") || {}).textContent || "");
+check("Reportes muestra los presenciales en su propia línea", /1\s*presenciales/.test(mdlRepM) && /3\s*e-learning/.test(mdlRepM), mdlRepM);
+await page.evaluate(() => ((state.view = "tecnico"), render()));
+
 // Dejar el tablero como estaba para que nada de esto ensucie lo que sigue.
 await page.evaluate(() => {
-  ((state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id))),
+  ((state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id) && !/^ZZ /.test(f.curso || ""))),
+    (state.moodle = null),
     (state.cards = state.cards.filter((c) => !/^ZZ /.test(c.titulo))),
     (state.tecFiltro = ""),
     (state.tecSubView = "grilla"),
