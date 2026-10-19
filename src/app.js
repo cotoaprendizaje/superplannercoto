@@ -10698,7 +10698,6 @@ function renderInicio() {
       : "") +
     "</div></div>" +
     respaldoAvisoHTML() +
-    agendaAvisoHTML() +
     '<div class="hub-grid">' +
     inicioTarjetas().map(inicioCardHTML).join("") +
     "</div>" +
@@ -10707,9 +10706,6 @@ function renderInicio() {
     "</div></div>"
   );
 }
-// Aviso breve y descartable donde antes vivía la pestaña de Agenda, para
-// que el equipo no se quede buscándola — se va a rehacer de cero más
-// adelante, esto no es un error.
 // El plan gratuito de Supabase no hace copias de seguridad: si la base se
 // pierde, lo único que queda es un respaldo bajado a mano. Y un respaldo que
 // depende de que alguien se acuerde no existe. Así que lo recuerda la app, y
@@ -10742,12 +10738,6 @@ function respaldoAvisoHTML() {
     cuando +
     "</b> El plan gratuito no guarda copias: si algo le pasa a la base, esto es lo único que queda. Bajá una y dejala en el Drive del área.</span>\n" +
     '    <button class="btn btn-sm" data-action="data:export">⬇ Bajar respaldo</button>\n  </div>'
-  );
-}
-function agendaAvisoHTML() {
-  if (localStorage.getItem("cf.avisoAgendaOculto") === "1") return "";
-  return (
-    '<div class="note warn hub-aviso">\n    <span>📅 Sacamos la Agenda del equipo por un tiempo — la vamos a rehacer de cero. Vuelve pronto.</span>\n    <button class="hub-aviso-x" data-action="agendaAviso:cerrar" title="Cerrar aviso" aria-label="Cerrar aviso">✕</button>\n  </div>'
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
@@ -12900,12 +12890,6 @@ document.addEventListener("click", (ev) => {
       if (el7c) ((el7c.classList.toggle("hidden")), cotofraseAlto());
       break;
     }
-    case "agendaAviso:cerrar": {
-      localStorage.setItem("cf.avisoAgendaOculto", "1");
-      const elAviso = ev.target.closest(".hub-aviso");
-      if (elAviso) elAviso.remove();
-      break;
-    }
     case "roulette:open": {
       // El hint "Nadie asignado" puede tocarse desde cualquier vista:
       // si no estás en el Planner, saltamos ahí, desplegamos el
@@ -14617,7 +14601,7 @@ function enterAs(value) {
   ((state.userId = hallado ? hallado.id : null),
     aplicarPermisos(),
     ($("#userChip").innerHTML =
-      avatarChip + "<span>" + esc(value) + '</span><span style="opacity:.45;font-size:11px">▾</span>'));
+      avatarChip + '<span class="uc-nombre">' + esc(value) + '</span><span class="uc-flecha">▾</span>'));
   // Quién sos, arriba del menú: el nombre, tu rol en el equipo (o el mail con
   // el que entraste, si no figurás) y el distintivo de admin cuando
   // corresponde. Antes el menú no decía en ningún lado con qué cuenta estabas

@@ -10192,3 +10192,35 @@ button.mat-ct:hover {
     margin-left: 0;
   }
 }
+
+/* El encabezado del teléfono en una sola fila. Con el nombre escrito al lado
+   del avatar no entraba y se partía en dos renglones: 109 px de pantalla
+   fija arriba de todo. El nombre igual está en el menú que abre el avatar. */
+.uc-flecha {
+  opacity: 0.45;
+  font-size: 11px;
+}
+@media (max-width: 480px) {
+  .topbar {
+    flex-wrap: nowrap;
+    gap: 6px;
+    padding: 8px 10px;
+  }
+  .brand {
+    min-width: 0;
+  }
+  .top-actions {
+    gap: 6px;
+  }
+  .top-tools {
+    gap: 0;
+    padding: 2px;
+  }
+  .uc-nombre,
+  .uc-flecha {
+    display: none;
+  }
+  .userchip {
+    padding: 3px;
+  }
+}

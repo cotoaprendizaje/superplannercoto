@@ -1552,6 +1552,20 @@ await page.evaluate(() => {
     parInvalidar());
 });
 
+// En el teléfono el encabezado va en una sola fila: con el nombre al lado del
+// avatar se partía en dos y se comía 109 px fijos arriba de la pantalla.
+await page.setViewportSize({ width: 360, height: 780 });
+await page.evaluate(() => ((state.view = "inicio"), render()));
+await page.waitForTimeout(300);
+const celu = await page.evaluate(() => ({
+  alto: Math.round(document.querySelector(".topbar").getBoundingClientRect().height),
+  ancho: document.documentElement.scrollWidth,
+  aviso: !!document.querySelector('[data-action="agendaAviso:cerrar"]'),
+}));
+check("en el teléfono el encabezado entra en una fila", celu.alto < 70 && celu.ancho <= 360, celu);
+check("el aviso viejo de la Agenda ya no aparece en Inicio", !celu.aviso, celu);
+await page.setViewportSize({ width: 1400, height: 950 });
+
 await browser.close();
 await backend.stop();
 const fallan = resultados.filter((r) => !r.ok);
