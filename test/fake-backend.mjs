@@ -13,6 +13,7 @@ const TYPES = {
   ".js": "text/javascript",
   ".webmanifest": "application/manifest+json",
   ".png": "image/png",
+  ".jpg": "image/jpeg",
   ".woff2": "font/woff2",
 };
 
