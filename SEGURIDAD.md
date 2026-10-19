@@ -29,6 +29,13 @@ La clave `sb_publishable_...` que viaja en el cliente **no es un secreto** y no
 hace falta esconderla: está pensada para eso. La que nunca puede salir del
 panel de Supabase es la `sb_secret_...`, que saltea las políticas.
 
+El respaldo automático semanal tampoco la usa: entra con una cuenta propia
+(`RESPALDO_MAIL` / `RESPALDO_PASS`, guardadas como secretos de GitHub Actions)
+y la base le contesta por las mismas políticas que a cualquiera del equipo. El
+archivo que deja sale cifrado con `RESPALDO_CLAVE`, porque el repositorio es
+público. Si esa cuenta deja de hacer falta, se borra en Authentication → Users
+y el respaldo simplemente empieza a fallar (y avisa por mail).
+
 ### Cuánto dura un ingreso
 
 Entrar deja guardado en esa computadora un permiso (no la contraseña: la

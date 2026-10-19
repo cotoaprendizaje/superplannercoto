@@ -12327,10 +12327,11 @@ document.addEventListener("click", (ev) => {
       repAbrirSector(el.dataset.sector);
       break;
     case "data:import":
-      doImport();
+      ((importCifrado = null), doImport());
       break;
     case "data:import-run":
-      runImport();
+      if (importCifrado && !$("#importText").value.trim()) runImportCifrado();
+      else runImport();
       break;
     case "data:reset":
       resetSeed();
@@ -16156,7 +16157,7 @@ function exportCSV() {
 }
 function doImport() {
   openModal(
-    '<h2>Importar JSON</h2><div class="sub-t">Elegí el archivo del backup (o pegá su contenido abajo). <b>Reemplaza</b> los datos actuales.</div>\n  <div class="fld"><label>Archivo de backup</label><input type="file" id="importFile" accept=".json,application/json"></div>\n  <div class="fld"><label>…o pegá el JSON acá</label><textarea id="importText" style="min-height:120px;font-family:monospace;font-size:12px"></textarea></div>\n  <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="data:import-run">Importar y reemplazar</button></div>',
+    '<h2>Importar JSON</h2><div class="sub-t">Elegí el archivo del backup (o pegá su contenido abajo). <b>Reemplaza</b> los datos actuales.</div>\n  <div class="fld"><label>Archivo de backup</label><input type="file" id="importFile" accept=".json,.cifrado,application/json"></div>\n  <div class="fld hidden" id="importClaveFld"><label>Clave del respaldo automático</label><input type="password" id="importClave" autocomplete="off" placeholder="La que está guardada como RESPALDO_CLAVE"></div>\n  <div class="fld"><label>…o pegá el JSON acá</label><textarea id="importText" style="min-height:120px;font-family:monospace;font-size:12px"></textarea></div>\n  <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="data:import-run">Importar y reemplazar</button></div>',
   );
   // Un backup real pesa cientos de KB (con las portadas, más de un mega):
   // copiarlo y pegarlo a mano es incómodo, y el importador del panel de
@@ -16169,12 +16170,52 @@ function doImport() {
       if (!archivo) return;
       const lector = new FileReader();
       ((lector.onload = () => {
-        (($("#importText").value = String(lector.result || "")),
-          flash("Archivo leído: " + archivo.name));
+        const bytes = new Uint8Array(lector.result || new ArrayBuffer(0)),
+          cifrado = esRespaldoCifrado(bytes);
+        ((importCifrado = cifrado ? bytes : null),
+          $("#importClaveFld").classList.toggle("hidden", !cifrado),
+          ($("#importText").value = cifrado ? "" : new TextDecoder().decode(bytes)));
+        if (cifrado) ($("#importClave").focus(), flash("Respaldo cifrado: escribí la clave para abrirlo"));
+        else flash("Archivo leído: " + archivo.name);
       }),
         (lector.onerror = () => flash("No pude leer el archivo", true)),
-        lector.readAsText(archivo));
+        lector.readAsArrayBuffer(archivo));
     });
+}
+// El respaldo automático semanal (scripts/respaldo.mjs) sale cifrado, porque
+// queda guardado en un repositorio público. Es el formato de `openssl enc
+// -aes-256-cbc -pbkdf2 -iter 200000 -md sha256`: «Salted__», 8 bytes de sal y
+// el resto cifrado; clave e IV salen juntos del PBKDF2.
+const RESPALDO_ITER = 200000;
+let importCifrado = null;
+function esRespaldoCifrado(bytes) {
+  return bytes.length > 16 && String.fromCharCode.apply(null, bytes.slice(0, 8)) === "Salted__";
+}
+async function descifrarRespaldo(bytes, clave) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(clave), "PBKDF2", false, ["deriveBits"]),
+    kiv = new Uint8Array(
+      await crypto.subtle.deriveBits(
+        { name: "PBKDF2", salt: bytes.slice(8, 16), iterations: RESPALDO_ITER, hash: "SHA-256" },
+        base,
+        384,
+      ),
+    ),
+    llave = await crypto.subtle.importKey("raw", kiv.slice(0, 32), "AES-CBC", false, ["decrypt"]);
+  return new TextDecoder().decode(
+    await crypto.subtle.decrypt({ name: "AES-CBC", iv: kiv.slice(32) }, llave, bytes.slice(16)),
+  );
+}
+async function runImportCifrado() {
+  const clave = ($("#importClave") || {}).value || "";
+  if (!clave) return flash("Falta la clave del respaldo", true);
+  try {
+    $("#importText").value = await descifrarRespaldo(importCifrado, clave);
+    JSON.parse($("#importText").value);
+  } catch (err) {
+    $("#importText").value = "";
+    return flash("Esa clave no abre este respaldo", true);
+  }
+  ((importCifrado = null), runImport());
 }
 function runImport() {
   let tarjeta;
