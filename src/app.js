@@ -3533,7 +3533,7 @@ function avatarHTML(id2, flag) {
 function stackHTML(tarjeta) {
   const lista = equipoDe(tarjeta).slice(0, 4);
   if (!lista.length)
-    return '<button class="stack-empty" data-action="roulette:open" title="Nadie asignado — probá girar la ruleta">🎡</button>';
+    return '<span class="stack-empty" title="Nadie la lleva todavía">Sin asignar</span>';
   const quien = state.filters.persona || (state.mis && state.userId) || "",
     espera = quien && tarjeta.estado !== "finalizado" && participa(tarjeta, quien) && enAccion(tarjeta) !== quien;
   return (
@@ -5197,15 +5197,10 @@ function renderView() {
       // .hub-side:has(.cotofrase-launcher)): no se alinea a mano.
       elSide.style.top = "";
     } else {
-      if (state.view === "kanban") {
-        const abierta = $("#roulettePop") && !$("#roulettePop").classList.contains("hidden");
-        ((elSide.innerHTML = rouletteWidgetHTML()), elSide.removeAttribute("hidden"));
-        if (abierta) {
-          const pop = $("#roulettePop");
-          if (pop) pop.classList.remove("hidden");
-        }
-        const elBar = $(".kbar");
-        if (elBar) elSide.style.top = elBar.getBoundingClientRect().top + "px";
+      if (state.view === "kanban" || state.view === "plannerb") {
+        const abierta = $("#pendPop") && !$("#pendPop").classList.contains("hidden");
+        ((elSide.innerHTML = pendientesWidgetHTML()), elSide.removeAttribute("hidden"), (elSide.style.top = ""));
+        if (abierta) pendAlternar(true);
       } else ((elSide.hidden = true), (elSide.innerHTML = ""));
     }
   }
@@ -12293,7 +12288,7 @@ function renderFraseWidget() {
   const el = $("#fraseWidget");
   if (el) el.outerHTML = fraseWidgetHTML();
 }
-// Mismo patrón que la ruleta del Planner: colapsada a un botón chico
+// Mismo patrón que «Mis pendientes» del Planner: colapsada a un botón chico
 // que despliega la máquina + el historial, en vez de una tarjeta
 // siempre abierta compitiendo con el resto de Inicio.
 // Cuánto puede medir el panel de la CotoFrase sin irse de la pantalla. Cuelga
@@ -12323,60 +12318,80 @@ function cotofraseLauncherHTML() {
     "\n    </div>\n  </div>"
   );
 }
-// "No iniciado" = una tarjeta de curso que ya está en el Planner pero
-// sigue en Pendiente: nadie la movió todavía a En desarrollo.
-function cursosPendientes() {
-  // activo !== false explícito: boardCards() ya deja pasar los dados de baja
-  // (no cuentan como inventario), y un "pendiente" dado de baja no debería
-  // poder salir sorteado.
-  return boardCards().filter(
-    (tarjeta) => tarjeta.tipo === "curso" && tarjeta.estado === "pendiente" && tarjeta.activo !== false,
-  );
+// ===== Mis pendientes =====
+// El botón de arriba a la derecha de los dos Planner (donde antes estaba la
+// ruleta de "¿Qué curso me toca?"). Muestra lo que cada persona tiene EN
+// ACCIÓN —la misma regla de todo el Planner (ver enAccion)—: nada en Próximo
+// a desarrollar, ni en En test esperando aprobación, ni en pausa, ni en
+// línea. Primero lo vencido, después lo que vence antes, al final lo que no
+// tiene fecha.
+function misPendientes() {
+  if (!state.userId) return [];
+  return boardCards()
+    .filter((c) => enAccion(c) === state.userId)
+    .sort((a, b) => {
+      const va = isOverdue(a) ? 0 : 1,
+        vb = isOverdue(b) ? 0 : 1;
+      if (va !== vb) return va - vb;
+      return (a.fin || "9999") < (b.fin || "9999") ? -1 : (a.fin || "9999") > (b.fin || "9999") ? 1 : 0;
+    });
 }
-// Vive fija en la barra lateral del Planner, igual que la máquina de
-// CotoFrase en Inicio, pero colapsada: un botón chico con ícono que al
-// tocarlo despliega el widget (como el popover de Filtros), para no
-// competir con las columnas del tablero mientras se trabaja.
-function rouletteWidgetHTML() {
-  const pendientes = cursosPendientes(),
-    body = !pendientes.length
-      ? '<div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">🎉 No hay cursos pendientes por arrancar.</div>\n      <button class="roulette-spin" data-action="hub:go" data-go="mapa">🗺 Ver el Mapa del área</button>'
-      : '<div class="slot-modal-t">🎡 ¿Qué curso me toca?</div>\n      <div class="slot-modal-d">Girá entre los cursos pendientes sin arrancar.</div>\n      <div class="roulette-reel"><span id="rouletteReelText">' +
-        esc(pendientes[0].titulo) +
-        '</span></div>\n      <div class="slot-result" id="rouletteResult"></div>\n      <button class="roulette-spin" id="rouletteSpin" data-action="roulette:spin">🎲 Girar</button>';
+function pendientesItemHTML(c) {
+  const e = estadoDe(c.estado),
+    vencida = isOverdue(c),
+    paso = pasosDe(c.proximoPaso)[0] || "";
   return (
-    '<div class="roulette-launcher">\n    <button class="roulette-fab" data-action="roulette:toggle" title="¿Qué curso me toca?" aria-label="¿Qué curso me toca?">🎡</button>\n    <div class="roulette-widget hidden" id="roulettePop">\n      ' +
-    body +
-    "\n    </div>\n  </div>"
+    '<button type="button" class="pend-i' +
+    (vencida ? " venc" : "") +
+    '" data-action="card:open" data-id="' +
+    c.id +
+    '" style="--tono:' +
+    e.dot +
+    '"><span class="pend-t">' +
+    esc(c.titulo) +
+    '</span><span class="pend-m"><span class="pend-etapa">' +
+    esc(e.corto) +
+    "</span>" +
+    (c.fin ? '<span class="pend-fin">' + (vencida ? "venció el " : "vence el ") + fmtShort(c.fin) + "</span>" : '<span class="pend-fin sin">sin fecha</span>') +
+    "</span>" +
+    (paso ? '<span class="pend-paso">→ ' + esc(paso) + "</span>" : "") +
+    "</button>"
   );
 }
-function tirarRuleta() {
-  const reel = $("#rouletteReelText"),
-    resultado = $("#rouletteResult"),
-    boton = $("#rouletteSpin"),
-    pendientes = cursosPendientes();
-  if (!reel || reel.dataset.spinning || !pendientes.length) return;
-  const elegido = pendientes[Math.floor(Math.random() * pendientes.length)];
-  ((reel.dataset.spinning = "1"),
-    boton && (boton.disabled = true),
-    resultado && (resultado.classList.remove("show"), (resultado.innerHTML = "")));
-  const timer = setInterval(() => {
-    reel.textContent = pendientes[Math.floor(Math.random() * pendientes.length)].titulo;
-  }, 70);
-  setTimeout(() => {
-    (clearInterval(timer),
-      (reel.textContent = elegido.titulo),
-      delete reel.dataset.spinning,
-      resultado &&
-        (resultado.classList.add("show"),
-        (resultado.innerHTML =
-          "Te toca: <b>" +
-          esc(elegido.titulo) +
-          '</b><br><button class="btn btn-sm btn-primary" style="margin-top:6px" data-action="card:open" data-id="' +
-          elegido.id +
-          '">Abrir tarjeta</button>')),
-      boton && (boton.disabled = false));
-  }, 1300);
+function pendientesWidgetHTML() {
+  const lista = misPendientes(),
+    vencidas = lista.filter(isOverdue).length,
+    esperando = state.userId
+      ? boardCards().filter((c) => c.estado !== "finalizado" && participa(c, state.userId) && enAccion(c) !== state.userId).length
+      : 0,
+    cuerpo = !state.userId
+      ? '<div class="pend-vacio">Entrá con tu cuenta del equipo para ver tus pendientes.</div>'
+      : !lista.length
+        ? '<div class="pend-vacio"><b>No tenés nada en acción 🎉</b>' +
+          (esperando ? "<span>Tenés " + esperando + (esperando === 1 ? " tarjeta esperando" : " tarjetas esperando") + " para hacer.</span>" : "") +
+          "</div>"
+        : '<div class="pend-lista">' + lista.map(pendientesItemHTML).join("") + "</div>" +
+          (esperando
+            ? '<div class="pend-pie">Además, ' + esperando + (esperando === 1 ? " tarjeta esperando" : " tarjetas esperando") + " para hacer (no suman acá).</div>"
+            : "");
+  return (
+    '<div class="pend-launcher"><button type="button" class="pend-fab' +
+    (vencidas ? " con-venc" : "") +
+    '" data-action="pend:toggle" aria-expanded="false" aria-controls="pendPop"><span>📌 Mis pendientes</span><b>' +
+    lista.length +
+    '</b></button><div class="pend-pop hidden" id="pendPop" role="dialog" aria-label="Mis pendientes"><div class="pend-h"><b>Mis pendientes</b><span>Lo que tenés en acción' +
+    (vencidas ? ' · <em>' + vencidas + (vencidas === 1 ? " vencida" : " vencidas") + "</em>" : "") +
+    "</span></div>" +
+    cuerpo +
+    "</div></div>"
+  );
+}
+function pendAlternar(abrir) {
+  const pop = $("#pendPop"),
+    boton = $(".pend-fab");
+  if (!pop) return;
+  const abierto = abrir === undefined ? pop.classList.contains("hidden") : abrir;
+  (pop.classList.toggle("hidden", !abierto), boton && boton.setAttribute("aria-expanded", String(abierto)));
 }
 function emptyState(txt, txt2, txt3) {
   return (
@@ -14279,30 +14294,14 @@ document.addEventListener("click", (ev) => {
     case "slot:pull":
       tirarSlot();
       break;
-    case "roulette:toggle": {
-      const el7b = $("#roulettePop");
-      if (el7b) el7b.classList.toggle("hidden");
+    case "pend:toggle":
+      pendAlternar();
       break;
-    }
     case "cotofrase:toggle": {
       const el7c = $("#cotofracePop");
       if (el7c) ((el7c.classList.toggle("hidden")), cotofraseAlto());
       break;
     }
-    case "roulette:open": {
-      // El hint "Nadie asignado" puede tocarse desde cualquier vista:
-      // si no estás en el Planner, saltamos ahí, desplegamos el
-      // popover y recién entonces giramos.
-      if (state.view !== "kanban") ((state.view = "kanban"), pushNav(), render());
-      setTimeout(() => {
-        const pop = $("#roulettePop");
-        (pop && pop.classList.remove("hidden"), tirarRuleta());
-      }, 60);
-      break;
-    }
-    case "roulette:spin":
-      tirarRuleta();
-      break;
     case "misemana:open":
       openMiSemana();
       break;
@@ -15510,9 +15509,7 @@ function pushRecent(id2) {
   // popover ni en el propio ▾ lo saca.
   if ($("#tecFiltPop") && !ev.target.closest("#tecFiltPop") && !ev.target.closest('[data-action="tec:filtcol"]'))
     tecFiltPopCerrar();
-  const elRoulettePop = $("#roulettePop");
-  if (elRoulettePop && !elRoulettePop.classList.contains("hidden") && !ev.target.closest(".roulette-launcher"))
-    elRoulettePop.classList.add("hidden");
+  if ($("#pendPop") && !$("#pendPop").classList.contains("hidden") && !ev.target.closest(".pend-launcher")) pendAlternar(false);
   const elCotofracePop = $("#cotofracePop");
   if (elCotofracePop && !elCotofracePop.classList.contains("hidden") && !ev.target.closest(".cotofrase-launcher"))
     elCotofracePop.classList.add("hidden");
@@ -15550,7 +15547,7 @@ function pushRecent(id2) {
         tecFiltPopCerrar();
         return;
       }
-      for (const sel of ["#filtrosPop", "#tecColsPop", "#roulettePop", "#cotofracePop"]) {
+      for (const sel of ["#filtrosPop", "#tecColsPop", "#pendPop", "#cotofracePop"]) {
         const pop = $(sel);
         if (pop && !pop.classList.contains("hidden")) {
           pop.classList.add("hidden");
