@@ -12975,7 +12975,10 @@ function renderPanel() {
       : "") +
     '<button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>\n    </div>\n    <div class="panel-body">\n      ' +
     panelCtxHTML(tarjeta) +
-    txt7 +
+    // Los mensajes van arriba de todo, apenas abajo de etapa/fecha/quién: es
+    // donde el equipo se avisa las cosas y lo primero que se busca al abrir
+    // una tarjeta.
+    mensajesHTML(tarjeta) +
     // "Datos" junta lo que antes eran Tipo y Estado sueltos arriba MÁS todo el
     // bloque "Más detalles": son los datos de la tarjeta, se cargan de una y se
     // leen de arriba a abajo. Va antes del checklist y arranca abierto, porque
@@ -13024,10 +13027,9 @@ function renderPanel() {
     html2 +
     sectorPicker(tarjeta) +
     '\n        </div></details>\n\n      ' +
-    // Los mensajes van pegados a Datos, antes del checklist: el equipo pidió
-    // que fuera de las primeras cosas que se ven al abrir una tarjeta, porque
-    // es donde se avisan las cosas entre ellas.
-    mensajesHTML(tarjeta) +
+    // El aviso de publicar (en producción / publicado / de baja) va después
+    // de Datos: es lo último que se hace con una tarjeta, no lo primero.
+    txt7 +
     "\n\n      " +
     // El checklist queda inmediatamente después de Datos: es el corazón del
     // trabajo del día a día. Arranca abierto salvo que esté vacío.
