@@ -1843,8 +1843,8 @@ const ESTADOS = [
     },
     {
       id: "finalizado",
-      nombre: "En línea",
-      corto: "En línea",
+      nombre: "Publicado",
+      corto: "Publicado",
       dot: "#2E9E8F",
       soft: "#E1F3EF",
       ink: "#17675C",
@@ -3423,7 +3423,7 @@ const SIN_ACCION_PORQUE = {
   pendiente: "todavía no arrancó",
   "en-revision": "se está esperando la aprobación del sector",
   "stand-by": "está en pausa",
-  finalizado: "ya está en línea",
+  finalizado: "ya está publicada",
 };
 // Tarjetas viejas: alguien en la lista de asignados pero sin responsable
 // guardado. Se veían "Sin responsable" aunque la ficha mostrara a alguien
@@ -4843,15 +4843,104 @@ function moverTarjetaAEstado(tarjeta, estadoId) {
   const nombre = (ESTADOS.find((e) => e.id === estadoId) || {}).nombre || estadoId;
   (logAct(tarjeta, "pasó a " + nombre),
     estadoId === "en-revision" && (tarjeta.revisionDesde = isoOf(new Date())),
+    sellarPublicado(tarjeta, estadoId),
     (tarjeta.estado = estadoId),
     touch());
   return true;
 }
-// Cuántas finalizadas se dibujan antes del "ver las anteriores". Con 90 cursos
-// publicados, la columna entera es la misma pared de tarjetas que el área ya
-// pidió sacar del tablero una vez.
-const KFIN_A_LA_VISTA = 15;
-let kfinTodas = false;
+// Publicado crece para siempre: en los dos Planners se ven solo las de los
+// últimos 30 días. Las demás no se borran, se esconden; viven todas en
+// «Todo lo publicado» (pub:historico).
+const PUB_DIAS_A_LA_VISTA = 30;
+// El día en que la tarjeta pasó a Publicado. Se sella al moverla; para las
+// que pasaron antes de existir el sello se busca en su actividad, después la
+// fecha de publicación cargada y, en último caso, su último cambio.
+function sellarPublicado(tarjeta, estadoId) {
+  if (estadoId === "finalizado") tarjeta.publicadaEl = isoOf(new Date());
+  else delete tarjeta.publicadaEl;
+}
+const RE_PASO_A_PUBLICADO = /^pasó a (Publicado|En línea|Finalizad)/;
+function fechaPublicado(tarjeta) {
+  if (tarjeta.publicadaEl) return tarjeta.publicadaEl;
+  const act = (tarjeta.actividad || []).filter((a) => RE_PASO_A_PUBLICADO.test(a.texto || ""));
+  if (act.length) return isoOf(new Date(act[act.length - 1].ts));
+  const pub = fechaPublicacionCard(tarjeta);
+  if (pub) return pub;
+  if (tarjeta.updatedAt) return isoOf(new Date(tarjeta.updatedAt));
+  return tarjeta.creadoEl || null;
+}
+function publicadoReciente(tarjeta) {
+  const f = fechaPublicado(tarjeta);
+  return !!f && daysBetween(f, todayISO()) <= PUB_DIAS_A_LA_VISTA;
+}
+// «Todo lo publicado»: el histórico completo, de lo más nuevo a lo más viejo,
+// agrupado por mes y con buscador. Es el lugar de las que el Planner esconde.
+function pubHistoricoListaHTML(busca) {
+  const q = String(busca || "").trim().toLowerCase(),
+    todas = boardCards()
+      .filter((c) => c.estado === "finalizado")
+      .map((c) => ({ c, f: fechaPublicado(c) || "" }))
+      .sort((a, b) => b.f.localeCompare(a.f)),
+    lista = q
+      ? todas.filter(({ c }) =>
+          [c.titulo, (allTipos()[c.tipo] || {}).nombre, ...(c.sectores || []).map((x) => sectorName(x) || x)]
+            .join(" ")
+            .toLowerCase()
+            .includes(q),
+        )
+      : todas;
+  if (!lista.length) return '<div class="pub-hist-nada">' + (q ? "Nada publicado coincide con «" + esc(busca) + "»." : "Todavía no hay nada publicado.") + "</div>";
+  let mes = "",
+    html = "";
+  for (const { c, f } of lista) {
+    const d = parseISO(f),
+      m = d ? MESES[d.getMonth()] + " " + d.getFullYear() : "Sin fecha";
+    if (m !== mes) ((html += (mes ? "</div>" : "") + '<h4 class="pub-hist-mes">' + esc(m) + '</h4><div class="pub-hist-grupo">'), (mes = m));
+    const sectores = (c.sectores || []).map((x) => sectorName(x) || x);
+    html +=
+      '<button class="pub-hist-item' +
+      (publicadoReciente(c) ? " reciente" : "") +
+      '" data-action="pub:abrir" data-id="' +
+      c.id +
+      '"><span class="pub-hist-dia">' +
+      (d ? d.getDate() + "/" + (d.getMonth() + 1) : "—") +
+      "</span><b>" +
+      esc(c.titulo) +
+      "</b><small>" +
+      esc([(allTipos()[c.tipo] || {}).nombre, sectores.join(", ")].filter(Boolean).join(" · ")) +
+      "</small>" +
+      (publicadoReciente(c) ? '<span class="pub-hist-vis" title="Se ve en los Planners">a la vista</span>' : "") +
+      "</button>";
+  }
+  return html + "</div>";
+}
+function abrirPubHistorico() {
+  const total = boardCards().filter((c) => c.estado === "finalizado").length;
+  openModal(
+    '<h2>📚 Todo lo publicado</h2><div class="sub-t">' +
+      total +
+      (total === 1 ? " tarjeta publicada" : " tarjetas publicadas") +
+      " desde siempre. En los Planners quedan a la vista solo las de los últimos " +
+      PUB_DIAS_A_LA_VISTA +
+      ' días; las demás no se borran, están acá.</div><input id="pubHistBuscar" class="pub-hist-buscar" type="search" placeholder="Buscar por curso, tipo o sector…" autocomplete="off"><div class="pub-hist-lista" id="pubHistLista">' +
+      pubHistoricoListaHTML("") +
+      '</div><div class="modal-foot"><button class="btn" data-action="modal:close">Cerrar</button></div>',
+    "pub-hist",
+  );
+  setTimeout(() => $("#pubHistBuscar") && $("#pubHistBuscar").focus(), 30);
+}
+function pubHistoricoBotonHTML(total, recientes, cls) {
+  const viejas = total - recientes;
+  return (
+    '<button class="' +
+    cls +
+    ' pub-hist-btn" data-action="pub:historico" title="Todo lo publicado, sin límite de fecha">📚 Todo lo publicado (' +
+    total +
+    ")" +
+    (viejas ? "<small>" + viejas + " de hace más de 30 días" + "</small>" : "") +
+    "</button>"
+  );
+}
 // Sello que se agrega arriba de todo justo antes de imprimir: el topbar y la
 // barra de filtros se ocultan en @media print, así que sin esto un
 // Calendario o Timeline impreso queda sin decir cuándo se sacó ni qué
@@ -5043,7 +5132,7 @@ function renderFilters() {
 }
 const VIEW_TITLES = {
   kanban: ["Planner", "Tareas y proyectos por etapa"],
-  plannerb: ["Planner B", "Las mismas tarjetas, por etapa: lo que avanza sube. Abajo lo que viene, arriba lo que ya está en línea."],
+  plannerb: ["Planner B", "Las mismas tarjetas, por etapa: lo que avanza sube. Abajo lo que viene, arriba lo que ya está publicado."],
   calendario: ["Calendario del planner", "Qué pasa y cuándo"],
   timeline: ["Timeline", "El panorama macro del área"],
   mapa: ["Mapa del área", "Todo lo publicado: cursos, Edu Points y contenido audiovisual, organizado por sector"],
@@ -5484,12 +5573,10 @@ function equipoCirculosHTML() {
 
 // ===== Planner B =====
 // Las mismas tarjetas del Planner, por etapa, en filas. Lo que avanza sube:
-// abajo lo que viene, arriba lo que ya está en línea. Stand by va aparte,
+// abajo lo que viene, arriba lo ya publicado. Stand by va aparte,
 // entre lo publicado y lo que viene, como en la planilla del área.
 const PB_ORDEN = ["finalizado", "en-revision", "con-claude", "diseno-listo", "en-desarrollo", "stand-by", "pendiente"],
-  PB_FLUJO = ["pendiente", "en-desarrollo", "diseno-listo", "con-claude", "en-revision", "finalizado"],
-  PB_LINEA_A_LA_VISTA = 8;
-let pbLineaTodas = false;
+  PB_FLUJO = ["pendiente", "en-desarrollo", "diseno-listo", "con-claude", "en-revision", "finalizado"];
 function pbPasosHTML(tarjeta) {
   const pasos = pasosDe(tarjeta.proximoPaso);
   if (!pasos.length) return '<span class="pb-vacio">—</span>';
@@ -5595,12 +5682,8 @@ function renderPlannerB() {
     .map((id, pos) => {
       const e = estadoDe(id);
       let filas = sortCards(porEstado[id]);
-      let ocultas = 0;
-      if (id === "finalizado" && !pbLineaTodas && filas.length > PB_LINEA_A_LA_VISTA) {
-        filas = filas.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-        ocultas = filas.length - PB_LINEA_A_LA_VISTA;
-        filas = filas.slice(0, PB_LINEA_A_LA_VISTA);
-      }
+      if (id === "finalizado")
+        filas = filas.filter(publicadoReciente).sort((a, b) => String(fechaPublicado(b)).localeCompare(String(fechaPublicado(a))));
       return (
         '<section class="pb-etapa" id="pb-' +
         id +
@@ -5617,15 +5700,13 @@ function renderPlannerB() {
         '"><span class="pb-nodo"></span><h3>' +
         esc(e.nombre) +
         '</h3><span class="pb-cuenta">' +
-        porEstado[id].length +
-        (porEstado[id].length === 1 ? " tarjeta" : " tarjetas") +
+        (id === "finalizado"
+          ? filas.length + " en los últimos 30 días"
+          : porEstado[id].length + (porEstado[id].length === 1 ? " tarjeta" : " tarjetas")) +
         '</span></div><div class="pb-filas">' +
         filas.map(pbFilaHTML).join("") +
-        (ocultas
-          ? '<button class="pb-mas" data-action="pb:linea">Ver las ' + ocultas + " anteriores en línea</button>"
-          : id === "finalizado" && pbLineaTodas && porEstado[id].length > PB_LINEA_A_LA_VISTA
-            ? '<button class="pb-mas" data-action="pb:linea">Ver solo las últimas ' + PB_LINEA_A_LA_VISTA + "</button>"
-            : "") +
+        (id === "finalizado" && !filas.length ? '<div class="pb-pub-vacio">Nada publicado en los últimos 30 días.</div>' : "") +
+        (id === "finalizado" ? pubHistoricoBotonHTML(porEstado[id].length, filas.length, "pb-mas") : "") +
         "</div></section>"
       );
     })
@@ -5954,11 +6035,10 @@ function renderKanban() {
     kcolMax = Math.max(1, ...ESTADOS.map((estado) => lista2.filter((arg) => arg.estado === estado.id).length)),
     txt = ESTADOS.map((estado) => {
       const todas = sortCards(lista2.filter((arg) => arg.estado === estado.id)),
-        // Solo "Finalizados" se recorta: es la única que crece para siempre.
-        // Las otras tres son trabajo en curso y tienen un techo natural.
-        recorta = estado.id === "finalizado" && !kfinTodas && todas.length > KFIN_A_LA_VISTA,
-        lista = recorta ? todas.slice(0, KFIN_A_LA_VISTA) : todas,
-        ocultas = todas.length - lista.length,
+        // Solo Publicado se recorta: es la única que crece para siempre.
+        // Las otras son trabajo en curso y tienen un techo natural.
+        esPub = estado.id === "finalizado",
+        lista = esPub ? todas.filter(publicadoReciente) : todas,
         cantidad2 = todas.filter(isOverdue).length;
       return (
         '<section class="kcol">\n      <div class="kcol-head"><span class="kcol-dot" style="background:' +
@@ -5978,11 +6058,7 @@ function renderKanban() {
         '">' +
         (lista.map(cardKanban).join("") ||
           '<div style="font-size:12px;color:var(--ink-soft);padding:10px;text-align:center">— vacío —</div>') +
-        (ocultas
-          ? '<button class="kcol-mas" data-action="kfin:todas">Ver las ' + ocultas + " anteriores</button>"
-          : estado.id === "finalizado" && kfinTodas && todas.length > KFIN_A_LA_VISTA
-            ? '<button class="kcol-mas" data-action="kfin:menos">Ver solo las últimas ' + KFIN_A_LA_VISTA + "</button>"
-            : "") +
+        (esPub ? pubHistoricoBotonHTML(todas.length, lista.length, "kcol-mas") : "") +
         '</div>\n      <div class="quick-add"><input data-quickadd="' +
         estado.id +
         '" placeholder="+ Agregar… (Enter)"></div>\n    </section>'
@@ -13501,6 +13577,7 @@ function applyField(tarjeta, val, el) {
   if (val === "estado" && tarjeta.estado !== value) {
     logAct(tarjeta, "pasó a " + ((ESTADOS.find((estado) => estado.id === value) || {}).nombre || value));
     if (value === "en-revision") tarjeta.revisionDesde = isoOf(new Date());
+    sellarPublicado(tarjeta, value);
   }
   // Cambiar el tipo de una tarjeta ya publicada puede sacarla o meterla en el
   // inventario del Mapa sin que nadie lo haya pedido a propósito (ej: pasarla
@@ -14060,11 +14137,11 @@ document.addEventListener("click", (ev) => {
       ((repFraseIdx = (repFraseIdx + (+el.dataset.paso || 1) + frases) % frases), clearInterval(repFraseTimer), repFranjaSync());
       break;
     }
-    case "kfin:todas":
-      ((kfinTodas = true), render());
+    case "pub:historico":
+      abrirPubHistorico();
       break;
-    case "kfin:menos":
-      ((kfinTodas = false), render());
+    case "pub:abrir":
+      (closeModal(), val10 && openDetail(val10));
       break;
     case "tec:filtcol":
       tecFiltPopAbrir(el, el.dataset.campo);
@@ -14539,9 +14616,6 @@ document.addEventListener("click", (ev) => {
     case "rep:persona":
       ((state.filters.persona = el.dataset.id), (state.view = "plannerb"), pushNav(), render());
       break;
-    case "pb:linea":
-      ((pbLineaTodas = !pbLineaTodas), render());
-      break;
     case "pb:ir": {
       const sec = document.getElementById("pb-" + el.dataset.estado);
       if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -14988,6 +15062,10 @@ document.addEventListener("click", (ev) => {
   }
   if (ev.target.id === "sectorSearch") {
     renderSectorResults(ev.target.value);
+    return;
+  }
+  if (ev.target.id === "pubHistBuscar") {
+    $("#pubHistLista").innerHTML = pubHistoricoListaHTML(ev.target.value);
     return;
   }
   if (ev.target.id === "tecSearch") {

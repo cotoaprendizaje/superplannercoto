@@ -1670,7 +1670,50 @@ const pbA = await page.evaluate(() => {
   };
 });
 check("el Planner de siempre tiene las 7 etapas", pbA.columnas === 7, pbA);
-check("Planner B: En línea arriba y Próximo a desarrollar abajo", pbA.lineaArriba && pbA.proximosAbajo, pbA);
+check("Planner B: Publicado arriba y Próximo a desarrollar abajo", pbA.lineaArriba && pbA.proximosAbajo, pbA);
+const pub = await page.evaluate(async () => {
+  const hace = (n) => isoOf(new Date(Date.now() - n * 86400000));
+  const nueva = newCard("libre", "ZZ Publicada ayer", { estado: "finalizado" }),
+    vieja = newCard("libre", "ZZ Publicada hace dos meses", { estado: "finalizado" });
+  ((nueva.publicadaEl = hace(1)), (vieja.publicadaEl = hace(60)), state.cards.push(nueva, vieja));
+  const ver = (sel) => [...document.querySelectorAll(sel)].map((x) => x.textContent).join("|");
+  ((state.view = "plannerb"), render());
+  const b = ver("#pb-finalizado .pb-fila"),
+    bBoton = !!document.querySelector("#pb-finalizado .pub-hist-btn");
+  ((state.view = "kanban"), render());
+  const k = ver('.kcol-body[data-estado="finalizado"] .kcard'),
+    nombre = ver(".kcol-head h3");
+  document.querySelector('.kcol-body[data-estado="finalizado"] .pub-hist-btn').click();
+  const hist = ver("#pubHistLista .pub-hist-item");
+  const buscar = document.querySelector("#pubHistBuscar");
+  ((buscar.value = "dos meses"), buscar.dispatchEvent(new Event("input", { bubbles: true })));
+  const filtrado = ver("#pubHistLista .pub-hist-item");
+  document.querySelector('#pubHistLista [data-id="' + vieja.id + '"]').click();
+  await new Promise((r) => setTimeout(r, 50));
+  const abre = $("#modal").classList.contains("hidden") && document.querySelector("#panel").classList.contains("open");
+  closePanel();
+  ((nueva.estado = "pendiente"), (vieja.estado = "pendiente"));
+  // Al pasarla a Publicado queda sellada con la fecha de hoy.
+  const t = newCard("libre", "ZZ Recién publicada", { estado: "con-claude" });
+  (state.cards.push(t), moverTarjetaAEstado(t, "finalizado"));
+  const sello = t.publicadaEl === todayISO();
+  (moverTarjetaAEstado(t, "pendiente"));
+  return {
+    plannerB: b.includes("ZZ Publicada ayer") && !b.includes("dos meses") && bBoton,
+    plannerA: k.includes("ZZ Publicada ayer") && !k.includes("dos meses"),
+    nombre: /Publicado/.test(nombre) && !/En línea/.test(nombre),
+    historico: hist.includes("ZZ Publicada ayer") && hist.includes("ZZ Publicada hace dos meses"),
+    busca: filtrado.includes("dos meses") && !filtrado.includes("ayer"),
+    abre,
+    sello,
+    sinSello: !t.publicadaEl,
+  };
+});
+check("«En línea» ahora se llama «Publicado»", pub.nombre, pub);
+check("Publicado muestra solo lo de los últimos 30 días, en los dos Planners", pub.plannerA && pub.plannerB, pub);
+check("«Todo lo publicado» tiene el histórico completo y se puede buscar", pub.historico && pub.busca, pub);
+check("desde el histórico se abre la tarjeta", pub.abre, pub);
+check("al pasar a Publicado se sella la fecha, y se borra si vuelve atrás", pub.sello && pub.sinSello, pub);
 check("el número del círculo es el total de cada uno: en acción + esperando", pbA.circGasti === pbA.cuentaGasti, pbA);
 check("al tocar un perfil se ven también las tarjetas donde espera su turno", pbA.veLasDos, pbA);
 check("y esas se marcan como «esperando para hacer»", pbA.marcaEs2, pbA);
