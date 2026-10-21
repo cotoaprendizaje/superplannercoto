@@ -1,0 +1,322 @@
+/* Editor en vivo — la capa de revisión (solo en la vista del artefacto). Usa
+   los colores de la app (sus variables), así acompaña el modo oscuro. */
+.ev {
+  font-family: var(--cuerpo, Roboto, system-ui, sans-serif);
+}
+.ev-pastilla {
+  position: fixed;
+  left: 22px;
+  bottom: 22px;
+  z-index: 60;
+  width: 270px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 44px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: var(--surface, #fff);
+  color: var(--ink, #16223a);
+  border: 1px solid var(--line, #d9e1ec);
+  border-radius: 18px;
+  box-shadow: 0 18px 44px rgba(11, 27, 51, 0.22);
+}
+.ev-pastilla.cerrada {
+  width: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+.ev-abrir {
+  height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: #0b1b33;
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(11, 27, 51, 0.3);
+}
+.ev-cab {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 8px;
+  margin-bottom: 4px;
+}
+.ev-cab b {
+  font-family: var(--titulo, inherit);
+  font-weight: 900;
+  font-size: 16px;
+}
+.ev-cab span {
+  grid-column: 1;
+  font-size: 11.5px;
+  color: var(--ink-soft, #4a5873);
+}
+.ev-plegar {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--line, #d9e1ec);
+  background: var(--surface-2, #f3f6fb);
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+.ev-b {
+  text-align: left;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line, #d9e1ec);
+  background: var(--surface-2, #f3f6fb);
+  color: inherit;
+  cursor: pointer;
+}
+.ev-b:hover,
+.ev-chip:hover {
+  border-color: var(--coto-blue, #006ea0);
+}
+.ev-b.on {
+  background: var(--coto-blue, #006ea0);
+  border-color: transparent;
+  color: #fff;
+}
+.ev-grupo {
+  border: 1px solid var(--line, #d9e1ec);
+  border-radius: 12px;
+  background: var(--surface-2, #f3f6fb);
+}
+.ev-grupo summary {
+  cursor: pointer;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 10px 12px;
+  list-style-position: inside;
+}
+.ev-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0 10px 10px;
+}
+.ev-chip {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line, #d9e1ec);
+  background: var(--surface, #fff);
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.ev-chip small {
+  font-weight: 500;
+  color: var(--ink-soft, #4a5873);
+  font-variant-numeric: tabular-nums;
+}
+.ev-chip.on,
+.ev-chip[aria-pressed="true"] {
+  background: var(--coto-blue, #006ea0);
+  border-color: transparent;
+  color: #fff;
+}
+.ev-chip[aria-pressed="true"] small {
+  color: rgba(255, 255, 255, 0.8);
+}
+.ev-pie {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 4px;
+}
+.ev-link {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  background: none;
+  color: var(--ink-soft, #4a5873);
+  cursor: pointer;
+  padding: 4px 0;
+}
+.ev-link:hover {
+  color: var(--coto-blue, #006ea0);
+}
+.ev button:focus-visible {
+  outline: 2px solid var(--coto-blue, #006ea0);
+  outline-offset: 2px;
+}
+.ev-aviso {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 70;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #0b1b33;
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+.ev-aviso[hidden],
+.ev-marca[hidden],
+.ev-marco[hidden] {
+  display: none;
+}
+/* Señalar: todo el documento con cruz y una marca que sigue al puntero. */
+body.ev-senalando,
+body.ev-senalando * {
+  cursor: crosshair !important;
+}
+body.ev-senalando .ev,
+body.ev-senalando .ev * {
+  cursor: pointer !important;
+}
+.ev-marca {
+  position: fixed;
+  z-index: 65;
+  pointer-events: none;
+  border: 2px solid #e5484d;
+  border-radius: 8px;
+  background: rgba(229, 72, 77, 0.08);
+  box-shadow: 0 0 0 9999px rgba(11, 27, 51, 0.12);
+  transition: all 0.06s linear;
+}
+/* Ver como: el dispositivo encima de todo, con su barra arriba. */
+.ev-marco {
+  position: fixed;
+  inset: 0;
+  z-index: 62;
+  background: rgba(8, 16, 30, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.ev-marco-caja {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+}
+.ev-marco-barra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  color: #eef3fa;
+  max-width: 100%;
+}
+.ev-marco-nom {
+  font-weight: 900;
+  font-size: 15px;
+}
+.ev-marco-med {
+  font-size: 12.5px;
+  color: #9fb4d3;
+  font-variant-numeric: tabular-nums;
+}
+.ev-marco-vista {
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(75, 168, 218, 0.22);
+  color: #cfe8f6;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.ev-marco-acc,
+.ev-marco-disp {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ev-marco-acc {
+  margin-left: auto;
+}
+.ev-marco .ev-chip {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.ev-marco .ev-comentar-marco {
+  background: #006ea0;
+  border-color: transparent;
+}
+.ev-marco .ev-chip[hidden] {
+  display: none;
+}
+.ev-marco-disp {
+  width: 100%;
+}
+.ev-marco-cuadro {
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 0 0 10px #050b16, 0 30px 60px rgba(0, 0, 0, 0.5);
+}
+.ev-marco-cuadro iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 0;
+  transform-origin: 0 0;
+  background: #fff;
+}
+/* La pastilla ocupa la esquina del globito del chat: el chat sube un poco. */
+body.ev-activo .chat-fab {
+  bottom: 84px;
+}
+body.ev-activo .chat-panel {
+  bottom: 150px;
+  height: min(520px, calc(100vh - 200px));
+}
+/* Con la pastilla abierta, el chat se corre a su derecha. */
+body.ev-activo.ev-abierta .chat-fab {
+  left: 306px;
+  bottom: 22px;
+}
+body.ev-activo.ev-abierta .chat-panel {
+  left: 306px;
+  bottom: 88px;
+}
+@media (max-width: 760px) {
+  body.ev-activo.ev-abierta .chat-fab {
+    left: 16px;
+  }
+  body.ev-activo.ev-abierta .chat-panel {
+    left: 8px;
+  }
+  .ev-pastilla {
+    left: 12px;
+    bottom: calc(158px + env(safe-area-inset-bottom));
+  }
+  body.ev-activo .chat-fab {
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  body.ev-activo .chat-panel {
+    bottom: calc(86px + env(safe-area-inset-bottom));
+    height: calc(100vh - 170px);
+  }
+}
+@media print {
+  .ev {
+    display: none !important;
+  }
+}

@@ -74,6 +74,9 @@ jobs:
       - name: Lo que se rompe al usarla
         run: node test/interfaz.test.mjs
 
+      - name: La vista del editor en vivo
+        run: node test/vista-editor.test.mjs
+
       # Lo que se va a publicar es exactamente lo que se acaba de probar: el
       # sitio se arma acá y se guarda, en vez de reconstruirse después.
       - name: Preparar el sitio

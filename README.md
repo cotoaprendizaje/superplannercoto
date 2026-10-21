@@ -32,7 +32,7 @@ index.html        ← generado. NO está en el repositorio: lo arma el build.
 npm install       # una sola vez (Playwright, para los tests)
 npm run build     # regenera index.html desde src/
 npm start         # sirve la carpeta en http://localhost:8080
-npm test          # las 377 pruebas (build incluido)
+npm test          # las 397 pruebas (build incluido)
 ```
 
 El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
@@ -95,9 +95,22 @@ Usa tres secretos de Actions: `RESPALDO_MAIL`, `RESPALDO_PASS` (la cuenta del
 respaldo en Supabase → Authentication) y `RESPALDO_CLAVE` (con la que se cifra;
 guardala también en un lugar del equipo, sin ella el archivo no se abre).
 
+## Editor en vivo
+
+Para revisar la app sin tocar los datos del equipo: `node build.mjs && node
+scripts/vista-editor.mjs <carpeta>` arma una vista que se publica como
+artefacto de claude.ai (la página es `pagina.html`, y `archivos.json` es el
+mapa de `files`). Es la app de verdad con un tablero de ejemplo y una base de
+mentira en el navegador de quien mira; arriba lleva una pastilla para comentar
+la vista o un elemento, verla con la medida exacta de PC, Full HD, iPad o
+teléfono, y entrar como otra persona del equipo. Los comentarios con "Send to
+Claude" llegan al chat, que cambia la fuente, rearma la vista y la vuelve a
+publicar en el mismo link. La vista es descartable y la capa
+(`scripts/editor-vivo/`) nunca entra en el `index.html` que se despliega.
+
 ## Pruebas
 
-Son 377, en cinco baterías, y corren solas en cada cambio (ver
+Son 397, en seis baterías, y corren solas en cada cambio (ver
 `.github/workflows/pruebas.yml`). Todas abren la app de verdad en un navegador
 contra `test/fake-backend.mjs`, que imita las filas de Supabase y su endpoint
 de ingreso.
@@ -108,6 +121,7 @@ de ingreso.
 | `test/tamano.test.mjs` | Que el documento sincronizado no engorde ni se lleve las imágenes adentro. Es la prueba que faltaba el día que se agotó la cuota. |
 | `test/ingreso.test.mjs` | Que sin sesión no se baje nada; que con sesión se trabaje normal aunque el token venza en el medio; que al recargar la app espere en el ingreso en vez de abrirse sola, y que pasadas las 12 h vuelva a pedir la contraseña. |
 | `test/numeros.test.mjs` | Que los números que el equipo lee sean los mismos en todas las vistas: que la campana no marque como pendiente algo terminado, que Reportería coincida con el Planner y con Técnico, y que el pulso de Inicio dé lo mismo que las columnas del Planner. |
+| `test/vista-editor.test.mjs` | Que la vista del editor en vivo arranque sola con el ejemplo, no saque ni un pedido a internet ni nombre la base real, que «Ver como» use la medida exacta y que la capa no se cuele en lo que se despliega. |
 | `test/interfaz.test.mjs` | Lo que se rompe al usarla, no al leerla: que en el buscador del tablero se pueda escribir de corrido, que una tarjeta creada con “Mis tareas” puesto se vea en el momento, y que reiniciar las CotoFrases no se lleve puesto nada más. También que el panel se pueda leer y tocar (encabezados que abren, controles grandes, responsable, anterior/siguiente), que los mensajes se lean como un chat, que Técnico sea una grilla de tarjetas y no una planilla (con sus embudos de columna, su ficha desplegable y sus acciones en lote) que las 63 reglas de matriculación crucen con las filas del Seguimiento técnico, y que el Excel de Moodle se lea, se muestre antes de aplicarse y no pise lo que el equipo cargó a mano (con un Excel armado en `test/xlsx-de-prueba.mjs`: el real no va al repositorio). |
 
 El flujo genera `index.html` desde `src/` antes de correr las pruebas y

@@ -1665,8 +1665,18 @@ const pbA = await page.evaluate(() => {
 check("el Planner de siempre tiene las 7 etapas", pbA.columnas === 7, pbA);
 check("Planner B: En línea arriba y Próximo a desarrollar abajo", pbA.lineaArriba && pbA.proximosAbajo, pbA);
 check("el número del círculo cuenta solo donde es el 1", pbA.circGasti === pbA.cuentaGasti, pbA);
-check("al tocar un perfil se ven también las tarjetas donde es 2", pbA.veLasDos, pbA);
-check("y esas se marcan como «es 2»", pbA.marcaEs2, pbA);
+check("al tocar un perfil se ven también las tarjetas donde espera su turno", pbA.veLasDos, pbA);
+check("y esas se marcan como «esperando para hacer»", pbA.marcaEs2, pbA);
+const accion = await page.evaluate(() => {
+  ((state.userId = "gasti"), (state.view = "kanban"), render());
+  const enPlanner = document.querySelectorAll(".kcard .tag-accion").length,
+    esperadas = kanbanCards().filter((c) => c.responsable === "gasti" && c.estado !== "finalizado").length;
+  ((state.view = "plannerb"), render());
+  const enB = document.querySelectorAll(".pb-fila .tag-accion").length;
+  ((state.userId = null), render());
+  return { enPlanner, enB, esperadas };
+});
+check("las tarjetas cerradas marcan «En acción» las que tengo como 1", accion.esperadas > 0 && accion.enPlanner === accion.esperadas && accion.enB === accion.esperadas, accion);
 check("tocar el mismo perfil de nuevo vuelve a todo", pbA.filtroLimpio, pbA);
 const antesMine = await page.evaluate((id) => {
   state.userId = "gasti";
@@ -1735,6 +1745,43 @@ check("el emoji de otra persona no se puede elegir", perfil.tomado === true, per
 check("guardar deja el emoji y el nombre elegidos en toda la app", perfil.tras.emoji === "🐙" && perfil.tras.nombre === "Evita" && perfil.tras.cerrado && perfil.tras.avatar, perfil);
 check("los perfiles se mezclan por persona, sin pisarse", JSON.stringify(perfil.mezcla) === JSON.stringify(["🐙", "🌵", "🌸"]), perfil);
 
+// ── El chat del equipo ──
+console.log("\nchat del equipo");
+await page.evaluate(() => { if (!document.querySelector("#chatBtn")) chatArrancar(); closeModal(); });
+const hayBoton = await page.evaluate(() => !!document.querySelector("#chatBtn") && document.querySelector("#chatPanel").hidden);
+await page.click("#chatBtn");
+await page.fill("#chatTexto", "ZZ hola equipo");
+await page.press("#chatTexto", "Enter");
+await page.waitForTimeout(1500);
+const enviado = await page.evaluate(async () => {
+  const remoto = await Store.remote(CHAT_FILA);
+  return {
+    abierto: !document.querySelector("#chatPanel").hidden,
+    enPantalla: document.querySelector("#chatLista").textContent.includes("ZZ hola equipo"),
+    guardado: !!remoto && (remoto.mensajes || []).some((m) => m.texto === "ZZ hola equipo"),
+    vacio: document.querySelector("#chatTexto").value === "",
+  };
+});
+const otro = await page.evaluate(async () => {
+  chatAlternar(false);
+  const remoto = await Store.remote(CHAT_FILA);
+  await Store.save({ mensajes: (remoto.mensajes || []).concat({ id: "zz-flor", autor: "flor", nombre: "Flor", texto: "ZZ dale!", ts: Date.now() + 1000 }) }, false, CHAT_FILA);
+  await chatTraer(true);
+  chatPintar();
+  const badge = document.querySelector("#chatBadge"),
+    conAviso = !badge.hidden && badge.textContent === "1";
+  chatAlternar(true);
+  const leido = badge.hidden;
+  chatAlternar(false);
+  const mezcla = mezclarChat([{ id: "a", ts: 1 }, { id: "b", ts: 3 }], [{ id: "c", ts: 2 }, { id: "a", ts: 1 }]).map((m) => m.id).join("");
+  return { conAviso, leido, mezcla };
+});
+check("hay un globito de chat en todas las vistas", hayBoton, { hayBoton });
+check("lo que escribo aparece y queda guardado para el equipo", enviado.abierto && enviado.enPantalla && enviado.guardado && enviado.vacio, enviado);
+check("un mensaje de otra persona suma al contador de no leídos", otro.conAviso, otro);
+check("y al abrir el chat queda leído", otro.leido, otro);
+check("si dos escriben a la vez no se pisan", otro.mezcla === "acb", otro);
+
 // Dejar el tablero como estaba para que nada de esto ensucie lo que sigue.
 await page.evaluate(() => {
   ((state.tecnico = state.tecnico.filter((f) => !/^zz-/.test(f.id) && !/^ZZ /.test(f.curso || ""))),
@@ -1757,6 +1804,15 @@ const celu = await page.evaluate(() => ({
 }));
 check("en el teléfono el encabezado entra en una fila", celu.alto < 70 && celu.ancho <= 360, celu);
 check("el aviso viejo de la Agenda ya no aparece en Inicio", !celu.aviso, celu);
+// Y en las pantallas de oficina (1366 y 1280), con las ocho pestañas, la
+// barra de arriba también entra en una fila.
+const oficina = [];
+for (const ancho of [1366, 1280]) {
+  await page.setViewportSize({ width: ancho, height: 768 });
+  await page.waitForTimeout(150);
+  oficina.push(await page.evaluate(() => Math.round(document.querySelector(".topbar").getBoundingClientRect().height)));
+}
+check("en 1366 y 1280 la barra de arriba entra en una fila", oficina.every((h) => h < 80), oficina);
 await page.setViewportSize({ width: 1400, height: 950 });
 
 await browser.close();

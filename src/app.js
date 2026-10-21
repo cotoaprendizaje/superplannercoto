@@ -3412,6 +3412,17 @@ function segundo(tarjeta) {
 function posicionEn(tarjeta, id) {
   return equipoDe(tarjeta).indexOf(id) + 1;
 }
+// Cómo se nombra cada lugar: el 1 está en acción; el resto espera su turno.
+function rolTxt(pos) {
+  return pos === 1 ? "En acción" : "Esperando para hacer";
+}
+// La etiqueta de las tarjetas cerradas (Planner y Planner B): "estas son las
+// que tengo en acción", sin tener que abrirlas ni filtrar.
+function enAccionTagHTML(tarjeta) {
+  return state.userId && tarjeta.responsable === state.userId && tarjeta.estado !== "finalizado"
+    ? '<span class="tag-accion" title="Sos quien la tiene en acción">⚡ En acción</span>'
+    : "";
+}
 function ponerEquipo(tarjeta, lista) {
   const nueva = lista.filter((x, i, a) => x && a.indexOf(x) === i);
   if ((nueva[0] || "") !== (tarjeta.responsable || "")) registrarUno(tarjeta, nueva[0] || "");
@@ -3425,7 +3436,7 @@ function registrarUno(tarjeta, id) {
     lista.push({ id: tarjeta.responsable, desde: tarjeta.inicio || "", estado: tarjeta.estado });
   if (id) lista.push({ id, desde: isoOf(new Date()), estado: tarjeta.estado });
   if (lista.length > 20) lista.splice(0, lista.length - 20);
-  logAct(tarjeta, id ? "pasó el 1 a " + ((member(id) || {}).nombre || id) : "quedó sin 1");
+  logAct(tarjeta, id ? "pasó a estar en acción " + ((member(id) || {}).nombre || id) : "quedó sin nadie en acción");
 }
 function isOverdue(tarjeta) {
   const val = tarjeta.fin || tarjeta.inicio;
@@ -3501,7 +3512,7 @@ function stackHTML(tarjeta) {
   return (
     '<div class="stack">' +
     lista.map((arg) => avatarHTML(arg, true)).join("") +
-    (pos > 1 ? '<span class="pb-es2" title="Acá acompaña: no le suma a su contador">es ' + pos + "</span>" : "") +
+    (pos > 1 ? '<span class="pb-es2" title="Esperando para hacer: no le suma a su contador">espera · ' + pos + "º</span>" : "") +
     "</div>"
   );
 }
@@ -4332,6 +4343,8 @@ const state = {
   // equipo. Viajan aparte de TEAM y se mezclan por persona: si dos eligen el
   // suyo a la vez, ninguno pisa al otro.
   perfiles: {},
+  // Los mensajes del chat del equipo (ver chatTraer), del más viejo al más nuevo.
+  chat: [],
   moodle: null,
   deletedTecnico: {},
   eduArchivo: [],
@@ -5216,6 +5229,7 @@ function cardKanban(tarjeta) {
       : inInventory(tarjeta)
         ? '<span class="tag-flag">◎ activo</span>'
         : "") +
+    enAccionTagHTML(tarjeta) +
     '\n    <div class="kcard-top">\n      <span class="tipo-pill">' +
     tipo.icon +
     " " +
@@ -5398,9 +5412,9 @@ function equipoCirculosHTML() {
     '<div class="eqc" role="group" aria-label="Filtrar por persona"><span class="eqc-t">' +
     (activo && member(activo)
       ? "Todo lo de " + esc(member(activo).nombre) + ": " +
-        vivas.filter((c) => c.responsable === activo).length + " como 1 · " +
-        vivas.filter((c) => posicionEn(c, activo) > 1).length + " acompañando · tocá de nuevo para ver todo"
-      : "El equipo · el número es lo que cada uno lleva como 1") +
+        vivas.filter((c) => c.responsable === activo).length + " en acción · " +
+        vivas.filter((c) => posicionEn(c, activo) > 1).length + " esperando para hacer · tocá de nuevo para ver todo"
+      : "El equipo · el número es lo que cada uno tiene en acción") +
     '</span><div class="eqc-l">' +
     TEAM.map((m) => {
       const n = vivas.filter((c) => c.responsable === m.id).length;
@@ -5413,9 +5427,9 @@ function equipoCirculosHTML() {
         (activo === m.id) +
         '" title="' +
         esc(m.nombre) +
-        ": lleva " +
+        ": " +
         n +
-        ' como 1"><span class="eqc-av">' +
+        ' en acción"><span class="eqc-av">' +
         avatarHTML(m.id) +
         '<span class="eqc-n' +
         (n ? "" : " cero") +
@@ -5470,13 +5484,17 @@ function pbFilaHTML(tarjeta) {
     tarjeta.id +
     '" role="button" tabindex="0"><span class="pb-c pb-curso"><b>' +
     esc(tarjeta.titulo) +
-    (pos > 1 ? ' <span class="pb-es2" title="Acá acompaña: no le suma a su contador">es ' + pos + "</span>" : "") +
-    "</b><small>" +
+    (pos > 1 ? ' <span class="pb-es2" title="Esperando para hacer: no le suma a su contador">espera · ' + pos + "º</span>" : "") +
+    "</b>" +
+    enAccionTagHTML(tarjeta) +
+    "<small>" +
     esc(((allTipos()[tarjeta.tipo] || {}).nombre || "") + (tarjeta.fin ? " · fin " + fmtShort(tarjeta.fin) : "")) +
     '</small></span><span class="pb-c pb-sector">' +
     (sectores.length ? sectores.map((n) => '<span class="pb-tag">' + esc(n) + "</span>").join("") : '<span class="pb-vacio">Sin sector</span>') +
     '</span><span class="pb-c pb-roles">' +
-    (tarjeta.responsable ? '<span class="pb-uno">' + avatarHTML(tarjeta.responsable) + "<i>1</i></span>" : '<span class="pb-uno nadie" title="Sin 1">?</span>') +
+    (tarjeta.responsable
+      ? '<span class="pb-uno" title="En acción: ' + esc((member(tarjeta.responsable) || {}).nombre || "") + '">' + avatarHTML(tarjeta.responsable) + "<i>1</i></span>"
+      : '<span class="pb-uno nadie" title="Nadie en acción">?</span>') +
     resto
       .slice(0, 2)
       .map((id) => '<span class="pb-dos">' + avatarHTML(id, true) + "</span>")
@@ -5569,7 +5587,7 @@ function renderPlannerB() {
     '<div class="pb">' +
     equipoCirculosHTML() +
     flujo +
-    '<div class="pb-tabla"><div class="pb-cab"><span class="pb-cab-r">↑ Etapa</span><div class="pb-cab-c"><span>Curso</span><span>Sector</span><span>1 · 2</span><span>Próximo paso</span><span>Aprobación del sector</span></div></div>' +
+    '<div class="pb-tabla"><div class="pb-cab"><span class="pb-cab-r">↑ Etapa</span><div class="pb-cab-c"><span>Curso</span><span>Sector</span><span>En acción</span><span>Próximo paso</span><span>Aprobación del sector</span></div></div>' +
     (cuerpo ||
       '<div class="pb-nada">' +
         (state.filters.persona && member(state.filters.persona)
@@ -5578,6 +5596,193 @@ function renderPlannerB() {
         "</div>") +
     "</div></div>"
   );
+}
+// ===== Chat del equipo =====
+// Un globito abajo a la izquierda, en todas las vistas, que abre el chat de
+// todo el equipo. Los mensajes viven en su propia fila (como Técnico o las
+// fotos) para no engordar el tablero, y se consulta igual que él: primero el
+// sello de versión —unos pocos bytes— y el chat entero solo si cambió. Con el
+// chat cerrado se pregunta al ritmo del tablero; abierto, más seguido.
+const CHAT_FILA = BACKEND.fila + "-chat",
+  CHAT_MAX = 300,
+  CHAT_ABIERTO_MS = 4000;
+let chatRev = null,
+  chatAbierto = false,
+  chatUltimaConsulta = 0;
+function chatClaveLeido() {
+  return "coto.chat.leido." + (state.userId || state.user || "");
+}
+function chatLeidoHasta() {
+  try {
+    return +(localStorage.getItem(chatClaveLeido()) || 0);
+  } catch (e) {
+    return 0;
+  }
+}
+function chatMarcarLeido() {
+  const ultimo = state.chat.length ? state.chat[state.chat.length - 1].ts : Date.now();
+  try {
+    localStorage.setItem(chatClaveLeido(), String(Math.max(ultimo, chatLeidoHasta())));
+  } catch (e) {}
+}
+function chatEsMio(m) {
+  return state.userId ? m.autor === state.userId : m.nombre === state.user;
+}
+function chatNoLeidos() {
+  const desde = chatLeidoHasta();
+  return state.chat.filter((m) => m.ts > desde && !chatEsMio(m)).length;
+}
+// Se mezcla por id, nunca se pisa: si dos personas escriben a la vez, quedan
+// los dos mensajes.
+function mezclarChat(a, b) {
+  const porId = new Map();
+  (a || []).concat(b || []).forEach((m) => m && m.id && porId.set(m.id, Object.assign({}, porId.get(m.id), m)));
+  return [...porId.values()].sort((x, y) => x.ts - y.ts).slice(-CHAT_MAX);
+}
+async function chatTraer(forzar) {
+  if (!useSupabase()) return false;
+  chatUltimaConsulta = Date.now();
+  const rev = await Store.rev(CHAT_FILA);
+  if (!forzar && rev && rev === chatRev) return false;
+  const doc = await Store.remote(CHAT_FILA),
+    antes = state.chat.length;
+  chatRev = (doc && doc.rev) || rev;
+  state.chat = mezclarChat(state.chat, (doc && doc.mensajes) || []);
+  return state.chat.length !== antes;
+}
+async function chatEnviar(texto) {
+  const limpio = String(texto || "").trim().slice(0, 2000);
+  if (!limpio) return;
+  const m = { id: uid(), autor: state.userId || "", nombre: state.user || "", texto: limpio, ts: Date.now() };
+  ((state.chat = mezclarChat(state.chat, [m])), chatMarcarLeido(), chatPintar(true));
+  if (!useSupabase()) return;
+  // Se relee antes de guardar y se confirma después: si otro guardó en el
+  // medio y el mensaje no quedó, se vuelve a mandar mezclado.
+  for (let intento = 0; intento < 3; intento++) {
+    try {
+      const remoto = await Store.remote(CHAT_FILA);
+      state.chat = mezclarChat(state.chat, (remoto && remoto.mensajes) || []);
+      chatRev = await Store.save({ mensajes: state.chat }, false, CHAT_FILA);
+      const confirmado = await Store.remote(CHAT_FILA);
+      if (confirmado && (confirmado.mensajes || []).some((x) => x.id === m.id)) {
+        chatRev = confirmado.rev || chatRev;
+        delete m.fallo;
+        return chatPintar();
+      }
+    } catch (err) {}
+  }
+  ((m.fallo = true), chatPintar(), flash("No se pudo mandar el mensaje. Probá de nuevo.", true));
+}
+function chatHora(ts) {
+  const f = new Date(ts);
+  return String(f.getHours()).padStart(2, "0") + ":" + String(f.getMinutes()).padStart(2, "0");
+}
+function chatDia(ts) {
+  const hoy = isoOf(new Date()),
+    dia = isoOf(new Date(ts));
+  if (dia === hoy) return "Hoy";
+  if (dia === isoOf(addDays(new Date(), -1))) return "Ayer";
+  return new Date(ts).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
+}
+function chatMensajesHTML() {
+  if (!state.chat.length)
+    return '<div class="chat-vacio"><b>Todavía no hay mensajes.</b><span>Lo que escribas acá lo ve todo el equipo, en cualquier vista.</span></div>';
+  let dia = "",
+    previo = null;
+  return state.chat
+    .map((m) => {
+      const d = chatDia(m.ts),
+        mio = chatEsMio(m),
+        seguido = previo && previo.autor === m.autor && previo.nombre === m.nombre && m.ts - previo.ts < 5 * 60000 && d === dia,
+        quien = (m.autor && member(m.autor)) || null,
+        nombre = (quien && quien.nombre) || m.nombre || "Alguien";
+      let html = "";
+      if (d !== dia) ((dia = d), (html += '<div class="chat-dia"><span>' + esc(d) + "</span></div>"));
+      previo = m;
+      return (
+        html +
+        '<div class="chat-m' +
+        (mio ? " mio" : "") +
+        (seguido ? " seguido" : "") +
+        (m.fallo ? " fallo" : "") +
+        '">' +
+        (mio ? "" : '<span class="chat-av">' + (seguido ? "" : quien ? avatarHTML(quien.id, true) : '<span class="avatar sm">' + esc(nombre.slice(0, 1).toUpperCase()) + "</span>") + "</span>") +
+        '<div class="chat-b">' +
+        (mio || seguido ? "" : '<span class="chat-quien">' + esc(nombre) + "</span>") +
+        '<span class="chat-t">' +
+        esc(m.texto).replace(/\n/g, "<br>") +
+        '</span><span class="chat-h">' +
+        (m.fallo ? "no se mandó · " : "") +
+        chatHora(m.ts) +
+        "</span></div></div>"
+      );
+    })
+    .join("");
+}
+function chatArmar() {
+  if ($("#chatBtn")) return;
+  const btn = document.createElement("button");
+  ((btn.id = "chatBtn"),
+    (btn.className = "chat-fab"),
+    (btn.type = "button"),
+    btn.setAttribute("data-action", "chat:toggle"),
+    btn.setAttribute("aria-label", "Chat del equipo"),
+    (btn.title = "Chat del equipo"),
+    (btn.innerHTML =
+      '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12.2c0 4-3.6 7.1-8 7.1-1.1 0-2.2-.2-3.1-.6L4 20l1.3-3.6C4.5 15.2 4 13.8 4 12.2 4 8.3 7.6 5 12 5s8 3.3 8 7.2Z"/></svg><span class="chat-badge" id="chatBadge" hidden></span>'));
+  const panel = document.createElement("section");
+  ((panel.id = "chatPanel"),
+    (panel.className = "chat-panel"),
+    (panel.hidden = true),
+    panel.setAttribute("aria-label", "Chat del equipo"),
+    (panel.innerHTML =
+      '<header class="chat-head"><div><h2>Chat del equipo</h2><span>Lo ve todo el equipo</span></div><button type="button" class="chat-x" data-action="chat:toggle" aria-label="Cerrar el chat">✕</button></header>' +
+      '<div class="chat-lista" id="chatLista" aria-live="polite"></div>' +
+      '<form class="chat-form" id="chatForm"><textarea id="chatTexto" rows="1" maxlength="2000" placeholder="Escribile al equipo…" aria-label="Mensaje"></textarea><button type="submit" class="chat-enviar" aria-label="Enviar">➤</button></form>'));
+  (document.body.appendChild(panel), document.body.appendChild(btn));
+  const texto = panel.querySelector("#chatTexto");
+  panel.querySelector("#chatForm").addEventListener("submit", (ev) => {
+    (ev.preventDefault(), chatEnviar(texto.value), (texto.value = ""), (texto.style.height = ""), texto.focus());
+  });
+  texto.addEventListener("keydown", (ev) => {
+    // Enter manda; Shift+Enter hace un renglón nuevo, como en cualquier chat.
+    if (ev.key === "Enter" && !ev.shiftKey && !ev.isComposing)
+      (ev.preventDefault(), panel.querySelector("#chatForm").requestSubmit());
+    if (ev.key === "Escape") (ev.stopPropagation(), chatAlternar(false));
+  });
+  texto.addEventListener("input", () => {
+    ((texto.style.height = "auto"), (texto.style.height = Math.min(texto.scrollHeight, 120) + "px"));
+  });
+}
+function chatPintar(alFinal) {
+  const lista = $("#chatLista"),
+    badge = $("#chatBadge");
+  if (!lista) return;
+  const cerca = lista.scrollHeight - lista.scrollTop - lista.clientHeight < 80;
+  lista.innerHTML = chatMensajesHTML();
+  if (alFinal || cerca) lista.scrollTop = lista.scrollHeight;
+  if (chatAbierto) chatMarcarLeido();
+  const n = chatAbierto ? 0 : chatNoLeidos();
+  ((badge.hidden = !n), (badge.textContent = n > 9 ? "9+" : String(n)));
+}
+function chatAlternar(abrir) {
+  chatAbierto = abrir === undefined ? !chatAbierto : abrir;
+  const panel = $("#chatPanel");
+  if (!panel) return;
+  ((panel.hidden = !chatAbierto), $("#chatBtn").classList.toggle("on", chatAbierto));
+  if (chatAbierto) {
+    (chatPintar(true), $("#chatTexto").focus());
+    chatTraer().then((cambio) => cambio && chatPintar(true), () => {});
+  } else chatPintar();
+}
+function chatArrancar() {
+  (chatArmar(), chatPintar());
+  chatTraer(true).then(() => chatPintar(), () => {});
+  setInterval(() => {
+    if (document.hidden) return;
+    if (!chatAbierto && Date.now() - chatUltimaConsulta < BACKEND.pollMs) return;
+    chatTraer().then((cambio) => cambio && chatPintar(), () => {});
+  }, CHAT_ABIERTO_MS);
 }
 function renderKanban() {
   const lista2 = kanbanCards(),
@@ -12277,7 +12482,7 @@ function rolesHTML(tarjeta) {
     libres = TEAM.filter((m) => !lista.includes(m.id)),
     hist = (tarjeta.historial1 || []).slice().reverse().slice(0, 5);
   return (
-    '<div class="eqo"><div class="eqo-h"><span class="eqo-t">Quién la lleva</span><span class="eqo-ayuda">Arrastrá para cambiar el orden · el 1 es el único al que le cuenta</span></div>' +
+    '<div class="eqo"><div class="eqo-h"><span class="eqo-t">Quién la lleva</span><span class="eqo-ayuda">Arrastrá para cambiar el orden · solo le cuenta a quien está en acción</span></div>' +
     (lista.length
       ? '<ol class="eqo-l">' +
         lista
@@ -12294,7 +12499,7 @@ function rolesHTML(tarjeta) {
               '<span class="eqo-tx"><b>' +
               esc((member(id) || {}).nombre || id) +
               "</b><small>" +
-              (i ? "Acompaña · no le suma" : "Responsable · le suma a su contador") +
+              (i ? rolTxt(i + 1) + " · no le suma todavía" : rolTxt(1) + " · le suma a su contador") +
               '</small></span><span class="eqo-acc">' +
               (i ? '<button class="eqo-btn" data-action="equipo:mover" data-persona="' + id + '" data-dir="-1" aria-label="Subir a ' + esc((member(id) || {}).nombre || id) + '" title="Subir">↑</button>' : "") +
               (i < lista.length - 1 ? '<button class="eqo-btn" data-action="equipo:mover" data-persona="' + id + '" data-dir="1" aria-label="Bajar a ' + esc((member(id) || {}).nombre || id) + '" title="Bajar">↓</button>' : "") +
@@ -12313,7 +12518,7 @@ function rolesHTML(tarjeta) {
         "</select>"
       : "") +
     (hist.length
-      ? '<div class="roles-hist"><span class="roles-hist-t">Quién fue 1</span>' +
+      ? '<div class="roles-hist"><span class="roles-hist-t">Quién estuvo en acción</span>' +
         hist
           .map(
             (h) =>
@@ -14032,6 +14237,9 @@ document.addEventListener("click", (ev) => {
       (ponerEquipo(tarjeta, equipoDe(tarjeta).filter((x) => x !== el.dataset.persona)), touch(), renderPanel(), render());
       break;
     }
+    case "chat:toggle":
+      chatAlternar();
+      break;
     case "pb:linea":
       ((pbLineaTodas = !pbLineaTodas), render());
       break;
@@ -15349,7 +15557,7 @@ function asignarme(id) {
   if (equipoDe(tarjeta).includes(state.userId)) return flash("Ya estás en esta tarjeta", true);
   ponerEquipo(tarjeta, [...equipoDe(tarjeta), state.userId]);
   const pos = posicionEn(tarjeta, state.userId);
-  (touch(), render(), flash(pos === 1 ? "🙋 Sos el 1 de esta tarjeta" : "🙋 Te sumaste como " + pos));
+  (touch(), render(), flash(pos === 1 ? "⚡ La tenés en acción" : "🙋 Te sumaste: esperando para hacer (" + pos + "º)"));
 }
 function doDelete(id) {
   const tarjeta = id ? state.cards.find((c) => c.id === id) : current();
@@ -17741,6 +17949,7 @@ async function arrancarApp() {
   // había entrado: se rehace ahora para que el aviso de cuenta aparezca.
   showBanner();
   pedirPerfilSiFalta();
+  chatArrancar();
   try {
     history.replaceState(navState(), "");
   } catch (err3) {}
