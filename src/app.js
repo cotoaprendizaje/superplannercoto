@@ -1794,26 +1794,68 @@ function ensureTeam() {
   }
 }
 const ADMIN_POR_DEFECTO = "dami";
+// Las etapas de un proyecto, en el orden en que avanza. Son las de la planilla
+// del área (octubre 2026) y las comparten los dos Planner: el de columnas y el
+// B, que las apila de abajo hacia arriba. Los ids de antes se conservaron
+// —pendiente, en-desarrollo, en-revision, finalizado— para que cada tarjeta
+// existente caiga sola en su etapa y todo lo que ya contaba por estado (la
+// revisión que espera, lo finalizado) siga contando igual.
 const ESTADOS = [
     {
       id: "pendiente",
-      nombre: "Pendiente",
+      nombre: "Próximo a desarrollar",
+      corto: "Próximos",
       dot: "#8A97B4",
+      soft: "#F2F4F8",
+      ink: "#4F5868",
     },
     {
       id: "en-desarrollo",
-      nombre: "En desarrollo",
-      dot: "#006EA0",
+      nombre: "Diseño en desarrollo",
+      corto: "Diseñando",
+      dot: "#D2652A",
+      soft: "#FBEADF",
+      ink: "#94401A",
+    },
+    {
+      id: "diseno-listo",
+      nombre: "Diseño listo – falta exportar",
+      corto: "Diseño listo",
+      dot: "#C28A00",
+      soft: "#FBF2D5",
+      ink: "#7A5800",
+    },
+    {
+      id: "con-claude",
+      nombre: "En desarrollo con Claude",
+      corto: "Con Claude",
+      dot: "#7A4FC4",
+      soft: "#EFE8FA",
+      ink: "#5E3AA0",
     },
     {
       id: "en-revision",
-      nombre: "En revisión",
-      dot: "#E2A03F",
+      nombre: "En test – esperando aprobación",
+      corto: "En test",
+      dot: "#2A6FB0",
+      soft: "#E3EEF8",
+      ink: "#1D5690",
     },
     {
       id: "finalizado",
-      nombre: "Finalizados",
+      nombre: "En línea",
+      corto: "En línea",
       dot: "#2E9E8F",
+      soft: "#E1F3EF",
+      ink: "#17675C",
+    },
+    {
+      id: "stand-by",
+      nombre: "Stand by",
+      corto: "Stand by",
+      dot: "#7C8597",
+      soft: "#EEF0F3",
+      ink: "#4A5160",
     },
   ],
   // "retirado: true" saca el tipo del selector de Nueva tarjeta sin borrarlo:
@@ -3349,9 +3391,46 @@ function inInventory(tarjeta) {
 function isInventory(tarjeta) {
   return inInventory(tarjeta) && !tarjeta.enActualizacion;
 }
+// Las etapas en las que alguien está trabajando la tarjeta: ni esperando
+// turno, ni publicada, ni en pausa.
+const ESTADOS_EN_CURSO = ["en-desarrollo", "diseno-listo", "con-claude", "en-revision"];
+function estadoDe(id) {
+  return (
+    ESTADOS.find((e) => e.id === id) || { id, nombre: id || "", corto: id || "", dot: "#999", soft: "#EEF0F3", ink: "#4A5160" }
+  );
+}
+// Quiénes llevan la tarjeta, en orden de prioridad: el 1 es el responsable
+// (el único al que le cuenta) y detrás van 2, 3, 4… Se guarda como siempre:
+// el 1 en "responsable" y el resto, en orden, en "asignados".
+function equipoDe(tarjeta) {
+  return [tarjeta.responsable, ...(tarjeta.asignados || [])].filter((x, i, a) => x && a.indexOf(x) === i);
+}
+function segundo(tarjeta) {
+  return equipoDe(tarjeta)[1] || "";
+}
+// En qué lugar está alguien (1, 2, 3…); 0 si no participa.
+function posicionEn(tarjeta, id) {
+  return equipoDe(tarjeta).indexOf(id) + 1;
+}
+function ponerEquipo(tarjeta, lista) {
+  const nueva = lista.filter((x, i, a) => x && a.indexOf(x) === i);
+  if ((nueva[0] || "") !== (tarjeta.responsable || "")) registrarUno(tarjeta, nueva[0] || "");
+  ((tarjeta.responsable = nueva[0] || null), (tarjeta.asignados = nueva.slice(1)));
+}
+// Cada vez que el 1 cambia, queda anotado quién lo tomó, desde cuándo y en qué
+// etapa estaba la tarjeta: es lo que la ficha muestra como "quién fue 1".
+function registrarUno(tarjeta, id) {
+  const lista = (tarjeta.historial1 = tarjeta.historial1 || []);
+  if (!lista.length && tarjeta.responsable)
+    lista.push({ id: tarjeta.responsable, desde: tarjeta.inicio || "", estado: tarjeta.estado });
+  if (id) lista.push({ id, desde: isoOf(new Date()), estado: tarjeta.estado });
+  if (lista.length > 20) lista.splice(0, lista.length - 20);
+  logAct(tarjeta, id ? "pasó el 1 a " + ((member(id) || {}).nombre || id) : "quedó sin 1");
+}
 function isOverdue(tarjeta) {
   const val = tarjeta.fin || tarjeta.inicio;
-  if (!val || isInventory(tarjeta) || tarjeta.estado === "finalizado") return false;
+  // Stand by es una pausa decidida: no se avisa como vencida.
+  if (!val || isInventory(tarjeta) || tarjeta.estado === "finalizado" || tarjeta.estado === "stand-by") return false;
   return val < todayISO();
 }
 function progress(tarjeta) {
@@ -3386,6 +3465,18 @@ function avatarHTML(id2, flag) {
       esc(id2) +
       ')">?</span>'
     );
+  if (miembro.emoji)
+    return (
+      '<span class="avatar avatar-emoji ' +
+      (flag ? "sm" : "") +
+      '" style="--av:' +
+      miembro.color +
+      '" title="' +
+      esc(miembro.nombre) +
+      '">' +
+      esc(miembro.emoji) +
+      "</span>"
+    );
   const txt = miembro.nombre.slice(0, 1).toUpperCase();
   return (
     '<span class="avatar ' +
@@ -3402,12 +3493,17 @@ function avatarHTML(id2, flag) {
   );
 }
 function stackHTML(tarjeta) {
-  const lista = [tarjeta.responsable, ...(tarjeta.asignados || [])]
-    .filter((arg2, arg3, arg) => arg2 && arg.indexOf(arg2) === arg3)
-    .slice(0, 4);
+  const lista = equipoDe(tarjeta).slice(0, 4);
   if (!lista.length)
     return '<button class="stack-empty" data-action="roulette:open" title="Nadie asignado — probá girar la ruleta">🎡</button>';
-  return '<div class="stack">' + lista.map((arg) => avatarHTML(arg, true)).join("") + "</div>";
+  const quien = state.filters.persona || (state.mis && state.userId) || "",
+    pos = quien ? posicionEn(tarjeta, quien) : 0;
+  return (
+    '<div class="stack">' +
+    lista.map((arg) => avatarHTML(arg, true)).join("") +
+    (pos > 1 ? '<span class="pb-es2" title="Acá acompaña: no le suma a su contador">es ' + pos + "</span>" : "") +
+    "</div>"
+  );
 }
 function sectoresBadges(lista) {
   if (!lista || !lista.length) return '<span class="badge badge-tbd" data-action="noop">Sin sector</span>';
@@ -3898,6 +3994,7 @@ function docSnapshot() {
     templates: state.customTpl,
     sectores: SECTORES,
     team: TEAM,
+    perfiles: state.perfiles,
     appPassHash: state.appPassHash,
     agenda: state.agenda,
     cotofrase: state.cotofrase,
@@ -4000,6 +4097,7 @@ async function mergeRemoteIntoState() {
       remote.team.length &&
       ((TEAM.length = 0), remote.team.forEach((m) => TEAM.push(m)), ensureTeam());
   }
+  aplicarPerfilesDe(remote);
   if (typeof remote.ultimoExport === "number")
     state.ultimoExport = Math.max(state.ultimoExport || 0, remote.ultimoExport);
   if (remote.agenda && typeof remote.agenda === "object")
@@ -4230,6 +4328,10 @@ const state = {
   tecnico: [],
   // Resumen del último Excel de Moodle (ver moodleAplicar): fecha, cuántos
   // e-learning y los presenciales, que solo cuentan en Reportes.
+  // El emoji y el nombre que cada uno eligió (ver perfilModal), por id del
+  // equipo. Viajan aparte de TEAM y se mezclan por persona: si dos eligen el
+  // suyo a la vez, ninguno pisa al otro.
+  perfiles: {},
   moodle: null,
   deletedTecnico: {},
   eduArchivo: [],
@@ -4632,9 +4734,16 @@ function backfillCatalogoImages() {
 function boardCards() {
   return state.cards.filter((tarjeta) => !isInventory(tarjeta) && tarjeta.activo !== false);
 }
+// En qué tarjetas participa alguien, sea como 1 o como 2: es lo que se ve al
+// tocar su círculo o "Mis tareas". Lo que CUENTA (el número del círculo, las
+// alertas, Mi semana, Carga del equipo) es solo donde es el 1: eso es mine().
+function participa(tarjeta, id) {
+  return !!id && equipoDe(tarjeta).includes(id);
+}
 function mine(tarjeta) {
   return (
-    state.userId && (tarjeta.responsable === state.userId || (tarjeta.asignados || []).includes(state.userId))
+    // Solo cuenta como tuya si sos el 1: ser 2 se ve en la tarjeta, pero no suma.
+    state.userId && tarjeta.responsable === state.userId
   );
 }
 function quickPass(tarjeta, arg) {
@@ -4653,14 +4762,9 @@ function quickPass(tarjeta, arg) {
 }
 function passBoard(tarjeta) {
   const tarjeta2 = state.filters;
-  if (state.mis && state.userId && !mine(tarjeta)) return false;
+  if (state.mis && state.userId && !participa(tarjeta, state.userId)) return false;
   if (state.quick && !quickPass(tarjeta, state.quick)) return false;
-  if (
-    tarjeta2.persona &&
-    tarjeta.responsable !== tarjeta2.persona &&
-    !(tarjeta.asignados || []).includes(tarjeta2.persona)
-  )
-    return false;
+  if (tarjeta2.persona && !participa(tarjeta, tarjeta2.persona)) return false;
   if (tarjeta2.tipo && tarjeta.tipo !== tarjeta2.tipo) return false;
   if (tarjeta2.sector && !(tarjeta.sectores || []).includes(tarjeta2.sector)) return false;
   if (tarjeta2.estado && tarjeta.estado !== tarjeta2.estado) return false;
@@ -4897,7 +5001,8 @@ function renderFilters() {
   }
 }
 const VIEW_TITLES = {
-  kanban: ["Planner", "Tareas y proyectos por estado"],
+  kanban: ["Planner", "Tareas y proyectos por etapa"],
+  plannerb: ["Planner B", "Las mismas tarjetas, por etapa: lo que avanza sube. Abajo lo que viene, arriba lo que ya está en línea."],
   calendario: ["Calendario del planner", "Qué pasa y cuándo"],
   timeline: ["Timeline", "El panorama macro del área"],
   mapa: ["Mapa del área", "Todo lo publicado: cursos, Edu Points y contenido audiovisual, organizado por sector"],
@@ -5005,6 +5110,7 @@ function renderView() {
   if (state.view === "inicio") txt = renderInicio();
   else {
     if (state.view === "kanban") txt = renderKanban();
+    else if (state.view === "plannerb") txt = renderPlannerB();
     else {
       if (state.view === "calendario") txt = renderCalendario();
       else {
@@ -5095,7 +5201,7 @@ function cardKanban(tarjeta) {
     '" data-cat="' +
     primaryCat(tarjeta) +
     '" data-action="card:open">\n    <div class="kcard-quick">' +
-    (state.userId && tarjeta.responsable !== state.userId && !(tarjeta.asignados || []).includes(state.userId)
+    (state.userId && !equipoDe(tarjeta).includes(state.userId)
       ? '<button class="kq-btn" data-action="kcard:assignme" data-id="' + tarjeta.id + '" title="Asignarme">🙋</button>'
       : "") +
     '<button class="kq-btn" data-action="qedit:open" data-id="' +
@@ -5166,6 +5272,313 @@ function sortCards(lista) {
     return 0;
   });
 }
+// ===== Perfiles: el emoji y el nombre de cada uno =====
+// La primera vez que alguien del equipo entra, elige un emoji (que no se
+// repite) y cómo quiere que lo llamen. Eso pasa a ser su foto en toda la app:
+// en los círculos de los Planner, en las tarjetas, en el menú.
+const PERFIL_EMOJIS = [
+  "🦊", "🦉", "🌸", "🌵", "🎬", "🎮", "🐱", "🐙",
+  "🚀", "☕", "🥑", "🐧", "⚡", "🌻", "🦄", "🧉",
+  "🐼", "🦋", "🍕", "🎧", "🌈", "🐝", "🍩", "🦖",
+];
+function mezclarPerfiles(a, b) {
+  const res = Object.assign({}, a || {});
+  Object.keys(b || {}).forEach((id) => {
+    const p = b[id];
+    if (p && (!res[id] || (p.ts || 0) > (res[id].ts || 0))) res[id] = p;
+  });
+  return res;
+}
+// TEAM se reemplaza entero cada vez que llega del backend; los perfiles se
+// vuelven a aplicar encima, así nunca se pierde lo que alguien eligió.
+function aplicarPerfiles() {
+  TEAM.forEach((m) => {
+    const p = state.perfiles[m.id];
+    if (!p) return;
+    if (p.emoji) m.emoji = p.emoji;
+    if (p.nombre) m.nombre = p.nombre;
+  });
+}
+function aplicarPerfilesDe(doc) {
+  if (doc && doc.perfiles && typeof doc.perfiles === "object") state.perfiles = mezclarPerfiles(state.perfiles, doc.perfiles);
+  aplicarPerfiles();
+}
+function perfilDe(m) {
+  return { emoji: (m && m.emoji) || "" };
+}
+// Solo a quien entró con un mail que figura en el equipo: alguien sin cargar
+// no tiene un lugar en TEAM donde guardar su emoji.
+function perfilFalta() {
+  const yo = !state.mailSinEquipo && state.userId && member(state.userId);
+  return !!yo && !yo.emoji;
+}
+function pedirPerfilSiFalta() {
+  if (perfilFalta()) perfilModal(true);
+}
+let perfilElegido = "";
+function perfilModal(obligatorio) {
+  const yo = state.userId && member(state.userId);
+  if (!yo) return flash("Tu mail no figura en el equipo: pedile a quien administra que lo cargue.", true);
+  perfilElegido = yo.emoji || "";
+  const tomados = {};
+  TEAM.forEach((m) => m.id !== yo.id && m.emoji && (tomados[m.emoji] = m.nombre));
+  openModal(
+    '<div class="perfil' +
+      (obligatorio ? " perfil-obligatorio" : "") +
+      '"><div class="perfil-top"><span class="perfil-prev" id="perfilPrev">' +
+      esc(perfilElegido || "?") +
+      '</span><div><span class="perfil-eyebrow">' +
+      (obligatorio ? "Antes de entrar" : "Tu perfil") +
+      '</span><h2>¿Cómo te ve el equipo?</h2></div></div>' +
+      '<p class="perfil-p">Tu emoji y tu nombre son tu foto en toda la app. En los Planner, tocándolos se ve solo lo que llevás como 1.</p>' +
+      '<div class="fld"><label for="perfilNombre">Cómo querés que te llamen</label><input id="perfilNombre" maxlength="14" autocomplete="off" value="' +
+      esc(yo.nombre) +
+      '"></div><div class="fld"><label>Tu emoji</label><div class="perfil-grid">' +
+      PERFIL_EMOJIS.map((e) => {
+        const de = tomados[e];
+        return (
+          '<button type="button" class="perfil-em' +
+          (e === perfilElegido ? " on" : "") +
+          '" data-action="perfil:emoji" data-emoji="' +
+          e +
+          '"' +
+          (de ? ' disabled title="Ya es de ' + esc(de) + '"' : ' title="Elegir ' + e + '"') +
+          ' aria-label="' +
+          (de ? e + " ya es de " + esc(de) : "Elegir " + e) +
+          '">' +
+          e +
+          "</button>"
+        );
+      }).join("") +
+      '</div><span class="fld-hint">Los grisados ya son de alguien. Lo podés cambiar cuando quieras desde tu menú.</span></div>' +
+      '<div class="modal-foot">' +
+      (obligatorio ? "" : '<button class="btn" data-action="modal:close">Cancelar</button>') +
+      '<button class="btn btn-primary" data-action="perfil:guardar">' +
+      (obligatorio ? "Listo, entrar" : "Guardar") +
+      "</button></div></div>",
+    "modal-perfil",
+  );
+}
+function perfilElegir(e) {
+  perfilElegido = e;
+  document.querySelectorAll(".perfil-em").forEach((b) => b.classList.toggle("on", b.dataset.emoji === e));
+  const prev = $("#perfilPrev");
+  if (prev) prev.textContent = e;
+}
+function perfilGuardar() {
+  const yo = state.userId && member(state.userId);
+  if (!yo) return;
+  const nombre = (($("#perfilNombre") || {}).value || "").trim();
+  if (!perfilElegido) return flash("Elegí un emoji", true);
+  if (!nombre) return flash("Escribí cómo querés que te llamen", true);
+  const otro = TEAM.find((m) => m.id !== yo.id && (m.nombre.toLowerCase() === nombre.toLowerCase() || m.emoji === perfilElegido));
+  if (otro)
+    return flash(
+      otro.emoji === perfilElegido ? "Ese emoji ya es de " + otro.nombre : "Ya hay alguien que se llama " + otro.nombre,
+      true,
+    );
+  ((state.perfiles = Object.assign({}, state.perfiles)),
+    (state.perfiles[yo.id] = { emoji: perfilElegido, nombre, ts: Date.now() }),
+    aplicarPerfiles(),
+    enterAs(nombre, yo.id),
+    touch(),
+    closeModal(),
+    render(),
+    flash(perfilElegido + " Listo, " + nombre + "."));
+}
+
+// ===== Los círculos del equipo, arriba de los dos Planner =====
+// Cada uno con su emoji y cuántas tarjetas lleva como 1 (sin contar las que
+// ya están en línea). Tocar un círculo filtra el Planner a lo de esa persona;
+// tocarlo de nuevo, vuelve a todo.
+function equipoCirculosHTML() {
+  const vivas = boardCards().filter((c) => c.estado !== "finalizado"),
+    activo = state.filters.persona || "";
+  return (
+    '<div class="eqc" role="group" aria-label="Filtrar por persona"><span class="eqc-t">' +
+    (activo && member(activo)
+      ? "Todo lo de " + esc(member(activo).nombre) + ": " +
+        vivas.filter((c) => c.responsable === activo).length + " como 1 · " +
+        vivas.filter((c) => posicionEn(c, activo) > 1).length + " acompañando · tocá de nuevo para ver todo"
+      : "El equipo · el número es lo que cada uno lleva como 1") +
+    '</span><div class="eqc-l">' +
+    TEAM.map((m) => {
+      const n = vivas.filter((c) => c.responsable === m.id).length;
+      return (
+        '<button class="eqc-b' +
+        (activo === m.id ? " on" : activo ? " off" : "") +
+        '" data-action="equipo:filtro" data-id="' +
+        m.id +
+        '" aria-pressed="' +
+        (activo === m.id) +
+        '" title="' +
+        esc(m.nombre) +
+        ": lleva " +
+        n +
+        ' como 1"><span class="eqc-av">' +
+        avatarHTML(m.id) +
+        '<span class="eqc-n' +
+        (n ? "" : " cero") +
+        '">' +
+        n +
+        '</span></span><span class="eqc-nom">' +
+        esc(m.nombre) +
+        "</span></button>"
+      );
+    }).join("") +
+    "</div></div>"
+  );
+}
+
+// ===== Planner B =====
+// Las mismas tarjetas del Planner, por etapa, en filas. Lo que avanza sube:
+// abajo lo que viene, arriba lo que ya está en línea. Stand by va aparte,
+// entre lo publicado y lo que viene, como en la planilla del área.
+const PB_ORDEN = ["finalizado", "en-revision", "con-claude", "diseno-listo", "en-desarrollo", "stand-by", "pendiente"],
+  PB_FLUJO = ["pendiente", "en-desarrollo", "diseno-listo", "con-claude", "en-revision", "finalizado"],
+  PB_LINEA_A_LA_VISTA = 8;
+let pbLineaTodas = false;
+function pbPasosHTML(tarjeta) {
+  const pasos = pasosDe(tarjeta.proximoPaso);
+  if (!pasos.length) return '<span class="pb-vacio">—</span>';
+  return pasos
+    .map((t, i) => (i ? '<span class="pb-flecha" aria-hidden="true">›</span>' : "") + '<span class="pb-paso' + (i ? "" : " pb-paso-1") + '">' + esc(t) + "</span>")
+    .join("");
+}
+function pbAprobHTML(tarjeta) {
+  if (!tarjeta.aprobacion) return '<span class="pb-vacio">—</span>';
+  return (
+    '<span class="pb-aprob ' +
+    (tarjeta.aprobado ? "ok" : "espera") +
+    '"><i></i><span><b>' +
+    esc(tarjeta.aprobacion) +
+    "</b><small>" +
+    (tarjeta.aprobado ? "aprobó ✓" : "esperando ok") +
+    "</small></span></span>"
+  );
+}
+function pbFilaHTML(tarjeta) {
+  const resto = equipoDe(tarjeta).slice(1),
+    pos = state.filters.persona ? posicionEn(tarjeta, state.filters.persona) : 0,
+    sectores = (tarjeta.sectores || []).map((x) => sectorName(x) || x);
+  return (
+    '<div class="pb-fila' +
+    (tarjeta.estado === "stand-by" ? " pausa" : "") +
+    (pos > 1 ? " como-2" : "") +
+    (isOverdue(tarjeta) ? " venc" : "") +
+    '" data-action="card:open" data-id="' +
+    tarjeta.id +
+    '" role="button" tabindex="0"><span class="pb-c pb-curso"><b>' +
+    esc(tarjeta.titulo) +
+    (pos > 1 ? ' <span class="pb-es2" title="Acá acompaña: no le suma a su contador">es ' + pos + "</span>" : "") +
+    "</b><small>" +
+    esc(((allTipos()[tarjeta.tipo] || {}).nombre || "") + (tarjeta.fin ? " · fin " + fmtShort(tarjeta.fin) : "")) +
+    '</small></span><span class="pb-c pb-sector">' +
+    (sectores.length ? sectores.map((n) => '<span class="pb-tag">' + esc(n) + "</span>").join("") : '<span class="pb-vacio">Sin sector</span>') +
+    '</span><span class="pb-c pb-roles">' +
+    (tarjeta.responsable ? '<span class="pb-uno">' + avatarHTML(tarjeta.responsable) + "<i>1</i></span>" : '<span class="pb-uno nadie" title="Sin 1">?</span>') +
+    resto
+      .slice(0, 2)
+      .map((id) => '<span class="pb-dos">' + avatarHTML(id, true) + "</span>")
+      .join("") +
+    (resto.length > 2 ? '<span class="pb-mas-gente" title="' + esc(resto.slice(2).map((id) => (member(id) || {}).nombre || id).join(", ")) + '">+' + (resto.length - 2) + "</span>" : "") +
+    '</span><span class="pb-c pb-pasos">' +
+    pbPasosHTML(tarjeta) +
+    '</span><span class="pb-c pb-aprobc">' +
+    pbAprobHTML(tarjeta) +
+    "</span></div>"
+  );
+}
+function renderPlannerB() {
+  const lista = filteredBoard(),
+    porEstado = {};
+  ESTADOS.forEach((e) => (porEstado[e.id] = []));
+  lista.forEach((c) => (porEstado[c.estado] || (porEstado[c.estado] = [])).push(c));
+  const visibles = PB_ORDEN.filter((id) => porEstado[id] && porEstado[id].length),
+    ultima = visibles.length - 1,
+    flujoMax = Math.max(1, ...PB_FLUJO.map((id) => porEstado[id].length)),
+    pausa = porEstado["stand-by"].length;
+  const flujo =
+    '<div class="pb-flujo"><div class="pb-flujo-h"><b>' +
+    lista.length +
+    (lista.length === 1 ? " tarjeta" : " tarjetas") +
+    (pausa ? " · " + pausa + " en pausa" : "") +
+    '</b><span>de lo que viene → a lo publicado</span></div><div class="pb-flujo-b">' +
+    PB_FLUJO.map((id) => {
+      const e = estadoDe(id),
+        n = porEstado[id].length;
+      return (
+        '<button class="pb-flujo-s" data-action="pb:ir" data-estado="' +
+        id +
+        '" style="--tono:' +
+        e.dot +
+        ";flex:" +
+        Math.max(n, flujoMax * 0.12) +
+        ' 1 0" title="Ir a ' +
+        esc(e.nombre) +
+        '"><i' +
+        (n ? "" : ' class="cero"') +
+        "></i><b>" +
+        n +
+        "</b><span>" +
+        esc(e.corto) +
+        "</span></button>"
+      );
+    }).join("") +
+    "</div></div>";
+  const cuerpo = visibles
+    .map((id, pos) => {
+      const e = estadoDe(id);
+      let filas = sortCards(porEstado[id]);
+      let ocultas = 0;
+      if (id === "finalizado" && !pbLineaTodas && filas.length > PB_LINEA_A_LA_VISTA) {
+        filas = filas.slice().sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+        ocultas = filas.length - PB_LINEA_A_LA_VISTA;
+        filas = filas.slice(0, PB_LINEA_A_LA_VISTA);
+      }
+      return (
+        '<section class="pb-etapa" id="pb-' +
+        id +
+        '" style="--tono:' +
+        e.dot +
+        ";--suave:" +
+        e.soft +
+        ";--tinta:" +
+        e.ink +
+        '"><div class="pb-rail' +
+        (pos === 0 ? " primera" : "") +
+        (pos === ultima ? " ultima" : "") +
+        (id === "stand-by" ? " pausa" : "") +
+        '"><span class="pb-nodo"></span><h3>' +
+        esc(e.nombre) +
+        '</h3><span class="pb-cuenta">' +
+        porEstado[id].length +
+        (porEstado[id].length === 1 ? " tarjeta" : " tarjetas") +
+        '</span></div><div class="pb-filas">' +
+        filas.map(pbFilaHTML).join("") +
+        (ocultas
+          ? '<button class="pb-mas" data-action="pb:linea">Ver las ' + ocultas + " anteriores en línea</button>"
+          : id === "finalizado" && pbLineaTodas && porEstado[id].length > PB_LINEA_A_LA_VISTA
+            ? '<button class="pb-mas" data-action="pb:linea">Ver solo las últimas ' + PB_LINEA_A_LA_VISTA + "</button>"
+            : "") +
+        "</div></section>"
+      );
+    })
+    .join("");
+  return (
+    '<div class="pb">' +
+    equipoCirculosHTML() +
+    flujo +
+    '<div class="pb-tabla"><div class="pb-cab"><span class="pb-cab-r">↑ Etapa</span><div class="pb-cab-c"><span>Curso</span><span>Sector</span><span>1 · 2</span><span>Próximo paso</span><span>Aprobación del sector</span></div></div>' +
+    (cuerpo ||
+      '<div class="pb-nada">' +
+        (state.filters.persona && member(state.filters.persona)
+          ? esc(member(state.filters.persona).nombre) + " no es 1 en ninguna tarjeta con estos filtros."
+          : "No hay tarjetas con estos filtros.") +
+        "</div>") +
+    "</div></div>"
+  );
+}
 function renderKanban() {
   const lista2 = kanbanCards(),
     html =
@@ -5219,6 +5632,7 @@ function renderKanban() {
       );
     }).join("");
   return (
+    equipoCirculosHTML() +
     html +
     '<div class="kanban">' +
     txt +
@@ -5639,7 +6053,7 @@ function renderTimeline() {
           // filas mostraba un punto gris y unas pocas una inicial, sin que se
           // entendiera la diferencia. Ahora el punto es del color del sector
           // (que es lo que la barra ya usa) y debajo va el tipo y quién la tiene.
-          const gente = [tarjeta.responsable, ...(tarjeta.asignados || [])]
+          const gente = equipoDe(tarjeta)
             .filter((v, i, arr) => v && arr.indexOf(v) === i)
             .map((id) => (member(id) || {}).nombre)
             .filter(Boolean);
@@ -9945,7 +10359,7 @@ function repMesNombre(fecha) {
 // trabajando ahora.
 function repLoQueViene() {
   return boardCards()
-    .filter((c) => (c.estado === "en-desarrollo" || c.estado === "en-revision") && c.fin)
+    .filter((c) => ESTADOS_EN_CURSO.includes(c.estado) && c.fin)
     .sort((a, b) => (a.fin < b.fin ? -1 : a.fin > b.fin ? 1 : 0));
 }
 // Cuántas tarjetas cambiaron de columna en los últimos siete días. Sale de
@@ -10371,8 +10785,8 @@ function exportReportesCSV() {
   const obj = {};
   (TEAM.forEach((m) => (obj[m.id] = { n: 0, alta: 0, venc: 0 })),
     cargaActivaCards().forEach((tarjeta) => {
-      [tarjeta.responsable, ...(tarjeta.asignados || [])]
-        .filter((v, i, arr) => v && arr.indexOf(v) === i)
+      [tarjeta.responsable]
+        .filter(Boolean)
         .forEach((id) => {
           if (!obj[id]) return;
           obj[id].n++;
@@ -11162,12 +11576,6 @@ function inicioProxHTML() {
 // lado de las ocho tarjetas de arriba parecían el pie de página de otra app.
 // Ahora es una tarjeta más, con la barra de cada estado proporcional a la más
 // alta: además del número se ve la forma del tablero.
-const INI_PULSO = {
-  pendiente: "Pendientes",
-  "en-desarrollo": "En desarrollo",
-  "en-revision": "En revisión",
-  finalizado: "Terminadas",
-};
 function inicioPulsoHTML() {
   const lista = boardCards(),
     cuenta = ESTADOS.map((estado) => lista.filter((tarjeta) => tarjeta.estado === estado.id).length),
@@ -11185,7 +11593,7 @@ function inicioPulsoHTML() {
         '" style="--tono:' +
         estado.dot +
         '"><span class="ini-pulso-n">' +
-        esc(INI_PULSO[estado.id] || estado.nombre) +
+        esc(estado.corto || estado.nombre) +
         '</span><span class="ini-pulso-b"><i style="width:' +
         Math.round((cuenta[i] / max) * 100) +
         '%"></i></span><span class="ini-pulso-c">' +
@@ -11861,30 +12269,96 @@ function panelCtxHTML(tarjeta) {
     "</div>"
   );
 }
-// El responsable de la tarjeta. Existía en los datos desde siempre —"Mis
-// tareas", Mi semana, Carga del equipo y Reportes se paran encima de él— pero
-// la única forma de ponerlo era el botón "Asignarme", o sea ponerse una misma.
-function responsableSelectHTML(tarjeta) {
+// Quién lleva la tarjeta: el 1 (principal, el único al que le cuenta) y el 2
+// (acompaña). Se cambian a mano a medida que la tarjeta pasa de etapa: hoy
+// Flor arma el contenido y es 1; cuando termina, el 1 pasa a quien diseña.
+function rolesHTML(tarjeta) {
+  const lista = equipoDe(tarjeta),
+    libres = TEAM.filter((m) => !lista.includes(m.id)),
+    hist = (tarjeta.historial1 || []).slice().reverse().slice(0, 5);
   return (
-    '<div class="fld"><label>Responsable</label><select data-field="responsable"><option value="">Sin responsable</option>' +
-    TEAM.map(
-      (miembro) =>
-        '<option value="' +
-        miembro.id +
-        '"' +
-        (tarjeta.responsable === miembro.id ? " selected" : "") +
-        ">" +
-        esc(miembro.nombre) +
-        "</option>",
-    ).join("") +
-    "</select></div>"
+    '<div class="eqo"><div class="eqo-h"><span class="eqo-t">Quién la lleva</span><span class="eqo-ayuda">Arrastrá para cambiar el orden · el 1 es el único al que le cuenta</span></div>' +
+    (lista.length
+      ? '<ol class="eqo-l">' +
+        lista
+          .map(
+            (id, i) =>
+              '<li class="eqo-i' +
+              (i ? "" : " uno") +
+              '" data-persona="' +
+              id +
+              '"><span class="eqo-grip" draggable="true" title="Arrastrá para cambiar el lugar" aria-hidden="true">⋮⋮</span><span class="eqo-n">' +
+              (i + 1) +
+              "</span>" +
+              avatarHTML(id) +
+              '<span class="eqo-tx"><b>' +
+              esc((member(id) || {}).nombre || id) +
+              "</b><small>" +
+              (i ? "Acompaña · no le suma" : "Responsable · le suma a su contador") +
+              '</small></span><span class="eqo-acc">' +
+              (i ? '<button class="eqo-btn" data-action="equipo:mover" data-persona="' + id + '" data-dir="-1" aria-label="Subir a ' + esc((member(id) || {}).nombre || id) + '" title="Subir">↑</button>' : "") +
+              (i < lista.length - 1 ? '<button class="eqo-btn" data-action="equipo:mover" data-persona="' + id + '" data-dir="1" aria-label="Bajar a ' + esc((member(id) || {}).nombre || id) + '" title="Bajar">↓</button>' : "") +
+              '<button class="eqo-btn quitar" data-action="equipo:quitar" data-persona="' +
+              id +
+              '" aria-label="Sacar a ' +
+              esc((member(id) || {}).nombre || id) +
+              '" title="Sacar">✕</button></span></li>',
+          )
+          .join("") +
+        "</ol>"
+      : '<div class="eqo-vacio">Nadie la lleva todavía.</div>') +
+    (libres.length
+      ? '<select class="eqo-sumar" data-field="equipo:sumar" aria-label="Sumar a alguien"><option value="">+ Sumar a alguien…</option>' +
+        libres.map((m) => '<option value="' + m.id + '">' + esc((m.emoji ? m.emoji + " " : "") + m.nombre) + "</option>").join("") +
+        "</select>"
+      : "") +
+    (hist.length
+      ? '<div class="roles-hist"><span class="roles-hist-t">Quién fue 1</span>' +
+        hist
+          .map(
+            (h) =>
+              '<span class="roles-hist-i">' +
+              avatarHTML(h.id, true) +
+              "<b>" +
+              esc((member(h.id) || {}).nombre || h.id) +
+              "</b>" +
+              (h.desde ? " desde el " + fmtShort(h.desde) : "") +
+              ' <span class="roles-hist-e">· ' +
+              esc(estadoDe(h.estado).corto) +
+              "</span></span>",
+          )
+          .join("") +
+        "</div>"
+      : "") +
+    "</div>"
+  );
+}
+// Próximo paso y aprobación del sector: las dos columnas de la planilla que
+// el Planner no tenía. Los pasos se separan con → y se leen como secuencia.
+function pasosDe(txt) {
+  return String(txt || "")
+    .replace(/->/g, "→")
+    .split("→")
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+function pasoAprobacionHTML(tarjeta) {
+  return (
+    '<div class="fld-row"><div class="fld"><label>Próximo paso</label><input data-field="proximoPaso" value="' +
+    esc(tarjeta.proximoPaso || "") +
+    '" placeholder="Ej: Exportar → armar con Claude → publicar"><span class="fld-hint">Si son varios, separalos con →</span></div>' +
+    '<div class="fld"><label>Aprobación del sector</label><input data-field="aprobacion" value="' +
+    esc(tarjeta.aprobacion || "") +
+    '" placeholder="Quién aprueba (ej: Gustavo)"><label class="chk-inline"><input type="checkbox" data-field="aprobado"' +
+    (tarjeta.aprobado ? " checked" : "") +
+    "> Ya aprobó</label></div></div>"
   );
 }
 // Las tarjetas que se pueden recorrer con ‹ › desde el panel: las que están a
 // la vista en el Planner con los filtros puestos. Fuera del Planner (Mapa,
 // Calendario, Inicio…) no hay una lista obvia y no se ofrece la flecha.
 function panelVecinas() {
-  return state.view === "kanban" ? filteredBoard() : [];
+  return state.view === "kanban" || state.view === "plannerb" ? filteredBoard() : [];
 }
 function panelNavHTML(tarjeta) {
   const lista = panelVecinas(),
@@ -11949,18 +12423,6 @@ function renderPanel() {
         ">" +
         estado.nombre +
         "</option>",
-    ).join(""),
-    txt3 = TEAM.map(
-      (miembro) =>
-        '<span class="chip-toggle ' +
-        ((tarjeta.asignados || []).includes(miembro.id) ? "on" : "") +
-        '" data-action="asig:toggle" data-person="' +
-        miembro.id +
-        '" style="--cat:' +
-        miembro.color +
-        '">' +
-        miembro.nombre +
-        "</span>",
     ).join(""),
     // La manija es lo único arrastrable de la fila: si el draggable fuera del
     // <div> entero, no se podría seleccionar texto dentro del input.
@@ -12126,7 +12588,7 @@ function renderPanel() {
     '" data-field="titulo">\n      </div>\n      <div class="panel-headtop">' +
     panelNavHTML(tarjeta) +
     savestateHTML() +
-    (state.view !== "kanban" && !inInventory(tarjeta)
+    (state.view !== "kanban" && state.view !== "plannerb" && !inInventory(tarjeta)
       ? '<button class="btn btn-icon btn-ghost" data-action="panel:goplanner" title="Ver en Planner">↗</button>'
       : "") +
     '<button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>\n    </div>\n    <div class="panel-body">\n      ' +
@@ -12136,11 +12598,15 @@ function renderPanel() {
     // bloque "Más detalles": son los datos de la tarjeta, se cargan de una y se
     // leen de arriba a abajo. Va antes del checklist y arranca abierto, porque
     // es lo primero que se completa al crear algo.
-    '\n      <details class="acc sec-acc" data-acc="datos" open><summary class="sub">Datos<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">\n      <div class="fld-row">\n        <div class="fld"><label>Tipo</label><select data-field="tipo">' +
+    '\n      <details class="acc sec-acc" data-acc="datos" open><summary class="sub">Datos<span class="ring"></span><span class="acc-ar" title="Abrir o cerrar esta sección">▸</span></summary>\n        <div class="acc-body">\n      ' +
+    rolesHTML(tarjeta) +
+    '<div class="fld-row">\n        <div class="fld"><label>Tipo</label><select data-field="tipo">' +
     txt +
     '</select></div>\n        <div class="fld"><label title="Estado del proyecto en el Planner — no confundir con el estado libre de Seguimiento técnico ni con el estado operativo de la Ficha técnica">Estado ⓘ</label><select data-field="estado">' +
     txt2 +
-    '</select></div>\n      </div>\n      <div class="fld-row">\n        <div class="fld"><label>Inicio</label><input type="date" value="' +
+    '</select></div>\n      </div>\n' +
+    pasoAprobacionHTML(tarjeta) +
+    '\n      <div class="fld-row">\n        <div class="fld"><label>Inicio</label><input type="date" value="' +
     (tarjeta.inicio || "") +
     '" data-field="inicio">' +
     datePresetsHTML("inicio") +
@@ -12172,15 +12638,8 @@ function renderPanel() {
     '>Normal</option><option value="alta" ' +
     (tarjeta.prioridad === "alta" ? "selected" : "") +
     ">Alta</option></select></div>" +
-    // El responsable manda en media app —"Mis tareas", Mi semana, Carga del
-    // equipo, quién figura en Reportes— y la única forma de ponerlo era
-    // "Asignarme". Para poner a otra persona había que pedírselo.
-    responsableSelectHTML(tarjeta) +
     "</div>" +
     html2 +
-    '\n      <div class="fld"><label>Asignados</label><div class="chiplist">' +
-    txt3 +
-    '</div><span class="fld-hint">Todos los que trabajan en ella (los que quieras).</span></div>\n      ' +
     sectorPicker(tarjeta) +
     '\n        </div></details>\n\n      ' +
     // Los mensajes van pegados a Datos, antes del checklist: el equipo pidió
@@ -12226,9 +12685,8 @@ function openCarga() {
       }),
   ),
     cargaActivaCards().forEach((tarjeta) => {
-      const lista = [tarjeta.responsable, ...(tarjeta.asignados || [])].filter(
-        (arg2, arg3, arg) => arg2 && arg.indexOf(arg2) === arg3,
-      );
+      // Solo el 1: a cada uno le cuenta lo que lleva como principal.
+      const lista = [tarjeta.responsable].filter(Boolean);
       lista.forEach((arg) => {
         if (obj[arg]) {
           obj[arg].n++;
@@ -12270,7 +12728,7 @@ function openCarga() {
     ($("#panel").innerHTML =
       '<div class="panel-head"><div style="flex:1"><div class="tipo-pill">👥 Equipo</div>\n    <div style="font-family:var(--titulo);font-size:18px;font-weight:700;margin-top:4px">Carga del equipo</div></div>\n    <button class="btn btn-icon btn-ghost" data-action="panel:close">✕</button></div>\n    <div class="panel-body"><div class="carga-list">' +
       txt +
-      '</div>\n    <div class="note">Cuenta tarjetas del tablero (responsable + asignados). Ayuda a ver el reparto de carga entre el equipo.</div></div>'),
+      '</div>\n    <div class="note">Cuenta las tarjetas donde cada uno es el 1 (ser 2 no suma). Ayuda a ver el reparto de carga entre el equipo.</div></div>'),
     $("#panel").classList.add("open"),
     $("#overlay").classList.remove("hidden"));
 }
@@ -12367,6 +12825,8 @@ function saveViews() {
   } catch (err) {}
 }
 function closeModal() {
+  // El perfil del primer ingreso no se puede saltear: sin emoji no se cierra.
+  if ($("#modal .perfil-obligatorio") && perfilFalta()) return;
   ($("#modal").classList.add("hidden"), ($("#modal").innerHTML = ""));
 }
 function openModal(html, cls) {
@@ -12554,6 +13014,18 @@ function applyField(tarjeta, val, el) {
           : "Este tipo ya no cuenta para el Mapa — puede desaparecer del inventario.",
         true,
       );
+  }
+  // Sumar a alguien al final de la fila de quienes llevan la tarjeta.
+  if (val === "equipo:sumar") {
+    if (value && !equipoDe(tarjeta).includes(value)) (ponerEquipo(tarjeta, [...equipoDe(tarjeta), value]), touch(), renderPanel());
+    return;
+  }
+  // Elegir un responsable nuevo lo pone primero; el resto corre un lugar.
+  if (val === "responsable") {
+    if ((tarjeta.responsable || "") !== (value || ""))
+      ponerEquipo(tarjeta, value ? [value, ...equipoDe(tarjeta).filter((x) => x !== value)] : equipoDe(tarjeta).slice(1));
+    (touch(), renderPanel());
+    return;
   }
   tarjeta[val] = value;
   // El título viaja hacia la fila de Técnico vinculada (si hay) para que Mapa
@@ -13534,6 +14006,45 @@ document.addEventListener("click", (ev) => {
     case "modal:close":
       closeModal();
       break;
+    case "perfil:abrir":
+      ($("#userMenu") && $("#userMenu").classList.add("hidden"), perfilModal(false));
+      break;
+    case "perfil:emoji":
+      perfilElegir(el.dataset.emoji);
+      break;
+    case "perfil:guardar":
+      perfilGuardar();
+      break;
+    case "equipo:mover": {
+      const tarjeta = current();
+      if (!tarjeta) break;
+      const lista = equipoDe(tarjeta),
+        i = lista.indexOf(el.dataset.persona),
+        j = i + +el.dataset.dir;
+      if (i < 0 || j < 0 || j >= lista.length) break;
+      ([lista[i], lista[j]] = [lista[j], lista[i]]);
+      (ponerEquipo(tarjeta, lista), touch(), renderPanel(), render());
+      break;
+    }
+    case "equipo:quitar": {
+      const tarjeta = current();
+      if (!tarjeta) break;
+      (ponerEquipo(tarjeta, equipoDe(tarjeta).filter((x) => x !== el.dataset.persona)), touch(), renderPanel(), render());
+      break;
+    }
+    case "pb:linea":
+      ((pbLineaTodas = !pbLineaTodas), render());
+      break;
+    case "pb:ir": {
+      const sec = document.getElementById("pb-" + el.dataset.estado);
+      if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+      break;
+    }
+    case "equipo:filtro": {
+      const id = el.dataset.id;
+      ((state.filters.persona = state.filters.persona === id ? "" : id), render());
+      break;
+    }
     case "filt:clear":
       ((state.filters = {
         persona: "",
@@ -14225,6 +14736,16 @@ document.addEventListener("click", (ev) => {
     }
   }),
   document.addEventListener("dragstart", (ev) => {
+    // La fila de quienes llevan la tarjeta: mismo gesto que el checklist.
+    const elEq = ev.target.closest(".eqo-grip");
+    if (elEq) {
+      const fila = elEq.closest(".eqo-i");
+      ((state.dragEq = fila.dataset.persona), fila.classList.add("drag"));
+      try {
+        (ev.dataTransfer.setDragImage(fila, 20, fila.offsetHeight / 2), (ev.dataTransfer.effectAllowed = "move"));
+      } catch (err4) {}
+      return;
+    }
     // El checklist va primero: la manija vive dentro del panel y no se pisa
     // con las tarjetas del tablero.
     const elChk = ev.target.closest(".chk-grip");
@@ -14261,6 +14782,10 @@ document.addEventListener("click", (ev) => {
     }
   }),
   document.addEventListener("dragend", (ev) => {
+    (document.querySelectorAll(".eqo-i.drag, .eqo-i.eqo-antes, .eqo-i.eqo-despues").forEach((f) =>
+      f.classList.remove("drag", "eqo-antes", "eqo-despues"),
+    ),
+      (state.dragEq = null));
     (document.querySelectorAll(".chk.drag").forEach((f) => f.classList.remove("drag")),
       limpiarMarcasChk(),
       (state.dragChk = null));
@@ -14277,6 +14802,17 @@ document.addEventListener("click", (ev) => {
       (state.dragTl = null));
   }),
   document.addEventListener("dragover", (ev) => {
+    if (state.dragEq) {
+      const fila = ev.target.closest(".eqo-i");
+      if (fila && fila.dataset.persona !== state.dragEq) {
+        ev.preventDefault();
+        const caja = fila.getBoundingClientRect(),
+          antes = ev.clientY < caja.top + caja.height / 2;
+        (document.querySelectorAll(".eqo-antes, .eqo-despues").forEach((f) => f.classList.remove("eqo-antes", "eqo-despues")),
+          fila.classList.add(antes ? "eqo-antes" : "eqo-despues"));
+      }
+      return;
+    }
     if (state.dragChk) {
       const fila = ev.target.closest(".chk");
       if (fila && fila.dataset.chk !== state.dragChk) {
@@ -14316,6 +14852,20 @@ document.addEventListener("click", (ev) => {
     if (el3) el3.classList.remove("drop");
   }),
   document.addEventListener("drop", (ev) => {
+    if (state.dragEq) {
+      const fila = ev.target.closest(".eqo-i"),
+        tarjeta = current();
+      if (fila && tarjeta && fila.dataset.persona !== state.dragEq) {
+        ev.preventDefault();
+        const caja = fila.getBoundingClientRect(),
+          antes = ev.clientY < caja.top + caja.height / 2,
+          lista = equipoDe(tarjeta).filter((x) => x !== state.dragEq);
+        lista.splice(lista.indexOf(fila.dataset.persona) + (antes ? 0 : 1), 0, state.dragEq);
+        (ponerEquipo(tarjeta, lista), touch(), renderPanel(), render());
+      }
+      state.dragEq = null;
+      return;
+    }
     if (state.dragChk) {
       const fila = ev.target.closest(".chk");
       if (fila && fila.dataset.chk !== state.dragChk) {
@@ -14796,12 +15346,10 @@ function asignarme(id) {
   }
   const tarjeta = state.cards.find((c) => c.id === id);
   if (!tarjeta) return;
-  if (!tarjeta.responsable) tarjeta.responsable = state.userId;
-  else {
-    ((tarjeta.asignados = tarjeta.asignados || []),
-      tarjeta.asignados.includes(state.userId) || tarjeta.asignados.push(state.userId));
-  }
-  (touch(), render(), flash("🙋 Te asignaste la tarjeta"));
+  if (equipoDe(tarjeta).includes(state.userId)) return flash("Ya estás en esta tarjeta", true);
+  ponerEquipo(tarjeta, [...equipoDe(tarjeta), state.userId]);
+  const pos = posicionEn(tarjeta, state.userId);
+  (touch(), render(), flash(pos === 1 ? "🙋 Sos el 1 de esta tarjeta" : "🙋 Te sumaste como " + pos));
 }
 function doDelete(id) {
   const tarjeta = id ? state.cards.find((c) => c.id === id) : current();
@@ -14979,6 +15527,7 @@ function entrarModoLocal(copia) {
     (state.deleted = doc.deleted || {}));
   aplicarSectores(doc.sectores);
   (Array.isArray(doc.team) && doc.team.length && ((TEAM.length = 0), doc.team.forEach((m) => TEAM.push(m))),
+    aplicarPerfilesDe(doc),
     doc.agenda && typeof doc.agenda === "object" && (state.agenda = doc.agenda),
     typeof doc.appPassHash === "string" && (state.appPassHash = doc.appPassHash));
   // Técnico y Edu Point solo están en las copias hechas desde esta versión en
@@ -15151,13 +15700,16 @@ function mensajeDeIngreso(err) {
   if (/failed to fetch|networkerror/.test(txt)) return "No pude conectarme. Fijate que tengas internet y probá de nuevo.";
   return "No pude entrar: " + ((err && err.message) || "error desconocido");
 }
-function enterAs(value) {
+function enterAs(value, id) {
   if (!value) {
     flash("Decinos quién sos 🙂", true);
     return;
   }
   ((state.user = value), $("#gate").classList.add("hidden"));
-  const hallado = TEAM.find((miembro) => miembro.nombre.toLowerCase() === value.toLowerCase());
+  // Por id cuando se sabe (el nombre ahora lo elige cada uno y puede cambiar).
+  const hallado =
+    (id && TEAM.find((miembro) => miembro.id === id)) ||
+    TEAM.find((miembro) => miembro.nombre.toLowerCase() === value.toLowerCase());
   const avatarChip = hallado
     ? avatarHTML(hallado.id)
     : '<span class="avatar" style="background:var(--coto-blue)">' + value.slice(0, 1).toUpperCase() + "</span>";
@@ -15241,7 +15793,7 @@ function entrarConSesion() {
   if (!useSupabase()) return (enterAs(state.user || "Equipo"), true);
   const email = (sesion && sesion.email) || "",
     miembro = TEAM.find((m) => String(m.email || "").trim().toLowerCase() === email);
-  if (miembro) return (state.mailSinEquipo = "", enterAs(miembro.nombre), true);
+  if (miembro) return (state.mailSinEquipo = "", enterAs(miembro.nombre, miembro.id), true);
   // Sin coincidencia NO se bloquea el paso. Entrar ya requirió una cuenta
   // válida: eso es lo que protege los datos. El cruce con el equipo solo
   // decide de quién es el color y las tareas, y hacerlo obligatorio dejaría a
@@ -15484,6 +16036,7 @@ function paletteCommands() {
   return [
     fn("Inicio", "inicio", "home panel principal resumen dashboard kpi indicadores carga"),
     fn("Planner", "kanban", "planner tablero kanban tareas estados"),
+    fn("Planner B", "plannerb", "planner b etapas filas abajo arriba"),
     fn("Calendario", "calendario", "fechas mes semana"),
     fn("Timeline", "timeline", "gantt cronograma"),
     fn("Mapa del área", "mapa", "cursos edu points apps bases inventario"),
@@ -16588,6 +17141,7 @@ function restoreBackup(ts) {
     if (Array.isArray(doc.tecnico)) state.tecnico = doc.tecnico;
     ensureFraseDay();
     (Array.isArray(doc.team) && doc.team.length && ((TEAM.length = 0), doc.team.forEach((m) => TEAM.push(m))),
+      aplicarPerfilesDe(doc),
       injectSectorStyles(),
       touch(),
       closeModal(),
@@ -16932,6 +17486,7 @@ function runImport() {
       tarjeta.team.length &&
       ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro))),
       ensureTeam(),
+      aplicarPerfilesDe(tarjeta),
       injectSectorStyles(),
       touch(),
       closeModal(),
@@ -17059,6 +17614,7 @@ async function arrancarApp() {
       Array.isArray(tarjeta.team) &&
         tarjeta.team.length &&
         ((TEAM.length = 0), tarjeta.team.forEach((miembro) => TEAM.push(miembro)));
+      aplicarPerfilesDe(tarjeta);
       if (typeof tarjeta.appPassHash === "string") state.appPassHash = tarjeta.appPassHash;
       if (tarjeta.agenda && typeof tarjeta.agenda === "object") state.agenda = tarjeta.agenda;
       if (tarjeta.cotofrase && typeof tarjeta.cotofrase === "object") state.cotofrase = tarjeta.cotofrase;
@@ -17184,6 +17740,7 @@ async function arrancarApp() {
   // El banner se armó unas líneas antes, cuando todavía no se sabía quién
   // había entrado: se rehace ahora para que el aviso de cuenta aparezca.
   showBanner();
+  pedirPerfilSiFalta();
   try {
     history.replaceState(navState(), "");
   } catch (err3) {}

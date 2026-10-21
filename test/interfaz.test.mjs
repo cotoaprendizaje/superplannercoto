@@ -300,7 +300,7 @@ const qe = await page.evaluate(async () => {
     hayColumna,
     estado: d.estado,
     // El mismo registro que deja arrastrar: queda anotado y se sella la fecha.
-    anotado: (d.actividad || []).some((a) => /revisi/i.test(a.texto)),
+    anotado: (d.actividad || []).some((a) => /En test/i.test(a.texto)),
     selloRevision: !!d.revisionDesde,
   };
 });
@@ -327,7 +327,7 @@ const panel = await page.evaluate(() => {
     // Los presets salen del recorrido del Tab: un campo de fecha ya tiene tres
     // paradas propias y con los presets hacían falta diez Tab para cruzar Datos.
     presetsFueraDelTab: [...document.querySelectorAll("#panel .dp-btn")].every((b) => b.tabIndex === -1),
-    hayResponsable: !!document.querySelector('#panel [data-field="responsable"]'),
+    hayResponsable: !!document.querySelector('#panel .eqo-sumar'),
     // El panel guarda solo y lo dice arriba: el botón era una promesa de que
     // sin tocarlo se perdía algo.
     sinBotonGuardar: !document.querySelector('#panel [data-action="card:save"]'),
@@ -1631,6 +1631,109 @@ await page.waitForTimeout(300);
 const mdlRepM = await page.evaluate(() => (document.querySelector(".rep-mdl") || {}).textContent || "");
 check("Reportes muestra los presenciales en su propia línea", /1\s*presenciales/.test(mdlRepM) && /3\s*e-learning/.test(mdlRepM), mdlRepM);
 await page.evaluate(() => ((state.view = "tecnico"), render()));
+
+// ── Planner B, el 1 y el 2, y los perfiles ──
+console.log("\nplanner B, el 1 y el 2, perfiles");
+const pbA = await page.evaluate(() => {
+  closeModal();
+  ((state.filters = { persona: "", tipo: "", sector: "", estado: "", texto: "", cursoEstado: "" }), (state.mis = false), (state.quick = ""));
+  const a = newCard("libre", "ZZ Uno es Flor", { estado: "diseno-listo" }),
+    b = newCard("libre", "ZZ Uno es Gasti", { estado: "pendiente" });
+  ((a.responsable = "flor"), (a.asignados = ["gasti"]), (b.responsable = "gasti"), state.cards.push(a, b));
+  ((state.view = "kanban"), render());
+  const columnas = document.querySelectorAll(".kanban .kcol").length;
+  ((state.view = "plannerb"), render());
+  const orden = [...document.querySelectorAll(".pb-etapa")].map((x) => x.id);
+  const circGasti = +document.querySelector('.eqc-b[data-id="gasti"] .eqc-n').textContent;
+  const cuentaGasti = boardCards().filter((c) => c.estado !== "finalizado" && c.responsable === "gasti").length;
+  document.querySelector('.eqc-b[data-id="gasti"]').click();
+  const filas = [...document.querySelectorAll(".pb-fila")].map((f) => f.textContent);
+  const es2 = [...document.querySelectorAll(".pb-fila.como-2")].map((f) => f.textContent);
+  document.querySelector('.eqc-b[data-id="gasti"]').click();
+  return {
+    columnas,
+    lineaArriba: orden.indexOf("pb-finalizado") < orden.indexOf("pb-pendiente") || orden.indexOf("pb-finalizado") === -1,
+    proximosAbajo: orden[orden.length - 1] === "pb-pendiente",
+    circGasti,
+    cuentaGasti,
+    veLasDos: filas.some((t) => t.includes("ZZ Uno es Flor")) && filas.some((t) => t.includes("ZZ Uno es Gasti")),
+    marcaEs2: es2.length >= 1 && es2.every((t) => !t.includes("ZZ Uno es Gasti")),
+    filtroLimpio: !state.filters.persona,
+    a: a.id,
+  };
+});
+check("el Planner de siempre tiene las 7 etapas", pbA.columnas === 7, pbA);
+check("Planner B: En línea arriba y Próximo a desarrollar abajo", pbA.lineaArriba && pbA.proximosAbajo, pbA);
+check("el número del círculo cuenta solo donde es el 1", pbA.circGasti === pbA.cuentaGasti, pbA);
+check("al tocar un perfil se ven también las tarjetas donde es 2", pbA.veLasDos, pbA);
+check("y esas se marcan como «es 2»", pbA.marcaEs2, pbA);
+check("tocar el mismo perfil de nuevo vuelve a todo", pbA.filtroLimpio, pbA);
+const antesMine = await page.evaluate((id) => {
+  state.userId = "gasti";
+  const r = mine(state.cards.find((c) => c.id === id));
+  openDetail(id);
+  return r;
+}, pbA.a);
+await page.waitForTimeout(200);
+// Gasti sube del 2 al 1 con la flecha.
+await page.click('#panel .eqo-i[data-persona="gasti"] [data-action="equipo:mover"][data-dir="-1"]');
+await page.waitForTimeout(150);
+const trasSubir = await page.evaluate((id) => {
+  const t = state.cards.find((c) => c.id === id);
+  return { orden: equipoDe(t), hist: (t.historial1 || []).map((h) => h.id), mine: mine(t) };
+}, pbA.a);
+// Se suma Vane al final y después, arrastrando, pasa a ser la primera.
+await page.selectOption("#panel .eqo-sumar", "vane");
+await page.waitForTimeout(150);
+const trasSumar = await page.evaluate((id) => equipoDe(state.cards.find((c) => c.id === id)), pbA.a);
+const gasti = await page.locator('#panel .eqo-i[data-persona="gasti"]').boundingBox();
+await page.dragAndDrop('#panel .eqo-i[data-persona="vane"] .eqo-grip', '#panel .eqo-i[data-persona="gasti"]', {
+  targetPosition: { x: 40, y: 4 },
+});
+await page.waitForTimeout(200);
+const trasArrastrar = await page.evaluate((id) => equipoDe(state.cards.find((c) => c.id === id)), pbA.a);
+await page.click('#panel .eqo-i[data-persona="flor"] [data-action="equipo:quitar"]');
+await page.waitForTimeout(150);
+const trasQuitar = await page.evaluate((id) => {
+  const t = state.cards.find((c) => c.id === id);
+  const r = { orden: equipoDe(t), numeros: [...document.querySelectorAll("#panel .eqo-n")].map((n) => n.textContent) };
+  (closePanel(), (state.userId = null));
+  return r;
+}, pbA.a);
+const roles = { antesMine, trasSubir, trasSumar, gasti: !!gasti, trasArrastrar, trasQuitar };
+check("estar 2.º no cuenta como tarea tuya", roles.antesMine === false, roles);
+check("subir al 2 lo hace responsable y el anterior pasa a 2", JSON.stringify(roles.trasSubir.orden) === '["gasti","flor"]', roles);
+check("queda anotado quién fue 1", JSON.stringify(roles.trasSubir.hist) === '["flor","gasti"]', roles);
+check("y ahora sí le cuenta", roles.trasSubir.mine === true, roles);
+check("sumar a alguien lo pone último", JSON.stringify(roles.trasSumar) === '["gasti","flor","vane"]', roles);
+check("arrastrando se cambia el orden", JSON.stringify(roles.trasArrastrar) === '["vane","gasti","flor"]', roles);
+check("sacar a alguien corre a los demás y renumera", JSON.stringify(roles.trasQuitar.orden) === '["vane","gasti"]' && roles.trasQuitar.numeros.join() === "1,2", roles);
+const perfil = await page.evaluate(async () => {
+  const eve = member("eve"),
+    antes = { emoji: eve.emoji, nombre: eve.nombre };
+  ((state.userId = "eve"), (state.mailSinEquipo = ""), delete eve.emoji, delete state.perfiles.eve);
+  state.perfiles.vane = { emoji: "🌵", nombre: member("vane").nombre, ts: 5 };
+  aplicarPerfiles();
+  pedirPerfilSiFalta();
+  const abierto = !!document.querySelector("#modal .perfil-obligatorio");
+  closeModal();
+  const sigue = !!document.querySelector("#modal .perfil-obligatorio");
+  const tomado = document.querySelector('.perfil-em[data-emoji="🌵"]').disabled;
+  document.querySelector('.perfil-em[data-emoji="🐙"]').click();
+  document.querySelector("#perfilNombre").value = "Evita";
+  document.querySelector('[data-action="perfil:guardar"]').click();
+  await new Promise((r) => setTimeout(r, 100));
+  const tras = { emoji: member("eve").emoji, nombre: member("eve").nombre, cerrado: !document.querySelector("#modal .perfil"), avatar: avatarHTML("eve").includes("🐙") };
+  // Dos pantallas eligiendo a la vez: gana el más nuevo de cada persona y nadie pisa al otro.
+  const mezcla = mezclarPerfiles({ eve: { emoji: "🐙", ts: 10 }, vane: { emoji: "🌵", ts: 1 } }, { eve: { emoji: "🦄", ts: 5 }, flor: { emoji: "🌸", ts: 3 } });
+  // dejar todo como estaba
+  ((state.perfiles = {}), delete member("eve").emoji, delete member("vane").emoji, (member("eve").nombre = antes.nombre), (state.userId = null), render());
+  return { abierto, sigue, tomado, tras, mezcla: [mezcla.eve.emoji, mezcla.vane.emoji, mezcla.flor.emoji] };
+});
+check("el primer ingreso pide el emoji y no se puede saltear", perfil.abierto && perfil.sigue, perfil);
+check("el emoji de otra persona no se puede elegir", perfil.tomado === true, perfil);
+check("guardar deja el emoji y el nombre elegidos en toda la app", perfil.tras.emoji === "🐙" && perfil.tras.nombre === "Evita" && perfil.tras.cerrado && perfil.tras.avatar, perfil);
+check("los perfiles se mezclan por persona, sin pisarse", JSON.stringify(perfil.mezcla) === JSON.stringify(["🐙", "🌵", "🌸"]), perfil);
 
 // Dejar el tablero como estaba para que nada de esto ensucie lo que sigue.
 await page.evaluate(() => {

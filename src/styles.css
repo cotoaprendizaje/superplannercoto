@@ -1284,11 +1284,20 @@ button {
      solo la tabla adentro de su caja. */
   min-width: 0;
 }
+/* Siete etapas no entran en el ancho de una pantalla común sin que cada
+   columna quede finita: la fila scrollea de costado y cada columna conserva
+   un ancho cómodo para leer la tarjeta. */
 .kanban {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
+  grid-template-columns: repeat(7, minmax(232px, 1fr));
+  gap: 16px;
   align-items: start;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scroll-snap-type: x proximity;
+}
+.kanban > .kcol {
+  scroll-snap-align: start;
 }
 .kcol {
   background: var(--surface-2);
@@ -10321,5 +10330,879 @@ button.mat-ct:hover {
   font-style: normal;
   font-weight: 400;
   font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
+
+/* ===== Perfiles con emoji ===== */
+.avatar.avatar-emoji {
+  background: color-mix(in srgb, var(--av, var(--coto-blue)) 14%, var(--surface));
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+  box-shadow:
+    0 0 0 2px var(--surface),
+    inset 0 0 0 1px color-mix(in srgb, var(--av, var(--coto-blue)) 35%, transparent);
+}
+.avatar.avatar-emoji.sm {
+  font-size: 12.5px;
+}
+.modal.modal-perfil {
+  width: 520px;
+}
+.perfil {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.perfil-top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.perfil-top h2 {
+  margin: 2px 0 0;
+}
+.perfil-prev {
+  width: 84px;
+  height: 84px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 46px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--coto-blue) 12%, var(--surface)), var(--surface));
+  box-shadow:
+    0 0 0 4px var(--coto-blue),
+    0 12px 26px color-mix(in srgb, var(--coto-blue) 28%, transparent);
+}
+.perfil-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--coto-blue);
+}
+.perfil-p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.perfil-grid {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 7px;
+}
+.perfil-em {
+  height: 46px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 23px;
+  cursor: pointer;
+  transition:
+    transform 0.15s var(--ease),
+    border-color 0.15s;
+}
+.perfil-em:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: var(--coto-blue);
+}
+.perfil-em.on {
+  border: 2px solid var(--coto-blue);
+  background: color-mix(in srgb, var(--coto-blue) 14%, var(--surface));
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--coto-blue) 22%, transparent);
+}
+.perfil-em:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+@media (max-width: 520px) {
+  .perfil-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+/* ===== Círculos del equipo (los dos Planner) ===== */
+.eqc {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.eqc-t {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.eqc-l {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.eqc-b {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  min-width: 64px;
+  padding: 6px 6px 5px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    background 0.15s,
+    opacity 0.15s,
+    transform 0.15s var(--spring);
+}
+.eqc-b:hover {
+  background: color-mix(in srgb, var(--coto-blue) 7%, transparent);
+}
+.eqc-b:active {
+  transform: scale(0.96);
+}
+.eqc-b.on {
+  background: color-mix(in srgb, var(--coto-blue) 13%, var(--surface));
+  border-color: color-mix(in srgb, var(--coto-blue) 45%, transparent);
+}
+.eqc-b.off {
+  opacity: 0.42;
+}
+.eqc-av {
+  position: relative;
+}
+.eqc-av .avatar {
+  width: 46px;
+  height: 46px;
+  font-size: 18px;
+}
+.eqc-av .avatar.avatar-emoji {
+  font-size: 25px;
+}
+.eqc-b.on .eqc-av .avatar {
+  box-shadow:
+    0 0 0 3px var(--coto-blue),
+    0 6px 14px color-mix(in srgb, var(--coto-blue) 28%, transparent);
+}
+.eqc-n {
+  position: absolute;
+  top: -4px;
+  right: -7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: var(--coto-navy);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 900;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px var(--surface);
+  font-variant-numeric: tabular-nums;
+}
+.eqc-n.cero {
+  background: var(--line);
+  color: var(--ink-soft);
+}
+.eqc-nom {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Quién lleva la tarjeta, en orden (la ficha) =====
+   Una lista numerada: el 1 resaltado (es el responsable, el único al que le
+   cuenta) y detrás los demás en orden de prioridad. Se reordena arrastrando
+   la manija o con las flechas, que es lo que anda en el teléfono. */
+.eqo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.eqo-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.eqo-t {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.eqo-ayuda {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.eqo-l {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.eqo-i {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 6px;
+  border-radius: var(--r-s);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  position: relative;
+}
+.eqo-i.uno {
+  background: color-mix(in srgb, var(--coto-navy) 92%, var(--surface));
+  border-color: transparent;
+  color: #f2f6fc;
+}
+.eqo-i.drag {
+  opacity: 0.4;
+}
+.eqo-i.eqo-antes::before,
+.eqo-i.eqo-despues::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--coto-blue);
+}
+.eqo-i.eqo-antes::before {
+  top: -5px;
+}
+.eqo-i.eqo-despues::after {
+  bottom: -5px;
+}
+.eqo-grip {
+  cursor: grab;
+  color: var(--ink-soft);
+  font-size: 13px;
+  letter-spacing: -2px;
+  padding: 4px 2px;
+  user-select: none;
+}
+.eqo-i.uno .eqo-grip {
+  color: #9fb4d3;
+}
+.eqo-n {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  flex: none;
+  display: grid;
+  place-items: center;
+  font-size: 11.5px;
+  font-weight: 900;
+  background: var(--line);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.eqo-i.uno .eqo-n {
+  background: var(--coto-blue);
+  color: #fff;
+}
+.eqo-i .avatar {
+  width: 34px;
+  height: 34px;
+}
+.eqo-i .avatar.avatar-emoji {
+  font-size: 19px;
+}
+.eqo-i.uno .avatar {
+  width: 40px;
+  height: 40px;
+  box-shadow: 0 0 0 2px #fff;
+}
+.eqo-i.uno .avatar.avatar-emoji {
+  font-size: 22px;
+}
+.eqo-tx {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+.eqo-tx b {
+  font-family: var(--titulo);
+  font-weight: 900;
+  font-size: 15px;
+}
+.eqo-tx small {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.eqo-i.uno .eqo-tx small {
+  color: #c7d4e8;
+}
+.eqo-acc {
+  display: flex;
+  gap: 2px;
+}
+.eqo-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.7;
+}
+.eqo-btn:hover,
+.eqo-btn:focus-visible {
+  opacity: 1;
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+.eqo-btn.quitar:hover {
+  color: var(--bad);
+}
+.eqo-vacio {
+  font-size: 13px;
+  color: var(--ink-soft);
+  padding: 10px 12px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-s);
+}
+.eqo-sumar {
+  align-self: flex-start;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--coto-blue);
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--coto-blue) 45%, var(--line));
+  border-radius: 999px;
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.pb-mas-gente {
+  margin-left: 2px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+.roles-hist {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 0 14px;
+  padding-left: 12px;
+  border-left: 2px solid var(--line);
+}
+.roles-hist-t {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.roles-hist-i {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+}
+.roles-hist-e {
+  color: var(--ink-soft);
+}
+.fld .chk-inline input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  flex: none;
+}
+.fld .chk-inline {
+  align-self: flex-start;
+  color: var(--ink);
+}
+.chk-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ===== Planner B =====
+   Las etapas apiladas: arriba lo publicado, abajo lo que viene. A la izquierda
+   una línea con un punto por etapa, del color de la etapa; a la derecha las
+   tarjetas en filas con las columnas de la planilla del área. */
+.pb {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pb .eqc {
+  margin: 0;
+}
+.pb-flujo {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.pb-flujo-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+}
+.pb-flujo-h span {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.pb-flujo-b {
+  display: flex;
+  gap: 4px;
+}
+.pb-flujo-s {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--ink);
+}
+.pb-flujo-s i {
+  display: block;
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--tono);
+}
+.pb-flujo-s i.cero {
+  opacity: 0.22;
+}
+.pb-flujo-s b {
+  font-family: var(--titulo);
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.pb-flujo-s span {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.pb-flujo-s:hover span {
+  color: var(--ink);
+}
+.pb-tabla {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.pb-cab,
+.pb-etapa {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+.pb-cab {
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.9px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.pb-cab-r {
+  padding: 11px 18px;
+}
+.pb-cab-c,
+.pb-fila {
+  display: grid;
+  grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.2fr) 88px minmax(0, 2.5fr) minmax(0, 1.6fr);
+  gap: 14px;
+  align-items: center;
+}
+.pb-cab-c {
+  padding: 11px 18px;
+}
+.pb-etapa {
+  border-top: 1px solid var(--line);
+  scroll-margin-top: calc(var(--topbar-h, 66px) + 12px);
+}
+.pb-etapa:first-of-type {
+  border-top: none;
+}
+.pb-rail {
+  position: relative;
+  background: var(--surface-2);
+  border-right: 1px solid var(--line);
+  padding: 15px 16px 15px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pb-rail::before {
+  content: "";
+  position: absolute;
+  left: 24px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--line);
+}
+.pb-rail.primera::before {
+  top: 24px;
+}
+.pb-rail.ultima::before {
+  bottom: calc(100% - 24px);
+}
+.pb-rail.primera.ultima::before {
+  display: none;
+}
+.pb-nodo {
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--tono);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tono) 22%, var(--surface-2));
+}
+.pb-rail.pausa .pb-nodo {
+  background: var(--surface);
+  border: 2px dashed var(--tono);
+  box-sizing: border-box;
+}
+.pb-rail h3 {
+  margin: 0;
+  font-family: var(--titulo);
+  font-weight: 900;
+  font-size: 15.5px;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.pb-cuenta {
+  align-self: flex-start;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--tono) 72%, var(--ink));
+  background: color-mix(in srgb, var(--tono) 14%, var(--surface));
+  border-radius: 999px;
+  padding: 3px 9px;
+}
+.pb-filas {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--tono) 9%, var(--surface)) 0, var(--surface) 22px);
+  min-width: 0;
+}
+.pb-fila {
+  padding: 12px 18px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.pb-fila + .pb-fila {
+  border-top: 1px solid var(--line-soft);
+}
+.pb-fila:hover {
+  background: color-mix(in srgb, var(--tono) 7%, transparent);
+}
+.pb-fila:focus-visible {
+  outline: 2px solid var(--coto-blue);
+  outline-offset: -2px;
+}
+.pb-fila.pausa {
+  opacity: 0.72;
+}
+.pb-c {
+  min-width: 0;
+}
+.pb-curso {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pb-curso b {
+  font-size: 14.5px;
+  line-height: 1.3;
+  color: var(--ink);
+}
+.pb-curso small {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.pb-fila.venc .pb-curso small {
+  color: var(--bad);
+}
+.pb-sector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.pb-tag {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 3px 7px;
+  line-height: 1.3;
+}
+.pb-roles {
+  display: flex;
+  align-items: center;
+}
+.pb-uno {
+  position: relative;
+  z-index: 1;
+}
+.pb-uno .avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 14px;
+  box-shadow: 0 0 0 2px var(--coto-navy);
+}
+.pb-uno .avatar.avatar-emoji {
+  font-size: 19px;
+}
+.pb-uno i {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--coto-navy);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  font-style: normal;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.pb-uno.nadie {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px dashed var(--line);
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.pb-dos {
+  margin-left: -6px;
+}
+.pb-dos .avatar {
+  width: 28px;
+  height: 28px;
+}
+.pb-dos .avatar.avatar-emoji {
+  font-size: 15px;
+}
+.pb-pasos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.pb-paso {
+  font-size: 12.5px;
+  line-height: 1.3;
+  color: var(--ink-soft);
+  border: 1px dashed var(--line);
+  border-radius: 7px;
+  padding: 3px 8px;
+}
+.pb-paso-1 {
+  font-weight: 700;
+  color: var(--ink);
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--coto-blue) 30%, var(--line));
+  background: color-mix(in srgb, var(--coto-blue) 8%, var(--surface));
+}
+.pb-flecha {
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.pb-vacio {
+  color: var(--ink-soft);
+  opacity: 0.7;
+  font-size: 13px;
+}
+.pb-aprob {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  max-width: 100%;
+}
+.pb-aprob i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.pb-aprob span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.pb-aprob b {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pb-aprob small {
+  font-size: 11px;
+}
+.pb-aprob.ok {
+  color: color-mix(in srgb, #2e9e8f 70%, var(--ink));
+  background: color-mix(in srgb, #2e9e8f 13%, var(--surface));
+}
+.pb-aprob.ok i {
+  background: #2e9e8f;
+}
+.pb-aprob.espera {
+  color: color-mix(in srgb, #c28a00 70%, var(--ink));
+  background: color-mix(in srgb, #e2a03f 15%, var(--surface));
+}
+.pb-aprob.espera i {
+  background: #e2a03f;
+}
+.pb-mas {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-top: 1px solid var(--line-soft);
+  background: none;
+  color: var(--coto-blue);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pb-nada {
+  padding: 28px 18px;
+  color: var(--ink-soft);
+  font-size: 14px;
+}
+@media (max-width: 760px) {
+  .eqc-l {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 calc(var(--view-pad, 14px) * -1);
+    padding: 4px var(--view-pad, 14px);
+  }
+  .eqc-l::-webkit-scrollbar {
+    display: none;
+  }
+}
+/* En el teléfono cada etapa es un bloque: el nombre arriba y las tarjetas
+   debajo, cada una con sus datos en dos renglones. */
+@media (max-width: 900px) {
+  .pb-cab {
+    display: none;
+  }
+  .pb-etapa {
+    grid-template-columns: 1fr;
+  }
+  .pb-rail {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    border-right: none;
+    border-bottom: 1px solid var(--line-soft);
+    padding: 12px 14px 12px 40px;
+  }
+  .pb-rail::before {
+    display: none;
+  }
+  .pb-nodo {
+    left: 16px;
+    top: 50%;
+    margin-top: -7px;
+  }
+  .pb-fila {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 12px;
+    padding: 12px 14px;
+  }
+  .pb-curso {
+    grid-column: 1;
+  }
+  .pb-roles {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .pb-sector,
+  .pb-pasos,
+  .pb-aprobc {
+    grid-column: 1 / -1;
+  }
+  .pb-aprobc:has(.pb-vacio),
+  .pb-pasos:has(> .pb-vacio:only-child) {
+    display: none;
+  }
+  .pb-flujo-s span {
+    font-size: 10px;
+  }
+  .pb-flujo-s b {
+    font-size: 18px;
+  }
+}
+/* Al ver lo de una persona, las tarjetas donde es 2 se distinguen: se ven,
+   pero no son su pendiente. */
+.pb-es2 {
+  margin-left: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: var(--ink-soft);
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+.pb-fila.como-2 .pb-curso b {
   color: var(--ink-soft);
 }

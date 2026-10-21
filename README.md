@@ -32,7 +32,7 @@ index.html        ← generado. NO está en el repositorio: lo arma el build.
 npm install       # una sola vez (Playwright, para los tests)
 npm run build     # regenera index.html desde src/
 npm start         # sirve la carpeta en http://localhost:8080
-npm test          # las 360 pruebas (build incluido)
+npm test          # las 377 pruebas (build incluido)
 ```
 
 El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
@@ -97,7 +97,7 @@ guardala también en un lugar del equipo, sin ella el archivo no se abre).
 
 ## Pruebas
 
-Son 360, en cinco baterías, y corren solas en cada cambio (ver
+Son 377, en cinco baterías, y corren solas en cada cambio (ver
 `.github/workflows/pruebas.yml`). Todas abren la app de verdad en un navegador
 contra `test/fake-backend.mjs`, que imita las filas de Supabase y su endpoint
 de ingreso.
