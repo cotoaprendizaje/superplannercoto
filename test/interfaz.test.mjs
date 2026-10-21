@@ -173,7 +173,7 @@ const sec = await page.evaluate(() => {
   return {
     existe: !!s,
     abierta: !!(s && s.open),
-    justoDespuesDeDatos: orden[0] === "datos" && orden[1] === "mensajes",
+    arribaDeTodo: orden[0] === "mensajes" && orden[1] === "datos",
     titulo: s ? s.querySelector("summary").textContent.replace(/\s+/g, " ").trim() : "",
     aLaVista: globos.length,
     mios: document.querySelectorAll("#panel .msg.mio").length,
@@ -193,7 +193,7 @@ const sec = await page.evaluate(() => {
   };
 });
 (check("hay una sección de mensajes propia y abierta", sec.existe && sec.abierta, sec),
-  check("y está arriba, pegada a Datos", sec.justoDespuesDeDatos === true, sec),
+  check("y está arriba de todo, antes de Datos", sec.arribaDeTodo === true, sec),
   check("el título dice cuántos hay", /Mensajes · 15/.test(sec.titulo), sec),
   check("muestra los últimos 12, no los 15", sec.aLaVista === 12, sec),
   check("y ofrece ver los anteriores", /Ver los 3 anteriores/.test(sec.botonMas), sec),
