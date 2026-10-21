@@ -1,0 +1,44 @@
+# Respaldo semanal de la base.
+#
+# Corre solo los lunes a las 6:52 (hora de Argentina) y también a mano, desde
+# Actions → Respaldo semanal → Run workflow. Deja el archivo cifrado como
+# artefacto de la corrida durante 90 días: se baja desde la misma página de la
+# corrida y se restaura en la app con Ajustes → Importar JSON (pide la clave).
+#
+# Si falla —falta un secreto, la base no contesta o el tablero vino vacío—
+# GitHub manda un mail avisando. Detalle en scripts/respaldo.mjs.
+
+name: Respaldo semanal
+
+on:
+  schedule:
+    - cron: "52 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  respaldo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Bajar y cifrar
+        env:
+          RESPALDO_MAIL: ${{ secrets.RESPALDO_MAIL }}
+          RESPALDO_PASS: ${{ secrets.RESPALDO_PASS }}
+          RESPALDO_CLAVE: ${{ secrets.RESPALDO_CLAVE }}
+        run: node scripts/respaldo.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-${{ github.run_number }}
+          path: respaldo/*.cifrado
+          retention-days: 90
+          if-no-files-found: error

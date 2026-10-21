@@ -32,7 +32,7 @@ index.html        ← generado. NO está en el repositorio: lo arma el build.
 npm install       # una sola vez (Playwright, para los tests)
 npm run build     # regenera index.html desde src/
 npm start         # sirve la carpeta en http://localhost:8080
-npm test          # las 335 pruebas (build incluido)
+npm test          # las 358 pruebas (build incluido)
 ```
 
 El ciclo es: editar en `src/`, correr `npm run build`, abrir `index.html`.
@@ -78,20 +78,37 @@ riesgo permanente es que dos personas editando a la vez se pisen. Para evitarlo:
 navegadores que editan al mismo tiempo. Si alguien vuelve a hacer que el
 guardado escriba la copia local entera, esas pruebas se ponen en rojo.
 
+## Respaldo automático
+
+El plan gratuito de Supabase no guarda copias. Por eso
+`.github/workflows/respaldo.yml` corre `scripts/respaldo.mjs` todos los lunes a
+las 6:52 (también se puede correr a mano desde Actions): entra con una cuenta
+propia del respaldo, baja el tablero, las portadas, Técnico y Edu Point, y deja
+un archivo **cifrado** como artefacto de la corrida durante 90 días. Cifrado
+porque el repositorio es público y los artefactos los puede bajar cualquiera.
+
+Se restaura desde la app: Ajustes → Importar JSON → elegir el `.cifrado` →
+escribir la clave. Si la corrida falla (falta un secreto, la base no contesta,
+el tablero vino vacío) GitHub manda un mail.
+
+Usa tres secretos de Actions: `RESPALDO_MAIL`, `RESPALDO_PASS` (la cuenta del
+respaldo en Supabase → Authentication) y `RESPALDO_CLAVE` (con la que se cifra;
+guardala también en un lugar del equipo, sin ella el archivo no se abre).
+
 ## Pruebas
 
-Son 335, en cinco baterías, y corren solas en cada cambio (ver
+Son 358, en cinco baterías, y corren solas en cada cambio (ver
 `.github/workflows/pruebas.yml`). Todas abren la app de verdad en un navegador
 contra `test/fake-backend.mjs`, que imita las filas de Supabase y su endpoint
 de ingreso.
 
 | batería | qué fija |
 |---|---|
-| `test/sync.test.mjs` | Que dos personas editando a la vez no se pisen, y que importar un JSON pueda sacar filas de verdad (sin esto volvían solas en la siguiente sincronización). |
+| `test/sync.test.mjs` | Que dos personas editando a la vez no se pisen, que importar un JSON pueda sacar filas de verdad (sin esto volvían solas en la siguiente sincronización), y que el respaldo automático cifrado se abra con su clave y con ninguna otra. |
 | `test/tamano.test.mjs` | Que el documento sincronizado no engorde ni se lleve las imágenes adentro. Es la prueba que faltaba el día que se agotó la cuota. |
 | `test/ingreso.test.mjs` | Que sin sesión no se baje nada; que con sesión se trabaje normal aunque el token venza en el medio; que al recargar la app espere en el ingreso en vez de abrirse sola, y que pasadas las 12 h vuelva a pedir la contraseña. |
 | `test/numeros.test.mjs` | Que los números que el equipo lee sean los mismos en todas las vistas: que la campana no marque como pendiente algo terminado, que Reportería coincida con el Planner y con Técnico, y que el pulso de Inicio dé lo mismo que las columnas del Planner. |
-| `test/interfaz.test.mjs` | Lo que se rompe al usarla, no al leerla: que en el buscador del tablero se pueda escribir de corrido, que una tarjeta creada con “Mis tareas” puesto se vea en el momento, y que reiniciar las CotoFrases no se lleve puesto nada más. También que el panel se pueda leer y tocar (encabezados que abren, controles grandes, responsable, anterior/siguiente), que los mensajes se lean como un chat, que Técnico sea una grilla de tarjetas y no una planilla (con sus embudos de columna, su ficha desplegable y sus acciones en lote) y que las 63 reglas de matriculación crucen con las filas del Seguimiento técnico. |
+| `test/interfaz.test.mjs` | Lo que se rompe al usarla, no al leerla: que en el buscador del tablero se pueda escribir de corrido, que una tarjeta creada con “Mis tareas” puesto se vea en el momento, y que reiniciar las CotoFrases no se lleve puesto nada más. También que el panel se pueda leer y tocar (encabezados que abren, controles grandes, responsable, anterior/siguiente), que los mensajes se lean como un chat, que Técnico sea una grilla de tarjetas y no una planilla (con sus embudos de columna, su ficha desplegable y sus acciones en lote) que las 63 reglas de matriculación crucen con las filas del Seguimiento técnico, y que el Excel de Moodle se lea, se muestre antes de aplicarse y no pise lo que el equipo cargó a mano (con un Excel armado en `test/xlsx-de-prueba.mjs`: el real no va al repositorio). |
 
 El flujo genera `index.html` desde `src/` antes de correr las pruebas y
 publica exactamente ese archivo: lo que se prueba y lo que sale a producción

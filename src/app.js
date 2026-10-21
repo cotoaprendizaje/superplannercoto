@@ -2097,7 +2097,7 @@ const TEMPLATES = {
       bajada: "Organizá tu equipo y asegurá la cobertura de la línea de cajas.",
       anio: 2016,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/0.jpg@@",
+      imagen: "assets/cursos/0.jpg",
       personas: "Postulantes a Auxiliar, Auxiliares, postulantes a Jefe de Caja y Jefes de Caja.",
       descripcion:
         "Este curso reúne las tareas vinculadas a la administración del personal de Cajas en la sucursal. Aprendemos a calcular y controlar el FTE, generar requerimientos de dotación y cargar horarios web. Además, abordamos la organización diaria de cajeros y el uso de herramientas clave como reuniones de equipo e informes de transferencia de sector.",
@@ -2108,7 +2108,7 @@ const TEMPLATES = {
       bajada: "Identificá causas, circuitos y estándares para interpretar los reportes de merma..",
       anio: 2016,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/1.jpg@@",
+      imagen: "assets/cursos/1.jpg",
       personas: "Gerentes, Jefes de todos los sectores y empleados de Administración",
       descripcion:
         "Este curso brinda las herramientas necesarias para comprender qué es una merma, cómo se calcula y cuáles son sus causas, tanto naturales como no naturales. Aprendemos a leer e interpretar los reportes del circuito de análisis, desde la detección de desvíos hasta la elaboración del informe y el seguimiento de los resultados en la sucursal.",
@@ -2120,7 +2120,7 @@ const TEMPLATES = {
         "Un repaso por las tareas necesarias para abrir correctamente el sector de cajas antes de la atención al público.",
       anio: 2016,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/2.jpg@@",
+      imagen: "assets/cursos/2.jpg",
       personas: "Jefes de Administración y Cajas.",
       descripcion:
         "Este curso guía el procedimiento de apertura para que todo esté listo antes de recibir al cliente. Repasamos el inicio de la jornada: encendido y control de terminales, validación de precios y promociones, gestión del fondo fijo, registro de novedades del sector y verificación del correcto funcionamiento de las cajas de autocobro.",
@@ -2132,7 +2132,7 @@ const TEMPLATES = {
         "Conceptos fundamentales para comprender el inventario y su impacto en la gestión diaria de la sucursal.",
       anio: 2020,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/3.jpg@@",
+      imagen: "assets/cursos/3.jpg",
       personas: "Auxiliares y Jefes de Administración y Jefes de todos los sectores.",
       descripcion:
         "En este curso abordamos la diferencia entre stock físico y stock teórico, y cómo realizar conteos mediante RF o PDA, considerando el impacto de ventas, recepciones y decomisos. Además, analizamos por qué un inventario correctamente ejecutado es clave para detectar desvíos y tomar decisiones operativas acertadas.",
@@ -2144,7 +2144,7 @@ const TEMPLATES = {
         "Introducción al circuito de la mercadería y a los principios fundamentales de la gestión de stock.",
       anio: 2015,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/4.jpg@@",
+      imagen: "assets/cursos/4.jpg",
       personas: "Auxiliares y Jefes de Administración, Gerentes de Sucursales y Jefes de todos los sectores.",
       descripcion:
         "En este curso aprenderemos qué es el stock y cómo funciona el circuito de la mercadería desde el pedido hasta la venta. Abordaremos los conceptos generales, los movimientos de stock y los estados en los que puede encontrarse la mercadería, junto con el rol del sistema GDM y su interacción con otros sistemas para el análisis y control del stock.",
@@ -2155,7 +2155,7 @@ const TEMPLATES = {
       bajada: "Bases para el control de stock y prevención de mermas.",
       anio: 2025,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/5.jpg@@",
+      imagen: "assets/cursos/5.jpg",
       personas: "Todos los colaboradores, postulantes a jefes, jefes y gerentes de Sucursal.",
       descripcion:
         "En este curso aprenderán las bases teóricas y prácticas para realizar inventarios correctos. Veremos la diferencia entre stock físico y teórico para evitar mermas, los tipos de inventarios generales y parciales, y cómo la planificación asegura la disponibilidad de mercadería en cada sucursal.",
@@ -2166,7 +2166,7 @@ const TEMPLATES = {
       bajada: "Funcionamiento del sistema de balanzas y procesos de actualización de precios en la sucursal.",
       anio: 2019,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/6.jpg@@",
+      imagen: "assets/cursos/6.jpg",
       personas: "Gerentes de Sucursal, Jefes de todos los sectores y Personal de Administración.",
       descripcion:
         "En este curso nos enfocaremos en el sistema de balanzas, su funcionamiento y los distintos tipos de actualización de precios. Abordaremos los procesos de Novedades, Cambios Online, Total y Completo, y aprenderemos cómo actuar ante una desactualización de precios en la sucursal. El objetivo es garantizar que los precios se mantengan siempre actualizados.",
@@ -2178,7 +2178,7 @@ const TEMPLATES = {
         "Un recorrido por los distintos tipos de inventarios que utilizamos en Coto y su planificación.",
       anio: 2020,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/7.jpg@@",
+      imagen: "assets/cursos/7.jpg",
       personas: "Auxiliares y Jefes de Administración, Gerentes de Sucursal y Jefes de todos los sectores.",
       descripcion:
         "Aquí aprendemos a identificar los dos grandes grupos de inventarios (parciales y totales), sus objetivos, formas de ejecución y responsables. Vemos ejemplos como rebalance, inventarios críticos, falsos stocks y sorpresas. Además, distinguimos los niveles de planificación y analizamos qué tipo de toma corresponde a cada situación.",
@@ -2189,7 +2189,7 @@ const TEMPLATES = {
       bajada: "Bases para el control de stock y prevención de mermas.",
       anio: 2026,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/8.jpg@@",
+      imagen: "assets/cursos/8.jpg",
       personas: "Colaboradores del sector Electro, postulantes a jefes, jefes y gerentes de Sucursal.",
       descripcion:
         "En este curso se abordan los conceptos fundamentales del inventario aplicados al sector Electro. Se desarrollan nociones de stock, su clasificación, la diferencia entre stock real y distorsionado, los tipos de inventarios y la planificación necesaria para una correcta organización del proceso.",
@@ -2200,7 +2200,7 @@ const TEMPLATES = {
       bajada: "Gestión integral de solicitudes y consultas de Tarjeta TCI desde el aplicativo.",
       anio: 2025,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/9.jpg@@",
+      imagen: "assets/cursos/9.jpg",
       personas: "Jefes y Auxiliares de Cajas.",
       descripcion:
         "En este curso aprenderemos a utilizar el aplicativo TCI para gestionar solicitudes de Tarjeta TCI, desde la carga de clientes hasta el seguimiento de estados y la atención de consultas frecuentes. Abordaremos cómo actuar ante los distintos resultados de una solicitud para acompañar correctamente cada trámite.",
@@ -2212,7 +2212,7 @@ const TEMPLATES = {
         "Guía práctica para asistir al cliente en la correcta confección del contrato de la Tarjeta TCI.",
       anio: 2025,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/10.jpg@@",
+      imagen: "assets/cursos/10.jpg",
       personas: "Jefes y Auxiliares de Cajas.",
       descripcion:
         "En este curso aprenderemos cómo asistir al cliente en la correcta confección del contrato de la Tarjeta TCI y su documentación anexa. Abordaremos las partes del contrato, las firmas requeridas, los controles a realizar y el correcto cierre, envío y resguardo del legajo en la sucursal, asegurando una gestión prolija y conforme a los procedimientos.",
@@ -2223,7 +2223,7 @@ const TEMPLATES = {
       bajada: "Gestión de riesgos y cumplimiento normativo para Tarjeta Coto Inteligente.",
       anio: 2025,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/11.jpg@@",
+      imagen: "assets/cursos/11.jpg",
       personas: "Directores, gerentes, jefaturas y colaboradores cuyas funciones impacten en la TCI.",
       descripcion:
         "En este curso conocerás las obligaciones, responsabilidades y procedimientos vinculados a la prevención del Lavado de Activos (LA), Financiación del Terrorismo (FT) y de la Proliferación (FP). Su objetivo es asegurar el cumplimiento del marco legal y regulatorio vigente en la operatoria de la Tarjeta Coto Inteligente (TCI).",
@@ -2234,7 +2234,7 @@ const TEMPLATES = {
       bajada: "Herramientas prácticas para mejorar la calidad de atención y el vínculo con el cliente.",
       anio: 2013,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/12.jpg@@",
+      imagen: "assets/cursos/12.jpg",
       personas: "Jefes de sectores, Postulantes, Personal de línea y Personal de atención al cliente.",
       descripcion:
         "En este curso trabajaremos las habilidades blandas necesarias para brindar una atención de calidad, poniendo el foco en la escucha activa, la empatía y la comunicación clara. Analizaremos distintos perfiles de clientes y cómo responder de forma adecuada ante consultas, reclamos y situaciones de conflicto, fortaleciendo el vínculo y la experiencia de atención.",
@@ -2246,7 +2246,7 @@ const TEMPLATES = {
         "Pautas para gestionar situaciones sensibles en la línea de cajas de manera respetuosa y profesional.",
       anio: 2018,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/13.jpg@@",
+      imagen: "assets/cursos/13.jpg",
       personas: "Cajeros, Auxiliares de Cajas y Jefes de Caja.",
       descripcion:
         "En este curso aprenderemos a gestionar situaciones sensibles en la línea de cajas, especialmente al solicitar al cliente que muestre su bolso o changuito. Abordaremos estrategias de comunicación basadas en el respeto y la empatía, y veremos cómo ofrecer alternativas y aplicar la normativa vigente para actuar de manera profesional ante una negativa.",
@@ -2257,7 +2257,7 @@ const TEMPLATES = {
       bajada: "Todo lo que necesitás saber para la gestión del circuito de envíos.",
       anio: 2016,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/14.jpg@@",
+      imagen: "assets/cursos/14.jpg",
       personas: "Jefes, postulantes y auxiliares de Cajas.",
       descripcion:
         "Este curso presenta el circuito completo de un pedido, desde la carga de clientes en Coto Servicios hasta el seguimiento y cierre de los envíos. Se abordan los controles diarios, la gestión de pedidos pendientes, el uso de los sistemas de envíos y las funciones del módulo de Pedidos y Viajes, junto con tareas administrativas clave de la operatoria.",
@@ -2268,7 +2268,7 @@ const TEMPLATES = {
       bajada: "Guía práctica para acompañar el trabajo diario de los cadetes en la línea de cajas.",
       anio: 2017,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/15.jpg@@",
+      imagen: "assets/cursos/15.jpg",
       personas: "Cadetes de línea de cajas.",
       descripcion:
         "En este curso aprenderemos las tareas clave que realizan los cadetes durante la jornada laboral, desde la apertura y cierre de la sucursal hasta la gestión de envíos a domicilio. Abordaremos buenas prácticas de orden y limpieza, atención al cliente, uso correcto de los elementos de traslado y criterios para una operatoria segura y eficiente.",
@@ -2279,7 +2279,7 @@ const TEMPLATES = {
       bajada: "Procedimientos y buenas prácticas para el cobro en línea de cajas.",
       anio: 2026,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/16.jpg@@",
+      imagen: "assets/cursos/16.jpg",
       personas: "Jefes, auxiliares y cajeros de línea de Cajas.",
       descripcion:
         "En este curso se desarrollan los medios de pago habilitados en Coto y sus medidas de seguridad. Se repasan los procedimientos de cobro con efectivo, tarjetas, documentos y billeteras virtuales, incluyendo control de validez, acreditación de identidad y servicio de extracción de efectivo.",
@@ -2290,7 +2290,7 @@ const TEMPLATES = {
       bajada: "Herramientas para identificar los euros auténticos y operar con seguridad.",
       anio: 2025,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/17.jpg@@",
+      imagen: "assets/cursos/17.jpg",
       personas: "Personal de línea de cajas y personas afectadas al sector o interesadas en la temática.",
       descripcion:
         "Este curso brinda nociones para reconocer los billetes de euro en circulación, sus series y principales diferencias. Se abordan las denominaciones aceptadas en sucursal, las medidas de seguridad vigentes y la identificación de hologramas, marcas visibles y elementos a trasluz, para una correcta validación durante la operatoria diaria.",
@@ -2301,7 +2301,7 @@ const TEMPLATES = {
       bajada: "riterios básicos para identificar billetes de dólar auténticos en la línea de cajas.",
       anio: 2025,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/18.jpg@@",
+      imagen: "assets/cursos/18.jpg",
       personas: "Personal de línea de cajas y personas afectadas al sector o interesadas en la temática.",
       descripcion:
         "Este curso brinda nociones para reconocer los billetes de dólar en circulación, sus series y denominaciones. Se trabajan las principales medidas de seguridad, la identificación de la serie alfanumérica y los procedimientos ante la recepción de moneda extranjera, incluyendo el uso de la Lista Negra y las acciones a seguir ante billetes dudosos en la operatoria diaria.",
@@ -2312,7 +2312,7 @@ const TEMPLATES = {
       bajada: "Una mirada práctica para identificar billetes auténticos y garantizar operaciones seguras.",
       anio: 2025,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/19.jpg@@",
+      imagen: "assets/cursos/19.jpg",
       personas: "Personal de línea de cajas y personas afectadas al sector o interesadas en la temática.",
       descripcion:
         "Este curso brinda nociones para reconocer los billetes de pesos en circulación, identificando sus distintas series y denominaciones. Se presentan las principales medidas de seguridad a observar al tacto, a simple vista y a trasluz, con el objetivo de facilitar una correcta identificación y prevenir errores durante la operatoria diaria en cajas.",
@@ -2323,7 +2323,7 @@ const TEMPLATES = {
       bajada: "Uso de equipamientos y productos ECONOR para los procesos de higiene en la sucursal.",
       anio: 2023,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/20.jpg@@",
+      imagen: "assets/cursos/20.jpg",
       personas:
         "Personal operativo de carnicería, pescadería, verdulería, panadería, cocina, rotisería, fiambrería y salón.",
       descripcion:
@@ -2335,7 +2335,7 @@ const TEMPLATES = {
       bajada: "Qué hacer cuando llega una inspección: procedimientos y responsabilidades.",
       anio: 2012,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/21.jpg@@",
+      imagen: "assets/cursos/21.jpg",
       personas: "Gerentes de sucursal y postulantes a Gerencia.",
       descripcion:
         "Este curso presenta los tipos de inspecciones que pueden realizar organismos gubernamentales en la sucursal y los eventos más frecuentes asociados a estos controles. Además, se detalla el procedimiento a seguir ante una inspección, los pasos clave de actuación y las responsabilidades del gerente durante todo el proceso.",
@@ -2346,7 +2346,7 @@ const TEMPLATES = {
       bajada: "Uso correcto de productos y equipamiento para los procesos de limpieza y desinfección.",
       anio: 2024,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/22.jpg@@",
+      imagen: "assets/cursos/22.jpg",
       personas:
         "Personal operativo de carnicería, pescadería, verdulería, panadería, cocina, rotisería, fiambrería y salón.",
       descripcion:
@@ -2358,7 +2358,7 @@ const TEMPLATES = {
       bajada: "Buenas prácticas para cuidar la salud de los consumidores.",
       anio: 2015,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/23.jpg@@",
+      imagen: "assets/cursos/23.jpg",
       personas: "Todo el personal de la compañía (colaboradores, jefes y gerentes).",
       descripcion:
         "Este curso aborda los conceptos básicos de seguridad alimentaria, diferenciando alimentos inocuos, alterados y contaminados. Se trabajan las buenas prácticas de higiene personal y de los ambientes, la prevención de ETAs, el control de temperaturas y la correcta manipulación de los alimentos para evitar la contaminación cruzada durante la operatoria diaria.",
@@ -2369,7 +2369,7 @@ const TEMPLATES = {
       bajada: "Todo lo que necesitás saber para preparar pedidos de Coto Digital.",
       anio: 2023,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/24.jpg@@",
+      imagen: "assets/cursos/24.jpg",
       personas: "Personal de Coto Digital.",
       descripcion:
         "Este curso aborda el proceso completo de armado de pedidos de Coto Digital, desde la preparación inicial del armador y el uso de la PDA, hasta el picking, el manejo de faltantes y la organización por sectores. También se trabajan el pesaje, los controles finales, el cierre del pedido y el cobro en la mesa de control, junto con las normas de higiene y seguridad necesarias durante la operatoria.",
@@ -2380,7 +2380,7 @@ const TEMPLATES = {
       bajada: "Control de activos, reservas y gestión administrativa inicial.",
       anio: 2025,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/25.jpg@@",
+      imagen: "assets/cursos/25.jpg",
       personas: "Auxiliares, postulantes a jefes y jefes de Coto Digital.",
       descripcion:
         "En este curso vas a aprender a controlar los activos del sector, gestionar las reservas y realizar los controles administrativos esenciales del área. Abordaremos en detalle la planilla de control diario, los procedimientos de facturación y resguardo de mercadería, y la solicitud de cupones, brindándote las herramientas para una gestión eficaz.",
@@ -2391,7 +2391,7 @@ const TEMPLATES = {
       bajada: "Procesos avanzados, devoluciones y resolución de reclamos.",
       anio: 2025,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/26.jpg@@",
+      imagen: "assets/cursos/26.jpg",
       personas: "Auxiliares, postulantes a jefes y jefes de Coto Digital.",
       descripcion:
         "En este curso vamos a profundizar en los procesos administrativos del sector y el uso correcto de las herramientas de gestión. Te capacitarás en el control de órdenes de compra, diferencias de precio y manejo de la caja de devoluciones. También veremos la mesa de rendiciones y la gestión de reclamos CRM para resolver incidencias operativas.",
@@ -2402,7 +2402,7 @@ const TEMPLATES = {
       bajada: "Los primeros pasos para comenzar el armado de pedidos en Coto Digital.",
       anio: 2020,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/27.jpg@@",
+      imagen: "assets/cursos/27.jpg",
       personas: "Gerentes y personal de Coto Digital.",
       descripcion:
         "Este curso introduce el concepto de picking y los elementos necesarios para el armado de pedidos en Coto Digital. Se aborda el uso de la PDA, la carga y seguimiento de la orden, la preparación del carrito y la lógica de armado según el layout del salón, junto con los controles básicos que garantizan un proceso ordenado y eficiente.",
@@ -2413,7 +2413,7 @@ const TEMPLATES = {
       bajada: "Cómo funciona el circuito completo de compra y entrega en Coto Digital.",
       anio: 2020,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/28.jpg@@",
+      imagen: "assets/cursos/28.jpg",
       personas: "Gerentes y personal del sector Coto Digital.",
       descripcion:
         "Este curso presenta el circuito completo de un pedido en Coto Digital, desde la compra realizada por el cliente en la web o la app hasta la entrega final y la rendición. Se repasan los roles involucrados y los pasos clave del proceso, como el armado, el cobro, la logística de distribución y la entrega del pedido.",
@@ -2424,7 +2424,7 @@ const TEMPLATES = {
       bajada: "Lineamientos de elaboración y presentación de facturas en el sector Elaborados.",
       anio: 2020,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/29.jpg@@",
+      imagen: "assets/cursos/29.jpg",
       personas: "Personal del sector Elaborados. Flota Propia",
       descripcion:
         "Este curso enseña a elaborar las principales variedades de facturas: medialunas, vigilantes, tortitas negras, cañoncitos, lengüitas rellenas y surtidas. Se trabajan reposo de masas, armado, pintado, horneado, relleno y decoración, respetando recetas, tiempos y presentación.",
@@ -2435,7 +2435,7 @@ const TEMPLATES = {
       bajada: "Todo lo que necesitás saber para desempeñarte como chofer de la Flota Propia de Coto Digital.",
       anio: 2025,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/30.jpg@@",
+      imagen: "assets/cursos/30.jpg",
       personas: "Choferes de Flota Propia de Coto Digital.",
       descripcion:
         "Este curso recorre la jornada del chofer de Flota Propia, desde la asignación del móvil y los controles previos hasta la entrega de pedidos y el cierre del día. Se abordan las responsabilidades del rol, la documentación requerida, el checklist del vehículo, los controles de seguridad y los procedimientos ante imprevistos durante el recorrido.",
@@ -2446,7 +2446,7 @@ const TEMPLATES = {
       bajada: "Técnicas de desposte y presentación de cortes del cuarto delantero.",
       anio: 2024,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/31.jpg@@",
+      imagen: "assets/cursos/31.jpg",
       personas: "Personal del sector Frescos",
       descripcion:
         "Este curso aborda el desposte y corte del cuarto delantero de la media res, la obtención de los principales cortes y bifes y las distintas formas de armado del bife a 10 costillas. Además, se trabaja el uso correcto de cuchilla y sierra, la presentación de las piezas y los criterios básicos de higiene y calidad.",
@@ -2457,7 +2457,7 @@ const TEMPLATES = {
       bajada: "Cortes, técnicas y presentaciones del cuarto trasero de la media res.",
       anio: 2025,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/32.jpg@@",
+      imagen: "assets/cursos/32.jpg",
       personas: "Personal del sector Frescos.",
       descripcion:
         "Este curso desarrolla técnicas de corte, limpieza y presentación del cuarto trasero de la media res, trabajando piezas internas y externas. Se estudian cortes como cuadril, peceto, nalga, tortuguita, bola de lomo y osobuco, además de emprolijado, milanesas y uso correcto de cuchilla y sierra, cumpliendo normas de calidad y seguridad.",
@@ -2468,7 +2468,7 @@ const TEMPLATES = {
       bajada: "Criterios esenciales para el cuidado, control de calidad y exhibición de frutas y verduras.",
       anio: 2017,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/33.jpg@@",
+      imagen: "assets/cursos/33.jpg",
       personas: "Personal del sector Verdulería.",
       descripcion:
         "Este curso aborda los conceptos fundamentales del sector de frutas y verduras, como la clasificación de productos, la estacionalidad y los controles de calidad. Se trabajan criterios de almacenamiento, control de temperaturas y buenas prácticas de exhibición e higiene para prevenir mermas y asegurar productos frescos y seguros para el consumo.",
@@ -2479,7 +2479,7 @@ const TEMPLATES = {
       bajada: "Fundamentos clave para el desposte seguro y correcto de la media res.",
       anio: 2016,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/34.jpg@@",
+      imagen: "assets/cursos/34.jpg",
       personas: "Personal del sector Frescos",
       descripcion:
         "Este curso presenta los conceptos generales del desposte, abordando herramientas, elementos de seguridad, técnicas de corte y clasificación de piezas. Se aprende a distinguir cortes delanteros y pistola, junto con los cuidados necesarios para el correcto almacenamiento, manipulación y conservación de la carne, respetando normas de calidad e higiene.",
@@ -2490,7 +2490,7 @@ const TEMPLATES = {
       bajada: "Cortes, técnicas y presentaciones del pecho de la media res.",
       anio: 2025,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/35.jpg@@",
+      imagen: "assets/cursos/35.jpg",
       personas: "Colaboradores, postulantes a jefes / jefes de Carnicería y gerentes de sucursal.",
       descripcion:
         "En este curso aprenderán cómo se obtienen, limpian y presentan los cortes del pecho de la media res. Nos enfocaremos en las técnicas correctas de desposte y exhibición para garantizar el correcto aprovechamiento de la pieza, cumpliendo rigurosamente con los estándares de calidad y frescura definidos para nuestra carnicería.",
@@ -2501,7 +2501,7 @@ const TEMPLATES = {
       bajada: "Conceptos básicos de recepción, producción y exhibición en el sector Carnicería.",
       anio: 2016,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/36.jpg@@",
+      imagen: "assets/cursos/36.jpg",
       personas: "Personal del sector Carnicería.",
       descripcion:
         "Este curso presenta los conceptos fundamentales del sector Carnicería, incluyendo clasificación de la hacienda, recepción, almacenamiento, controles de calidad y seguridad. También aborda producción operativa, uso de maquinarias, limpieza y exhibición en mostrador y góndola para reducir mermas y mejorar la atención al cliente.",
@@ -2512,7 +2512,7 @@ const TEMPLATES = {
       bajada: "Instrucciones clave para operar la empaquetadora ULMA de forma segura y eficiente.",
       anio: 2013,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/37.jpg@@",
+      imagen: "assets/cursos/37.jpg",
       personas: "Personal del sector Carnicería.",
       descripcion:
         "Este curso brinda instrucciones para el uso seguro y eficiente de la empaquetadora ULMA en el sector Frescos. Aborda qué productos pueden y no pueden empaquetarse, el manejo del panel de mando, el control del sellado, las malas prácticas a evitar y los procedimientos de limpieza, lubricación y verificación básica por turno.",
@@ -2523,7 +2523,7 @@ const TEMPLATES = {
       bajada: "Claves para preparar picadas con buena presentación, peso y frescura.",
       anio: 2020,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/38.jpg@@",
+      imagen: "assets/cursos/38.jpg",
       personas: "Personal de Quesos y Fiambres.",
       descripcion:
         "Este curso enseña el armado de picadas de quesos y fiambres, considerando bandeja, cuchillo y orden de armado. Aborda peso estándar, variedades, durabilidad y criterios de higiene y presentación, para lograr una exhibición atractiva y asegurar la aptitud de consumo en góndola según procedimientos del sector.",
@@ -2535,7 +2535,7 @@ const TEMPLATES = {
         "Técnicas de corte, manipulación y exhibición para quesos y dulces, priorizando seguridad, calidad y presentación.",
       anio: 2020,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/39.jpg@@",
+      imagen: "assets/cursos/39.jpg",
       personas: "Personal de Quesos y Fiambres.",
       descripcion:
         "Este curso enseña técnicas correctas de corte y manipulación de quesos y dulces, diferenciando tipos, herramientas y formas de presentación. Aborda criterios de seguridad, exhibición con o sin bandeja y cuidados específicos de cada variedad, para garantizar productos frescos, seguros y bien presentados en góndola.",
@@ -2546,7 +2546,7 @@ const TEMPLATES = {
       bajada: "Todo lo que necesitás saber para conservar, exhibir y ordenar los productos de pescadería.",
       anio: 2025,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/40.jpg@@",
+      imagen: "assets/cursos/40.jpg",
       personas: "Personal del sector Pescadería. g.",
       descripcion:
         "Este curso enseña cómo conservar y presentar correctamente los productos del sector en mostrador, heladeras y pozos. Se abordan temperaturas de referencia, clasificación, almacenamiento seguro, uso del hielo, rotación y normas de higiene, junto con prácticas a evitar para preservar la calidad y prevenir la contaminación.",
@@ -2557,7 +2557,7 @@ const TEMPLATES = {
       bajada: "Conocé cómo usar Panel de Control para visualizar y",
       anio: 2018,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/41.jpg@@",
+      imagen: "assets/cursos/41.jpg",
       personas: "Personal del área Comercial.",
       descripcion:
         "tomar decisiones basadas en las ventas. Este curso introduce la aplicación Panel de Control en iPad, enseñando a visualizar y comparar ventas a distintos niveles: cadena, sucursal, grupo comercial, departamento, clase, proveedor y PLU. Se aprende a navegar la información, interpretar indicadores y realizar análisis según cada necesidad para optimizar la gestión y la toma de decisiones comerciales.",
@@ -2568,7 +2568,7 @@ const TEMPLATES = {
       bajada: "Conocé los procesos, herramientas y estrategias que",
       anio: 2014,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/42.jpg@@",
+      imagen: "assets/cursos/42.jpg",
       personas: "Personal de los sectores comerciales y de Administración.",
       descripcion:
         "permiten organizar y optimizar la gestión comercial en Coto. Este curso introduce los fundamentos de la gestión comercial, abordando mantenimiento de artículos, uso de PLU, definición de surtido y reposición, manejo y control de stock, valorización y análisis de precios y competencia, utilizando herramientas internas, sistemas de la compañía y un glosario de términos clave para la gestión diaria.",
@@ -2579,7 +2579,7 @@ const TEMPLATES = {
       bajada: "Aprendé a identificar y gestionar productos que no",
       anio: 2016,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/43.jpg@@",
+      imagen: "assets/cursos/43.jpg",
       personas: "Personal del área Comercial.",
       descripcion:
         "rotan para optimizar la venta en sucursales. Este curso enseña a identificar “clavos” o productos sin rotación mediante el uso de iPad y sistema VACA. Se analiza rotación, stock, kardex, precios y relevamientos, y se aplican soluciones específicas según cada caso, con ejemplos prácticos basados en situaciones reales de sucursales que facilitan la toma de decisiones comerciales.",
@@ -2590,7 +2590,7 @@ const TEMPLATES = {
       bajada: "Herramienta clave para controlar mercadería, rotación y surtido de tu sucursal desde el iPad.",
       anio: 2019,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/44.jpg@@",
+      imagen: "assets/cursos/44.jpg",
       personas: "Gerentes de Sucursal.",
       descripcion:
         "Este curso muestra cómo utilizar el módulo Surtido de Sucursales3 en iPad para consultar y analizar datos de stock, frecuencia de venta y disponibilidad de productos. Se trabaja la interpretación de la información para tomar decisiones estratégicas sobre surtido, rotación, reposición y una gestión eficiente del espacio y la sucursal.",
@@ -2601,7 +2601,7 @@ const TEMPLATES = {
       bajada: "Fundamentos esenciales para comprender instalaciones eléctricas y trabajar con seguridad.",
       anio: 2014,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/45.jpg@@",
+      imagen: "assets/cursos/45.jpg",
       personas:
         "Personal de Mantenimiento y colaboradores que realicen tareas relacionadas con instalaciones eléctricas",
       descripcion:
@@ -2613,7 +2613,7 @@ const TEMPLATES = {
       bajada: "Conocé los sistemas, dispositivos y procedimientos",
       anio: 2013,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/46.jpg@@",
+      imagen: "assets/cursos/46.jpg",
       personas: "Gerentes y jefes de sectores.",
       descripcion:
         "para detectar y actuar ante incendios Este curso brinda conocimientos sobre los sistemas de detección de incendios en sucursales, abordando normativa, tipos de detectores térmicos, de humo, gas y manuales, funcionamiento de la central de alarma, señalización acústica y visual, discador/llamador y sistemas convencionales y analógicos para actuar de forma rápida y correcta ante emergencias.",
@@ -2624,7 +2624,7 @@ const TEMPLATES = {
       bajada: "Cómo gestionar correctamente los pedidos de mantenimiento en la sucursal.",
       anio: 2018,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/47.jpg@@",
+      imagen: "assets/cursos/47.jpg",
       personas:
         "Jefes, postulantes y empleados de línea de los sectores Mantenimiento, Administración y Operaciones",
       descripcion:
@@ -2636,7 +2636,7 @@ const TEMPLATES = {
       bajada: "Ajustes clave para garantizar el funcionamiento seguro y eficiente de la empaquetadora.",
       anio: 2020,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/48.jpg@@",
+      imagen: "assets/cursos/48.jpg",
       personas: "Técnicos de mantenimiento de sucursales.",
       descripcion:
         "Este curso enseña a realizar la puesta a punto de los principales componentes de la máquina ULMA, como el empujador, las plegadoras y el carro de alimentación. Se abordan los ajustes necesarios para asegurar un funcionamiento seguro, preciso y continuo del equipo, evitando fallas, detenciones y pérdidas en el proceso de empaquetado.",
@@ -2648,7 +2648,7 @@ const TEMPLATES = {
         "Fundamentos y prácticas para para prevenir riesgos y trabajar con electricidad de forma segura.",
       anio: 2015,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/49.jpg@@",
+      imagen: "assets/cursos/49.jpg",
       personas: "Personal de mantenimiento y colaboradores que realizan tareas con riesgo eléctrico.",
       descripcion:
         "Este curso aborda los riesgos asociados al trabajo con instalaciones eléctricas, como descargas, incendios y explosiones. Enseña el uso correcto de EPP, elementos de maniobra y salvataje, y repasa las 5 reglas de oro de la seguridad eléctrica, promoviendo prácticas seguras, responsables y preventivas en el entorno laboral.",
@@ -2660,7 +2660,7 @@ const TEMPLATES = {
         "Checklist y procedimientos para operar de forma segura los principales vehículos del depósito.",
       anio: 2025,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/50.jpg@@",
+      imagen: "assets/cursos/50.jpg",
       personas: "Personal de Mantenimiento y todos quienes utilizan vehículos industriales.",
       descripcion:
         "Este curso enseña a realizar los checklists diarios de los tres vehículos industriales principales: autoelevador, apilador y zorra eléctrica. Se aprende a detectar fallas a tiempo, garantizar un uso seguro, prevenir accidentes y prolongar la vida útil de los equipos, promoviendo buenas prácticas operativas y el cumplimiento de normas de seguridad.",
@@ -2671,7 +2671,7 @@ const TEMPLATES = {
       bajada: "Funcionamiento del sector, surtido y criterios para una correcta exhibición.",
       anio: 2013,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/51.jpg@@",
+      imagen: "assets/cursos/51.jpg",
       personas: "Repositores de Salón, Jefes de Salón Mixto, Jefes de Coto Hogar y Gerentes de sucursal.",
       descripcion:
         "Este curso brinda una visión integral del sector Coto Hogar. Presenta sus departamentos y líneas de productos, los procesos de recepción y almacenamiento de mercadería, la lógica de surtido por sucursal y los criterios definidos para la exhibición en salón, con foco en el orden, la estacionalidad y la experiencia del cliente.",
@@ -2682,7 +2682,7 @@ const TEMPLATES = {
       bajada: "Herramientas y criterios para asegurar stock y góndolas completas en No Alimentos.",
       anio: 2024,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/52.jpg@@",
+      imagen: "assets/cursos/52.jpg",
       personas: "Colaboradores del sector NOA, Electro y responsables de Salón.",
       descripcion:
         "Este curso explica cómo utilizar el Reporte de Prioridad de Reposición para identificar productos agotados o con bajo stock y definir qué reponer primero en góndola. Introduce el concepto de MEG (Mínimo de Exhibición en Góndola), los modos de consulta del reporte y las acciones necesarias para asegurar disponibilidad y una correcta exhibición diaria.",
@@ -2693,7 +2693,7 @@ const TEMPLATES = {
       bajada: "Control de exhibición y disponibilidad en No Alimentos.",
       anio: 2025,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/53.jpg@@",
+      imagen: "assets/cursos/53.jpg",
       personas: "Colaboradores, postulantes a jefes y jefes de NOA (Electro, Hogar y Textil).",
       descripcion:
         "En este curso aprenderás a verificar que los productos de Electro, Hogar y Textil estén correctamente exhibidos y disponibles para la venta. Te capacitaremos en el uso de GESCOM, Sucursales 3 y la PDA para realizar el relevamiento semanal de clases, detectar errores de stock o exhibición y cerrar el control garantizando el surtido ideal.",
@@ -2704,7 +2704,7 @@ const TEMPLATES = {
       bajada: "Gestión centralizada de la información del sector.",
       anio: 2020,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/54.jpg@@",
+      imagen: "assets/cursos/54.jpg",
       personas: "Personal de Textil y Bazar.",
       descripcion:
         "Este curso explica cómo crear, acceder y utilizar correctamente la Carpeta Compartida del sector Textil/Bazar. Se aborda su rol como herramienta central de gestión, donde se organiza información clave sobre ofertas, stock, precios y decomisos, y se destaca la importancia de mantenerla siempre actualizada para una correcta toma de decisiones.",
@@ -2715,7 +2715,7 @@ const TEMPLATES = {
       bajada: "Análisis de información clave para el control y la toma de decisiones del sector.",
       anio: 2020,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/55.jpg@@",
+      imagen: "assets/cursos/55.jpg",
       personas: "Personal de Textil y Bazar.",
       descripcion:
         "Este curso enseña a utilizar los archivos disponibles en la carpeta compartida del sector y a analizar los reportes enviados por auditoría. A partir de esta información, se aprende a evaluar el estado de los productos y a definir acciones como liquidaciones, ajustes por faltantes de stock o decomisos de mercadería no apta para la venta.",
@@ -2726,7 +2726,7 @@ const TEMPLATES = {
       bajada: "Cómo solicitar repuestos utilizando el sistema GDM.",
       anio: 2020,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/56.jpg@@",
+      imagen: "assets/cursos/56.jpg",
       personas: "Personal del Textil/Bazar.",
       descripcion:
         "Este curso enseña cómo realizar pedidos de repuestos del sector Textil/Bazar a través del módulo Gestión de Pedidos del sistema GDM Sucursales. Se aborda el uso correcto de la herramienta, el seguimiento de pedidos y su importancia para asegurar una gestión comercial eficiente y el abastecimiento oportuno.",
@@ -2737,7 +2737,7 @@ const TEMPLATES = {
       bajada: "Herramientas y técnicas para una atención efectiva y orientada al cierre.",
       anio: 2015,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/57.jpg@@",
+      imagen: "assets/cursos/57.jpg",
       personas: "Colaboradores y jefes de bazar, electrodomésticos y atención al cliente..",
       descripcion:
         "Este curso presenta las etapas del proceso de venta, desde la bienvenida hasta la despedida, incluyendo indagación, asesoramiento, manejo de objeciones, cierre y venta adicional. Brinda técnicas de comunicación para adaptarse a distintos perfiles de clientes y nociones de producto para asesorar con seguridad.",
@@ -2748,7 +2748,7 @@ const TEMPLATES = {
       bajada: "Control de fichadas, ausencias y seguimiento operativo del personal.",
       anio: 2018,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/58.jpg@@",
+      imagen: "assets/cursos/58.jpg",
       personas: "Auxiliares de Administración de Recursos Humanos en sucursales.",
       descripcion:
         "Este curso aborda la gestión integral del control de personal en sucursal. Incluye el tratamiento de errores de fichadas, control de jornada y horas extras, emisión y uso de ficha rosa, carga y seguimiento de ausencias en SAP, control de libretas sanitarias, gestión de personal tercerizado y elaboración de informes periódicos de RRHH.",
@@ -2759,7 +2759,7 @@ const TEMPLATES = {
       bajada: "Procedimientos y criterios para gestionar ingresos de personal en sucursal.",
       anio: 2023,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/59.jpg@@",
+      imagen: "assets/cursos/59.jpg",
       personas: "Auxiliares de Administración de Recursos Humanos en sucursales.",
       descripcion:
         "Este curso aborda el proceso de ingreso de personal en la sucursal, desde la gestión del requerimiento hasta el seguimiento del período de prueba. Incluye recepción del nuevo empleado, verificación de documentación, inducción, entrega de uniformes y EPP, y cierre administrativo, unificando criterios para una correcta incorporación.",
@@ -2770,7 +2770,7 @@ const TEMPLATES = {
       bajada: "Planificación horaria, vacaciones y gestión operativa en SAP.",
       anio: 2024,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/60.jpg@@",
+      imagen: "assets/cursos/60.jpg",
       personas: "Auxiliares de Administración de Recursos Humanos en sucursales.",
       descripcion:
         "Este curso aborda la planificación horaria y de vacaciones del personal, desde la carga web y sus etapas de aprobación hasta su imputación en SAP. Incluye modalidades de contrato, control de francos, cambios de horario, notificación al personal y liquidación de vacaciones, asegurando una gestión ordenada y conforme a normativa.",
@@ -2781,7 +2781,7 @@ const TEMPLATES = {
       bajada: "Criterios y procedimientos para el régimen disciplinario en sucursal.",
       anio: 2018,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/61.jpg@@",
+      imagen: "assets/cursos/61.jpg",
       personas: "Auxiliares de Administración de Recursos Humanos en las sucursales.",
       descripcion:
         "Este curso describe los principios del régimen disciplinario, los distintos tipos de faltas y sanciones, y cómo deben redactarse, cargarse y archivar. También se abordan los criterios de aplicación y las instancias de reunión vinculadas a la gestión de sanciones.",
@@ -2792,7 +2792,7 @@ const TEMPLATES = {
       bajada: "Procedimientos ante accidentes laborales y uso adecuado del botiquín.",
       anio: 2018,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/62.jpg@@",
+      imagen: "assets/cursos/62.jpg",
       personas: "Auxiliares de Administración de Recursos Humanos y responsables de área en las sucursales.",
       descripcion:
         "Este curso presenta los pasos a seguir ante un accidente de trabajo, incluyendo la clasificación de incidentes, qué se considera una enfermedad profesional y el rol del botiquín en la atención inicial. Una guía fundamental para actuar con rapidez y criterio ante situaciones imprevistas.",
@@ -2803,7 +2803,7 @@ const TEMPLATES = {
       bajada: "Cómo actuar correctamente frente a una inspección.",
       anio: 2018,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/63.jpg@@",
+      imagen: "assets/cursos/63.jpg",
       personas: "Auxiliares de Administración de Recursos Humanos y responsables operativos.",
       descripcion:
         "Este curso detalla qué organismos pueden presentarse en la sucursal y cuál es el procedimiento adecuado a seguir durante una inspección. Brinda herramientas para garantizar una respuesta clara, ordenada y alineada con la normativa vigente.",
@@ -2814,7 +2814,7 @@ const TEMPLATES = {
       bajada: "Control de pre-liquidación y entrega de recibos.",
       anio: 2018,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/64.jpg@@",
+      imagen: "assets/cursos/64.jpg",
       personas: "Auxiliares de Administración de Recursos Humanos en las sucursales.",
       descripcion:
         "Este curso detalla los aspectos fundamentales del proceso de pre-liquidación: desde la pérdida de premio y el control de frío, hasta la apertura y cierre de jornada, el control de preliquidación y la entrega de recibos al personal.",
@@ -2825,7 +2825,7 @@ const TEMPLATES = {
       bajada: "Procedimientos para gestionar correctamente el egreso del personal.",
       anio: 2018,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/65.jpg@@",
+      imagen: "assets/cursos/65.jpg",
       personas: "Auxiliares de Administración de Recursos Humanos y responsables de área en las sucursales.",
       descripcion:
         "Este curso aborda las tareas relacionadas con la baja de un colaborador: tipos de egreso, carga en sistema, devolución de indumentaria y generación del listado de bajas. Una guía práctica para asegurar que el cierre del vínculo laboral se realice de forma ordenada y conforme a los procedimientos establecidos.",
@@ -2836,7 +2836,7 @@ const TEMPLATES = {
       bajada: "Gestión de reposición en góndola según stock y mínimos de exhibición.",
       anio: 2022,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/66.jpg@@",
+      imagen: "assets/cursos/66.jpg",
       personas: "Jefes y colaboradores del Salón de Ventas.",
       descripcion:
         "Este curso explica el uso del reporte de Prioridad de Reposición para identificar productos ingresados con quiebre de stock o por debajo del MEG. Aborda la reposición inmediata según prioridades, el control permanente tras la recepción de mercadería y la impresión de obleas de precio en GESCOM para asegurar góndolas completas y actualizadas.",
@@ -2847,7 +2847,7 @@ const TEMPLATES = {
       bajada: "Control y gestión de productos sin rotación para mejorar ventas y exhibición.",
       anio: 2022,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/67.jpg@@",
+      imagen: "assets/cursos/67.jpg",
       personas: "Jefes y colaboradores del Salón de Ventas.",
       descripcion:
         "Este curso explica el concepto de N días y el uso del reporte para detectar productos que no registran ventas en un período determinado. Aborda la identificación de falsos stocks y problemas de exhibición, y el análisis de acciones comerciales y correctivas necesarias para asegurar la rotación y eficiencia del salón de ventas.",
@@ -2858,7 +2858,7 @@ const TEMPLATES = {
       bajada: "Gestión diaria de faltantes en góndola para asegurar stock, orden y correcta exhibición.",
       anio: 2022,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/68.jpg@@",
+      imagen: "assets/cursos/68.jpg",
       personas: "Jefes y colaboradores del Salón de Ventas.",
       descripcion:
         "Este curso desarrolla el proceso diario de relevamiento y gestión de faltantes en góndola mediante PDA y reportes de GESCOM. Explica la identificación de huecos del jefe, del sistema y coincidentes, el uso de obleas, la detección de falsos stocks, los ajustes correspondientes y el análisis de causas para asegurar una correcta reposición y exhibición.",
@@ -2869,7 +2869,7 @@ const TEMPLATES = {
       bajada: "Gestión de traspasos de mercadería al Centro de Devoluciones.",
       anio: 2022,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/69.jpg@@",
+      imagen: "assets/cursos/69.jpg",
       personas: "Colaboradores de Salón y personal de Operaciones.",
       descripcion:
         "Este curso explica el procedimiento para realizar traspasos de mercadería desde la sucursal al Centro de Devoluciones 126. Aborda la identificación de productos con convenio, la preparación y carga del traspaso en el sistema, el uso de obleas, el armado correcto de pallets, los requisitos de envío y la emisión de documentación para asegurar un proceso ordenado y sin desvíos.",
@@ -2880,7 +2880,7 @@ const TEMPLATES = {
       bajada: "Control semanal de surtido y correcta exhibición en góndola.",
       anio: 2022,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/70.jpg@@",
+      imagen: "assets/cursos/70.jpg",
       personas: "Jefes y colaboradores del Salón de Ventas.",
       descripcion:
         "Este curso explica el relevamiento semanal de clases para verificar que los productos definidos por el sistema estén correctamente exhibidos en góndola. Aborda el uso de PDA y GESCOM, el escaneo de obleas y huecos, la corrección de diferencias y el análisis del cumplimiento por departamento, con el objetivo de superar el 90% y detectar falsos stocks.",
@@ -2891,7 +2891,7 @@ const TEMPLATES = {
       bajada: "Funciones, responsabilidades y controles del personal de Seguridad en la sucursal.",
       anio: 2021,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/71.jpg@@",
+      imagen: "assets/cursos/71.jpg",
       personas: "Gerentes, Jefes de Operaciones, Jefes de Recepción, Fiscalizadores y Recepcionistas.",
       descripcion:
         "Este curso presenta los distintos puestos del sector Seguridad en la sucursal y sus responsabilidades operativas. Aborda funciones de control en recepción, salón, cajas, electro, bodega, playa y CCTV, incluyendo manejo de productos críticos, control de frío, alarmado, rondines y coordinación con otras áreas para prevenir incidentes y desvíos.",
@@ -2902,7 +2902,7 @@ const TEMPLATES = {
       bajada: "Prevención, detección y control de hurtos en sucursal.",
       anio: 2024,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/72.jpg@@",
+      imagen: "assets/cursos/72.jpg",
       personas: "Personal de Seguridad en sucursales.",
       descripcion:
         "Este curso desarrolla las principales modalidades de hurto detectadas en cajas, salón y otras cadenas, como changos con doble fondo, bolsas preparadas, mecheros, cambio de etiquetas y hurtos combinados. Además, aborda los controles clave de seguridad, incluyendo rondines, conteo de críticos, jaula de productos sensibles, control de frío y seguimiento de sospechosos.",
@@ -2913,7 +2913,7 @@ const TEMPLATES = {
       bajada: "Control y trazabilidad en la recepción de mercadería desde el CD.",
       anio: 2013,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/73.jpg@@",
+      imagen: "assets/cursos/73.jpg",
       personas: "Personal de Seguridad, Jefes y Gerentes de Sucursal.",
       descripcion:
         "Este curso explica el procedimiento de recepción de móviles provenientes del Centro de Distribución, abordando el control de documentación, precintos y obleas, la descarga de pallets y cubetas, el registro de ingresos y egresos, y el uso de PDA y GPS para asegurar una recepción ordenada, segura y con trazabilidad completa.",
@@ -2924,7 +2924,7 @@ const TEMPLATES = {
       bajada: "Las 5 normas básicas para operar montacargas sin riesgos.",
       anio: 2018,
       duracion: "Curso corto",
-      imagen: "@@ASSET:assets/cursos/74.jpg@@",
+      imagen: "assets/cursos/74.jpg",
       personas: "Todo el personal de la compañía.",
       descripcion:
         "Este curso presenta las cinco normas básicas para el uso seguro del montacargas. Aborda la verificación previa del equipo, las condiciones de operación, las medidas de seguridad durante su uso y cómo actuar ante fallas o situaciones de riesgo, con el objetivo de prevenir accidentes y promover un entorno de trabajo seguro.",
@@ -2935,7 +2935,7 @@ const TEMPLATES = {
       bajada: "Una introducción fundamental para cuidar lo más importante: las personas.",
       anio: 2018,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/75.jpg@@",
+      imagen: "assets/cursos/75.jpg",
       personas: "Todo el personal de la compañía.",
       descripcion:
         "Este curso introduce los conceptos básicos de Seguridad e Higiene laboral en COTO. Aborda actos y condiciones inseguras, el uso correcto de los elementos de protección personal, señalizaciones, tipos de matafuegos y el rol de la ART, con el objetivo de concientizar sobre la prevención de riesgos y el cumplimiento de normas.",
@@ -2946,7 +2946,7 @@ const TEMPLATES = {
       bajada: "Cómo reducir los riesgos de enfermedades cardiovasculares desde el cuidado diario",
       anio: 2023,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/76.jpg@@",
+      imagen: "assets/cursos/76.jpg",
       personas: "Todo el personal.",
       descripcion:
         "Este curso introduce a las enfermedades cardiovasculares como parte de las enfermedades no transmisibles (ENT) y explica cómo prevenirlas. Aborda los principales factores de riesgo, diferenciando entre modificables y no modificables, y promueve hábitos saludables para reducir el impacto de la hipertensión, el colesterol, la diabetes, el sedentarismo y el tabaquismo.",
@@ -2958,7 +2958,7 @@ const TEMPLATES = {
         "Herramientas y conocimientos clave para brindar una experiencia de juego segura, ordenada y de calidad.",
       anio: 2014,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/77.jpg@@",
+      imagen: "assets/cursos/77.jpg",
       personas: "Anfitriones de Zona E, Cajeros y Jefes.",
       descripcion:
         "Este curso está orientado a anfitriones de Zona Entretenimientos y desarrolla las funciones clave del rol. Aborda las tareas diarias, la apertura y cierre del sector, el cruce de seguridad y el conocimiento del funcionamiento y ubicación de los juegos, con foco en la atención al cliente y el trato cordial.",
@@ -2969,7 +2969,7 @@ const TEMPLATES = {
       bajada: "Cómo brindar una excelente atención al cliente en el sector de Zona Gourmet.",
       anio: 2024,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/78.jpg@@",
+      imagen: "assets/cursos/78.jpg",
       personas: "Camareros de Zona Gourmet.",
       descripcion:
         "Este curso introduce a los camareros en la experiencia Zona Gourmet y los objetivos del rol. Aborda los preparativos de inicio y cierre de jornada y desarrolla los 16 pasos de la atención al cliente, desde la bienvenida y toma del pedido hasta el cobro, la despedida y la limpieza final de la mesa.",
@@ -2980,7 +2980,7 @@ const TEMPLATES = {
       bajada: "Criterios esenciales para el cuidado, control de calidad y exhibición de frutas y verduras.",
       anio: 2017,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/79.jpg@@",
+      imagen: "assets/cursos/79.jpg",
       personas: "Personal del sector Verdulería.",
       descripcion:
         "Este curso aborda los conceptos fundamentales del sector de frutas y verduras, como la clasificación de productos, la estacionalidad y los controles de calidad. Se trabajan criterios de almacenamiento, control de temperaturas y buenas prácticas de exhibición e higiene para prevenir mermas y asegurar productos frescos y seguros para el consumo.",
@@ -2991,7 +2991,7 @@ const TEMPLATES = {
       bajada: "Procedimiento estandarizado para una recepción de mercadería precisa y controlada.",
       anio: 2016,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/80.jpg@@",
+      imagen: "assets/cursos/80.jpg",
       personas: "Gerentes, Jefes de Operaciones, Jefes de Recepción, Fiscalizadores y Recepcionistas.",
       descripcion:
         "Este curso explica el procedimiento completo para la recepción de mercadería de proveedores directos. Aborda las etapas de carga de orden de compra, descarga y control de mercadería, registro de embalajes, confirmación del pedido, gestión de devoluciones y salida del proveedor, asegurando una recepción ordenada, precisa y sin desvíos.",
@@ -3002,7 +3002,7 @@ const TEMPLATES = {
       bajada: "Lineamientos esenciales para proteger la información y los sistemas de la compañía.",
       anio: 2024,
       duracion: "Curso largo",
-      imagen: "@@ASSET:assets/cursos/81.jpg@@",
+      imagen: "assets/cursos/81.jpg",
       personas: "Todo el personal de la compañía.",
       descripcion:
         "Este curso presenta los fundamentos de la Seguridad de la Información en COTO y el uso responsable de la información como activo estratégico. Aborda el Convenio de Confidencialidad, la clasificación de la información, la gestión de accesos y las responsabilidades de Sistemas y de los empleados para prevenir usos indebidos.",
@@ -3013,7 +3013,7 @@ const TEMPLATES = {
       bajada: "¡Todo lo que necesitás para ser un gran anfitrión en los Cumples de Zona E!",
       anio: 2024,
       duracion: "Curso medio",
-      imagen: "@@ASSET:assets/cursos/82.jpg@@",
+      imagen: "assets/cursos/82.jpg",
       personas: "Anfitriones de Zona E.",
       descripcion:
         "En este curso conocerás las propuestas de Zona Cumples y cómo comunicarlas de forma clara a los clientes. Se desarrollan las 5 etapas del cumple —venta, contratación, preparación, día del evento y post cumple— y las tareas clave en cada una, reforzando la importancia de una atención al cliente de calidad en todo el proceso.",
@@ -3913,6 +3913,7 @@ function docSnapshotTecnico() {
   return {
     tecnico: state.tecnico,
     deletedTecnico: state.deletedTecnico,
+    moodle: state.moodle || null,
   };
 }
 function docSnapshotEduArchivo() {
@@ -4227,6 +4228,9 @@ const state = {
   cotofrase: { day: "", v: 0, porUsuario: {} },
   deleted: {},
   tecnico: [],
+  // Resumen del último Excel de Moodle (ver moodleAplicar): fecha, cuántos
+  // e-learning y los presenciales, que solo cuentan en Reportes.
+  moodle: null,
   deletedTecnico: {},
   eduArchivo: [],
   // Fotos de portada, por id de tarjeta. Viven en su propia fila del backend.
@@ -6590,6 +6594,9 @@ function tecBarraHTML(sub) {
     '<span class="tbar-g">' +
     tecCategoriaFiltroHTML() +
     (sub === "grilla" ? '<button class="btn btn-ghost btn-sm" data-action="tec:add">+ Agregar curso</button>' : "") +
+    '<button class="btn btn-ghost btn-sm" data-action="moodle:abrir" title="' +
+    esc(state.moodle ? "Último Excel: " + new Date(state.moodle.fecha).toLocaleDateString("es-AR") : "Todavía no se cargó ningún Excel de Moodle") +
+    '">⤓ Actualizar desde Moodle</button>' +
     tecColsPopHTML() +
     "</span>" +
     '<span class="tbar-g"><span class="tbar-lbl">Ordenar</span>' +
@@ -6772,22 +6779,533 @@ function tecCategoriasUsadas() {
   state.tecnico.forEach((f) => f.categoria && set.add(f.categoria));
   return [...set].sort((a, b) => a.localeCompare(b));
 }
-// Las categorías de Técnico y los sectores del Mapa son dos listas que casi
-// coinciden pero no del todo (Seguridad e Higiene, Pañol y Centro de
-// Distribución existen de un lado y no del otro). Ofrecer los dos conjuntos en
-// el mismo desplegable no fuerza nada, pero hace que escribir una variante
-// nueva sea lo raro y no lo cómodo.
+// Primero las categorías de Moodle (la lista oficial, ver MOODLE_SECTOR) y
+// después cualquier otra que ya se use y no sea un nombre viejo de una de
+// ellas. Escribir una variante nueva tiene que ser lo raro, no lo cómodo.
 function tecCategoriasDatalistHTML() {
-  const usadas = tecCategoriasUsadas(),
-    vistas = new Set(usadas.map((c) => c.toLowerCase())),
-    sectores = Object.values(SECTORES)
-      .map((x) => x.nombre)
-      .filter((n) => !vistas.has(n.toLowerCase()));
+  const oficiales = Object.keys(MOODLE_SECTOR),
+    vistas = new Set(oficiales.map(normCat)),
+    otras = tecCategoriasUsadas().filter((c) => !vistas.has(normCat(c)) && !categoriaMoodle(c));
   return (
     '<datalist id="tecCategoriasList">' +
-    usadas.concat(sectores).map((c) => '<option value="' + esc(c) + '">').join("") +
+    oficiales.concat(otras).map((c) => '<option value="' + esc(c) + '">').join("") +
     "</datalist>"
   );
+}
+// ===== Moodle: la lista oficial de categorías =====
+// Técnico tenía «categorías» y el Mapa «sectores»: dos listas que casi
+// coincidían (Frescos 1 / Frescos I, Zona E! / Zona E, Seguridad e Higiene /
+// Higiene y Seguridad…) y que había que mantener a mano. Ahora la categoría
+// de un curso es la de Moodle, tal cual la exporta el Excel del área, y esta
+// tabla dice en qué sector del Mapa cae cada una. Una categoría que no tiene
+// sector propio (los centros de distribución) queda en vacío: se ve en
+// Técnico, pero no inventa un sector en el Mapa.
+const MOODLE_SECTOR = {
+    Administración: "administracion",
+    // En Moodle lo de TCI vive en Administración y Finanzas; en el Mapa sigue
+    // siendo su propio sector.
+    "Administración y Finanzas": "tci",
+    "Area Frescos - Centro de Distribución": "",
+    "Area No Alimentos - Centro de Distribución": "",
+    "Area Secos - Centro de Distribución": "",
+    "Atención al Cliente": "atencion-al-cliente",
+    Cajas: "cajas",
+    "Control de Calidad": "control-de-calidad",
+    "Coto Digital": "coto-digital",
+    Elaborados: "elaborados",
+    "Flota Propia": "flota-propia",
+    "Frescos I": "frescos-1",
+    "Frescos II": "frescos-2",
+    "Gestión Comercial": "gestion-comercial",
+    "Higiene y Seguridad": "seguridad-higiene",
+    Mantenimiento: "mantenimiento",
+    "No Alimentos": "no-alimentos",
+    "Recursos Humanos - Administración de Personal": "recursos-humanos",
+    Salón: "salon",
+    Seguridad: "seguridad",
+    "Seguridad de la Información": "sistemas",
+    "Servicio Médico": "servicio-medico",
+    "Zona E": "zona-e",
+  },
+  // Cómo se llamaban en Técnico antes de seguir a Moodle. Sirve para que una
+  // fila vieja siga cayendo en su sector, y para corregir al vuelo a quien
+  // escriba el nombre de antes.
+  CATEGORIA_VIEJA = {
+    "frescos 1": "Frescos I",
+    "frescos 2": "Frescos II",
+    "recursos humanos": "Recursos Humanos - Administración de Personal",
+    "zona e!": "Zona E",
+    "seguridad e higiene": "Higiene y Seguridad",
+    tci: "Administración y Finanzas",
+  },
+  // Los presenciales no son filas de Técnico (no tienen SCORM, ni portada, ni
+  // diseño): se cuentan aparte, solo en Reportes. Testing es Moodle probándose
+  // a sí mismo y no se cuenta en ningún lado.
+  MOODLE_PRESENCIAL = "Presenciales",
+  MOODLE_IGNORADAS = ["Testing"];
+function normCat(txt) {
+  return String(txt || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+// El nombre de Moodle para lo que se haya escrito, si lo hay: igual salvo
+// mayúsculas/acentos/espacios, o uno de los nombres viejos de Técnico.
+function categoriaMoodle(txt) {
+  const k = normCat(txt);
+  if (!k) return "";
+  const exacta = Object.keys(MOODLE_SECTOR).find((c) => normCat(c) === k);
+  return exacta || CATEGORIA_VIEJA[k] || (k === normCat(MOODLE_PRESENCIAL) ? MOODLE_PRESENCIAL : "");
+}
+// El sector del Mapa que le toca a una categoría de Técnico. Antes esto era
+// toSector(), que solo acertaba si la categoría se escribía igual que la clave
+// interna del sector: «Frescos 1» no encontraba a «frescos-1».
+function sectorDeCategoria(txt) {
+  const moodle = categoriaMoodle(txt);
+  if (moodle) return MOODLE_SECTOR[moodle] || null;
+  const k = normCat(txt),
+    porNombre =
+      Object.keys(SECTORES).find((s) => normCat(SECTORES[s].nombre) === k) ||
+      // Pañol no es categoría de Moodle; en el Mapa es «Pañol y Base 12».
+      (k === "panol" && SECTORES["panol-base-12"] ? "panol-base-12" : null);
+  if (porNombre) return porNombre;
+  const s = toSector(txt);
+  return s && SECTORES[s] ? s : null;
+}
+
+// --- Leer el Excel ---------------------------------------------------------
+// La página no puede cargar librerías de afuera (lo prohíbe su política de
+// seguridad), así que el .xlsx se abre a mano: es un zip con XML adentro. Se
+// lee el índice del zip, se descomprime lo que haga falta con lo que ya trae
+// el navegador, y de la primera hoja sale una tabla de filas y columnas.
+async function zipEntradas(buf) {
+  const dv = new DataView(buf),
+    u8 = new Uint8Array(buf);
+  let fin = -1;
+  for (let i = u8.length - 22; i >= Math.max(0, u8.length - 66000); i--)
+    if (dv.getUint32(i, true) === 0x06054b50) {
+      fin = i;
+      break;
+    }
+  if (fin < 0) throw new Error("No parece un archivo de Excel (.xlsx).");
+  const total = dv.getUint16(fin + 10, true),
+    entradas = {};
+  let p = dv.getUint32(fin + 16, true);
+  for (let n = 0; n < total; n++) {
+    const metodo = dv.getUint16(p + 10, true),
+      tam = dv.getUint32(p + 20, true),
+      largoNombre = dv.getUint16(p + 28, true),
+      largoExtra = dv.getUint16(p + 30, true),
+      largoComent = dv.getUint16(p + 32, true),
+      local = dv.getUint32(p + 42, true),
+      nombre = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + largoNombre));
+    entradas[nombre] = { metodo, tam, local };
+    p += 46 + largoNombre + largoExtra + largoComent;
+  }
+  return {
+    nombres: Object.keys(entradas),
+    async texto(nombre) {
+      const e = entradas[nombre];
+      if (!e) return null;
+      const ini = e.local + 30 + dv.getUint16(e.local + 26, true) + dv.getUint16(e.local + 28, true),
+        datos = u8.slice(ini, ini + e.tam);
+      if (e.metodo === 0) return new TextDecoder().decode(datos);
+      if (e.metodo !== 8) throw new Error("El Excel viene comprimido de una forma que no sé abrir.");
+      const flujo = new Blob([datos]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return await new Response(flujo).text();
+    },
+  };
+}
+function xmlDe(texto) {
+  return new DOMParser().parseFromString(texto, "application/xml");
+}
+async function leerXlsx(buf) {
+  const zip = await zipEntradas(buf),
+    compartidos = [],
+    ss = await zip.texto("xl/sharedStrings.xml");
+  if (ss)
+    xmlDe(ss)
+      .querySelectorAll("si")
+      .forEach((si) => compartidos.push([...si.querySelectorAll("t")].map((t) => t.textContent).join("")));
+  const hoja =
+    zip.nombres.find((n) => n === "xl/worksheets/sheet1.xml") ||
+    zip.nombres.filter((n) => /^xl\/worksheets\/[^/]+\.xml$/.test(n)).sort()[0];
+  if (!hoja) throw new Error("El Excel no tiene ninguna hoja.");
+  const filas = [];
+  xmlDe(await zip.texto(hoja))
+    .querySelectorAll("sheetData > row")
+    .forEach((row) => {
+      const fila = [];
+      row.querySelectorAll("c").forEach((c) => {
+        const ref = c.getAttribute("r") || "",
+          letras = (ref.match(/^[A-Z]+/) || [""])[0];
+        let col = 0;
+        for (const l of letras) col = col * 26 + (l.charCodeAt(0) - 64);
+        const t = c.getAttribute("t"),
+          v = c.querySelector("v"),
+          val =
+            t === "s"
+              ? compartidos[+((v && v.textContent) || 0)] || ""
+              : t === "inlineStr"
+                ? [...c.querySelectorAll("t")].map((x) => x.textContent).join("")
+                : t === "str" || t === "b"
+                  ? (v && v.textContent) || ""
+                  : v && v.textContent !== ""
+                    ? Number(v.textContent)
+                    : "";
+        fila[(col || fila.length + 1) - 1] = val;
+      });
+      filas.push(fila);
+    });
+  return filas;
+}
+// Por si alguien lo guarda como CSV desde Excel (que en castellano separa con
+// punto y coma).
+function leerCsv(texto) {
+  const primera = texto.split(/\r?\n/)[0] || "",
+    sep = (primera.match(/;/g) || []).length > (primera.match(/,/g) || []).length ? ";" : ",",
+    filas = [];
+  let fila = [],
+    campo = "",
+    comillas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const ch = texto[i];
+    if (comillas) {
+      if (ch === '"' && texto[i + 1] === '"') ((campo += '"'), i++);
+      else if (ch === '"') comillas = false;
+      else campo += ch;
+    } else if (ch === '"') comillas = true;
+    else if (ch === sep) (fila.push(campo), (campo = ""));
+    else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && texto[i + 1] === "\n") i++;
+      (fila.push(campo), filas.push(fila), (fila = []), (campo = ""));
+    } else campo += ch;
+  }
+  if (campo || fila.length) (fila.push(campo), filas.push(fila));
+  return filas.filter((f) => f.some((x) => String(x).trim()));
+}
+// Excel guarda las fechas como días desde el 30/12/1899; el CSV, como texto
+// (2025-07-24 12:50 o 24/07/2025). Todo sale como AAAA-MM-DD.
+function fechaMoodle(v) {
+  if (typeof v === "number" && isFinite(v) && v > 1)
+    return new Date(Math.round((v - 25569) * 86400000)).toISOString().slice(0, 10);
+  const s = String(v || "").trim();
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[1] + "-" + m[2] + "-" + m[3];
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0");
+  return "";
+}
+// De la tabla cruda a cursos. Las columnas se buscan por su encabezado, no
+// por su posición, para que reordenarlas en el Excel no cambie nada.
+function cursosDeMoodle(tabla) {
+  const cab = (tabla[0] || []).map((c) => normCat(c).replace(/[^a-z]/g, "")),
+    col = (...nombres) => cab.findIndex((c) => nombres.includes(c)),
+    ix = {
+      id: col("id"),
+      creado: col("fecreacion", "fechacreacion", "fechadecreacion"),
+      categoria: col("categoria"),
+      nombre: col("nombre", "nombrecompleto"),
+      visible: col("visible"),
+      scorm: col("femodifscorm", "fechamodifscorm", "scorm"),
+    };
+  if (ix.nombre < 0 || ix.categoria < 0)
+    throw new Error("No encontré las columnas «Nombre» y «Categoría» en la primera fila.");
+  const celda = (fila, i) => (i < 0 ? "" : fila[i] === undefined ? "" : fila[i]);
+  return tabla
+    .slice(1)
+    .map((f) => ({
+      id: String(celda(f, ix.id)).trim(),
+      nombre: String(celda(f, ix.nombre)).trim(),
+      categoria: String(celda(f, ix.categoria)).trim(),
+      creado: fechaMoodle(celda(f, ix.creado)),
+      scorm: fechaMoodle(celda(f, ix.scorm)),
+      visible: ix.visible < 0 ? true : !/^(0|no|false)$/i.test(String(celda(f, ix.visible)).trim()),
+    }))
+    .filter((c) => c.nombre);
+}
+
+// --- Cruzar con Técnico ----------------------------------------------------
+// Cada curso de Moodle busca su fila: primero por el número de Moodle (si ya
+// se importó alguna vez), después por el nombre igual, después por un nombre
+// parecido. Lo muy parecido se toma solo; lo dudoso lo decide una persona.
+function moodleCruce(cursos) {
+  const libres = new Set(state.tecnico.map((f) => f.id)),
+    porId = new Map(state.tecnico.filter((f) => f.moodleId).map((f) => [String(f.moodleId), f])),
+    res = { pares: [], dudosos: [], nuevos: [], presenciales: [], ignorados: 0, soloTec: [] },
+    tomar = (fila) => libres.delete(fila.id);
+  const elearning = [];
+  cursos.forEach((c) => {
+    if (MOODLE_IGNORADAS.some((x) => normCat(x) === normCat(c.categoria))) return void res.ignorados++;
+    if (normCat(c.categoria) === normCat(MOODLE_PRESENCIAL)) return void res.presenciales.push(c);
+    elearning.push(c);
+  });
+  const sinPar = [];
+  elearning.forEach((c) => {
+    const fila = (c.id && porId.get(c.id)) || null;
+    if (fila && libres.has(fila.id)) (tomar(fila), res.pares.push({ curso: c, fila }));
+    else sinPar.push(c);
+  });
+  const quedan = [];
+  sinPar.forEach((c) => {
+    const n = tecNormTitulo(c.nombre),
+      fila = state.tecnico.find((f) => libres.has(f.id) && tecNormTitulo(f.curso) === n);
+    if (fila) (tomar(fila), res.pares.push({ curso: c, fila }));
+    else quedan.push(c);
+  });
+  // Los parecidos se reparten de mejor a peor, para que dos cursos de Moodle
+  // no se peleen la misma fila.
+  const candidatos = [];
+  quedan.forEach((c) =>
+    state.tecnico.forEach((f) => {
+      if (!libres.has(f.id) || !tecNormTitulo(f.curso)) return;
+      const score = tecParecido(c.nombre, f.curso);
+      if (score >= PAR_UMBRAL) candidatos.push({ curso: c, fila: f, score });
+    }),
+  );
+  const usados = new Set();
+  candidatos
+    .sort((a, b) => b.score - a.score)
+    .forEach((x) => {
+      if (usados.has(x.curso) || !libres.has(x.fila.id)) return;
+      (usados.add(x.curso), tomar(x.fila));
+      (x.score >= PAR_SEGURO ? res.pares : res.dudosos).push(x);
+    });
+  quedan.filter((c) => !usados.has(c)).forEach((c) => res.nuevos.push(c));
+  res.soloTec = state.tecnico.filter((f) => libres.has(f.id) && tecNormTitulo(f.curso));
+  return res;
+}
+// Qué le cambiaría a una fila. Solo se completa lo que Moodle sabe mejor:
+// la categoría, si sigue visible, y la última subida del SCORM (si es más
+// nueva que la anotada). La fecha de publicación se llena solo si estaba
+// vacía: esa la carga el equipo y no se pisa.
+function moodleCambios(fila, c) {
+  const cambios = {},
+    cat = c.categoria;
+  if (cat && cat !== fila.categoria) cambios.categoria = [fila.categoria || "", cat];
+  if (c.scorm && (!fila.scorm || tecFechaMala(fila.scorm) || c.scorm > fila.scorm))
+    cambios.scorm = [fila.scorm || "", c.scorm];
+  if (c.creado && !fila.publicacion) cambios.publicacion = ["", c.creado];
+  if (tecFilaActiva(fila) !== c.visible) cambios.baja = [!tecFilaActiva(fila), !c.visible];
+  if (c.id && String(fila.moodleId || "") !== c.id) cambios.moodleId = [fila.moodleId || "", c.id];
+  return cambios;
+}
+let moodlePendiente = null;
+function moodleImportarModal() {
+  ((moodlePendiente = null),
+    openModal(
+      '<h2>Actualizar desde Moodle</h2><div class="sub-t">Elegí el Excel de cursos que exporta Moodle. Antes de tocar nada te muestro qué cambiaría.</div>' +
+        '<div class="fld"><label>Excel de cursos (.xlsx o .csv)</label><input type="file" id="moodleFile" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"></div>' +
+        '<div id="moodlePrevia"></div>' +
+        '<div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="moodle:aplicar" id="moodleAplicar" disabled>Aplicar cambios</button></div>',
+      "modal-ancho",
+    ));
+  const el = $("#moodleFile");
+  if (el)
+    el.addEventListener("change", async () => {
+      const archivo = el.files && el.files[0];
+      if (!archivo) return;
+      try {
+        const buf = await archivo.arrayBuffer(),
+          tabla = /\.csv$/i.test(archivo.name) ? leerCsv(new TextDecoder().decode(buf)) : await leerXlsx(buf),
+          cursos = cursosDeMoodle(tabla);
+        if (!cursos.length) throw new Error("El archivo no trae ningún curso.");
+        moodlePendiente = { archivo: archivo.name, cursos, cruce: moodleCruce(cursos) };
+        ($("#moodlePrevia").innerHTML = moodlePreviaHTML(moodlePendiente)), ($("#moodleAplicar").disabled = false);
+      } catch (err) {
+        ((moodlePendiente = null),
+          ($("#moodlePrevia").innerHTML = '<div class="note warn">' + esc(err.message || String(err)) + "</div>"),
+          ($("#moodleAplicar").disabled = true));
+      }
+    });
+}
+const MOODLE_CAMPO = { categoria: "Categoría", scorm: "SCORM", publicacion: "Publicación", baja: "Estado", moodleId: "N.º Moodle" };
+function moodleCambioTxt(k, par) {
+  if (k === "baja") return par[1] ? "pasa a dado de baja (oculto en Moodle)" : "vuelve a vigente (visible en Moodle)";
+  if (k === "moodleId") return "";
+  const fmt = (v) => (k === "categoria" ? v || "sin categoría" : v ? v.split("-").reverse().join("/") : "vacía");
+  return MOODLE_CAMPO[k] + ": " + esc(fmt(par[0])) + " → <b>" + esc(fmt(par[1])) + "</b>";
+}
+function moodlePreviaHTML(p) {
+  const x = p.cruce,
+    conCambios = x.pares
+      .map((par) => ({ par, cambios: moodleCambios(par.fila, par.curso) }))
+      .filter((o) => Object.keys(o.cambios).some((k) => k !== "moodleId")),
+    soloId = x.pares.length - conCambios.length,
+    porCampo = ["categoria", "scorm", "publicacion", "baja"]
+      .map((k) => [k, conCambios.filter((o) => o.cambios[k]).length])
+      .filter((par) => par[1])
+      .map((par) => ({ categoria: "categoría", scorm: "SCORM", publicacion: "publicación", baja: "estado" })[par[0]] + ": " + par[1])
+      .join(" · "),
+    presVis = x.presenciales.filter((c) => c.visible).length,
+    lista = (items) => '<ul class="mdl-lista">' + items.join("") + "</ul>",
+    bloque = (titulo, cuerpo, abierto) =>
+      '<details class="mdl-bloque"' + (abierto ? " open" : "") + "><summary>" + titulo + "</summary>" + cuerpo + "</details>";
+  return (
+    '<div class="mdl-resumen"><b>' +
+    p.cursos.length +
+    "</b> cursos en el Excel: " +
+    x.pares.length +
+    " ya están en Técnico, " +
+    x.dudosos.length +
+    " para confirmar, " +
+    x.nuevos.length +
+    " nuevos, " +
+    x.presenciales.length +
+    " presenciales" +
+    (x.ignorados ? " y " + x.ignorados + " de prueba (no se cuentan)" : "") +
+    ".</div>" +
+    (conCambios.length
+      ? bloque(
+          "Se actualizan " + conCambios.length + " curso" + (conCambios.length === 1 ? "" : "s") + ' <span class="mdl-pct">(' + porCampo + ")</span>",
+          lista(
+            conCambios.map(
+              (o) =>
+                "<li><b>" +
+                esc(o.par.fila.curso) +
+                "</b>" +
+                Object.keys(o.cambios)
+                  .map((k) => moodleCambioTxt(k, o.cambios[k]))
+                  .filter(Boolean)
+                  .map((t) => '<span class="mdl-cambio">' + t + "</span>")
+                  .join("") +
+                "</li>",
+            ),
+          ),
+          conCambios.length <= 12,
+        )
+      : '<div class="mdl-ok">Los ' + x.pares.length + " cursos que ya estaban coinciden con Moodle: no hay nada que cambiarles.</div>") +
+    (soloId && conCambios.length
+      ? '<div class="mdl-nota">Los otros ' + soloId + " ya coinciden con Moodle.</div>"
+      : "") +
+    (x.dudosos.length
+      ? bloque(
+          "¿Son el mismo curso? (" + x.dudosos.length + ")",
+          '<p class="mdl-nota">Se parecen pero no son iguales. Tildá los que sí son el mismo: esos se actualizan como los de arriba. Los que no tildes no se tocan (para no duplicarlos); si después resulta que eran otro curso, se agregan a mano.</p>' +
+            lista(
+              x.dudosos.map(
+                (d, i) =>
+                  '<li><label class="mdl-chk"><input type="checkbox" data-moodle-dudoso="' +
+                  i +
+                  '"> <span>Moodle: <b>' +
+                  esc(d.curso.nombre) +
+                  "</b><br>Técnico: <b>" +
+                  esc(d.fila.curso) +
+                  '</b> <span class="mdl-pct">' +
+                  Math.round(d.score * 100) +
+                  "% parecido</span></span></label></li>",
+              ),
+            ),
+          true,
+        )
+      : "") +
+    (x.nuevos.length
+      ? bloque(
+          "Cursos de Moodle que no están en Técnico (" + x.nuevos.length + ")",
+          '<p class="mdl-nota">Los tildados se agregan como filas nuevas, con su categoría y sus fechas.</p>' +
+            lista(
+              x.nuevos.map(
+                (c, i) =>
+                  '<li><label class="mdl-chk"><input type="checkbox" data-moodle-nuevo="' +
+                  i +
+                  '" checked> <span><b>' +
+                  esc(c.nombre) +
+                  "</b> · " +
+                  esc(c.categoria) +
+                  (c.visible ? "" : " · oculto en Moodle") +
+                  "</span></label></li>",
+              ),
+            ),
+          true,
+        )
+      : "") +
+    (x.presenciales.length
+      ? '<div class="mdl-nota">🏫 <b>' +
+        x.presenciales.length +
+        " presenciales</b> (" +
+        presVis +
+        " visibles): no se agregan a Técnico, se cuentan aparte en Reportes.</div>"
+      : "") +
+    (x.soloTec.length
+      ? bloque(
+          "Están en Técnico pero no en Moodle (" + x.soloTec.length + ")",
+          '<p class="mdl-nota">No se tocan. Si alguno se dio de baja, marcalo a mano.</p>' +
+            lista(x.soloTec.map((f) => "<li>" + esc(f.curso) + (f.categoria ? " · " + esc(f.categoria) : "") + "</li>")),
+          false,
+        )
+      : "")
+  );
+}
+function moodleAplicarCambios(fila, cambios) {
+  Object.keys(cambios).forEach((k) => (fila[k] = cambios[k][1]));
+}
+function moodleAplicar() {
+  const p = moodlePendiente;
+  if (!p) return;
+  const x = p.cruce,
+    tildado = (attr, i) => {
+      const el = document.querySelector("[" + attr + '="' + i + '"]');
+      return !!(el && el.checked);
+    };
+  let actualizadas = 0,
+    agregadas = 0;
+  const pares = x.pares.concat(x.dudosos.filter((d, i) => tildado("data-moodle-dudoso", i))),
+    nuevos = x.nuevos.filter((c, i) => tildado("data-moodle-nuevo", i));
+  pares.forEach((par) => {
+    const cambios = moodleCambios(par.fila, par.curso);
+    if (!Object.keys(cambios).length) return;
+    (moodleAplicarCambios(par.fila, cambios), Object.keys(cambios).some((k) => k !== "moodleId") && actualizadas++);
+  });
+  nuevos.forEach((c) => {
+    (state.tecnico.push({
+      id: uid(),
+      categoria: c.categoria,
+      curso: c.nombre,
+      publicacion: c.creado,
+      scorm: c.scorm,
+      mail: "",
+      portada: false,
+      mosaico: false,
+      evaluacion: false,
+      textos: false,
+      diseno: "",
+      estado: "",
+      baja: !c.visible,
+      moodleId: c.id,
+      cardId: null,
+      updatedAt: Date.now(),
+    }),
+      agregadas++);
+  });
+  state.moodle = {
+    fecha: Date.now(),
+    archivo: p.archivo,
+    elearning: x.pares.length + x.dudosos.length + x.nuevos.length,
+    elearningVisibles: p.cursos.filter(
+      (c) => normCat(c.categoria) !== normCat(MOODLE_PRESENCIAL) && !MOODLE_IGNORADAS.some((i) => normCat(i) === normCat(c.categoria)) && c.visible,
+    ).length,
+    presenciales: x.presenciales.map((c) => ({ id: c.id, nombre: c.nombre, visible: c.visible, creado: c.creado })),
+  };
+  ((moodlePendiente = null), parInvalidar(), touchTecnico(), closeModal(), render());
+  flash(
+    "Moodle al día: " +
+      actualizadas +
+      " curso" +
+      (actualizadas === 1 ? "" : "s") +
+      " actualizado" +
+      (actualizadas === 1 ? "" : "s") +
+      (agregadas ? ", " + agregadas + " nuevo" + (agregadas === 1 ? "" : "s") : "") +
+      ".",
+  );
+}
+// El resumen de la última importación viaja con Técnico. Si dos pantallas
+// importan, gana la más reciente: es una foto del Excel, no algo que se edita.
+function moodleMasNuevo(a, b) {
+  if (!a || !a.fecha) return b || null;
+  if (!b || !b.fecha) return a;
+  return b.fecha > a.fecha ? b : a;
 }
 // Reemplaza los dos prompt() nativos que se usaban para crear una fila: acá
 // mismo se puede corregir la categoría (o dejarla vacía) antes de crear.
@@ -8318,8 +8836,7 @@ function filaTieneNombre(fila) {
   return !!tecNormTitulo(fila.curso);
 }
 function cardNuevaParaFila(fila) {
-  const s = toSector(fila.categoria),
-    sector = s && SECTORES[s] ? s : null,
+  const sector = sectorDeCategoria(fila.categoria),
     tarjeta = newCard("curso", (fila.curso || "").trim() || "Curso sin título", {
       publicado: true,
       estado: "finalizado",
@@ -9752,6 +10269,30 @@ function repBajasHTML() {
     "</div>"
   );
 }
+// Lo que Moodle tiene publicado, según el último Excel cargado. Los
+// presenciales van solo acá: no son filas de Técnico (no tienen SCORM ni
+// piezas), pero son cursos que el área da y que el número total tiene que ver.
+function repMoodleHTML() {
+  const m = state.moodle;
+  if (!m || !m.fecha)
+    return '<div class="rep-empty">Todavía no se cargó el Excel de Moodle. Se carga desde Técnico → <b>⤓ Actualizar desde Moodle</b>.</div>';
+  const pres = m.presenciales || [],
+    presVis = pres.filter((c) => c.visible).length,
+    fila = (n, txt, sub) =>
+      '<div class="rep-mdl-fila"><b>' + n + "</b><span>" + txt + (sub ? "<i>" + sub + "</i>" : "") + "</span></div>";
+  return (
+    '<div class="rep-mdl">' +
+    fila(m.elearning || 0, "e-learning", (m.elearningVisibles || 0) + " visibles en Moodle") +
+    fila(pres.length, "presenciales", presVis + " visibles en Moodle") +
+    fila((m.elearning || 0) + pres.length, "en total", "") +
+    "</div>" +
+    '<div class="rep-nota">Según el Excel «' +
+    esc(m.archivo || "") +
+    "», cargado el " +
+    new Date(m.fecha).toLocaleDateString("es-AR") +
+    ". Los presenciales no están en Técnico: solo se cuentan acá.</div>"
+  );
+}
 function renderReportes() {
   // Antes era una pila: cuatro cajas, gráfico, gráfico, lista, lista — todo
   // del mismo ancho y del mismo peso, más de 2.500 px de scroll. Ahora hay
@@ -9793,7 +10334,10 @@ function renderReportes() {
     repSeccion("Catálogo por diseño", "Lo que está en HTML es lo que hay que rediseñar", repDisenoHTML()) +
     repSeccion("Antigüedad de lo publicado", "Cuándo salió lo que hoy sigue vigente", repAntiguedadHTML()) +
     "</div>" +
+    '<div class="rep-cols">' +
     repSeccion("Vigentes y dados de baja", "Sobre las " + state.tecnico.length + " filas de Seguimiento técnico", repBajasHTML()) +
+    repSeccion("Lo que hay en Moodle", "E-learning y presenciales, del último Excel", repMoodleHTML()) +
+    "</div>" +
     repFuenteHTML()
   );
 }
@@ -10698,7 +11242,6 @@ function renderInicio() {
       : "") +
     "</div></div>" +
     respaldoAvisoHTML() +
-    agendaAvisoHTML() +
     '<div class="hub-grid">' +
     inicioTarjetas().map(inicioCardHTML).join("") +
     "</div>" +
@@ -10707,9 +11250,6 @@ function renderInicio() {
     "</div></div>"
   );
 }
-// Aviso breve y descartable donde antes vivía la pestaña de Agenda, para
-// que el equipo no se quede buscándola — se va a rehacer de cero más
-// adelante, esto no es un error.
 // El plan gratuito de Supabase no hace copias de seguridad: si la base se
 // pierde, lo único que queda es un respaldo bajado a mano. Y un respaldo que
 // depende de que alguien se acuerde no existe. Así que lo recuerda la app, y
@@ -10742,12 +11282,6 @@ function respaldoAvisoHTML() {
     cuando +
     "</b> El plan gratuito no guarda copias: si algo le pasa a la base, esto es lo único que queda. Bajá una y dejala en el Drive del área.</span>\n" +
     '    <button class="btn btn-sm" data-action="data:export">⬇ Bajar respaldo</button>\n  </div>'
-  );
-}
-function agendaAvisoHTML() {
-  if (localStorage.getItem("cf.avisoAgendaOculto") === "1") return "";
-  return (
-    '<div class="note warn hub-aviso">\n    <span>📅 Sacamos la Agenda del equipo por un tiempo — la vamos a rehacer de cero. Vuelve pronto.</span>\n    <button class="hub-aviso-x" data-action="agendaAviso:cerrar" title="Cerrar aviso" aria-label="Cerrar aviso">✕</button>\n  </div>'
   );
 }
 const SLOT_SIMBOLOS = ["🍒", "🍋", "⭐", "🍀", "💎", "🔔", "7️⃣", "🍇"],
@@ -11917,7 +12451,9 @@ async function guardarTecnicoAhora() {
       const remote = await Store.remote(TEC_FILA);
       if (remote && Array.isArray(remote.tecnico)) {
         const merged = mergeCards(state.tecnico, remote.tecnico, state.deletedTecnico, remote.deletedTecnico || {});
-        ((state.tecnico = merged.cards), (state.deletedTecnico = merged.deleted));
+        ((state.tecnico = merged.cards),
+          (state.deletedTecnico = merged.deleted),
+          (state.moodle = moodleMasNuevo(state.moodle, remote.moodle)));
       }
     } catch (e) {}
   }
@@ -11936,7 +12472,9 @@ async function refreshTecnicoFromRemote() {
     const remote = await Store.remote(TEC_FILA);
     if (remote && Array.isArray(remote.tecnico)) {
       const merged = mergeCards(state.tecnico, remote.tecnico, state.deletedTecnico, remote.deletedTecnico || {});
-      ((state.tecnico = merged.cards), (state.deletedTecnico = merged.deleted));
+      ((state.tecnico = merged.cards),
+        (state.deletedTecnico = merged.deleted),
+        (state.moodle = moodleMasNuevo(state.moodle, remote.moodle)));
       if (state.view === "tecnico") renderTecList();
     }
   } catch (e) {}
@@ -12337,10 +12875,17 @@ document.addEventListener("click", (ev) => {
       repAbrirSector(el.dataset.sector);
       break;
     case "data:import":
-      doImport();
+      ((importCifrado = null), doImport());
+      break;
+    case "moodle:abrir":
+      moodleImportarModal();
+      break;
+    case "moodle:aplicar":
+      moodleAplicar();
       break;
     case "data:import-run":
-      runImport();
+      if (importCifrado && !$("#importText").value.trim()) runImportCifrado();
+      else runImport();
       break;
     case "data:reset":
       resetSeed();
@@ -12898,12 +13443,6 @@ document.addEventListener("click", (ev) => {
     case "cotofrase:toggle": {
       const el7c = $("#cotofracePop");
       if (el7c) ((el7c.classList.toggle("hidden")), cotofraseAlto());
-      break;
-    }
-    case "agendaAviso:cerrar": {
-      localStorage.setItem("cf.avisoAgendaOculto", "1");
-      const elAviso = ev.target.closest(".hub-aviso");
-      if (elAviso) elAviso.remove();
       break;
     }
     case "roulette:open": {
@@ -13514,9 +14053,14 @@ document.addEventListener("click", (ev) => {
       // mayúsculas/espacios, se pisa por la versión canónica — evita terminar
       // con "Cajas" y "cajas " como si fueran dos categorías distintas.
       if (ev.target && ev.target.dataset && ev.target.dataset.tecField === "categoria") {
+        // Primero contra Moodle (que también entiende los nombres viejos:
+        // «Frescos 1» pasa a «Frescos I»), después contra las ya usadas.
         const escrito = ev.target.value.trim(),
           clave = escrito.toLowerCase(),
-          canonica = clave && tecCategoriasUsadas().find((c) => c.toLowerCase() === clave && c !== escrito);
+          moodle = categoriaMoodle(escrito),
+          canonica =
+            (moodle && moodle !== escrito && moodle) ||
+            (clave && !moodle && tecCategoriasUsadas().find((c) => c.toLowerCase() === clave && c !== escrito));
         if (canonica) {
           const fila = state.tecnico.find((f) => f.id === ev.target.dataset.tecId);
           if (fila) ((ev.target.value = canonica), (fila.categoria = canonica), touchTecnico());
@@ -14617,7 +15161,7 @@ function enterAs(value) {
   ((state.userId = hallado ? hallado.id : null),
     aplicarPermisos(),
     ($("#userChip").innerHTML =
-      avatarChip + "<span>" + esc(value) + '</span><span style="opacity:.45;font-size:11px">▾</span>'));
+      avatarChip + '<span class="uc-nombre">' + esc(value) + '</span><span class="uc-flecha">▾</span>'));
   // Quién sos, arriba del menú: el nombre, tu rol en el equipo (o el mail con
   // el que entraste, si no figurás) y el distintivo de admin cuando
   // corresponde. Antes el menú no decía en ningún lado con qué cuenta estabas
@@ -16129,6 +16673,7 @@ function exportJSON() {
         fotos: state.fotos,
         tecnico: state.tecnico,
         eduArchivo: state.eduArchivo,
+        moodle: state.moodle,
       },
       null,
       2,
@@ -16172,7 +16717,7 @@ function exportCSV() {
 }
 function doImport() {
   openModal(
-    '<h2>Importar JSON</h2><div class="sub-t">Elegí el archivo del backup (o pegá su contenido abajo). <b>Reemplaza</b> los datos actuales.</div>\n  <div class="fld"><label>Archivo de backup</label><input type="file" id="importFile" accept=".json,application/json"></div>\n  <div class="fld"><label>…o pegá el JSON acá</label><textarea id="importText" style="min-height:120px;font-family:monospace;font-size:12px"></textarea></div>\n  <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="data:import-run">Importar y reemplazar</button></div>',
+    '<h2>Importar JSON</h2><div class="sub-t">Elegí el archivo del backup (o pegá su contenido abajo). <b>Reemplaza</b> los datos actuales.</div>\n  <div class="fld"><label>Archivo de backup</label><input type="file" id="importFile" accept=".json,.cifrado,application/json"></div>\n  <div class="fld hidden" id="importClaveFld"><label>Clave del respaldo automático</label><input type="password" id="importClave" autocomplete="off" placeholder="La que está guardada como RESPALDO_CLAVE"></div>\n  <div class="fld"><label>…o pegá el JSON acá</label><textarea id="importText" style="min-height:120px;font-family:monospace;font-size:12px"></textarea></div>\n  <div class="modal-foot"><button class="btn" data-action="modal:close">Cancelar</button><button class="btn btn-primary" data-action="data:import-run">Importar y reemplazar</button></div>',
   );
   // Un backup real pesa cientos de KB (con las portadas, más de un mega):
   // copiarlo y pegarlo a mano es incómodo, y el importador del panel de
@@ -16185,12 +16730,52 @@ function doImport() {
       if (!archivo) return;
       const lector = new FileReader();
       ((lector.onload = () => {
-        (($("#importText").value = String(lector.result || "")),
-          flash("Archivo leído: " + archivo.name));
+        const bytes = new Uint8Array(lector.result || new ArrayBuffer(0)),
+          cifrado = esRespaldoCifrado(bytes);
+        ((importCifrado = cifrado ? bytes : null),
+          $("#importClaveFld").classList.toggle("hidden", !cifrado),
+          ($("#importText").value = cifrado ? "" : new TextDecoder().decode(bytes)));
+        if (cifrado) ($("#importClave").focus(), flash("Respaldo cifrado: escribí la clave para abrirlo"));
+        else flash("Archivo leído: " + archivo.name);
       }),
         (lector.onerror = () => flash("No pude leer el archivo", true)),
-        lector.readAsText(archivo));
+        lector.readAsArrayBuffer(archivo));
     });
+}
+// El respaldo automático semanal (scripts/respaldo.mjs) sale cifrado, porque
+// queda guardado en un repositorio público. Es el formato de `openssl enc
+// -aes-256-cbc -pbkdf2 -iter 200000 -md sha256`: «Salted__», 8 bytes de sal y
+// el resto cifrado; clave e IV salen juntos del PBKDF2.
+const RESPALDO_ITER = 200000;
+let importCifrado = null;
+function esRespaldoCifrado(bytes) {
+  return bytes.length > 16 && String.fromCharCode.apply(null, bytes.slice(0, 8)) === "Salted__";
+}
+async function descifrarRespaldo(bytes, clave) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(clave), "PBKDF2", false, ["deriveBits"]),
+    kiv = new Uint8Array(
+      await crypto.subtle.deriveBits(
+        { name: "PBKDF2", salt: bytes.slice(8, 16), iterations: RESPALDO_ITER, hash: "SHA-256" },
+        base,
+        384,
+      ),
+    ),
+    llave = await crypto.subtle.importKey("raw", kiv.slice(0, 32), "AES-CBC", false, ["decrypt"]);
+  return new TextDecoder().decode(
+    await crypto.subtle.decrypt({ name: "AES-CBC", iv: kiv.slice(32) }, llave, bytes.slice(16)),
+  );
+}
+async function runImportCifrado() {
+  const clave = ($("#importClave") || {}).value || "";
+  if (!clave) return flash("Falta la clave del respaldo", true);
+  try {
+    $("#importText").value = await descifrarRespaldo(importCifrado, clave);
+    JSON.parse($("#importText").value);
+  } catch (err) {
+    $("#importText").value = "";
+    return flash("Esa clave no abre este respaldo", true);
+  }
+  ((importCifrado = null), runImport());
 }
 function runImport() {
   let tarjeta;
@@ -16237,6 +16822,7 @@ function runImport() {
         (state.cards = tarjeta.cards),
         (state.customTpl = tarjeta.templates || {}));
     }
+    if (tarjeta.moodle && tarjeta.moodle.fecha) state.moodle = moodleMasNuevo(state.moodle, tarjeta.moodle);
     if (tarjeta.fotos && typeof tarjeta.fotos === "object")
       ((state.fotos = Object.assign({}, state.fotos, tarjeta.fotos)), (fotosPendientes = true));
     // Seguimiento técnico y Archivos Edu Point viven en filas propias del
@@ -16462,6 +17048,7 @@ async function arrancarApp() {
   try {
     const tecDoc = await Store.load(TEC_FILA);
     if (tecDoc && Array.isArray(tecDoc.tecnico)) state.tecnico = tecDoc.tecnico;
+    if (tecDoc && tecDoc.moodle) state.moodle = tecDoc.moodle;
     if (tecDoc && tecDoc.deletedTecnico && typeof tecDoc.deletedTecnico === "object")
       state.deletedTecnico = pruneTombstones(tecDoc.deletedTecnico);
   } catch (errTec) {

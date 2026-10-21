@@ -11,6 +11,11 @@
 import { chromium } from "playwright";
 import { rutaChromium } from "./navegador.mjs";
 import { startFakeBackend } from "./fake-backend.mjs";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import { mkdtempSync, readdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const CHROMIUM = rutaChromium();
 // El ingreso pasó a ser una cuenta de verdad: mail y contraseña contra
@@ -685,6 +690,70 @@ async function pruebaImportarBorra(browser, backend) {
   (await page.close(), await otra.close());
 }
 
+// El respaldo automático semanal: el script baja las filas, las cifra, y la app
+// tiene que poder abrir ese archivo con la clave — y no con otra. Se corre el
+// script de verdad contra el backend de prueba, no una imitación.
+async function pruebaRespaldoCifrado(browser, backend) {
+  console.log("\nrespaldo automático cifrado");
+  await backend.reset();
+  const page = await openClient(browser, backend.url, "Dami");
+  await page.waitForTimeout(1500);
+  const tarjetas = await page.evaluate(() => state.cards.length);
+
+  const dir = mkdtempSync(join(tmpdir(), "respaldo-"));
+  // Asíncrono: el backend de prueba corre en este mismo proceso, y una llamada
+  // bloqueante lo congela justo cuando el script le pide las filas.
+  const { stdout: salida } = await promisify(execFile)("node", ["scripts/respaldo.mjs"], {
+    env: Object.assign({}, process.env, {
+      SUPABASE_URL: backend.url,
+      RESPALDO_MAIL: "respaldo@coto.com.ar",
+      RESPALDO_PASS: "Cotonetes2026",
+      RESPALDO_CLAVE: "clave-de-prueba-larga",
+      RESPALDO_DIR: dir,
+    }),
+  });
+  // Con una contraseña mala no sale nada: ni archivo vacío ni a medias.
+  const malo = await promisify(execFile)("node", ["scripts/respaldo.mjs"], {
+    env: Object.assign({}, process.env, {
+      SUPABASE_URL: backend.url,
+      RESPALDO_MAIL: "respaldo@coto.com.ar",
+      RESPALDO_PASS: "no-es-esta",
+      RESPALDO_CLAVE: "clave-de-prueba-larga",
+      RESPALDO_DIR: dir + "-malo",
+    }),
+  }).then(() => "salió bien", (e) => e.stderr);
+  check("con la contraseña mala el respaldo falla en vez de guardar algo", /No pude entrar/.test(malo), malo);
+  const archivos = readdirSync(dir);
+  check("el script deja un archivo cifrado", archivos.length === 1 && /\.cifrado$/.test(archivos[0]), { archivos, salida });
+
+  await page.evaluate(() => doImport());
+  await page.waitForTimeout(300);
+  await page.setInputFiles("#importFile", join(dir, archivos[0]));
+  await page.waitForTimeout(400);
+  const pide = await page.evaluate(() => !document.querySelector("#importClaveFld").classList.contains("hidden"));
+  check("la app reconoce el archivo cifrado y pide la clave", pide);
+
+  await page.fill("#importClave", "otra-clave-cualquiera");
+  await page.click('[data-action="data:import-run"]');
+  await page.waitForTimeout(800);
+  const conMala = await page.evaluate(() => ({
+    pregunta: !!document.querySelector('[data-action="confirm:yes"]'),
+    texto: document.querySelector("#importText") ? document.querySelector("#importText").value : "",
+  }));
+  check("con otra clave no abre nada", !conMala.pregunta && !conMala.texto, conMala);
+
+  await page.fill("#importClave", "clave-de-prueba-larga");
+  await page.click('[data-action="data:import-run"]');
+  await page.waitForTimeout(800);
+  const pregunta = await page.evaluate(() => (document.querySelector(".modal .sub-t") || {}).textContent || "");
+  check("con la clave buena lo abre y pregunta antes de reemplazar", /tablero/i.test(pregunta), pregunta);
+  await page.click('[data-action="confirm:yes"]');
+  await page.waitForTimeout(800);
+  const despues = await page.evaluate(() => state.cards.length);
+  check("y el tablero restaurado es el mismo", despues === tarjetas && tarjetas > 0, { tarjetas, despues });
+  await page.close();
+}
+
 // --- corrida ------------------------------------------------------------
 
 const backend = await startFakeBackend();
@@ -699,7 +768,8 @@ try {
     await pruebaBackendCaido(browser, backend),
     await pruebaFrasesSinRepetir(browser, backend.url),
     await pruebaDosTirandoALaVez(browser, backend),
-    await pruebaImportarBorra(browser, backend));
+    await pruebaImportarBorra(browser, backend),
+    await pruebaRespaldoCifrado(browser, backend));
 } finally {
   (await browser.close(), await backend.stop());
 }

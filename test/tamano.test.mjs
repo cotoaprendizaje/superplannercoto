@@ -77,17 +77,24 @@ let tablero = await filaDelBackend("coto");
 const fotos = await filaDelBackend("coto-fotos");
 
 check("el primer arranque deja escrito el tablero", !!(tablero && Array.isArray(tablero.cards)));
+// Las portadas de la semilla ya no viajan como base64: son archivos del sitio
+// (assets/cursos) y la tarjeta guarda solo la ruta. La fila de fotos queda
+// para las que suba el equipo a mano.
 check(
-  "las portadas se guardan en su propia fila",
-  !!(fotos && fotos.fotos && Object.keys(fotos.fotos).length > 0),
-  "coto-fotos: " + (fotos && fotos.fotos ? Object.keys(fotos.fotos).length + " portadas" : "no existe"),
+  "las portadas de la semilla se guardan como ruta, no como imagen",
+  !!(tablero && tablero.cards.some((c) => /^assets\/cursos\/\d+\.jpg$/.test((c.catalogo || {}).imagen || ""))),
+);
+check(
+  "la fila de fotos no se llena con las portadas de la semilla",
+  !(fotos && fotos.fotos && Object.keys(fotos.fotos).length > 0),
+  "coto-fotos: " + (fotos && fotos.fotos ? Object.keys(fotos.fotos).length + " portadas" : "vacía"),
 );
 
 let json = JSON.stringify(tablero);
 check("el tablero guardado no lleva imágenes adentro", json.indexOf("data:image") === -1);
 check("el tablero guardado entra bajo el tope", json.length < TOPE_KB * 1024, kb(json.length) + " de " + TOPE_KB + " KB");
 check("el tablero lleva sello de versión, para que el polling no lo baje entero", !!tablero.rev);
-console.log("         tablero: " + kb(json.length) + " · portadas aparte: " + kb(JSON.stringify(fotos).length));
+console.log("         tablero: " + kb(json.length) + " · fila de fotos: " + kb(JSON.stringify(fotos || {}).length));
 
 // ── Segundo arranque: acá estuvo el error. Al releer un tablero cuyas fotos
 //    ya salieron, el relleno del catálogo se las volvía a meter y el guardado
@@ -103,13 +110,16 @@ check("al segundo arranque el tablero no engordó", json.length < TOPE_KB * 1024
 
 // Y las portadas se siguen viendo: sacarlas del documento no puede costarle
 // la imagen a ninguna tarjeta.
-const portadas = await page.evaluate(() => ({
-  conPortada: state.cards.filter((c) => cardImagen(c).slice(0, 5) === "data:").length,
-  enMemoria: Object.keys(state.fotos).length,
-}));
+const portadas = await page.evaluate(async () => {
+  const rutas = state.cards.map(cardImagen).filter((src) => src.startsWith("assets/cursos/"));
+  const cargan = await Promise.all(
+    rutas.map((src) => new Promise((ok) => { const im = new Image(); im.onload = () => ok(im.naturalWidth > 0); im.onerror = () => ok(false); im.src = src; })),
+  );
+  return { conPortada: rutas.length, cargan: cargan.filter(Boolean).length };
+});
 check(
-  "las tarjetas siguen mostrando su portada",
-  portadas.conPortada > 0 && portadas.conPortada === portadas.enMemoria,
+  "las tarjetas siguen mostrando su portada (y el archivo existe)",
+  portadas.conPortada >= 80 && portadas.cargan === portadas.conPortada,
   JSON.stringify(portadas),
 );
 
