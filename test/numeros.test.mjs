@@ -193,7 +193,7 @@ else
     check("el gráfico por mes pasa a ser el de ese año", anio.mesesDelOtroAnio === anio.publicadosEseAnio, anio));
 
 // ── El pulso de Inicio contra las columnas del Planner ───────────────────
-// Los cuatro números del pie de Inicio y los contadores de las columnas del
+// Los números del pie de Inicio (uno por etapa) y los contadores de las columnas del
 // Planner cuentan lo mismo. Son dos lugares distintos del código, así que
 // nada garantiza que sigan de acuerdo salvo esto.
 console.log("\nel pulso de Inicio");
@@ -210,9 +210,9 @@ const pulso = await page.evaluate(async () => {
   );
   ((state.view = "kanban"), render());
   const enPlanner = [...document.querySelectorAll(".kcol-count")].map((el) => +el.textContent);
-  return { enInicio, enPlanner };
+  return { enInicio, enPlanner, etapas: ESTADOS.length };
 });
-(check("el pulso tiene un número por estado", pulso.enInicio.length === 4, pulso),
+(check("el pulso tiene un número por etapa", pulso.enInicio.length === pulso.etapas && pulso.etapas === 7, pulso),
   check(
     "cada número del pulso da lo mismo que su columna del Planner",
     pulso.enInicio.length === pulso.enPlanner.length &&
