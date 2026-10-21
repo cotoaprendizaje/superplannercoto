@@ -3408,18 +3408,45 @@ function equipoDe(tarjeta) {
 function segundo(tarjeta) {
   return equipoDe(tarjeta)[1] || "";
 }
+// LA REGLA de todo el Planner (los dos): "en acción" está solo el primero de
+// la fila, y solo mientras la tarjeta se está trabajando. En Próximo a
+// desarrollar todavía no arrancó; en En test se espera la aprobación del
+// sector; en Stand by está en pausa; En línea ya salió. En esas etapas nadie
+// está en acción: todos esperan. Lo pendiente de cada persona (su campana, Mi
+// semana, Carga del equipo, la etiqueta ⚡) es SOLO lo que tiene en acción.
+const ESTADOS_EN_ACCION = ["en-desarrollo", "diseno-listo", "con-claude"];
+function enAccion(tarjeta) {
+  return ESTADOS_EN_ACCION.includes(tarjeta.estado) ? equipoDe(tarjeta)[0] || "" : "";
+}
+// Por qué en esta etapa nadie está en acción (se dice en la ficha).
+const SIN_ACCION_PORQUE = {
+  pendiente: "todavía no arrancó",
+  "en-revision": "se está esperando la aprobación del sector",
+  "stand-by": "está en pausa",
+  finalizado: "ya está en línea",
+};
+// Tarjetas viejas: alguien en la lista de asignados pero sin responsable
+// guardado. Se veían "Sin responsable" aunque la ficha mostrara a alguien
+// primero. El primero de la lista pasa a ser el responsable, como dice la
+// ficha. Devuelve cuántas tarjetas se acomodaron.
+function normalizarEquipos() {
+  let n = 0;
+  state.cards.forEach((t) => {
+    const lista = equipoDe(t);
+    if ((t.responsable || null) !== (lista[0] || null) || (t.asignados || []).includes(t.responsable)) {
+      ((t.responsable = lista[0] || null), (t.asignados = lista.slice(1)), n++);
+    }
+  });
+  return n;
+}
 // En qué lugar está alguien (1, 2, 3…); 0 si no participa.
 function posicionEn(tarjeta, id) {
   return equipoDe(tarjeta).indexOf(id) + 1;
 }
-// Cómo se nombra cada lugar: el 1 está en acción; el resto espera su turno.
-function rolTxt(pos) {
-  return pos === 1 ? "En acción" : "Esperando para hacer";
-}
 // La etiqueta de las tarjetas cerradas (Planner y Planner B): "estas son las
 // que tengo en acción", sin tener que abrirlas ni filtrar.
 function enAccionTagHTML(tarjeta) {
-  return state.userId && tarjeta.responsable === state.userId && tarjeta.estado !== "finalizado"
+  return state.userId && enAccion(tarjeta) === state.userId
     ? '<span class="tag-accion" title="Sos quien la tiene en acción">⚡ En acción</span>'
     : "";
 }
@@ -3508,11 +3535,11 @@ function stackHTML(tarjeta) {
   if (!lista.length)
     return '<button class="stack-empty" data-action="roulette:open" title="Nadie asignado — probá girar la ruleta">🎡</button>';
   const quien = state.filters.persona || (state.mis && state.userId) || "",
-    pos = quien ? posicionEn(tarjeta, quien) : 0;
+    espera = quien && tarjeta.estado !== "finalizado" && participa(tarjeta, quien) && enAccion(tarjeta) !== quien;
   return (
     '<div class="stack">' +
     lista.map((arg) => avatarHTML(arg, true)).join("") +
-    (pos > 1 ? '<span class="pb-es2" title="Esperando para hacer: no le suma a su contador">espera · ' + pos + "º</span>" : "") +
+    (espera ? '<span class="pb-es2" title="Esperando para hacer: no le suma a sus pendientes">esperando</span>' : "") +
     "</div>"
   );
 }
@@ -4755,8 +4782,9 @@ function participa(tarjeta, id) {
 }
 function mine(tarjeta) {
   return (
-    // Solo cuenta como tuya si sos el 1: ser 2 se ve en la tarjeta, pero no suma.
-    state.userId && tarjeta.responsable === state.userId
+    // Solo cuenta como tuya si la tenés EN ACCIÓN (ver enAccion): estar
+    // esperando se ve en la tarjeta, pero no suma a tus pendientes.
+    !!state.userId && enAccion(tarjeta) === state.userId
   );
 }
 function quickPass(tarjeta, arg) {
@@ -5416,12 +5444,15 @@ function equipoCirculosHTML() {
     '<div class="eqc" role="group" aria-label="Filtrar por persona"><span class="eqc-t">' +
     (activo && member(activo)
       ? "Todo lo de " + esc(member(activo).nombre) + ": " +
-        vivas.filter((c) => c.responsable === activo).length + " en acción · " +
-        vivas.filter((c) => posicionEn(c, activo) > 1).length + " esperando para hacer · tocá de nuevo para ver todo"
-      : "El equipo · el número es lo que cada uno tiene en acción") +
+        vivas.filter((c) => enAccion(c) === activo).length + " en acción · " +
+        vivas.filter((c) => participa(c, activo) && enAccion(c) !== activo).length + " esperando · tocá de nuevo para ver todo"
+      : "El equipo · todo lo que tiene cada uno, en acción y esperando") +
     '</span><div class="eqc-l">' +
     TEAM.map((m) => {
-      const n = vivas.filter((c) => c.responsable === m.id).length;
+      // El número del círculo es el TOTAL de cada uno (en acción + esperando);
+      // lo pendiente —lo que de verdad le suma— es solo lo que está en acción.
+      const n = vivas.filter((c) => participa(c, m.id)).length,
+        accion = vivas.filter((c) => enAccion(c) === m.id).length;
       return (
         '<button class="eqc-b' +
         (activo === m.id ? " on" : activo ? " off" : "") +
@@ -5432,8 +5463,10 @@ function equipoCirculosHTML() {
         '" title="' +
         esc(m.nombre) +
         ": " +
-        n +
-        ' en acción"><span class="eqc-av">' +
+        accion +
+        " en acción y " +
+        (n - accion) +
+        ' esperando"><span class="eqc-av">' +
         avatarHTML(m.id) +
         '<span class="eqc-n' +
         (n ? "" : " cero") +
@@ -5476,19 +5509,21 @@ function pbAprobHTML(tarjeta) {
   );
 }
 function pbFilaHTML(tarjeta) {
-  const resto = equipoDe(tarjeta).slice(1),
-    pos = state.filters.persona ? posicionEn(tarjeta, state.filters.persona) : 0,
+  const equipo = equipoDe(tarjeta),
+    accion = enAccion(tarjeta),
+    quien = state.filters.persona || "",
+    espera = quien && tarjeta.estado !== "finalizado" && participa(tarjeta, quien) && accion !== quien,
     sectores = (tarjeta.sectores || []).map((x) => sectorName(x) || x);
   return (
     '<div class="pb-fila' +
     (tarjeta.estado === "stand-by" ? " pausa" : "") +
-    (pos > 1 ? " como-2" : "") +
+    (espera ? " como-2" : "") +
     (isOverdue(tarjeta) ? " venc" : "") +
     '" data-action="card:open" data-id="' +
     tarjeta.id +
     '" role="button" tabindex="0"><span class="pb-c pb-curso"><b>' +
     esc(tarjeta.titulo) +
-    (pos > 1 ? ' <span class="pb-es2" title="Esperando para hacer: no le suma a su contador">espera · ' + pos + "º</span>" : "") +
+    (espera ? ' <span class="pb-es2" title="Esperando para hacer: no le suma a sus pendientes">esperando</span>' : "") +
     "</b>" +
     enAccionTagHTML(tarjeta) +
     "<small>" +
@@ -5496,14 +5531,21 @@ function pbFilaHTML(tarjeta) {
     '</small></span><span class="pb-c pb-sector">' +
     (sectores.length ? sectores.map((n) => '<span class="pb-tag">' + esc(n) + "</span>").join("") : '<span class="pb-vacio">Sin sector</span>') +
     '</span><span class="pb-c pb-roles">' +
-    (tarjeta.responsable
-      ? '<span class="pb-uno" title="En acción: ' + esc((member(tarjeta.responsable) || {}).nombre || "") + '">' + avatarHTML(tarjeta.responsable) + "<i>1</i></span>"
-      : '<span class="pb-uno nadie" title="Nadie en acción">?</span>') +
-    resto
-      .slice(0, 2)
-      .map((id) => '<span class="pb-dos">' + avatarHTML(id, true) + "</span>")
-      .join("") +
-    (resto.length > 2 ? '<span class="pb-mas-gente" title="' + esc(resto.slice(2).map((id) => (member(id) || {}).nombre || id).join(", ")) + '">+' + (resto.length - 2) + "</span>" : "") +
+    // Quién la lleva, en orden. El que está en acción va resaltado; en las
+    // etapas de espera nadie lo está y todos se ven iguales.
+    (equipo.length
+      ? equipo
+          .slice(0, 3)
+          .map((id, i) =>
+            id === accion
+              ? '<span class="pb-uno" title="En acción: ' + esc((member(id) || {}).nombre || "") + '">' + avatarHTML(id) + "</span>"
+              : '<span class="pb-dos" title="Esperando: ' + esc((member(id) || {}).nombre || "") + '">' + avatarHTML(id, true) + "</span>",
+          )
+          .join("") +
+        (equipo.length > 3
+          ? '<span class="pb-mas-gente" title="' + esc(equipo.slice(3).map((id) => (member(id) || {}).nombre || id).join(", ")) + '">+' + (equipo.length - 3) + "</span>"
+          : "")
+      : '<span class="pb-uno nadie" title="Nadie la lleva todavía">?</span>') +
     '</span><span class="pb-c pb-pasos">' +
     pbPasosHTML(tarjeta) +
     '</span><span class="pb-c pb-aprobc">' +
@@ -5591,7 +5633,7 @@ function renderPlannerB() {
     '<div class="pb">' +
     equipoCirculosHTML() +
     flujo +
-    '<div class="pb-tabla"><div class="pb-cab"><span class="pb-cab-r">↑ Etapa</span><div class="pb-cab-c"><span>Curso</span><span>Sector</span><span>En acción</span><span>Próximo paso</span><span>Aprobación del sector</span></div></div>' +
+    '<div class="pb-tabla"><div class="pb-cab"><span class="pb-cab-r">↑ Etapa</span><div class="pb-cab-c"><span>Curso</span><span>Sector</span><span>Quién la lleva</span><span>Próximo paso</span><span>Aprobación del sector</span></div></div>' +
     (cuerpo ||
       '<div class="pb-nada">' +
         (state.filters.persona && member(state.filters.persona)
@@ -11099,7 +11141,7 @@ function exportReportesCSV() {
   const obj = {};
   (TEAM.forEach((m) => (obj[m.id] = { n: 0, alta: 0, venc: 0 })),
     cargaActivaCards().forEach((tarjeta) => {
-      [tarjeta.responsable]
+      [enAccion(tarjeta)]
         .filter(Boolean)
         .forEach((id) => {
           if (!obj[id]) return;
@@ -12564,7 +12606,7 @@ let accAbiertos = {},
 // a mano mientras se trabaja abajo.
 function panelCtxHTML(tarjeta) {
   const estado = ESTADOS.find((e) => e.id === tarjeta.estado) || { nombre: tarjeta.estado, dot: "#999" },
-    quien = member(tarjeta.responsable),
+    quien = member(equipoDe(tarjeta)[0]),
     vencida = isOverdue(tarjeta);
   return (
     '<div class="panel-ctx"><span class="pctx" style="--dot:' +
@@ -12578,7 +12620,7 @@ function panelCtxHTML(tarjeta) {
     (tarjeta.fin ? (vencida ? "⚠ Vencida el " : "📅 ") + tecFechaVer(tarjeta.fin) : "📅 Sin fecha de fin") +
     "</span>" +
     (quien
-      ? '<span class="pctx quien">' + avatarHTML(tarjeta.responsable, true) + esc(quien.nombre) + "</span>"
+      ? '<span class="pctx quien" title="' + (enAccion(tarjeta) ? "En acción" : "Esperando") + '">' + avatarHTML(quien.id, true) + esc(quien.nombre) + (enAccion(tarjeta) ? "" : " · esperando") + "</span>"
       : '<span class="pctx quien vacio">Sin responsable</span>') +
     "</div>"
   );
@@ -12588,27 +12630,32 @@ function panelCtxHTML(tarjeta) {
 // Flor arma el contenido y es 1; cuando termina, el 1 pasa a quien diseña.
 function rolesHTML(tarjeta) {
   const lista = equipoDe(tarjeta),
+    accion = enAccion(tarjeta),
+    porque = !accion && lista.length ? SIN_ACCION_PORQUE[tarjeta.estado] : "",
     libres = TEAM.filter((m) => !lista.includes(m.id)),
     hist = (tarjeta.historial1 || []).slice().reverse().slice(0, 5);
   return (
-    '<div class="eqo"><div class="eqo-h"><span class="eqo-t">Quién la lleva</span><span class="eqo-ayuda">Arrastrá para cambiar el orden · solo le cuenta a quien está en acción</span></div>' +
+    '<div class="eqo"><div class="eqo-h"><span class="eqo-t">Quién la lleva</span><span class="eqo-ayuda">Arrastrá para cambiar el orden · solo suma a los pendientes de quien está en acción</span></div>' +
+    (porque ? '<div class="eqo-nota">⏳ En esta etapa nadie está en acción: ' + esc(porque) + ".</div>" : "") +
     (lista.length
       ? '<ol class="eqo-l">' +
         lista
           .map(
             (id, i) =>
               '<li class="eqo-i' +
-              (i ? "" : " uno") +
+              (id === accion ? " uno" : "") +
               '" data-persona="' +
               id +
-              '"><span class="eqo-grip" draggable="true" title="Arrastrá para cambiar el lugar" aria-hidden="true">⋮⋮</span><span class="eqo-n">' +
-              (i + 1) +
-              "</span>" +
+              '"><span class="eqo-grip" draggable="true" title="Arrastrá para cambiar el lugar" aria-hidden="true">⋮⋮</span>' +
               avatarHTML(id) +
               '<span class="eqo-tx"><b>' +
               esc((member(id) || {}).nombre || id) +
               "</b><small>" +
-              (i ? rolTxt(i + 1) + " · no le suma todavía" : rolTxt(1) + " · le suma a su contador") +
+              (id === accion
+                ? "En acción · le suma a sus pendientes"
+                : i === 0
+                  ? "Esperando · arranca cuando la tarjeta avance"
+                  : "Esperando para hacer") +
               '</small></span><span class="eqo-acc">' +
               (i ? '<button class="eqo-btn" data-action="equipo:mover" data-persona="' + id + '" data-dir="-1" aria-label="Subir a ' + esc((member(id) || {}).nombre || id) + '" title="Subir">↑</button>' : "") +
               (i < lista.length - 1 ? '<button class="eqo-btn" data-action="equipo:mover" data-persona="' + id + '" data-dir="1" aria-label="Bajar a ' + esc((member(id) || {}).nombre || id) + '" title="Bajar">↓</button>' : "") +
@@ -13007,8 +13054,8 @@ function openCarga() {
       }),
   ),
     cargaActivaCards().forEach((tarjeta) => {
-      // Solo el 1: a cada uno le cuenta lo que lleva como principal.
-      const lista = [tarjeta.responsable].filter(Boolean);
+      // Solo lo que cada uno tiene en acción (ver enAccion).
+      const lista = [enAccion(tarjeta)].filter(Boolean);
       lista.forEach((arg) => {
         if (obj[arg]) {
           obj[arg].n++;
@@ -18070,6 +18117,7 @@ async function arrancarApp() {
   // El banner se armó unas líneas antes, cuando todavía no se sabía quién
   // había entrado: se rehace ahora para que el aviso de cuenta aparezca.
   showBanner();
+  if (normalizarEquipos()) (touch(), render());
   pedirPerfilSiFalta();
   chatArrancar();
   try {
@@ -18107,11 +18155,14 @@ function startPolling() {
         state.lastSyncTs = Date.now();
         return;
       }
+      // Una tarjeta vieja que llegó con alguien asignado pero sin
+      // responsable se acomoda acá también (ver normalizarEquipos).
       const editing =
           $("#panel").classList.contains("open") ||
           !$("#modal").classList.contains("hidden") ||
           escribiendo(),
         changed = await mergeRemoteIntoState();
+      if (normalizarEquipos()) touch();
       state.lastSyncTs = Date.now();
       if (!changed.length) return;
       if (editing) return;
