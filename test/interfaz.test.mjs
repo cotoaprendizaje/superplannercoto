@@ -1745,11 +1745,65 @@ check("el emoji de otra persona no se puede elegir", perfil.tomado === true, per
 check("guardar deja el emoji y el nombre elegidos en toda la app", perfil.tras.emoji === "🐙" && perfil.tras.nombre === "Evita" && perfil.tras.cerrado && perfil.tras.avatar, perfil);
 check("los perfiles se mezclan por persona, sin pisarse", JSON.stringify(perfil.mezcla) === JSON.stringify(["🐙", "🌵", "🌸"]), perfil);
 
+// ── El checklist no te manda arriba de la tarjeta ──
+console.log("\nchecklist sin saltos");
+const chkId = await page.evaluate(() => {
+  closeModal();
+  const t = newCard("curso", "ZZ checklist largo", {});
+  t.checklist = Array.from({ length: 10 }, (_, i) => ({ id: "zzc" + i, text: "Paso " + i, done: false }));
+  (state.cards.push(t), (state.view = "kanban"), render(), openDetail(t.id));
+  return t.id;
+});
+await page.waitForTimeout(300);
+await page.evaluate(() => document.querySelector('#panel [data-acc="checklist"] [data-action="cl:add"]').scrollIntoView({ block: "center" }));
+const chkAntesChk = await page.evaluate(() => document.querySelector("#panel .panel-body").scrollTop);
+await page.click('#panel [data-action="cl:toggle"][data-cl="zzc5"]');
+await page.waitForTimeout(200);
+const chkTrasTachar = await page.evaluate(() => ({
+  scroll: document.querySelector("#panel .panel-body").scrollTop,
+  abierto: document.querySelector('#panel [data-acc="checklist"]').open,
+}));
+await page.click('#panel [data-action="cl:add"]');
+await page.waitForTimeout(200);
+const chkTrasSumar = await page.evaluate(() => ({
+  scroll: document.querySelector("#panel .panel-body").scrollTop,
+  foco: (document.activeElement && document.activeElement.dataset && document.activeElement.dataset.field) || "",
+  abierto: document.querySelector('#panel [data-acc="checklist"]').open,
+}));
+await page.evaluate(() => closePanel());
+check("tachar un ítem deja la tarjeta donde estaba", chkAntesChk > 100 && Math.abs(chkTrasTachar.scroll - chkAntesChk) < 5 && chkTrasTachar.abierto, { chkAntesChk, chkTrasTachar });
+check("sumar un ítem no te manda arriba y deja el cursor en el nuevo", chkTrasSumar.scroll > 100 && /^cl:/.test(chkTrasSumar.foco) && chkTrasSumar.abierto, chkTrasSumar);
+
+// ── La 🎰 en la esquina de Inicio ──
+await page.setViewportSize({ width: 1366, height: 768 });
+const esquina = await page.evaluate(() => {
+  ((state.view = "inicio"), render());
+  const b = document.querySelector(".cotofrase-fab").getBoundingClientRect();
+  return { derecha: Math.round(innerWidth - b.right), arriba: Math.round(b.top), alto: innerHeight };
+});
+await page.setViewportSize({ width: 1400, height: 950 });
+check("en Inicio la 🎰 está arriba a la derecha (también en 1366)", esquina.derecha < 60 && esquina.arriba < 150, esquina);
+
 // ── El chat del equipo ──
 console.log("\nchat del equipo");
 await page.evaluate(() => { if (!document.querySelector("#chatBtn")) chatArrancar(); closeModal(); });
 const hayBoton = await page.evaluate(() => !!document.querySelector("#chatBtn") && document.querySelector("#chatPanel").hidden);
 await page.click("#chatBtn");
+// Arranca en Movimientos: lo que se movió en el tablero, sin que nadie avise.
+const novedades = await page.evaluate(() => {
+  const t = state.cards.find((c) => /^ZZ /.test(c.titulo) && !isInventory(c)) || boardCards()[0];
+  moverTarjetaAEstado(t, t.estado === "con-claude" ? "en-revision" : "con-claude");
+  render();
+  return {
+    tab: document.querySelector("#chatTabMov").classList.contains("on"),
+    sinCaja: document.querySelector("#chatForm").hidden,
+    titulo: t.titulo,
+    primero: (document.querySelector("#chatLista .mov") || {}).textContent || "",
+  };
+});
+check("las novedades arrancan en Movimientos, sin caja para escribir", novedades.tab && novedades.sinCaja, novedades);
+check("un movimiento del tablero aparece arriba de todo", novedades.primero.includes(novedades.titulo) && /pasó a/.test(novedades.primero), novedades);
+await page.click("#chatTabMsj");
 await page.fill("#chatTexto", "ZZ hola equipo");
 await page.press("#chatTexto", "Enter");
 await page.waitForTimeout(1500);
@@ -1770,6 +1824,7 @@ const otro = await page.evaluate(async () => {
   chatPintar();
   const badge = document.querySelector("#chatBadge"),
     conAviso = !badge.hidden && badge.textContent === "1";
+  chatElegirTab("msj");
   chatAlternar(true);
   const leido = badge.hidden;
   chatAlternar(false);

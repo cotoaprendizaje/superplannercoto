@@ -11529,3 +11529,125 @@ button.mat-ct:hover {
     height: 15px;
   }
 }
+
+/* ===== Novedades: dos solapas, movimientos y mensajes ===== */
+.chat-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 10px 0;
+  background: var(--coto-navy);
+}
+.chat-tabs button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 12px 12px 0 0;
+  background: transparent;
+  color: #9fb4d3;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.chat-tabs button.on {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.chat-tab-n {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #e5484d;
+  color: #fff;
+  font-size: 10.5px;
+  display: inline-grid;
+  place-items: center;
+}
+.chat-tab-n[hidden] {
+  display: none;
+}
+.chat-form[hidden] {
+  display: none;
+}
+.mov {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--tono, var(--line));
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mov:hover {
+  border-color: color-mix(in srgb, var(--coto-blue) 40%, var(--line));
+  border-left-color: var(--tono, var(--line));
+}
+.mov-tx {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mov-tx b {
+  font-size: 13.5px;
+  line-height: 1.3;
+}
+.mov-tx > span {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+.mov-quien {
+  font-weight: 800;
+  color: var(--coto-blue);
+}
+.mov .chat-h {
+  align-self: flex-start;
+  margin-top: 2px;
+}
+
+/* La 🎰 de la CotoFrase vive fija en la esquina de arriba a la derecha de
+   Inicio, en cualquier pantalla. Antes, en las de 1440 o menos, quedaba al
+   final de todo, abajo de las tarjetas y el pulso. */
+.hub-side:has(.cotofrase-launcher) {
+  position: fixed;
+  top: calc(var(--topbar-h, 66px) + 14px);
+  right: 22px;
+  left: auto;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  transform: none;
+  max-height: none;
+}
+.hub-side:has(.cotofrase-launcher) .cotofrase-pop {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(340px, calc(100vw - 32px));
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .hub-side:has(.cotofrase-launcher) {
+    top: calc(var(--topbar-h, 56px) + 10px);
+    right: 14px;
+  }
+  .hub-side:has(.cotofrase-launcher) .cotofrase-fab {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+}
