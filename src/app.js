@@ -3436,7 +3436,7 @@ function registrarUno(tarjeta, id) {
     lista.push({ id: tarjeta.responsable, desde: tarjeta.inicio || "", estado: tarjeta.estado });
   if (id) lista.push({ id, desde: isoOf(new Date()), estado: tarjeta.estado });
   if (lista.length > 20) lista.splice(0, lista.length - 20);
-  logAct(tarjeta, id ? "pasó a estar en acción " + ((member(id) || {}).nombre || id) : "quedó sin nadie en acción");
+  logAct(tarjeta, id ? "dejó en acción a " + ((member(id) || {}).nombre || id) : "la dejó sin nadie en acción");
 }
 function isOverdue(tarjeta) {
   const val = tarjeta.fin || tarjeta.inicio;
@@ -5057,6 +5057,9 @@ function render() {
     medirTopbar(),
     repFranjaArrancar(),
     devolverFoco(foco));
+  // Las novedades (movimientos) salen de las tarjetas: si el tablero cambió,
+  // el globito y la lista se ponen al día.
+  if ($("#chatBtn")) chatPintar();
 }
 // Si el re-render es de la MISMA vista (por ej. editar una tarjeta del
 // Planner sin cambiar de pestaña), el documento entero se vuelve a armar
@@ -5162,8 +5165,9 @@ function renderView() {
       // Alineado arriba con las tarjetas del hub, no centrado en la
       // ventana: así queda a la altura de lo primero que se ve, no
       // "flotando" a mitad de una pantalla que puede ser muy alta.
-      const elGrid = $(".hub-grid");
-      if (elGrid) elSide.style.top = elGrid.getBoundingClientRect().top + "px";
+      // La 🎰 vive fija en la esquina de arriba a la derecha (ver el CSS de
+      // .hub-side:has(.cotofrase-launcher)): no se alinea a mano.
+      elSide.style.top = "";
     } else {
       if (state.view === "kanban") {
         const abierta = $("#roulettePop") && !$("#roulettePop").classList.contains("hidden");
@@ -5608,7 +5612,14 @@ const CHAT_FILA = BACKEND.fila + "-chat",
   CHAT_ABIERTO_MS = 4000;
 let chatRev = null,
   chatAbierto = false,
-  chatUltimaConsulta = 0;
+  chatUltimaConsulta = 0,
+  // Qué solapa está a la vista: "mov" (movimientos de las tarjetas) o "msj".
+  // Arranca en movimientos: un mensaje se puede perder, un movimiento del
+  // tablero lo ve todo el equipo sin que nadie tenga que acordarse de avisar.
+  chatTab = "mov";
+try {
+  chatTab = localStorage.getItem("coto.novedades.tab") || "mov";
+} catch (e) {}
 function chatClaveLeido() {
   return "coto.chat.leido." + (state.userId || state.user || "");
 }
@@ -5684,6 +5695,78 @@ function chatDia(ts) {
   if (dia === isoOf(addDays(new Date(), -1))) return "Ayer";
   return new Date(ts).toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" });
 }
+// ── Movimientos: los hitos de las tarjetas, de todo el tablero ──
+// Sale de la Actividad que cada tarjeta ya registra (creada, pasó de etapa,
+// quién está en acción, publicada, de baja). No se guarda nada nuevo: viaja
+// con las tarjetas y se actualiza con el mismo pulso que el tablero.
+const MOV_DIAS = 45,
+  MOV_MAX = 80;
+function movimientos() {
+  const desde = Date.now() - MOV_DIAS * 86400000,
+    lista = [];
+  state.cards.forEach((c) =>
+    (c.actividad || []).forEach((a) => a && a.ts > desde && lista.push({ ts: a.ts, autor: a.autor || "", texto: a.texto || "", card: c })),
+  );
+  return lista.sort((a, b) => b.ts - a.ts).slice(0, MOV_MAX);
+}
+function movClaveVisto() {
+  return "coto.mov.visto." + (state.userId || state.user || "");
+}
+function movVistoHasta() {
+  try {
+    const v = localStorage.getItem(movClaveVisto());
+    // La primera vez no se cuenta todo lo de antes como novedad.
+    if (v === null) return (localStorage.setItem(movClaveVisto(), String(Date.now())), Date.now());
+    return +v;
+  } catch (e) {
+    return Date.now();
+  }
+}
+function movEsMio(m) {
+  return !!state.user && m.autor.toLowerCase() === String(state.user).toLowerCase();
+}
+function movNuevos() {
+  const desde = movVistoHasta();
+  return movimientos().filter((m) => m.ts > desde && !movEsMio(m)).length;
+}
+function movMarcarVisto() {
+  try {
+    localStorage.setItem(movClaveVisto(), String(Date.now()));
+  } catch (e) {}
+}
+function movimientosHTML() {
+  const lista = movimientos();
+  if (!lista.length)
+    return '<div class="chat-vacio"><b>Todavía no hay movimientos.</b><span>Acá aparece cada vez que alguien crea una tarjeta, la pasa de etapa, toma una en acción o publica un curso.</span></div>';
+  let dia = "";
+  return lista
+    .map((m) => {
+      const d = chatDia(m.ts),
+        quien = TEAM.find((x) => x.nombre.toLowerCase() === m.autor.toLowerCase()),
+        tono = estadoDe(m.card.estado).dot;
+      let html = "";
+      if (d !== dia) ((dia = d), (html += '<div class="chat-dia"><span>' + esc(d) + "</span></div>"));
+      return (
+        html +
+        '<button type="button" class="mov" data-action="chat:card" data-id="' +
+        m.card.id +
+        '" style="--tono:' +
+        tono +
+        '"><span class="chat-av">' +
+        (quien ? avatarHTML(quien.id, true) : '<span class="avatar sm">' + esc((m.autor || "?").slice(0, 1).toUpperCase()) + "</span>") +
+        '</span><span class="mov-tx"><b>' +
+        esc(m.card.titulo || "Sin título") +
+        '</b><span><span class="mov-quien">' +
+        esc((quien && quien.nombre) || m.autor || "Alguien") +
+        "</span> " +
+        esc(m.texto) +
+        '</span></span><span class="chat-h">' +
+        chatHora(m.ts) +
+        "</span></button>"
+      );
+    })
+    .join("");
+}
 function chatMensajesHTML() {
   if (!state.chat.length)
     return '<div class="chat-vacio"><b>Todavía no hay mensajes.</b><span>Lo que escribas acá lo ve todo el equipo, en cualquier vista.</span></div>';
@@ -5726,17 +5809,19 @@ function chatArmar() {
     (btn.className = "chat-fab"),
     (btn.type = "button"),
     btn.setAttribute("data-action", "chat:toggle"),
-    btn.setAttribute("aria-label", "Chat del equipo"),
-    (btn.title = "Chat del equipo"),
+    btn.setAttribute("aria-label", "Novedades del equipo: movimientos y mensajes"),
+    (btn.title = "Novedades del equipo"),
     (btn.innerHTML =
       '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12.2c0 4-3.6 7.1-8 7.1-1.1 0-2.2-.2-3.1-.6L4 20l1.3-3.6C4.5 15.2 4 13.8 4 12.2 4 8.3 7.6 5 12 5s8 3.3 8 7.2Z"/></svg><span class="chat-badge" id="chatBadge" hidden></span>'));
   const panel = document.createElement("section");
   ((panel.id = "chatPanel"),
     (panel.className = "chat-panel"),
     (panel.hidden = true),
-    panel.setAttribute("aria-label", "Chat del equipo"),
+    panel.setAttribute("aria-label", "Novedades del equipo"),
     (panel.innerHTML =
-      '<header class="chat-head"><div><h2>Chat del equipo</h2><span>Lo ve todo el equipo</span></div><button type="button" class="chat-x" data-action="chat:toggle" aria-label="Cerrar el chat">✕</button></header>' +
+      '<header class="chat-head"><div><h2>Novedades del equipo</h2><span>Lo ve todo el equipo</span></div><button type="button" class="chat-x" data-action="chat:toggle" aria-label="Cerrar las novedades">✕</button></header>' +
+      '<div class="chat-tabs" role="tablist"><button type="button" role="tab" data-action="chat:tab" data-tab="mov" id="chatTabMov">Movimientos<span class="chat-tab-n" hidden></span></button>' +
+      '<button type="button" role="tab" data-action="chat:tab" data-tab="msj" id="chatTabMsj">Mensajes<span class="chat-tab-n" hidden></span></button></div>' +
       '<div class="chat-lista" id="chatLista" aria-live="polite"></div>' +
       '<form class="chat-form" id="chatForm"><textarea id="chatTexto" rows="1" maxlength="2000" placeholder="Escribile al equipo…" aria-label="Mensaje"></textarea><button type="submit" class="chat-enviar" aria-label="Enviar">➤</button></form>'));
   (document.body.appendChild(panel), document.body.appendChild(btn));
@@ -5758,12 +5843,36 @@ function chatPintar(alFinal) {
   const lista = $("#chatLista"),
     badge = $("#chatBadge");
   if (!lista) return;
-  const cerca = lista.scrollHeight - lista.scrollTop - lista.clientHeight < 80;
-  lista.innerHTML = chatMensajesHTML();
-  if (alFinal || cerca) lista.scrollTop = lista.scrollHeight;
-  if (chatAbierto) chatMarcarLeido();
-  const n = chatAbierto ? 0 : chatNoLeidos();
+  const enMov = chatTab === "mov",
+    cerca = lista.scrollHeight - lista.scrollTop - lista.clientHeight < 80,
+    arriba = lista.scrollTop;
+  if (chatAbierto) enMov ? movMarcarVisto() : chatMarcarLeido();
+  lista.classList.toggle("es-mov", enMov);
+  lista.innerHTML = enMov ? movimientosHTML() : chatMensajesHTML();
+  // Los mensajes se leen de arriba abajo (lo último, abajo); los movimientos
+  // al revés, lo último arriba.
+  if (!enMov && (alFinal || cerca)) lista.scrollTop = lista.scrollHeight;
+  else if (enMov && !alFinal) lista.scrollTop = arriba;
+  $("#chatForm").hidden = enMov;
+  const nMsj = chatAbierto && !enMov ? 0 : chatNoLeidos(),
+    nMov = chatAbierto && enMov ? 0 : movNuevos(),
+    n = chatAbierto ? 0 : nMsj + nMov;
   ((badge.hidden = !n), (badge.textContent = n > 9 ? "9+" : String(n)));
+  [["#chatTabMov", "mov", nMov], ["#chatTabMsj", "msj", nMsj]].forEach(([sel, id, cuenta]) => {
+    const t = $(sel);
+    if (!t) return;
+    (t.setAttribute("aria-selected", String(chatTab === id)), t.classList.toggle("on", chatTab === id));
+    const chip = t.querySelector(".chat-tab-n");
+    ((chip.hidden = !cuenta || chatTab === id), (chip.textContent = cuenta > 9 ? "9+" : String(cuenta)));
+  });
+}
+function chatElegirTab(tab) {
+  chatTab = tab === "msj" ? "msj" : "mov";
+  try {
+    localStorage.setItem("coto.novedades.tab", chatTab);
+  } catch (e) {}
+  chatPintar(true);
+  if (chatTab === "msj") $("#chatTexto").focus();
 }
 function chatAlternar(abrir) {
   chatAbierto = abrir === undefined ? !chatAbierto : abrir;
@@ -5771,7 +5880,7 @@ function chatAlternar(abrir) {
   if (!panel) return;
   ((panel.hidden = !chatAbierto), $("#chatBtn").classList.toggle("on", chatAbierto));
   if (chatAbierto) {
-    (chatPintar(true), $("#chatTexto").focus());
+    (chatPintar(true), chatTab === "msj" && $("#chatTexto").focus());
     chatTraer().then((cambio) => cambio && chatPintar(true), () => {});
   } else chatPintar();
 }
@@ -12596,7 +12705,13 @@ function renderPanel() {
     $("#panel").innerHTML = "";
     return;
   }
-  if (accTarjeta === tarjeta.id)
+  // Redibujar la ficha de la MISMA tarjeta (tachar un ítem, sumar otro) no
+  // puede mandarte arriba de todo: se guarda dónde estabas y se vuelve ahí.
+  // Antes cada tilde del checklist te devolvía al principio de la tarjeta.
+  const mismaTarjeta = accTarjeta === tarjeta.id,
+    cuerpoAntes = $("#panel .panel-body"),
+    scrollAntes = mismaTarjeta && cuerpoAntes ? cuerpoAntes.scrollTop : 0;
+  if (mismaTarjeta)
     document.querySelectorAll("#panel details[data-acc]").forEach((d) => (accAbiertos[d.dataset.acc] = d.open));
   else ((accAbiertos = {}), (accTarjeta = tarjeta.id));
   const avance = progress(tarjeta),
@@ -12879,6 +12994,8 @@ function renderPanel() {
     const guardado = accAbiertos[d.dataset.acc];
     if (guardado !== undefined) d.open = guardado;
   });
+  const cuerpo = $("#panel .panel-body");
+  if (cuerpo && scrollAntes) cuerpo.scrollTop = scrollAntes;
 }
 function openCarga() {
   const obj = {};
@@ -14240,6 +14357,12 @@ document.addEventListener("click", (ev) => {
     case "chat:toggle":
       chatAlternar();
       break;
+    case "chat:tab":
+      chatElegirTab(el.dataset.tab);
+      break;
+    case "chat:card":
+      openDetail(el.dataset.id);
+      break;
     case "pb:linea":
       ((pbLineaTodas = !pbLineaTodas), render());
       break;
@@ -14423,14 +14546,13 @@ document.addEventListener("click", (ev) => {
       break;
     }
     case "cl:add": {
-      const tarjeta2 = current();
-      (tarjeta2.checklist.push({
-        id: uid(),
-        text: "Nuevo ítem",
-        done: false,
-      }),
-        touch(),
-        renderPanel());
+      const tarjeta2 = current(),
+        nuevo = { id: uid(), text: "Nuevo ítem", done: false };
+      ((accAbiertos.checklist = true), tarjeta2.checklist.push(nuevo), touch(), renderPanel());
+      // El ítem nuevo queda con el cursor adentro y el texto marcado: se
+      // escribe encima directamente, sin ir a buscarlo.
+      const campo = $('#panel [data-field="cl:' + nuevo.id + '"]');
+      if (campo) (campo.focus(), campo.select && campo.select(), campo.scrollIntoView({ block: "nearest" }));
       break;
     }
     case "cl:del": {
