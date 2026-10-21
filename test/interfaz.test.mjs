@@ -1776,6 +1776,27 @@ check(
   pend,
 );
 check("la ruleta de «¿Qué curso me toca?» ya no está", pend.sinRuleta, pend);
+const repTab = await page.evaluate(() => {
+  ((state.view = "reportes"), render());
+  const abiertas = boardCards().filter((c) => c.estado !== "finalizado");
+  const filas = [...document.querySelectorAll(".rep-persona")].map((b) => {
+    const id = b.dataset.id,
+      txt = b.querySelector(".rep-persona-c").textContent;
+    return {
+      ok:
+        +txt.match(/(\d+) en acción/)[1] === abiertas.filter((c) => enAccion(c) === id).length &&
+        +txt.match(/(\d+) esperando/)[1] === abiertas.filter((c) => participa(c, id) && enAccion(c) !== id).length,
+      id,
+    };
+  });
+  const etapas = [...document.querySelectorAll(".rep-flujo .pb-flujo-s")].length;
+  document.querySelector('.rep-persona[data-id="flor"]').click();
+  const tras = { view: state.view, persona: state.filters.persona };
+  ((state.filters.persona = ""), (state.view = "reportes"), render());
+  return { filas, etapas, tras };
+});
+check("Reportes: «Cada uno» cuenta en acción y esperando con la regla del Planner", repTab.filas.length > 0 && repTab.filas.every((f) => f.ok) && repTab.etapas === 6, repTab);
+check("y tocar una persona lleva al Planner B filtrado", repTab.tras.view === "plannerb" && repTab.tras.persona === "flor", repTab);
 check("una tarjeta vieja con asignados y sin responsable pasa a tener al primero", reglas.vieja.r === "vane" && reglas.vieja.a.join() === "gasti" && reglas.vieja.n >= 1, reglas);
 const perfil = await page.evaluate(async () => {
   const eve = member("eve"),

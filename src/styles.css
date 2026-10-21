@@ -11843,3 +11843,188 @@ button.mat-ct:hover {
   font-size: 12px;
   padding: 8px 12px;
 }
+
+/* ===== Reportes con la línea del Planner B =====
+   Cada sección es una tarjeta blanca con su título en Faible; arriba de todo
+   siguen las publicaciones (lo principal) y debajo «Cómo viene el tablero»:
+   las etapas con sus colores y la carga de cada uno, en acción y esperando. */
+.view:has(.rep-tablero) .rep-sec {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 18px 20px 20px;
+  box-shadow: var(--shadow-sm);
+}
+.view:has(.rep-tablero) .rep-sec-h h3 {
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: -0.2px;
+}
+.rep-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--coto-blue);
+}
+.rep-tablero {
+  margin: var(--sp-5) 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+}
+.rep-tab-h {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rep-tab-h h2 {
+  margin: 0;
+  font-family: var(--titulo);
+  font-weight: 900;
+  font-size: 24px;
+  letter-spacing: -0.4px;
+  color: var(--ink);
+}
+.rep-flujo {
+  border-radius: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.rep-flujo .pb-flujo-b {
+  margin-top: 6px;
+}
+.rep-flujo .pb-flujo-s i {
+  height: 14px;
+  border-radius: 7px;
+}
+.rep-flujo .pb-flujo-s b {
+  font-size: 28px;
+}
+.rep-gente {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 4px 18px;
+}
+.rep-gente-h {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+  font-size: 13px;
+}
+.rep-gente-h span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.rep-lg {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  margin-left: 6px;
+}
+.rep-lg.accion,
+.rep-persona-b .accion {
+  background: var(--coto-blue);
+}
+.rep-lg.espera,
+.rep-persona-b .espera {
+  background: color-mix(in srgb, var(--coto-blue) 22%, var(--line));
+}
+.rep-persona {
+  display: grid;
+  grid-template-columns: 32px 70px minmax(0, 1fr);
+  grid-template-areas: "av nom barra" "av nom cuenta";
+  column-gap: 10px;
+  row-gap: 2px;
+  align-items: center;
+  width: 100%;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.rep-persona:hover {
+  background: var(--surface-2);
+}
+.rep-persona .avatar {
+  grid-area: av;
+  width: 32px;
+  height: 32px;
+}
+.rep-persona .avatar.avatar-emoji {
+  font-size: 18px;
+}
+.rep-persona-n {
+  grid-area: nom;
+  font-weight: 800;
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rep-persona-b {
+  grid-area: barra;
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.rep-persona-b i {
+  display: block;
+  height: 100%;
+  border-radius: 5px;
+}
+.rep-persona-c {
+  grid-area: cuenta;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+.rep-persona-c b {
+  color: var(--ink);
+}
+.rep-persona-c em {
+  font-style: normal;
+  font-weight: 800;
+  color: var(--bad);
+}
+.rep-etapa {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--tono) 72%, var(--ink));
+  background: color-mix(in srgb, var(--tono) 14%, var(--surface));
+  border-radius: 999px;
+  padding: 2px 9px;
+  margin: 0 8px;
+}
+.view:has(.rep-tablero) .rep-corte h2 {
+  font-weight: 900;
+  font-size: 24px;
+  letter-spacing: -0.4px;
+}
+@media (max-width: 760px) {
+  .rep-gente {
+    grid-template-columns: 1fr;
+  }
+  .rep-flujo .pb-flujo-s b {
+    font-size: 20px;
+  }
+}
