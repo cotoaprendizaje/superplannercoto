@@ -10809,8 +10809,10 @@ function repLoQueVieneHTML() {
           c.id +
           '" style="cursor:pointer;flex:1">' +
           esc(c.titulo) +
-          '</span><span class="val-est">' +
-          esc((ESTADOS.find((e) => e.id === c.estado) || {}).nombre || "") +
+          '</span><span class="rep-etapa" style="--tono:' +
+          estadoDe(c.estado).dot +
+          '">' +
+          esc(estadoDe(c.estado).corto) +
           '</span><span class="rep-cuando' +
           (dias < 0 ? " tarde" : dias <= 7 ? " pronto" : "") +
           '">' +
@@ -11064,6 +11066,82 @@ function repMoodleHTML() {
     ". Los presenciales no están en Técnico: solo se cuentan acá.</div>"
   );
 }
+// ===== Cómo viene el tablero =====
+// La misma lectura que el Planner B, en Reportes: cuántas tarjetas hay en cada
+// etapa (de lo que viene a lo publicado) y cuánto tiene cada persona, en
+// acción y esperando, con la regla de todo el Planner (ver enAccion). Tocar
+// una etapa o una persona lleva al Planner B ya filtrado.
+function repTableroHTML() {
+  const abiertas = boardCards().filter((c) => c.estado !== "finalizado"),
+    todas = boardCards(),
+    porEstado = {};
+  ESTADOS.forEach((e) => (porEstado[e.id] = todas.filter((c) => c.estado === e.id).length));
+  const flujoMax = Math.max(1, ...PB_FLUJO.map((id) => porEstado[id])),
+    enAccionTotal = abiertas.filter((c) => enAccion(c)).length,
+    gente = TEAM.map((m) => {
+      const accion = abiertas.filter((c) => enAccion(c) === m.id),
+        espera = abiertas.filter((c) => participa(c, m.id) && enAccion(c) !== m.id);
+      return { m, accion: accion.length, espera: espera.length, venc: accion.filter(isOverdue).length };
+    }),
+    genteMax = Math.max(1, ...gente.map((g) => g.accion + g.espera));
+  return (
+    '<section class="rep-tablero"><div class="rep-tab-h"><span class="rep-eyebrow">Cómo viene el tablero</span><h2>' +
+    abiertas.length +
+    (abiertas.length === 1 ? " tarjeta abierta" : " tarjetas abiertas") +
+    " · " +
+    enAccionTotal +
+    " en acción" +
+    (porEstado["stand-by"] ? " · " + porEstado["stand-by"] + " en pausa" : "") +
+    '</h2></div><div class="pb-flujo rep-flujo"><div class="pb-flujo-h"><b>Por etapa</b><span>de lo que viene → a lo publicado</span></div><div class="pb-flujo-b">' +
+    PB_FLUJO.map((id) => {
+      const e = estadoDe(id),
+        n = porEstado[id];
+      return (
+        '<button class="pb-flujo-s" data-action="rep:etapa" data-estado="' +
+        id +
+        '" style="--tono:' +
+        e.dot +
+        ";flex:" +
+        Math.max(n, flujoMax * 0.12) +
+        ' 1 0" title="Ver ' +
+        esc(e.nombre) +
+        ' en el Planner B"><i' +
+        (n ? "" : ' class="cero"') +
+        "></i><b>" +
+        n +
+        "</b><span>" +
+        esc(e.corto) +
+        "</span></button>"
+      );
+    }).join("") +
+    '</div></div><div class="rep-gente"><div class="rep-gente-h"><b>Cada uno</b><span><i class="rep-lg accion"></i>en acción <i class="rep-lg espera"></i>esperando</span></div>' +
+    gente
+      .map(
+        (g) =>
+          '<button class="rep-persona" data-action="rep:persona" data-id="' +
+          g.m.id +
+          '" title="Ver lo de ' +
+          esc(g.m.nombre) +
+          ' en el Planner B">' +
+          avatarHTML(g.m.id) +
+          '<span class="rep-persona-n">' +
+          esc(g.m.nombre) +
+          '</span><span class="rep-persona-b"><i class="accion" style="width:' +
+          ((g.accion / genteMax) * 100).toFixed(1) +
+          '%"></i><i class="espera" style="width:' +
+          ((g.espera / genteMax) * 100).toFixed(1) +
+          '%"></i></span><span class="rep-persona-c"><b>' +
+          g.accion +
+          "</b> en acción · " +
+          g.espera +
+          " esperando" +
+          (g.venc ? ' · <em>' + g.venc + (g.venc === 1 ? " vencida" : " vencidas") + "</em>" : "") +
+          "</span></button>",
+      )
+      .join("") +
+    "</div></section>"
+  );
+}
 function renderReportes() {
   // Antes era una pila: cuatro cajas, gráfico, gráfico, lista, lista — todo
   // del mismo ancho y del mismo peso, más de 2.500 px de scroll. Ahora hay
@@ -11073,6 +11151,7 @@ function renderReportes() {
     '<div class="rep-top"><button class="btn btn-ghost btn-sm" data-action="reportes:csv" title="Descargar estos números en CSV">⬇ CSV</button><button class="btn btn-ghost btn-sm" data-action="app:print" title="Imprimir o guardar como PDF">🖨 PDF</button></div>' +
     repFranjaHTML() +
     repHeroHTML() +
+    repTableroHTML() +
     '<div class="rep-cols">' +
     repSeccion(
       "Cursos por año de publicación",
@@ -14447,6 +14526,18 @@ document.addEventListener("click", (ev) => {
       break;
     case "chat:card":
       openDetail(el.dataset.id);
+      break;
+    case "rep:etapa": {
+      const id = el.dataset.estado;
+      ((state.view = "plannerb"), pushNav(), render());
+      setTimeout(() => {
+        const sec = document.getElementById("pb-" + id);
+        if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 60);
+      break;
+    }
+    case "rep:persona":
+      ((state.filters.persona = el.dataset.id), (state.view = "plannerb"), pushNav(), render());
       break;
     case "pb:linea":
       ((pbLineaTodas = !pbLineaTodas), render());
