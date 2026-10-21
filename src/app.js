@@ -12890,6 +12890,9 @@ document.addEventListener("click", (ev) => {
     case "data:reset":
       resetSeed();
       break;
+    case "data:portadas":
+      portadasAligerar();
+      break;
     case "data:frases-reset":
       confirmar("Se borran las CotoFrases de hoy y todo el equipo vuelve a tirar.", () => {
         // Se deja la ronda del día vacía en vez de borrar el objeto: así lo que
@@ -16351,7 +16354,82 @@ function setDatosHTML() {
     '<div class="set-peligro"><div class="set-peligro-h">⚠ Zona de riesgo</div>' +
     '<div>Vacía el Planner y vuelve a dejar el catálogo como vino de fábrica. No se puede deshacer desde la app: lo único que lo revierte es un respaldo o una copia del navegador.</div>' +
     '<button class="btn btn-peligro" data-action="data:reset">🧹 Reiniciar (Planner vacío + catálogo)</button></div>' +
+    setPortadasHTML() +
     setFrasesHTML()
+  );
+}
+// Las portadas de las tarjetas que ya existían quedaron guardadas como imagen
+// adentro de la base (la fila de fotos, ~1,3 MB que se bajan en cada ingreso).
+// La gran mayoría son, byte por byte, las mismas que el sitio ya publica en
+// assets/cursos. Esto las compara y cambia solo las idénticas por la ruta del
+// archivo: la tarjeta muestra la misma imagen y la base deja de cargarla. Las
+// que subió el equipo a mano no coinciden con ningún archivo y quedan igual.
+function setPortadasHTML() {
+  const fotos = Object.keys(state.fotos || {}).length;
+  return (
+    '<div class="set-seg"><b>🪶 Portadas guardadas en la base</b><div>' +
+    (fotos
+      ? fotos + (fotos === 1 ? " portada se guarda" : " portadas se guardan") + " como imagen adentro de la base y se baja" + (fotos === 1 ? "" : "n") + " en cada ingreso. Las que sean iguales a las del sitio se pueden cambiar por el archivo: se ven igual y la app carga más rápido."
+      : "No hay portadas guardadas adentro de la base: todas se cargan como archivo.") +
+    '</div><button class="btn btn-sm" data-action="data:portadas"' +
+    (fotos ? "" : " disabled") +
+    ">🪶 Aligerar portadas</button></div>"
+  );
+}
+function base64DeBytes(buf) {
+  const u8 = new Uint8Array(buf);
+  let txt = "";
+  for (let i = 0; i < u8.length; i += 0x8000) txt += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+  return btoa(txt);
+}
+async function portadasIguales() {
+  const rutas = [...new Set(CURSOS.map((c) => c.imagen).filter((r) => /^assets\/cursos\//.test(r || "")))],
+    porContenido = new Map();
+  await Promise.all(
+    rutas.map(async (ruta) => {
+      try {
+        const resp = await fetch(ruta);
+        if (resp.ok) porContenido.set(base64DeBytes(await resp.arrayBuffer()), ruta);
+      } catch (e) {}
+    }),
+  );
+  if (!porContenido.size) throw new Error("No pude leer las portadas del sitio. Probá de nuevo con conexión.");
+  const iguales = [];
+  Object.keys(state.fotos || {}).forEach((id) => {
+    const dato = state.fotos[id] || "",
+      ruta = porContenido.get(dato.slice(dato.indexOf(",") + 1)),
+      tarjeta = state.cards.find((c) => c.id === id);
+    if (ruta && tarjeta) iguales.push({ tarjeta, ruta, peso: dato.length });
+  });
+  return iguales;
+}
+async function portadasAligerar() {
+  let iguales;
+  try {
+    iguales = await portadasIguales();
+  } catch (err) {
+    return flash(err.message, true);
+  }
+  const total = Object.keys(state.fotos).length,
+    otras = total - iguales.length,
+    kb = Math.round(iguales.reduce((a, x) => a + x.peso, 0) / 1024);
+  if (!iguales.length)
+    return flash("Ninguna de las " + total + " portadas coincide con un archivo del sitio: quedan como están.");
+  confirmar(
+    iguales.length +
+      " de " +
+      total +
+      " portadas son idénticas a un archivo del sitio (" +
+      kb +
+      " KB). Se cambian por el archivo: la imagen es la misma." +
+      (otras ? " Las otras " + otras + " (subidas por el equipo) no se tocan." : ""),
+    () => {
+      iguales.forEach((x) => {
+        ((x.tarjeta.catalogo = x.tarjeta.catalogo || {}), (x.tarjeta.catalogo.imagen = x.ruta), delete state.fotos[x.tarjeta.id]);
+      });
+      ((fotosPendientes = true), touch(), render(), openSettings("datos"));
+      flash("🪶 Listo: " + iguales.length + " portadas ahora se cargan como archivo (" + kb + " KB menos por ingreso).");
+    },
   );
 }
 // La ronda de CotoFrases se reinicia sola cada día, y también cuando cambian

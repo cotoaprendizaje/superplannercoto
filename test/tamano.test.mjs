@@ -135,6 +135,40 @@ json = JSON.stringify(tablero);
 check("después de editar y guardar, las imágenes siguen afuera", json.indexOf("data:image") === -1);
 check("después de editar y guardar, el tablero sigue bajo el tope", json.length < TOPE_KB * 1024, kb(json.length));
 
+// ── Aligerar portadas: el tablero de producción todavía guarda las fotos de
+//    las tarjetas viejas adentro de la base. Las idénticas a un archivo del
+//    sitio se cambian por la ruta; una foto subida a mano no se toca. ──
+await page.evaluate(async () => {
+  const conRuta = state.cards.filter((c) => /^assets\/cursos\//.test((c.catalogo || {}).imagen || "")).slice(0, 3);
+  for (const c of conRuta) {
+    const b = await (await fetch(c.catalogo.imagen)).arrayBuffer();
+    ((state.fotos[c.id] = "data:image/jpeg;base64," + base64DeBytes(b)), (c.catalogo.imagen = ""));
+  }
+  const propia = state.cards.find((c) => !conRuta.includes(c));
+  state.fotos[propia.id] = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+  window.__propia = propia.id;
+  await Store.save(docSnapshotFotos(), false, FOTOS_FILA);
+});
+await page.evaluate(() => portadasAligerar());
+await page.waitForSelector('[data-action="confirm:yes"]', { timeout: 10000 });
+await page.click('[data-action="confirm:yes"]');
+await page.waitForTimeout(2000);
+const aligeradas = await page.evaluate(() => ({
+  enMemoria: Object.keys(state.fotos),
+  propia: window.__propia,
+  rutas: state.cards.filter((c) => /^assets\/cursos\//.test(cardImagen(c))).length,
+}));
+const fotosTras = await filaDelBackend("coto-fotos");
+check(
+  "aligerar deja solo la foto subida a mano, en memoria y en la base",
+  aligeradas.enMemoria.length === 1 && aligeradas.enMemoria[0] === aligeradas.propia &&
+    Object.keys((fotosTras || {}).fotos || {}).length === 1,
+  { aligeradas, enBase: Object.keys((fotosTras || {}).fotos || {}) },
+);
+tablero = await filaDelBackend("coto");
+json = JSON.stringify(tablero);
+check("y las tarjetas aligeradas guardan la ruta, sin imagen adentro", json.indexOf("data:image") === -1 && aligeradas.rutas >= 80, aligeradas.rutas);
+
 check("sin errores de JavaScript", erroresJS.length === 0, erroresJS.join(" | "));
 
 await browser.close();
