@@ -11570,7 +11570,8 @@ button.mat-ct:hover {
    lo que tenés en acción, que despliega la lista. */
 .hub-side:has(.pend-launcher) {
   position: fixed;
-  top: calc(var(--topbar-h, 66px) + 14px);
+  /* A la altura del buscador del tablero, no pegada a la barra de arriba. */
+  top: calc(var(--topbar-h, 66px) + 78px);
   right: 22px;
   left: auto;
   width: auto;
@@ -11748,4 +11749,97 @@ button.mat-ct:hover {
     content: "📌";
     font-size: 16px;
   }
+}
+
+/* La 🎰 de la CotoFrase, rediseñada: una ficha dorada redonda con brillo, su
+   nombre abajo y un punto rojo si todavía no tiraste hoy. En pantallas anchas
+   se para a la derecha de las tarjetas de Inicio, centrada con ellas
+   (ubicarCotofrase); si no hay lugar, queda arriba a la derecha. */
+.hub-side:has(.cotofrase-launcher) .cotofrase-launcher {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.hub-side:has(.cotofrase-launcher).al-costado {
+  right: auto;
+}
+.hub-side .cotofrase-fab {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: radial-gradient(circle at 32% 26%, #fff6cf 0, #ffd84d 34%, #eaa915 70%, #b8780a 100%);
+  box-shadow:
+    0 10px 24px rgba(232, 168, 21, 0.45),
+    0 0 0 6px color-mix(in srgb, #ffd84d 28%, transparent),
+    inset 0 -4px 8px rgba(120, 70, 0, 0.25);
+  transition:
+    transform 0.2s var(--spring),
+    box-shadow 0.2s ease;
+}
+.hub-side .cotofrase-fab:hover {
+  transform: rotate(-8deg) scale(1.06);
+  box-shadow:
+    0 14px 30px rgba(232, 168, 21, 0.55),
+    0 0 0 8px color-mix(in srgb, #ffd84d 34%, transparent),
+    inset 0 -4px 8px rgba(120, 70, 0, 0.25);
+}
+.cf-ico {
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 2px rgba(80, 40, 0, 0.35));
+}
+.cf-nueva {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #e5484d;
+  box-shadow: 0 0 0 3px #fff;
+  animation: cfLatido 1.6s ease-in-out infinite;
+}
+@keyframes cfLatido {
+  50% {
+    transform: scale(1.25);
+  }
+}
+.cf-lbl {
+  font-size: 11.5px;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  box-shadow: var(--shadow-sm);
+}
+@media (max-width: 760px) {
+  .hub-side .cotofrase-fab {
+    width: 48px;
+    height: 48px;
+  }
+  .cf-ico {
+    font-size: 22px;
+  }
+  .cf-lbl {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cf-nueva {
+    animation: none;
+  }
+}
+/* El aviso del respaldo, al final de Inicio y en chico. */
+.hub > .hub-aviso,
+.hub-aviso:has([data-action="data:export"]) {
+  max-width: 760px;
+  margin: 18px auto 0;
+  font-size: 12px;
+  padding: 8px 12px;
 }

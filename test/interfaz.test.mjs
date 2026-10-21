@@ -1837,11 +1837,22 @@ check("sumar un ítem no te manda arriba y deja el cursor en el nuevo", chkTrasS
 await page.setViewportSize({ width: 1366, height: 768 });
 const esquina = await page.evaluate(() => {
   ((state.view = "inicio"), render());
-  const b = document.querySelector(".cotofrase-fab").getBoundingClientRect();
-  return { derecha: Math.round(innerWidth - b.right), arriba: Math.round(b.top), alto: innerHeight };
+  const b = document.querySelector(".cotofrase-fab").getBoundingClientRect(),
+    g = document.querySelector(".hub-grid").getBoundingClientRect();
+  return {
+    aLaDerecha: Math.round(b.left - g.right),
+    centro: Math.round(b.top + b.height / 2 - (g.top + g.height / 2)),
+  };
 });
 await page.setViewportSize({ width: 1400, height: 950 });
-check("en Inicio la 🎰 está arriba a la derecha (también en 1366)", esquina.derecha < 60 && esquina.arriba < 150, esquina);
+check("en Inicio la 🎰 queda a la derecha de las tarjetas, centrada con ellas", esquina.aLaDerecha > 0 && Math.abs(esquina.centro) < 40, esquina);
+// Y al pasar de Inicio al Planner, «Mis pendientes» no hereda ese lugar: va a la derecha.
+const pendLugar = await page.evaluate(() => {
+  ((state.view = "inicio"), render(), (state.view = "kanban"), render());
+  const b = document.querySelector(".pend-fab").getBoundingClientRect();
+  return { derecha: Math.round(innerWidth - b.right) };
+});
+check("«Mis pendientes» queda pegado a la derecha aunque vengas de Inicio", pendLugar.derecha < 40, pendLugar);
 
 // ── El chat del equipo ──
 console.log("\nchat del equipo");

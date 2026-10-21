@@ -5193,15 +5193,21 @@ function renderView() {
       // Alineado arriba con las tarjetas del hub, no centrado en la
       // ventana: así queda a la altura de lo primero que se ve, no
       // "flotando" a mitad de una pantalla que puede ser muy alta.
-      // La 🎰 vive fija en la esquina de arriba a la derecha (ver el CSS de
-      // .hub-side:has(.cotofrase-launcher)): no se alinea a mano.
-      elSide.style.top = "";
+      ubicarCotofrase();
     } else {
       if (state.view === "kanban" || state.view === "plannerb") {
         const abierta = $("#pendPop") && !$("#pendPop").classList.contains("hidden");
-        ((elSide.innerHTML = pendientesWidgetHTML()), elSide.removeAttribute("hidden"), (elSide.style.top = ""));
+        // La posición que le deja la 🎰 de Inicio (al costado de las tarjetas)
+        // no aplica acá: se limpia antes de dibujar el botón.
+        (elSide.classList.remove("al-costado"), (elSide.style.left = ""), (elSide.style.top = ""));
+        ((elSide.innerHTML = pendientesWidgetHTML()), elSide.removeAttribute("hidden"));
         if (abierta) pendAlternar(true);
-      } else ((elSide.hidden = true), (elSide.innerHTML = ""));
+      } else
+        ((elSide.hidden = true),
+          (elSide.innerHTML = ""),
+          elSide.classList.remove("al-costado"),
+          (elSide.style.left = ""),
+          (elSide.style.top = ""));
     }
   }
 }
@@ -12000,11 +12006,13 @@ function renderInicio() {
         "</button>"
       : "") +
     "</div></div>" +
-    respaldoAvisoHTML() +
     '<div class="hub-grid">' +
     inicioTarjetas().map(inicioCardHTML).join("") +
     "</div>" +
     inicioPieHTML() +
+    // El aviso del respaldo va al final y chico: entre el saludo y las
+    // tarjetas tapaba lo primero que se viene a buscar.
+    respaldoAvisoHTML() +
     inicioAtajosHTML() +
     "</div></div>"
   );
@@ -12310,9 +12318,38 @@ function cotofraseAlto() {
     (pop.style.maxHeight = Math.max(200, Math.round(haciaArriba ? hayArriba : hayAbajo)) + "px"));
 }
 (window.addEventListener("scroll", cotofraseAlto, true), window.addEventListener("resize", cotofraseAlto));
+// ¿Ya tiró hoy quien está mirando? Si no, el botón lo invita.
+function cotofraseSinTirar() {
+  const c = state.cotofrase || {};
+  return !!state.user && !(c.porUsuario || {})[state.user];
+}
+// La 🎰 se para a la derecha de las tarjetas de Inicio, centrada con ellas,
+// cuando hay lugar al costado; en pantallas angostas queda en la esquina de
+// arriba (ver el CSS de .hub-side:has(.cotofrase-launcher)).
+function ubicarCotofrase() {
+  const side = $("#hubSide"),
+    grid = $(".hub-grid");
+  if (!side || !side.querySelector(".cotofrase-launcher")) return;
+  const r = grid ? grid.getBoundingClientRect() : null,
+    libre = r ? window.innerWidth - r.right : 0,
+    alCostado = !!r && libre >= 150 && window.innerWidth > 760;
+  side.classList.toggle("al-costado", alCostado);
+  if (alCostado) {
+    const ancho = side.offsetWidth || 110;
+    side.style.left = Math.round(r.right + Math.max(16, (Math.min(libre, 260) - ancho) / 2)) + "px";
+    side.style.top = Math.round(r.top + r.height / 2 - (side.offsetHeight || 96) / 2) + "px";
+  } else ((side.style.left = ""), (side.style.top = ""));
+}
+(window.addEventListener("scroll", ubicarCotofrase, { passive: true }), window.addEventListener("resize", ubicarCotofrase));
 function cotofraseLauncherHTML() {
   return (
-    '<div class="cotofrase-launcher">\n    <button class="cotofrase-fab" data-action="cotofrase:toggle" title="CotoFrase del día" aria-label="CotoFrase del día">🎰</button>\n    <div class="cotofrase-pop hidden" id="cotofracePop">\n      ' +
+    '<div class="cotofrase-launcher">\n    <button class="cotofrase-fab" data-action="cotofrase:toggle" title="CotoFrase del día" aria-label="CotoFrase del día' +
+    (cotofraseSinTirar() ? " (todavía no tiraste hoy)" : "") +
+    '"><span class="cf-ico" aria-hidden="true">🎰</span>' +
+    (cotofraseSinTirar() ? '<span class="cf-nueva" aria-hidden="true"></span>' : "") +
+    '</button><span class="cf-lbl">' +
+    (cotofraseSinTirar() ? "¡Tirá la CotoFrase!" : "CotoFrase del día") +
+    '</span>\n    <div class="cotofrase-pop hidden" id="cotofracePop">\n      ' +
     slotWidgetHTML() +
     fraseWidgetHTML() +
     "\n    </div>\n  </div>"
