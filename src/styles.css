@@ -12028,3 +12028,110 @@ button.mat-ct:hover {
     font-size: 20px;
   }
 }
+
+/* ===== Publicado: los últimos 30 días a la vista + «Todo lo publicado» ===== */
+.pub-hist-btn small {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  margin-top: 2px;
+}
+.pb-pub-vacio {
+  padding: 14px 18px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.modal.pub-hist {
+  width: min(640px, 94vw);
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+}
+.pub-hist-buscar {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 12px 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  font: inherit;
+  font-size: 14px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.pub-hist-lista {
+  overflow-y: auto;
+  min-height: 120px;
+  flex: 1;
+  margin: 0 -4px;
+  padding: 0 4px;
+}
+.pub-hist-mes {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 10px 0 4px;
+  padding: 6px 0;
+  background: var(--surface);
+  font-size: 11.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #2e9e8f;
+}
+.pub-hist-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.pub-hist-item {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: baseline;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.pub-hist-item:hover,
+.pub-hist-item:focus-visible {
+  background: color-mix(in srgb, #2e9e8f 16%, transparent);
+  outline: none;
+}
+.pub-hist-dia {
+  grid-row: 1 / span 2;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+.pub-hist-item b {
+  font-size: 14px;
+  font-weight: 600;
+}
+.pub-hist-item small {
+  grid-column: 2;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+.pub-hist-vis {
+  grid-column: 3;
+  grid-row: 1;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, #2e9e8f 16%, transparent);
+  color: #2e9e8f;
+}
+.pub-hist-nada {
+  padding: 24px 4px;
+  color: var(--ink-soft);
+}
