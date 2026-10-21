@@ -11651,3 +11651,16 @@ button.mat-ct:hover {
     font-size: 20px;
   }
 }
+/* La ficha avisa cuando, por la etapa, nadie está en acción. */
+.eqo-nota {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.pb-roles .pb-dos:first-child {
+  margin-left: 0;
+}

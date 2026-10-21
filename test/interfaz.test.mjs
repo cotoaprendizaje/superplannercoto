@@ -1638,17 +1638,19 @@ const pbA = await page.evaluate(() => {
   closeModal();
   ((state.filters = { persona: "", tipo: "", sector: "", estado: "", texto: "", cursoEstado: "" }), (state.mis = false), (state.quick = ""));
   const a = newCard("libre", "ZZ Uno es Flor", { estado: "diseno-listo" }),
-    b = newCard("libre", "ZZ Uno es Gasti", { estado: "pendiente" });
-  ((a.responsable = "flor"), (a.asignados = ["gasti"]), (b.responsable = "gasti"), state.cards.push(a, b));
+    b = newCard("libre", "ZZ Uno es Gasti", { estado: "pendiente" }),
+    c = newCard("libre", "ZZ Gasti en acción", { estado: "con-claude" });
+  ((a.responsable = "flor"), (a.asignados = ["gasti"]), (b.responsable = "gasti"), (c.responsable = "gasti"), state.cards.push(a, b, c));
   ((state.view = "kanban"), render());
   const columnas = document.querySelectorAll(".kanban .kcol").length;
   ((state.view = "plannerb"), render());
   const orden = [...document.querySelectorAll(".pb-etapa")].map((x) => x.id);
   const circGasti = +document.querySelector('.eqc-b[data-id="gasti"] .eqc-n').textContent;
-  const cuentaGasti = boardCards().filter((c) => c.estado !== "finalizado" && c.responsable === "gasti").length;
+  const cuentaGasti = boardCards().filter((c) => c.estado !== "finalizado" && participa(c, "gasti")).length;
   document.querySelector('.eqc-b[data-id="gasti"]').click();
   const filas = [...document.querySelectorAll(".pb-fila")].map((f) => f.textContent);
   const es2 = [...document.querySelectorAll(".pb-fila.como-2")].map((f) => f.textContent);
+  const sinMarca = [...document.querySelectorAll(".pb-fila:not(.como-2)")].map((f) => f.textContent);
   document.querySelector('.eqc-b[data-id="gasti"]').click();
   return {
     columnas,
@@ -1657,26 +1659,31 @@ const pbA = await page.evaluate(() => {
     circGasti,
     cuentaGasti,
     veLasDos: filas.some((t) => t.includes("ZZ Uno es Flor")) && filas.some((t) => t.includes("ZZ Uno es Gasti")),
-    marcaEs2: es2.length >= 1 && es2.every((t) => !t.includes("ZZ Uno es Gasti")),
+    // Esperando: donde no es el primero (Flor) y donde es el primero pero la
+    // etapa es de espera (Próximo a desarrollar). En acción: Con Claude.
+    marcaEs2:
+      es2.some((t) => t.includes("ZZ Uno es Flor")) &&
+      es2.some((t) => t.includes("ZZ Uno es Gasti")) &&
+      sinMarca.some((t) => t.includes("ZZ Gasti en acción")),
     filtroLimpio: !state.filters.persona,
     a: a.id,
   };
 });
 check("el Planner de siempre tiene las 7 etapas", pbA.columnas === 7, pbA);
 check("Planner B: En línea arriba y Próximo a desarrollar abajo", pbA.lineaArriba && pbA.proximosAbajo, pbA);
-check("el número del círculo cuenta solo donde es el 1", pbA.circGasti === pbA.cuentaGasti, pbA);
+check("el número del círculo es el total de cada uno: en acción + esperando", pbA.circGasti === pbA.cuentaGasti, pbA);
 check("al tocar un perfil se ven también las tarjetas donde espera su turno", pbA.veLasDos, pbA);
 check("y esas se marcan como «esperando para hacer»", pbA.marcaEs2, pbA);
 const accion = await page.evaluate(() => {
   ((state.userId = "gasti"), (state.view = "kanban"), render());
   const enPlanner = document.querySelectorAll(".kcard .tag-accion").length,
-    esperadas = kanbanCards().filter((c) => c.responsable === "gasti" && c.estado !== "finalizado").length;
+    esperadas = kanbanCards().filter((c) => enAccion(c) === "gasti").length;
   ((state.view = "plannerb"), render());
   const enB = document.querySelectorAll(".pb-fila .tag-accion").length;
   ((state.userId = null), render());
   return { enPlanner, enB, esperadas };
 });
-check("las tarjetas cerradas marcan «En acción» las que tengo como 1", accion.esperadas > 0 && accion.enPlanner === accion.esperadas && accion.enB === accion.esperadas, accion);
+check("las tarjetas cerradas marcan «En acción» solo las que tengo en acción", accion.esperadas > 0 && accion.enPlanner === accion.esperadas && accion.enB === accion.esperadas, accion);
 check("tocar el mismo perfil de nuevo vuelve a todo", pbA.filtroLimpio, pbA);
 const antesMine = await page.evaluate((id) => {
   state.userId = "gasti";
@@ -1706,7 +1713,7 @@ await page.click('#panel .eqo-i[data-persona="flor"] [data-action="equipo:quitar
 await page.waitForTimeout(150);
 const trasQuitar = await page.evaluate((id) => {
   const t = state.cards.find((c) => c.id === id);
-  const r = { orden: equipoDe(t), numeros: [...document.querySelectorAll("#panel .eqo-n")].map((n) => n.textContent) };
+  const r = { orden: equipoDe(t), numeros: document.querySelectorAll("#panel .eqo-n").length, filas: [...document.querySelectorAll("#panel .eqo-i")].map((li) => li.dataset.persona) };
   (closePanel(), (state.userId = null));
   return r;
 }, pbA.a);
@@ -1717,7 +1724,32 @@ check("queda anotado quién fue 1", JSON.stringify(roles.trasSubir.hist) === '["
 check("y ahora sí le cuenta", roles.trasSubir.mine === true, roles);
 check("sumar a alguien lo pone último", JSON.stringify(roles.trasSumar) === '["gasti","flor","vane"]', roles);
 check("arrastrando se cambia el orden", JSON.stringify(roles.trasArrastrar) === '["vane","gasti","flor"]', roles);
-check("sacar a alguien corre a los demás y renumera", JSON.stringify(roles.trasQuitar.orden) === '["vane","gasti"]' && roles.trasQuitar.numeros.join() === "1,2", roles);
+check("sacar a alguien corre a los demás, en orden y sin números", JSON.stringify(roles.trasQuitar.orden) === '["vane","gasti"]' && roles.trasQuitar.filas.join() === "vane,gasti" && roles.trasQuitar.numeros === 0, roles);
+
+// ── La regla de las etapas: en espera nadie está en acción ──
+const reglas = await page.evaluate(() => {
+  state.userId = "flor";
+  const t = newCard("libre", "ZZ regla de etapas", { estado: "en-revision" });
+  ((t.responsable = "flor"), state.cards.push(t));
+  const enRevision = { mine: mine(t), accion: enAccion(t), tag: enAccionTagHTML(t) !== "" };
+  openDetail(t.id);
+  const nota = (document.querySelector("#panel .eqo-nota") || {}).textContent || "";
+  closePanel();
+  const resto = ["pendiente", "stand-by", "finalizado"].map((e) => ((t.estado = e), mine(t) || enAccion(t) !== ""));
+  t.estado = "con-claude";
+  const trabajando = { mine: mine(t), accion: enAccion(t), tag: enAccionTagHTML(t) !== "" };
+  // Tarjeta vieja: alguien en asignados pero sin responsable guardado.
+  const vieja = newCard("libre", "ZZ tarjeta vieja", { estado: "en-desarrollo" });
+  ((vieja.responsable = null), (vieja.asignados = ["vane", "gasti"]), state.cards.push(vieja));
+  const acomodadas = normalizarEquipos();
+  state.userId = null;
+  return { enRevision, nota, resto, trabajando, vieja: { r: vieja.responsable, a: vieja.asignados, n: acomodadas } };
+});
+check("en «En test» nadie está en acción: no suma a pendientes ni lleva ⚡", !reglas.enRevision.mine && !reglas.enRevision.accion && !reglas.enRevision.tag, reglas);
+check("y la ficha dice por qué", /esperando la aprobación del sector/.test(reglas.nota), reglas);
+check("tampoco en Próximo a desarrollar, Stand by ni En línea", reglas.resto.every((x) => x === false), reglas);
+check("al pasar a una etapa de trabajo, el primero queda en acción", reglas.trabajando.mine && reglas.trabajando.accion === "flor" && reglas.trabajando.tag, reglas);
+check("una tarjeta vieja con asignados y sin responsable pasa a tener al primero", reglas.vieja.r === "vane" && reglas.vieja.a.join() === "gasti" && reglas.vieja.n >= 1, reglas);
 const perfil = await page.evaluate(async () => {
   const eve = member("eve"),
     antes = { emoji: eve.emoji, nombre: eve.nombre };
