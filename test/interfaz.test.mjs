@@ -1749,6 +1749,33 @@ check("en «En test» nadie está en acción: no suma a pendientes ni lleva ⚡"
 check("y la ficha dice por qué", /esperando la aprobación del sector/.test(reglas.nota), reglas);
 check("tampoco en Próximo a desarrollar, Stand by ni En línea", reglas.resto.every((x) => x === false), reglas);
 check("al pasar a una etapa de trabajo, el primero queda en acción", reglas.trabajando.mine && reglas.trabajando.accion === "flor" && reglas.trabajando.tag, reglas);
+const pend = await page.evaluate(() => {
+  state.userId = "flor";
+  const res = {};
+  for (const v of ["kanban", "plannerb"]) {
+    (pendAlternar(false), (state.view = v), render());
+    document.querySelector(".pend-fab").click();
+    const titulos = [...document.querySelectorAll("#pendPop .pend-i .pend-t")].map((x) => x.textContent);
+    res[v] = {
+      numero: +document.querySelector(".pend-fab b").textContent,
+      titulos,
+      esperadas: boardCards().filter((c) => enAccion(c) === "flor").map((c) => c.titulo).sort(),
+      abierto: !document.querySelector("#pendPop").classList.contains("hidden"),
+    };
+  }
+  const sinRuleta = !document.querySelector(".roulette-fab, #roulettePop");
+  ((state.userId = null), render());
+  return { res, sinRuleta };
+});
+check(
+  "«Mis pendientes» lista solo lo que tengo en acción, en los dos Planner",
+  ["kanban", "plannerb"].every((v) => {
+    const r = pend.res[v];
+    return r.abierto && r.numero === r.esperadas.length && JSON.stringify(r.titulos.slice().sort()) === JSON.stringify(r.esperadas) && r.titulos.length > 0;
+  }),
+  pend,
+);
+check("la ruleta de «¿Qué curso me toca?» ya no está", pend.sinRuleta, pend);
 check("una tarjeta vieja con asignados y sin responsable pasa a tener al primero", reglas.vieja.r === "vane" && reglas.vieja.a.join() === "gasti" && reglas.vieja.n >= 1, reglas);
 const perfil = await page.evaluate(async () => {
   const eve = member("eve"),
