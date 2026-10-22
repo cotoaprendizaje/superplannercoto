@@ -1796,6 +1796,36 @@ const stickers = await page.evaluate(() => {
 });
 check("cada tarjeta lleva su tipo como cartelito, en los dos Planners", stickers.k && stickers.b && stickers.video, stickers);
 
+// ── Hace cuánto está en test ──
+const enTest = await page.evaluate(() => {
+  const hace = (n) => isoOf(new Date(Date.now() - n * 86400000));
+  const a = newCard("libre", "ZZT Diez días", { estado: "en-revision" }),
+    b = newCard("libre", "ZZT Por la actividad", { estado: "en-revision" });
+  a.revisionDesde = hace(10);
+  delete b.revisionDesde;
+  b.actividad = [{ ts: Date.now() - 20 * 86400000, autor: "x", texto: "pasó a En test – esperando aprobación" }];
+  state.cards.push(a, b);
+  asentarFechasPublicado();
+  ((state.view = "plannerb"), render());
+  const fila = (id) => document.querySelector('.pb-fila[data-id="' + id + '"] .tag-test');
+  const fa = fila(a.id), fb = fila(b.id),
+    espera = (document.querySelector("#pb-en-revision .pb-espera") || {}).textContent || "";
+  ((state.view = "kanban"), render());
+  const k = document.querySelector('.kcard[data-id="' + a.id + '"] .tag-test');
+  const r = {
+    a: fa && fa.textContent, aOjo: fa && fa.classList.contains("ojo"),
+    b: fb && fb.textContent, bMal: fb && fb.classList.contains("mal"),
+    sello: b.revisionDesde === hace(20),
+    kanban: k && k.textContent,
+    espera,
+  };
+  [a, b].forEach((c) => (c.activo = false));
+  return r;
+});
+check("en test se ve hace cuántos días espera, en los dos Planners", /hace 10 días/.test(enTest.a) && enTest.aOjo && /hace 10 días/.test(enTest.kanban), enTest);
+check("al costado de la etapa dice cuánto espera la más vieja", /la más vieja: \d+ días/.test(enTest.espera), enTest);
+check("pasadas las dos semanas se marca en rojo, y la fecha sale de la actividad si no estaba", /hace 20 días/.test(enTest.b) && enTest.bMal && enTest.sello, enTest);
+
 // ── Alertas y vencidas de Inicio: solo lo tuyo en acción ──
 const alertasFlor = await page.evaluate(() => {
   const hace = isoOf(new Date(Date.now() - 5 * 86400000));

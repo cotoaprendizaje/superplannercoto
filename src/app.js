@@ -3471,6 +3471,36 @@ function tipoStickerHTML(tarjeta) {
     "</span>"
   );
 }
+// Hace cuánto está una tarjeta en «En test – esperando aprobación». El sello
+// (revisionDesde) se pone al moverla; para las que entraron antes, se busca
+// el movimiento en su actividad. null si no hay forma de saberlo.
+const RE_PASO_A_TEST = /^pasó a (En test|En revisión|Esperando aprobación)/i;
+function desdeEnTest(tarjeta) {
+  if (tarjeta.revisionDesde) return tarjeta.revisionDesde;
+  const act = (tarjeta.actividad || []).filter((a) => RE_PASO_A_TEST.test(a.texto || ""));
+  return act.length ? isoOf(new Date(act[act.length - 1].ts)) : null;
+}
+function diasEnTest(tarjeta) {
+  const d = desdeEnTest(tarjeta);
+  return d ? Math.max(0, daysBetween(d, todayISO())) : null;
+}
+// El cartel de la espera: gris la primera semana, ámbar desde los 7 días,
+// rojo desde los 14 — ahí ya conviene ir a buscar la aprobación.
+function enTestTagHTML(tarjeta) {
+  if (tarjeta.estado !== "en-revision") return "";
+  const n = diasEnTest(tarjeta),
+    desde = desdeEnTest(tarjeta);
+  if (n === null) return '<span class="tag-test sin" title="No se sabe desde cuándo está en test">⏳ en test</span>';
+  return (
+    '<span class="tag-test' +
+    (n >= 14 ? " mal" : n >= 7 ? " ojo" : "") +
+    '" title="En test desde el ' +
+    fmtShort(desde) +
+    '">⏳ ' +
+    (n === 0 ? "desde hoy" : "hace " + n + (n === 1 ? " día" : " días")) +
+    "</span>"
+  );
+}
 function enAccionTagHTML(tarjeta) {
   return state.userId && enAccion(tarjeta) === state.userId
     ? '<span class="tag-accion" title="Sos quien la tiene en acción">⚡ En acción</span>'
@@ -4905,6 +4935,10 @@ function fechaPublicado(tarjeta) {
 function asentarFechasPublicado() {
   let n = 0;
   state.cards.forEach((t) => {
+    if (t.estado === "en-revision" && !t.revisionDesde) {
+      const d = desdeEnTest(t);
+      if (d) ((t.revisionDesde = d), n++);
+    }
     if (t.estado !== "finalizado" || t.publicadaEl) return;
     const f = fechaPublicado(t);
     if (f) ((t.publicadaEl = f), n++);
@@ -5409,11 +5443,7 @@ function cardKanban(tarjeta) {
     dateLabel(tarjeta) +
     (vencida ? " · vencida" : "") +
     "</span>" +
-    (tarjeta.estado === "en-revision" && tarjeta.revisionDesde
-      ? '<span class="date rev-age" title="Esperando revisión de otros sectores">🕓 ' +
-        Math.max(0, daysBetween(tarjeta.revisionDesde, isoOf(new Date()))) +
-        "d en revisión</span>"
-      : "") +
+    enTestTagHTML(tarjeta) +
     "\n    </div>\n    " +
     (avance.total
       ? '<div class="prog-row"><div class="progress"><div class="progress-bar" style="width:' +
@@ -5665,6 +5695,18 @@ function equipoCirculosHTML() {
   );
 }
 
+function pbEsperaMaxHTML(lista) {
+  const dias = lista.map(diasEnTest).filter((n) => n !== null);
+  if (!dias.length) return "";
+  const max = Math.max(...dias);
+  return (
+    '<span class="pb-cuenta pb-espera' +
+    (max >= 14 ? " mal" : max >= 7 ? " ojo" : "") +
+    '" title="La que más tiempo lleva esperando aprobación">⏳ la más vieja: ' +
+    (max === 0 ? "de hoy" : max + (max === 1 ? " día" : " días")) +
+    "</span>"
+  );
+}
 // ===== Planner B =====
 // Las mismas tarjetas del Planner, por etapa, en filas. Lo que avanza sube:
 // abajo lo que viene, arriba lo ya publicado. Stand by va aparte,
@@ -5710,6 +5752,7 @@ function pbFilaHTML(tarjeta) {
     enAccionTagHTML(tarjeta) +
     '<span class="pb-tipo">' +
     tipoStickerHTML(tarjeta) +
+    enTestTagHTML(tarjeta) +
     (tarjeta.fin ? "<small>fin " + fmtShort(tarjeta.fin) + "</small>" : "") +
     '</span></span><span class="pb-c pb-sector">' +
     (sectores.length ? sectores.map((n) => '<span class="pb-tag">' + esc(n) + "</span>").join("") : '<span class="pb-vacio">Sin sector</span>') +
@@ -5798,7 +5841,11 @@ function renderPlannerB() {
         (id === "finalizado"
           ? filas.length + " en los últimos 30 días"
           : porEstado[id].length + (porEstado[id].length === 1 ? " tarjeta" : " tarjetas")) +
-        '</span></div><div class="pb-filas">' +
+        "</span>" +
+        // En test: cuánto lleva esperando la que más espera, con la misma
+        // pastilla que la cuenta de arriba.
+        (id === "en-revision" ? pbEsperaMaxHTML(porEstado[id]) : "") +
+        '</div><div class="pb-filas">' +
         filas.map(pbFilaHTML).join("") +
         (id === "finalizado" && !filas.length ? '<div class="pb-pub-vacio">Nada publicado en los últimos 30 días.</div>' : "") +
         (id === "finalizado" ? pubHistoricoBotonHTML(porEstado[id].length, filas.length, "pb-mas") : "") +
