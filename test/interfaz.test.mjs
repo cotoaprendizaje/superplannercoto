@@ -1785,6 +1785,39 @@ check("sumar a alguien lo pone último", JSON.stringify(roles.trasSumar) === '["
 check("arrastrando se cambia el orden", JSON.stringify(roles.trasArrastrar) === '["vane","gasti","flor"]', roles);
 check("sacar a alguien corre a los demás, en orden y sin números", JSON.stringify(roles.trasQuitar.orden) === '["vane","gasti"]' && roles.trasQuitar.filas.join() === "vane,gasti" && roles.trasQuitar.numeros === 0, roles);
 
+// ── El tipo como cartelito, en los dos Planners ──
+const stickers = await page.evaluate(() => {
+  ((state.view = "kanban"), render());
+  const k = document.querySelectorAll(".kcard .tipo-sticker").length === document.querySelectorAll(".kcard").length;
+  ((state.view = "plannerb"), render());
+  const b = document.querySelectorAll(".pb-fila .tipo-sticker").length === document.querySelectorAll(".pb-fila").length;
+  const video = tipoStickerHTML({ tipo: "video" });
+  return { k, b, video: /Video/.test(video) && /--tipo:#D71E50/.test(video) };
+});
+check("cada tarjeta lleva su tipo como cartelito, en los dos Planners", stickers.k && stickers.b && stickers.video, stickers);
+
+// ── Alertas y vencidas de Inicio: solo lo tuyo en acción ──
+const alertasFlor = await page.evaluate(() => {
+  const hace = isoOf(new Date(Date.now() - 5 * 86400000));
+  const deFlor = newCard("libre", "ZZA Vencida de Flor", { estado: "en-desarrollo", fin: hace }),
+    deGasti = newCard("libre", "ZZA Vencida de Gasti", { estado: "en-desarrollo", fin: hace }),
+    esperando = newCard("libre", "ZZA Flor esperando", { estado: "en-desarrollo", fin: hace });
+  ((deFlor.responsable = "flor"), (deGasti.responsable = "gasti"), (esperando.responsable = "gasti"), (esperando.asignados = ["flor"]));
+  state.cards.push(deFlor, deGasti, esperando);
+  ((state.userId = "flor"), (state.view = "inicio"), render());
+  const titulos = computeAlerts().map((a) => a.c.titulo);
+  const boton = document.querySelector(".ini-alerta.mal"),
+    numero = boton ? parseInt(boton.textContent, 10) : 0,
+    esperadas = boardCards().filter((c) => isOverdue(c) && enAccion(c) === "flor").length;
+  boton && boton.click();
+  const enPlanner = kanbanCards().map((c) => c.titulo);
+  ((state.quick = ""), (state.userId = null), (state.view = "inicio"), render());
+  [deFlor, deGasti, esperando].forEach((c) => (c.activo = false));
+  return { titulos, numero, esperadas, enPlanner };
+});
+check("las alertas son solo de lo que uno tiene en acción", alertasFlor.titulos.includes("ZZA Vencida de Flor") && !alertasFlor.titulos.includes("ZZA Vencida de Gasti") && !alertasFlor.titulos.includes("ZZA Flor esperando"), alertasFlor);
+check("«N vencidas» de Inicio cuenta solo las tuyas y lleva a esas", alertasFlor.numero === alertasFlor.esperadas && alertasFlor.enPlanner.includes("ZZA Vencida de Flor") && !alertasFlor.enPlanner.includes("ZZA Vencida de Gasti"), alertasFlor);
+
 // ── Orden libre: alfabético de entrada, después donde uno la suelte ──
 await page.evaluate(() => {
   ((state.filters = { persona: "", tipo: "", sector: "", estado: "", texto: "", cursoEstado: "" }), (state.quick = ""), (state.mis = false), (state.userId = null));
