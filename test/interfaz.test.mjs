@@ -1785,6 +1785,51 @@ check("sumar a alguien lo pone último", JSON.stringify(roles.trasSumar) === '["
 check("arrastrando se cambia el orden", JSON.stringify(roles.trasArrastrar) === '["vane","gasti","flor"]', roles);
 check("sacar a alguien corre a los demás, en orden y sin números", JSON.stringify(roles.trasQuitar.orden) === '["vane","gasti"]' && roles.trasQuitar.filas.join() === "vane,gasti" && roles.trasQuitar.numeros === 0, roles);
 
+// ── Orden libre: alfabético de entrada, después donde uno la suelte ──
+await page.evaluate(() => {
+  ((state.filters = { persona: "", tipo: "", sector: "", estado: "", texto: "", cursoEstado: "" }), (state.quick = ""), (state.mis = false), (state.userId = null));
+  for (const t of ["ZZO Cigüeña", "ZZO Árbol", "ZZO Barco"]) state.cards.push(newCard("libre", t, { estado: "en-desarrollo" }));
+  ((state.view = "kanban"), render());
+});
+const ordTitulos = (sel) => page.evaluate((sel) => [...document.querySelectorAll(sel)].map((e) => (e.querySelector("b, .kcard-title, h4") || e).textContent).filter((t) => t.includes("ZZO")).map((t) => t.match(/ZZO \S+/)[0]), sel);
+const ordInicial = await ordTitulos('.kcol-body[data-estado="en-desarrollo"] .kcard');
+const colTitulos = await page.evaluate(() => [...document.querySelectorAll('.kcol-body[data-estado="en-desarrollo"] .kcard')].map((e) => state.cards.find((c) => c.id === e.dataset.id).titulo));
+const idDe = (t) => page.evaluate((t) => state.cards.find((c) => c.titulo === t).id, t);
+const [idA, idC] = [await idDe("ZZO Árbol"), await idDe("ZZO Cigüeña")];
+// Arrastre a mano (bajar, mover, soltar): dragAndDrop() desplaza la página
+// hacia el destino a mitad del gesto y suelta sobre la misma tarjeta.
+const arrastrar = async (desde, hasta) => {
+  await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: "center", behavior: "instant" }), hasta);
+  await page.waitForTimeout(100);
+  const a = await page.locator(desde).boundingBox(),
+    b = await page.locator(hasta).boundingBox();
+  await page.mouse.move(a.x + 30, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(b.x + 30, b.y + 6, { steps: 8 });
+  await page.mouse.move(b.x + 32, b.y + 4, { steps: 2 });
+  await page.mouse.up();
+};
+await arrastrar('.kcard[data-id="' + idC + '"]', '.kcard[data-id="' + idA + '"]');
+await page.waitForTimeout(200);
+const ordTrasMover = await ordTitulos('.kcol-body[data-estado="en-desarrollo"] .kcard');
+await page.evaluate(() => ((state.view = "plannerb"), render()));
+const ordEnB = await ordTitulos("#pb-en-desarrollo .pb-fila");
+// En el Planner B también se arrastra, y a otra etapa.
+const filaRev = await page.evaluate(() => [...document.querySelectorAll("#pb-diseno-listo .pb-fila")].pop().dataset.id);
+await arrastrar('.pb-fila[data-id="' + idA + '"]', '.pb-fila[data-id="' + filaRev + '"]');
+await page.waitForTimeout(200);
+const ordOtra = await page.evaluate((id) => {
+  const t = state.cards.find((c) => c.id === id);
+  const filas = [...document.querySelectorAll("#pb-diseno-listo .pb-fila")].map((f) => f.dataset.id);
+  return { estado: t.estado, primera: filas[filas.length - 2] === id, sort: state.sort };
+}, idA);
+await page.evaluate(() => state.cards.filter((c) => /^ZZO /.test(c.titulo)).forEach((c) => (c.activo = false)));
+const orden = { ordInicial, colTitulos, ordTrasMover, ordEnB, ordOtra };
+check("cada columna arranca en orden alfabético", ordInicial.join() === "ZZO Árbol,ZZO Barco,ZZO Cigüeña" && colTitulos.every((t, i, l) => !i || l[i - 1].localeCompare(t, "es", { sensitivity: "base", numeric: true }) <= 0), orden);
+check("arrastrando una tarjeta queda donde se la suelta", ordTrasMover.join() === "ZZO Cigüeña,ZZO Árbol,ZZO Barco", orden);
+check("el Planner B muestra el mismo orden", ordEnB.join() === "ZZO Cigüeña,ZZO Árbol,ZZO Barco", orden);
+check("en el Planner B se arrastra también, incluso a otra etapa", ordOtra.estado === "diseno-listo" && ordOtra.primera && ordOtra.sort === "manual", orden);
+
 // ── La regla de las etapas: en espera nadie está en acción ──
 const reglas = await page.evaluate(() => {
   state.userId = "flor";
@@ -1926,6 +1971,27 @@ const esquina = await page.evaluate(() => {
 });
 await page.setViewportSize({ width: 1400, height: 950 });
 check("en Inicio la 🎰 queda a la derecha de las tarjetas, centrada con ellas", esquina.aLaDerecha > 0 && Math.abs(esquina.centro) < 40, esquina);
+// La máquina se abre al centro de la pantalla, entera.
+await page.click(".cotofrase-fab");
+await page.waitForTimeout(150);
+const cfModal = await page.evaluate(() => {
+  const m = document.querySelector("#modal .modal.cotofrase-modal"),
+    r = m && m.getBoundingClientRect();
+  const fuera = r && (r.top < 0 || r.bottom > innerHeight || r.left < 0 || r.right > innerWidth);
+  const res = { hay: !!m, slot: !!(m && m.querySelector(".slot-widget")), centrado: r ? Math.abs(r.left + r.width / 2 - innerWidth / 2) < 4 : false, fuera };
+  closeModal();
+  return res;
+});
+check("la CotoFrase se abre en una ventana central, sin cortarse", cfModal.hay && cfModal.slot && cfModal.centrado && !cfModal.fuera, cfModal);
+// La barra de arriba en una sola fila, también en 1536 (Full HD al 125%).
+const barraFila = [];
+for (const w of [1280, 1366, 1470, 1536, 1600, 1920]) {
+  await page.setViewportSize({ width: w, height: 800 });
+  await page.waitForTimeout(80);
+  barraFila.push(await page.evaluate(() => ({ w: innerWidth, alto: Math.round(document.querySelector(".topbar").getBoundingClientRect().height), ancho: document.documentElement.scrollWidth })));
+}
+await page.setViewportSize({ width: 1400, height: 950 });
+check("la barra de arriba va en una sola fila de 1280 a 1920", barraFila.every((b) => b.alto < 80 && b.ancho <= b.w), barraFila);
 // Y al pasar de Inicio al Planner, «Mis pendientes» no hereda ese lugar: va a la derecha.
 const pendLugar = await page.evaluate(() => {
   ((state.view = "inicio"), render(), (state.view = "kanban"), render());

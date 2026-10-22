@@ -4327,7 +4327,7 @@ const state = {
   calCursor: new Date(),
   tlGroup: "",
   tlRange: "todo",
-  sort: "prioridad",
+  sort: "manual",
   mapaSec: "todos",
   filters: {
     persona: "",
@@ -4845,6 +4845,7 @@ function moverTarjetaAEstado(tarjeta, estadoId) {
   (logAct(tarjeta, "pasó a " + nombre),
     estadoId === "en-revision" && (tarjeta.revisionDesde = isoOf(new Date())),
     sellarPublicado(tarjeta, estadoId),
+    delete tarjeta.orden,
     (tarjeta.estado = estadoId),
     touch());
   return true;
@@ -5418,8 +5419,61 @@ function sortCards(lista) {
     }
     if (val === "fecha") return fn2(tarjeta).localeCompare(fn2(tarjeta2));
     if (val === "titulo") return tarjeta.titulo.localeCompare(tarjeta2.titulo);
+    if (val === "manual") return compararOrden(tarjeta, tarjeta2);
     return 0;
   });
+}
+// ===== El orden de cada columna =====
+// De entrada, alfabético. Después cada tarjeta se puede arrastrar al lugar
+// que se quiera dentro de su columna (o de otra): al soltarla, la columna
+// entera queda numerada en ese orden (campo "orden") y así lo ve todo el
+// equipo, en los dos Planners. Las que todavía no tienen número (una nueva,
+// o una que llegó de otra etapa sin arrastrarla) van al final, por nombre.
+function compararOrden(a, b) {
+  const oa = typeof a.orden === "number" ? a.orden : Infinity,
+    ob = typeof b.orden === "number" ? b.orden : Infinity;
+  if (oa !== ob) return oa < ob ? -1 : 1;
+  return String(a.titulo || "").localeCompare(String(b.titulo || ""), "es", { sensitivity: "base", numeric: true });
+}
+// Deja la tarjeta "id" en la etapa "estadoId", justo antes (o después) de
+// "refId"; sin refId, al final. Renumera la etapa completa —no solo lo que
+// se ve con los filtros puestos— para que el orden no dependa de quién mira.
+function ordenarTarjeta(id, estadoId, refId, despues) {
+  const tarjeta = state.cards.find((c) => c.id === id);
+  if (!tarjeta || !estadoId) return false;
+  moverTarjetaAEstado(tarjeta, estadoId);
+  const col = boardCards().filter((c) => c.estado === estadoId && c.id !== id).sort(compararOrden);
+  let i = refId ? col.findIndex((c) => c.id === refId) : -1;
+  i = i < 0 ? col.length : i + (despues ? 1 : 0);
+  col.splice(i, 0, tarjeta);
+  col.forEach((c, n) => {
+    if (c.orden !== n + 1) ((c.orden = n + 1), (c.updatedAt = Date.now()));
+  });
+  state.sort = "manual";
+  touch();
+  return true;
+}
+// Sobre qué tarjeta (o fila del Planner B) cae lo que se arrastra, y si cae
+// arriba o abajo de ella: mitad de arriba, antes; mitad de abajo, después.
+function destinoOrden(x, y, abajo) {
+  const el = abajo || document.elementFromPoint(x, y);
+  if (!el) return null;
+  const zona = el.closest(".kcol-body, .pb-etapa");
+  if (!zona) return null;
+  const estado = zona.dataset.estado || (zona.id || "").replace(/^pb-/, "");
+  const ref = el.closest(".kcard, .pb-fila");
+  if (!ref || ref.classList.contains("drag")) {
+    // En el hueco de la columna: después de la última que se ve.
+    const todas = [...zona.querySelectorAll(".kcard:not(.drag), .pb-fila:not(.drag)")];
+    const ult = todas.filter((c) => c.getBoundingClientRect().top < y).pop();
+    return ult ? { estado, ref: ult.dataset.id, despues: true, el: ult } : { estado, ref: todas[0] ? todas[0].dataset.id : null, despues: false, el: todas[0] || null };
+  }
+  const caja = ref.getBoundingClientRect();
+  return { estado, ref: ref.dataset.id, despues: y >= caja.top + caja.height / 2, el: ref };
+}
+function marcarDestinoOrden(dest) {
+  document.querySelectorAll(".ord-antes, .ord-despues").forEach((f) => f.classList.remove("ord-antes", "ord-despues"));
+  if (dest && dest.el) dest.el.classList.add(dest.despues ? "ord-despues" : "ord-antes");
 }
 // ===== Perfiles: el emoji y el nombre de cada uno =====
 // La primera vez que alguien del equipo entra, elige un emoji (que no se
@@ -5622,7 +5676,7 @@ function pbFilaHTML(tarjeta) {
     (isOverdue(tarjeta) ? " venc" : "") +
     '" data-action="card:open" data-id="' +
     tarjeta.id +
-    '" role="button" tabindex="0"><span class="pb-c pb-curso"><b>' +
+    '" draggable="true" role="button" tabindex="0"><span class="pb-c pb-curso"><b>' +
     esc(tarjeta.titulo) +
     (espera ? ' <span class="pb-es2" title="Esperando para hacer: no le suma a sus pendientes">esperando</span>' : "") +
     "</b>" +
@@ -5696,7 +5750,7 @@ function renderPlannerB() {
       const e = estadoDe(id);
       let filas = sortCards(porEstado[id]);
       if (id === "finalizado")
-        filas = filas.filter(publicadoReciente).sort((a, b) => String(fechaPublicado(b)).localeCompare(String(fechaPublicado(a))));
+        filas = filas.filter(publicadoReciente);
       return (
         '<section class="pb-etapa" id="pb-' +
         id +
@@ -6038,7 +6092,9 @@ function renderKanban() {
       " tarjeta" +
       (lista2.length !== 1 ? "s" : "") +
       (state.mis && state.userId ? " · mías" : "") +
-      '</span>\n    <span class="grow"></span>\n    <button class="btn btn-ghost btn-sm" data-action="data:csv" title="Exportar a CSV lo que estás viendo (respeta los filtros activos)">⬇ CSV</button>\n    <button class="btn btn-ghost btn-sm" data-action="app:print" title="Imprimir o guardar como PDF">🖨 PDF</button>\n    <div class="filt">↕<select data-control="sort">\n      <option value="prioridad" ' +
+      '</span>\n    <span class="grow"></span>\n    <button class="btn btn-ghost btn-sm" data-action="data:csv" title="Exportar a CSV lo que estás viendo (respeta los filtros activos)">⬇ CSV</button>\n    <button class="btn btn-ghost btn-sm" data-action="app:print" title="Imprimir o guardar como PDF">🖨 PDF</button>\n    <div class="filt">↕<select data-control="sort">\n      <option value="manual" ' +
+      (state.sort === "manual" ? "selected" : "") +
+      '>Mi orden</option>\n      <option value="prioridad" ' +
       (state.sort === "prioridad" ? "selected" : "") +
       '>Prioridad</option>\n      <option value="fecha" ' +
       (state.sort === "fecha" ? "selected" : "") +
@@ -12413,7 +12469,7 @@ function tirarSlot() {
         (resultado && ((resultado.textContent = frase), resultado.classList.add("show")),
           desc && (desc.textContent = "Ya tiraste de la palanca hoy — volvé mañana por otra."),
           boton && (boton.remove()));
-        renderFraseWidget();
+        (renderFraseWidget(), refrescarLanzadorCotofrase());
       }
     }, paradas[i]);
   });
@@ -12521,11 +12577,18 @@ function cotofraseLauncherHTML() {
     (cotofraseSinTirar() ? '<span class="cf-nueva" aria-hidden="true"></span>' : "") +
     '</button><span class="cf-lbl">' +
     (cotofraseSinTirar() ? "¡Tirá la CotoFrase!" : "CotoFrase del día") +
-    '</span>\n    <div class="cotofrase-pop hidden" id="cotofracePop">\n      ' +
-    slotWidgetHTML() +
-    fraseWidgetHTML() +
-    "\n    </div>\n  </div>"
+    "</span>\n  </div>"
   );
+}
+// La máquina se abre en una ventana al centro de la pantalla. Colgada de la
+// 🎰 quedaba cortada según dónde estuviera la página; al centro entra siempre.
+function abrirCotofrase() {
+  openModal('<div class="cotofrase-centro">' + slotWidgetHTML() + fraseWidgetHTML() + '</div><div class="modal-foot"><button class="btn" data-action="modal:close">Cerrar</button></div>', "cotofrase-modal");
+}
+// Después de tirar, la 🎰 deja de invitar («¡Tirá la CotoFrase!»).
+function refrescarLanzadorCotofrase() {
+  const l = $("#hubSide .cotofrase-launcher");
+  if (l) (($("#hubSide").innerHTML = cotofraseLauncherHTML()), ubicarCotofrase());
 }
 // ===== Mis pendientes =====
 // El botón de arriba a la derecha de los dos Planner (donde antes estaba la
@@ -13595,6 +13658,7 @@ function applyField(tarjeta, val, el) {
     logAct(tarjeta, "pasó a " + ((ESTADOS.find((estado) => estado.id === value) || {}).nombre || value));
     if (value === "en-revision") tarjeta.revisionDesde = isoOf(new Date());
     sellarPublicado(tarjeta, value);
+    delete tarjeta.orden;
   }
   // Cambiar el tipo de una tarjeta ya publicada puede sacarla o meterla en el
   // inventario del Mapa sin que nadie lo haya pedido a propósito (ej: pasarla
@@ -14509,11 +14573,9 @@ document.addEventListener("click", (ev) => {
     case "pend:toggle":
       pendAlternar();
       break;
-    case "cotofrase:toggle": {
-      const el7c = $("#cotofracePop");
-      if (el7c) ((el7c.classList.toggle("hidden")), cotofraseAlto());
+    case "cotofrase:toggle":
+      abrirCotofrase();
       break;
-    }
     case "misemana:open":
       openMiSemana();
       break;
@@ -15361,9 +15423,12 @@ document.addEventListener("click", (ev) => {
       } catch (err3) {}
       return;
     }
-    const el = ev.target.closest(".kcard");
+    const el = ev.target.closest(".kcard, .pb-fila");
     if (el) {
       ((state.dragId = el.dataset.id), el.classList.add("drag"));
+      try {
+        ev.dataTransfer.effectAllowed = "move";
+      } catch (err5) {}
       return;
     }
     const el2 = ev.target.closest(".cal-bar");
@@ -15390,8 +15455,9 @@ document.addEventListener("click", (ev) => {
     (document.querySelectorAll(".chk.drag").forEach((f) => f.classList.remove("drag")),
       limpiarMarcasChk(),
       (state.dragChk = null));
-    const el = ev.target.closest(".kcard");
+    const el = ev.target.closest(".kcard, .pb-fila");
     if (el) el.classList.remove("drag");
+    (marcarDestinoOrden(null), (state.dragId = null));
     const el2 = ev.target.closest(".cal-bar");
     if (el2) el2.classList.remove("drag");
     const el3 = ev.target.closest(".tl-bar");
@@ -15427,10 +15493,16 @@ document.addEventListener("click", (ev) => {
       }
       return;
     }
-    const el = ev.target.closest(".kcol-body");
-    if (el) {
-      (ev.preventDefault(), el.classList.add("drop"));
-      return;
+    if (state.dragId) {
+      const dest = destinoOrden(ev.clientX, ev.clientY, ev.target);
+      if (dest) {
+        ev.preventDefault();
+        const col = ev.target.closest(".kcol-body");
+        (document.querySelectorAll(".kcol-body.drop").forEach((c) => c !== col && c.classList.remove("drop")),
+          col && col.classList.add("drop"),
+          marcarDestinoOrden(dest));
+        return;
+      }
     }
     if (state.dragCal) {
       const el2 = ev.target.closest(".cwd");
@@ -15477,15 +15549,14 @@ document.addEventListener("click", (ev) => {
       ((state.dragChk = null), limpiarMarcasChk());
       return;
     }
-    const el2 = ev.target.closest(".kcol-body");
-    if (el2 && state.dragId) {
-      ev.preventDefault();
-      moverTarjetaAEstado(
-        state.cards.find((tarjeta) => tarjeta.id === state.dragId),
-        el2.dataset.estado,
-      );
-      ((state.dragId = null), render());
-      return;
+    if (state.dragId) {
+      const dest = destinoOrden(ev.clientX, ev.clientY, ev.target);
+      if (dest) {
+        ev.preventDefault();
+        ordenarTarjeta(state.dragId, dest.estado, dest.ref, dest.despues);
+        ((state.dragId = null), marcarDestinoOrden(null), render());
+        return;
+      }
     }
     const el3 = ev.target.closest(".cwd");
     if (el3 && state.dragCal) {
@@ -15528,6 +15599,7 @@ function tapDragLimpiar() {
     tapDrag.clon && tapDrag.clon.remove(),
     tapDrag.el && tapDrag.el.classList.remove("drag"),
     document.querySelectorAll(".kcol-body.drop").forEach((c) => c.classList.remove("drop")),
+    marcarDestinoOrden(null),
     document.body.classList.remove("tap-drag"));
   tapDrag = null;
 }
@@ -15575,7 +15647,7 @@ function tapDragColumna(x, y) {
 (document.addEventListener("pointerdown", (ev) => {
   // El mouse sigue por el camino nativo.
   if (ev.pointerType === "mouse" || !ev.isPrimary) return;
-  const el = ev.target.closest && ev.target.closest(".kcard");
+  const el = ev.target.closest && ev.target.closest(".kcard, .pb-fila");
   // Los botones de acción rápida de la tarjeta se tocan, no se arrastran.
   if (!el || ev.target.closest("button") || ev.target.closest("input,textarea,select")) return;
   tapDragLimpiar();
@@ -15603,7 +15675,8 @@ function tapDragColumna(x, y) {
       (tapDrag.clon.style.top = ev.clientY - tapDrag.dy + "px"));
     const col = tapDragColumna(ev.clientX, ev.clientY);
     (document.querySelectorAll(".kcol-body.drop").forEach((c) => c !== col && c.classList.remove("drop")),
-      col && col.classList.add("drop"));
+      col && col.classList.add("drop"),
+      marcarDestinoOrden(destinoOrden(ev.clientX, ev.clientY)));
     tapDragArrimar(ev.clientX, ev.clientY);
   }),
   // touchmove hace falta aparte y sin passive: es el único que puede frenar
@@ -15617,11 +15690,11 @@ function tapDragColumna(x, y) {
   ),
   document.addEventListener("pointerup", (ev) => {
     if (!tapDrag || !ev.isPrimary) return;
-    const suelto = tapDrag.activo ? tapDragColumna(ev.clientX, ev.clientY) : null,
+    const suelto = tapDrag.activo ? destinoOrden(ev.clientX, ev.clientY) : null,
       id = tapDrag.id,
       arrastro = tapDrag.activo && tapDrag.movio;
     tapDragLimpiar();
-    if (suelto && moverTarjetaAEstado(state.cards.find((c) => c.id === id), suelto.dataset.estado)) render();
+    if (suelto && ordenarTarjeta(id, suelto.estado, suelto.ref, suelto.despues)) render();
     // Soltar la tarjeta no puede además abrir el panel: el toque termina en
     // un click sintético que hay que comerse una sola vez.
     if (arrastro) {
@@ -15735,9 +15808,6 @@ function pushRecent(id2) {
   if ($("#tecFiltPop") && !ev.target.closest("#tecFiltPop") && !ev.target.closest('[data-action="tec:filtcol"]'))
     tecFiltPopCerrar();
   if ($("#pendPop") && !$("#pendPop").classList.contains("hidden") && !ev.target.closest(".pend-launcher")) pendAlternar(false);
-  const elCotofracePop = $("#cotofracePop");
-  if (elCotofracePop && !elCotofracePop.classList.contains("hidden") && !ev.target.closest(".cotofrase-launcher"))
-    elCotofracePop.classList.add("hidden");
   document.querySelectorAll(".panel-menu-wrap.open").forEach((wrap) => {
     if (!wrap.contains(ev.target)) wrap.classList.remove("open");
   });
