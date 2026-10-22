@@ -4546,6 +4546,7 @@ function newCard(txt, txt2, obj) {
   // Si nace ya publicada (ingesta de catálogo), no hay otra fecha real de
   // publicación disponible más que "hoy, que es cuando entró al sistema".
   if (nueva.publicado && !nueva.publicadoEl) nueva.publicadoEl = nueva.creadoEl;
+  if (nueva.estado === "finalizado" && !nueva.publicado && !nueva.publicadaEl) nueva.publicadaEl = todayISO();
   return nueva;
 }
 function withChecklist(lista) {
@@ -4853,8 +4854,11 @@ function moverTarjetaAEstado(tarjeta, estadoId) {
 // «Todo lo publicado» (pub:historico).
 const PUB_DIAS_A_LA_VISTA = 30;
 // El día en que la tarjeta pasó a Publicado. Se sella al moverla; para las
-// que pasaron antes de existir el sello se busca en su actividad, después la
-// fecha de publicación cargada y, en último caso, su último cambio.
+// que pasaron antes de existir el sello se busca en su actividad y después en
+// la fecha de publicación cargada. El último cambio (updatedAt) NO sirve: se
+// renueva con cualquier retoque y hacía ver como recién publicadas a cosas
+// de hace meses. Sin ninguna de las dos pistas, queda "sin fecha": fuera de
+// la vista y al final del histórico.
 function sellarPublicado(tarjeta, estadoId) {
   if (estadoId === "finalizado") tarjeta.publicadaEl = isoOf(new Date());
   else delete tarjeta.publicadaEl;
@@ -4864,10 +4868,19 @@ function fechaPublicado(tarjeta) {
   if (tarjeta.publicadaEl) return tarjeta.publicadaEl;
   const act = (tarjeta.actividad || []).filter((a) => RE_PASO_A_PUBLICADO.test(a.texto || ""));
   if (act.length) return isoOf(new Date(act[act.length - 1].ts));
-  const pub = fechaPublicacionCard(tarjeta);
-  if (pub) return pub;
-  if (tarjeta.updatedAt) return isoOf(new Date(tarjeta.updatedAt));
-  return tarjeta.creadoEl || null;
+  return fechaPublicacionCard(tarjeta) || null;
+}
+// Deja asentada en cada publicada la fecha que se dedujo, para que no dependa
+// de la actividad (que guarda solo los últimos 60 movimientos) ni de cambios
+// futuros en Técnico. Devuelve cuántos sellos puso.
+function asentarFechasPublicado() {
+  let n = 0;
+  state.cards.forEach((t) => {
+    if (t.estado !== "finalizado" || t.publicadaEl) return;
+    const f = fechaPublicado(t);
+    if (f) ((t.publicadaEl = f), n++);
+  });
+  return n;
 }
 function publicadoReciente(tarjeta) {
   const f = fechaPublicado(tarjeta);
@@ -12090,7 +12103,11 @@ function inicioProxHTML() {
 // alta: además del número se ve la forma del tablero.
 function inicioPulsoHTML() {
   const lista = boardCards(),
-    cuenta = ESTADOS.map((estado) => lista.filter((tarjeta) => tarjeta.estado === estado.id).length),
+    // Publicado cuenta lo mismo que se ve en el Planner: los últimos 30 días.
+    cuenta = ESTADOS.map(
+      (estado) =>
+        lista.filter((tarjeta) => tarjeta.estado === estado.id && (estado.id !== "finalizado" || publicadoReciente(tarjeta))).length,
+    ),
     max = Math.max(1, ...cuenta);
   return (
     '<section class="ini-card ini-card-pulso"><div class="ini-card-h"><h2>El pulso del área</h2>' +
@@ -17077,7 +17094,7 @@ function updateBell() {
   }
   // Señal liviana además de la campana: se nota en la pestaña del navegador
   // aunque el equipo esté mirando otra ventana.
-  document.title = cantidad ? "(" + cantidad + ") Cotonetes Forever" : "Cotonetes Forever · COTO Aprendizaje e-Learning";
+  document.title = cantidad ? "(" + cantidad + ") Cotonetes Forever" : "Cotonetes Forever";
 }
 // Cuánto hace que está vencida, en palabras. "venció el 12/05" no dice si
 // eso fue anteayer o en marzo, que es lo único que decide qué se mira primero.
@@ -18322,7 +18339,7 @@ async function arrancarApp() {
   // El banner se armó unas líneas antes, cuando todavía no se sabía quién
   // había entrado: se rehace ahora para que el aviso de cuenta aparezca.
   showBanner();
-  if (normalizarEquipos()) (touch(), render());
+  if (normalizarEquipos() + asentarFechasPublicado()) (touch(), render());
   pedirPerfilSiFalta();
   chatArrancar();
   try {
@@ -18367,7 +18384,7 @@ function startPolling() {
           !$("#modal").classList.contains("hidden") ||
           escribiendo(),
         changed = await mergeRemoteIntoState();
-      if (normalizarEquipos()) touch();
+      if (normalizarEquipos() + asentarFechasPublicado()) touch();
       state.lastSyncTs = Date.now();
       if (!changed.length) return;
       if (editing) return;

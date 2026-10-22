@@ -54,7 +54,7 @@ for (const token of ["<!-- @@STYLES@@ -->", "<!-- @@SCRIPT@@ -->"]) {
   if (!shell.includes(token)) throw new Error(`Falta el marcador ${token} en src/index.html`);
 }
 
-const html = shell
+const html = (await inlineJsAssets(shell))
   .replace("<!-- @@STYLES@@ -->", `<style>\n${await inlineCssAssets(css)}\n</style>`)
   .replace("<!-- @@SCRIPT@@ -->", `<script>\n${await inlineJsAssets(js)}\n</script>`);
 
