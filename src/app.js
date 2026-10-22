@@ -3445,6 +3445,32 @@ function posicionEn(tarjeta, id) {
 }
 // La etiqueta de las tarjetas cerradas (Planner y Planner B): "estas son las
 // que tengo en acción", sin tener que abrirlas ni filtrar.
+// El tipo de la tarjeta como cartelito de color, igual de visible que el
+// «⚡ En acción»: de un vistazo se distingue un curso de un video o una guía.
+const TIPO_TONO = {
+  curso: "#1E7F4F",
+  "actualizacion-curso": "#0E8A9A",
+  video: "#D71E50",
+  presencial: "#E07B00",
+  "edu-point": "#8232C8",
+  guia: "#B07A00",
+  "app-web": "#3F51B5",
+  libre: "#5B6B82",
+};
+function tipoStickerHTML(tarjeta) {
+  const t = allTipos()[tarjeta.tipo] || { nombre: tarjeta.tipo || "Sin tipo", icon: "•" };
+  return (
+    '<span class="tipo-sticker" style="--tipo:' +
+    (TIPO_TONO[tarjeta.tipo] || t.color || "#5B6B82") +
+    '" title="Tipo: ' +
+    esc(t.nombre) +
+    '"><span aria-hidden="true">' +
+    t.icon +
+    "</span>" +
+    esc(t.nombre) +
+    "</span>"
+  );
+}
 function enAccionTagHTML(tarjeta) {
   return state.userId && enAccion(tarjeta) === state.userId
     ? '<span class="tag-accion" title="Sos quien la tiene en acción">⚡ En acción</span>'
@@ -4790,6 +4816,8 @@ function mine(tarjeta) {
 }
 function quickPass(tarjeta, arg) {
   if (arg === "venc") return isOverdue(tarjeta);
+  // Las vencidas que tenés EN ACCIÓN: lo que cuenta el «N vencidas» de Inicio.
+  if (arg === "mivenc") return isOverdue(tarjeta) && mine(tarjeta);
   if (arg === "alta") return tarjeta.prioridad === "alta";
   if (arg === "sinresp") return !tarjeta.responsable;
   if (arg === "sem") {
@@ -5075,6 +5103,7 @@ function renderFilters() {
       .map((h) => h.replace('<div class="filt">', '<div class="filt filt-pop-item">'))
       .join(""),
     lista = [
+      ...(state.userId ? [{ k: "mivenc", l: "⚑ Mis vencidas" }] : []),
       {
         k: "venc",
         l: "⚑ Vencidas",
@@ -5366,11 +5395,9 @@ function cardKanban(tarjeta) {
         ? '<span class="tag-flag">◎ activo</span>'
         : "") +
     enAccionTagHTML(tarjeta) +
-    '\n    <div class="kcard-top">\n      <span class="tipo-pill">' +
-    tipo.icon +
-    " " +
-    esc(tipo.nombre) +
-    "</span>\n      " +
+    '\n    <div class="kcard-top">\n      ' +
+    tipoStickerHTML(tarjeta) +
+    "\n      " +
     (tarjeta.prioridad === "alta" ? '<span class="badge prio">★ Alta</span>' : "") +
     '\n    </div>\n    <div class="kcard-title">' +
     esc(tarjeta.titulo) +
@@ -5681,9 +5708,10 @@ function pbFilaHTML(tarjeta) {
     (espera ? ' <span class="pb-es2" title="Esperando para hacer: no le suma a sus pendientes">esperando</span>' : "") +
     "</b>" +
     enAccionTagHTML(tarjeta) +
-    "<small>" +
-    esc(((allTipos()[tarjeta.tipo] || {}).nombre || "") + (tarjeta.fin ? " · fin " + fmtShort(tarjeta.fin) : "")) +
-    '</small></span><span class="pb-c pb-sector">' +
+    '<span class="pb-tipo">' +
+    tipoStickerHTML(tarjeta) +
+    (tarjeta.fin ? "<small>fin " + fmtShort(tarjeta.fin) + "</small>" : "") +
+    '</span></span><span class="pb-c pb-sector">' +
     (sectores.length ? sectores.map((n) => '<span class="pb-tag">' + esc(n) + "</span>").join("") : '<span class="pb-vacio">Sin sector</span>') +
     '</span><span class="pb-c pb-roles">' +
     // Quién la lleva, en orden. El que está en acción va resaltado; en las
@@ -12201,7 +12229,9 @@ function inicioAtajosHTML() {
 }
 function renderInicio() {
   const lista = boardCards(),
-    vencidas = lista.filter(isOverdue).length,
+    // Lo vencido de Inicio es lo TUYO en acción, igual que la campana: ver
+    // las del resto del equipo acá hacía creer que eran propias.
+    vencidas = lista.filter((c) => isOverdue(c) && (!state.userId || mine(c))).length,
     alertas = alertasSinLeer().length,
     crudo = new Date()
       .toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })
@@ -12220,7 +12250,7 @@ function renderInicio() {
     // El estado del día en una línea, y clickeable: si hay algo vencido, de
     // acá se salta derecho a verlo.
     (vencidas
-      ? '<button class="ini-alerta mal" data-action="kpi:go" data-go="kanban" data-quick="venc">' +
+      ? '<button class="ini-alerta mal" data-action="kpi:go" data-go="kanban" data-quick="' + (state.userId ? "mivenc" : "venc") + '">' +
         vencidas +
         " vencida" +
         (vencidas !== 1 ? "s" : "") +
@@ -17076,6 +17106,9 @@ function computeAlerts() {
     // isOverdue()— pero acá la cuenta estaba hecha a mano y sin ese chequeo:
     // por eso la campana seguía marcando como pendientes cosas ya cerradas.
     if (arg.estado === "finalizado") return;
+    // Las alertas son de cada uno: solo lo que tenés EN ACCIÓN (ver mine).
+    // Antes avisaba de cualquier tarjeta del equipo, aunque no fuera tuya.
+    if (state.userId && !mine(arg)) return;
     if (isOverdue(arg))
       lista.push({
         c: arg,
@@ -17105,6 +17138,8 @@ function computeAlerts() {
       // Una recurrente terminada sí avisa —de eso se trata, toca la próxima
       // vuelta—, pero una dada de baja no: ya no forma parte del trabajo.
       if (tarjeta.activo === false) return;
+      // La recurrente cerrada no tiene a nadie en acción: avisa a quien la lleva.
+      if (state.userId && equipoDe(tarjeta)[0] !== state.userId) return;
       if (tarjeta.recurrencia && tarjeta.recurrencia !== "none" && !isInventory(tarjeta)) {
         const val = tarjeta.fin || tarjeta.inicio;
         if (val && val <= iso)

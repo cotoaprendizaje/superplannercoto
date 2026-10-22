@@ -59,13 +59,15 @@ await page.evaluate(() => {
   const dias = (n) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
   const mk = (titulo, fin, estado, extra) => {
     const c = newCard("libre", titulo, {});
-    ((c.fin = fin), (c.estado = estado), Object.assign(c, extra || {}));
+    // Las alertas son de quien tiene la tarjeta en acción: todas las de
+    // prueba van a nombre de quien entró.
+    ((c.fin = fin), (c.estado = estado), (c.responsable = state.userId), Object.assign(c, extra || {}));
     return (state.cards.push(c), c);
   };
-  (mk("VENCIDA DE VERDAD", dias(-30), "pendiente"),
+  (mk("VENCIDA DE VERDAD", dias(-30), "en-desarrollo"),
     mk("VENCIDA HACE MUCHO", dias(-120), "en-desarrollo"),
     mk("YA TERMINADA", dias(-45), "finalizado"),
-    mk("VENCE PRONTO", dias(2), "pendiente"),
+    mk("VENCE PRONTO", dias(2), "en-desarrollo"),
     mk("RECURRENTE DADA DE BAJA", dias(-10), "pendiente", { recurrencia: "mensual", activo: false }));
 });
 
