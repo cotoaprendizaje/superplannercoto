@@ -11570,8 +11570,10 @@ button.mat-ct:hover {
    lo que tenés en acción, que despliega la lista. */
 .hub-side:has(.pend-launcher) {
   position: fixed;
-  /* A la altura del buscador del tablero, no pegada a la barra de arriba. */
-  top: calc(var(--topbar-h, 66px) + 78px);
+  /* Fijo en la esquina de arriba a la derecha, apenas debajo de la barra:
+     ahí no tapa el selector de orden ni los botones del tablero, y se queda
+     en el mismo lugar aunque se baje por la página. */
+  top: calc(var(--topbar-h, 66px) + 12px);
   right: 22px;
   left: auto;
   width: auto;
@@ -12200,22 +12202,49 @@ button.mat-ct:hover {
   overflow: visible;
 }
 
-/* ===== El tipo como cartelito (Curso, Video, Guía…) ===== */
+/* ===== El tipo como cartelito (Curso, Video, Guía…) =====
+   Chico y apagado: tiene que leerse, pero no ganarle al título de la tarjeta,
+   que es lo primero que se busca. Fondo suave del color del tipo, letra en
+   ese color, sin brillo ni sombra (eso queda para «⚡ En acción»). */
 .tipo-sticker {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   width: fit-content;
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: 0.2px;
   line-height: 1.3;
-  color: #fff;
-  background: linear-gradient(135deg, var(--tipo), color-mix(in srgb, var(--tipo) 70%, #000));
+  color: color-mix(in srgb, var(--tipo) 82%, var(--ink));
+  background: color-mix(in srgb, var(--tipo) 11%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tipo) 22%, transparent);
   border-radius: 999px;
-  padding: 3px 9px 3px 7px;
-  box-shadow: 0 3px 8px color-mix(in srgb, var(--tipo) 28%, transparent);
+  padding: 1px 7px 1px 5px;
   white-space: nowrap;
+}
+.tipo-sticker > span {
+  font-size: 10px;
+  filter: saturate(0.7);
+}
+:root[data-theme="dark"] .tipo-sticker {
+  color: color-mix(in srgb, var(--tipo) 55%, #fff);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tipo-sticker {
+    color: color-mix(in srgb, var(--tipo) 55%, #fff);
+  }
+}
+/* El título de la tarjeta, con más peso: es lo que se lee primero. */
+.kcard-title {
+  font-size: 15.5px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  color: var(--ink);
+}
+.pb-curso b {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.15px;
 }
 .pb-tipo {
   display: flex;
