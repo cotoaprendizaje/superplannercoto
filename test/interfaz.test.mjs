@@ -1676,6 +1676,16 @@ const pub = await page.evaluate(async () => {
   const nueva = newCard("libre", "ZZ Publicada ayer", { estado: "finalizado" }),
     vieja = newCard("libre", "ZZ Publicada hace dos meses", { estado: "finalizado" });
   ((nueva.publicadaEl = hace(1)), (vieja.publicadaEl = hace(60)), state.cards.push(nueva, vieja));
+  // Vieja retocada hoy y sin ninguna pista de cuándo se publicó: el último
+  // cambio no cuenta, queda fuera de la vista. Otra con el movimiento en su
+  // actividad: se asienta esa fecha.
+  const retocada = newCard("libre", "ZZ Vieja retocada hoy", { estado: "finalizado" }),
+    conRastro = newCard("libre", "ZZ Con rastro", { estado: "finalizado" });
+  ((retocada.updatedAt = Date.now()), (retocada.actividad = []), delete retocada.publicadoEl, delete retocada.publicadaEl, delete conRastro.publicadaEl);
+  conRastro.actividad = [{ ts: Date.now() - 45 * 86400000, autor: "x", texto: "pasó a En línea" }];
+  state.cards.push(retocada, conRastro);
+  const asentadas = asentarFechasPublicado();
+  const asienta = conRastro.publicadaEl === hace(45) && !retocada.publicadaEl && asentadas >= 1;
   const ver = (sel) => [...document.querySelectorAll(sel)].map((x) => x.textContent).join("|");
   ((state.view = "plannerb"), render());
   const b = ver("#pb-finalizado .pb-fila"),
@@ -1692,7 +1702,7 @@ const pub = await page.evaluate(async () => {
   await new Promise((r) => setTimeout(r, 50));
   const abre = $("#modal").classList.contains("hidden") && document.querySelector("#panel").classList.contains("open");
   closePanel();
-  ((nueva.estado = "pendiente"), (vieja.estado = "pendiente"));
+  ((nueva.estado = "pendiente"), (vieja.estado = "pendiente"), (retocada.estado = "pendiente"), (conRastro.estado = "pendiente"));
   // Al pasarla a Publicado queda sellada con la fecha de hoy.
   const t = newCard("libre", "ZZ Recién publicada", { estado: "con-claude" });
   (state.cards.push(t), moverTarjetaAEstado(t, "finalizado"));
@@ -1700,7 +1710,9 @@ const pub = await page.evaluate(async () => {
   (moverTarjetaAEstado(t, "pendiente"));
   return {
     plannerB: b.includes("ZZ Publicada ayer") && !b.includes("dos meses") && bBoton,
-    plannerA: k.includes("ZZ Publicada ayer") && !k.includes("dos meses"),
+    plannerA: k.includes("ZZ Publicada ayer") && !k.includes("dos meses") && !k.includes("retocada") && !k.includes("Con rastro"),
+    asienta,
+    retocadaEnHistorico: hist.includes("ZZ Vieja retocada hoy"),
     nombre: /Publicado/.test(nombre) && !/En línea/.test(nombre),
     historico: hist.includes("ZZ Publicada ayer") && hist.includes("ZZ Publicada hace dos meses"),
     busca: filtrado.includes("dos meses") && !filtrado.includes("ayer"),
@@ -1710,9 +1722,13 @@ const pub = await page.evaluate(async () => {
   };
 });
 check("«En línea» ahora se llama «Publicado»", pub.nombre, pub);
+const pestana = await page.evaluate(() => ({ titulo: document.title, icono: !!document.querySelector('link[rel="icon"][href^="data:image/svg"]') }));
+check("la pestaña dice «Cotonetes Forever» y tiene su logo", /^(\(\d+\) )?Cotonetes Forever$/.test(pestana.titulo) && pestana.icono, pestana);
 check("Publicado muestra solo lo de los últimos 30 días, en los dos Planners", pub.plannerA && pub.plannerB, pub);
 check("«Todo lo publicado» tiene el histórico completo y se puede buscar", pub.historico && pub.busca, pub);
 check("desde el histórico se abre la tarjeta", pub.abre, pub);
+check("un retoque no la vuelve a mostrar: sin fecha de publicación queda solo en el histórico", pub.retocadaEnHistorico && pub.plannerA, pub);
+check("las ya publicadas quedan con su fecha asentada (la de cuando pasaron)", pub.asienta, pub);
 check("al pasar a Publicado se sella la fecha, y se borra si vuelve atrás", pub.sello && pub.sinSello, pub);
 check("el número del círculo es el total de cada uno: en acción + esperando", pbA.circGasti === pbA.cuentaGasti, pbA);
 check("al tocar un perfil se ven también las tarjetas donde espera su turno", pbA.veLasDos, pbA);
