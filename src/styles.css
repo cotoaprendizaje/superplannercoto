@@ -12135,3 +12135,67 @@ button.mat-ct:hover {
   padding: 24px 4px;
   color: var(--ink-soft);
 }
+
+/* ===== Orden libre dentro de cada columna: dónde va a caer ===== */
+.kcard.ord-antes {
+  box-shadow: 0 -4px 0 0 var(--coto-blue), var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.08));
+}
+.kcard.ord-despues {
+  box-shadow: 0 4px 0 0 var(--coto-blue), var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.08));
+}
+.pb-fila.ord-antes {
+  box-shadow: inset 0 3px 0 0 var(--coto-blue);
+}
+.pb-fila.ord-despues {
+  box-shadow: inset 0 -3px 0 0 var(--coto-blue);
+}
+.pb-fila[draggable="true"] {
+  cursor: grab;
+}
+.pb-fila.drag {
+  opacity: 0.4;
+}
+
+/* La barra de arriba va siempre en una fila en compu. Entre 1440 y 1600 de
+   ancho (una pantalla Full HD con el zoom de Windows al 125% queda en 1536)
+   se partía en dos: ahora el buscador es lo que cede ancho, hasta quedar en
+   la lupa sola, y nada más se mueve. (Por debajo de 1441 ya está en lupa.) */
+@media (min-width: 1441px) {
+  .topbar {
+    flex-wrap: nowrap;
+  }
+  .topbar > .brand,
+  .topbar > .tabs,
+  .topbar > .top-actions {
+    flex-shrink: 0;
+  }
+  .topbar > .search-promo {
+    flex: 0 1 242px;
+    min-width: 36px;
+    overflow: hidden;
+  }
+}
+
+/* ===== CotoFrase en ventana central ===== */
+.modal.cotofrase-modal {
+  width: min(420px, 94vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+}
+.cotofrase-centro {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+.cotofrase-centro .slot-widget,
+.cotofrase-centro .frase-card {
+  box-shadow: none;
+}
+.cotofrase-centro .frase-list {
+  max-height: none;
+  overflow: visible;
+}
